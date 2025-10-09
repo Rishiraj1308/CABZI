@@ -1,0 +1,117 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // =============================================================
+    // Helper Functions
+    // =============================================================
+    function isAuth() {
+      return request.auth != null;
+    }
+    
+    // Checks if the requesting user is the owner of the document
+    function isOwner(userId) {
+      return isAuth() && request.auth.uid == userId;
+    }
+
+    // Checks if the user is an admin by looking at a separate 'admins' collection
+    function isAdmin() {
+      return isAuth() && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+    
+    // Checks if the user making the request is the same as the user associated with a given partner/mechanic ID
+    function isPartnerOwner(partnerCollection, partnerId) {
+        let partnerDoc = get(/databases/$(database)/documents/$(partnerCollection)/$(partnerId)).data;
+        // The user ID is stored in the 'userId' field of the partner document
+        return partnerDoc.userId == request.auth.uid;
+    }
+
+
+    // =============================================================
+    // User and Admin Roles
+    // =============================================================
+    match /users/{userId} {
+      allow read, write: if isOwner(userId);
+      allow create: if isAuth();
+    }
+    
+    match /admins/{userId} {
+        allow read, write: if isAdmin();
+    }
+    
+    // =============================================================
+    // Partner Collections (Path, ResQ, Cure)
+    // =============================================================
+    match /partners/{partnerId} {
+        // Only an admin can create/update/delete partner profiles
+        allow read: if isAuth();
+        allow create, update, delete: if isAdmin();
+    }
+    
+    match /partners/{partnerId}/transactions/{transactionId} {
+        // Only the partner who owns the document can read/create transactions
+        allow read, create: if isAuth() && isPartnerOwner('partners', partnerId);
+    }
+    
+    match /mechanics/{mechanicId} {
+        allow read: if isAuth();
+        allow create, update, delete: if isAdmin();
+    }
+
+    match /mechanics/{mechanicId}/transactions/{transactionId} {
+        allow read, create: if isAuth() && isPartnerOwner('mechanics', mechanicId);
+    }
+    
+    match /ambulances/{ambulanceId} {
+         allow read: if isAuth();
+         allow create, update, delete: if isAdmin();
+    }
+    
+     match /ambulances/{ambulanceId}/{subcollection}/{docId} {
+        // Cure partners can manage their own fleet and drivers
+        allow read, write, delete: if isAuth() && isPartnerOwner('ambulances', ambulanceId);
+     }
+
+
+    // =============================================================
+    // Core Service Collections (Rides, Requests, Cases)
+    // =============================================================
+    match /rides/{rideId} {
+      // A rider can create a ride.
+      allow create: if isAuth() && request.resource.data.riderId == request.auth.uid;
+      // The assigned driver or the original rider can read/update the ride.
+      allow read, update: if isAuth() && (resource.data.riderId == request.auth.uid || resource.data.driverId == request.auth.uid);
+      // The rider can cancel their own ride
+      allow update: if isAuth() && request.resource.data.status == 'cancelled_by_rider' && resource.data.riderId == request.auth.uid;
+    }
+    
+    match /garageRequests/{reqId} {
+        allow create: if isAuth() && request.resource.data.driverId == request.auth.uid;
+        allow read, update: if isAuth() && (resource.data.driverId == request.auth.uid || resource.data.mechanicId == request.auth.uid);
+    }
+    
+     match /emergencyCases/{caseId} {
+        allow create: if isAuth() && request.resource.data.riderId == request.auth.uid;
+        // The patient and the assigned hospital can view/update the case
+        allow read, update: if isAuth() && (resource.data.riderId == request.auth.uid || isPartnerOwner('ambulances', resource.data.assignedPartner.id));
+     }
+
+    // =============================================================
+    // Generic/Public Collections
+    // =============================================================
+    match /company/settings {
+        allow read: if isAuth();
+        allow write: if isAdmin();
+    }
+
+    match /expenses/{expenseId} {
+        allow read, write: if isAdmin();
+    }
+    
+     match /vendors/{vendorId} {
+        allow read, write: if isAdmin();
+    }
+
+  }
+}

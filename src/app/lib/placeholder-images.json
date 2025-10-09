@@ -1,0 +1,23 @@
+
+{
+  "home": {
+    "heroBackground": {
+      "src": "https://picsum.photos/seed/road/1920/1080",
+      "hint": "road"
+    },
+    "howItWorks": [
+      {
+        "src": "https://picsum.photos/seed/city-night/1920/1080",
+        "hint": "city night"
+      },
+      {
+        "src": "https://picsum.photos/seed/car-interior/1920/1080",
+        "hint": "car interior"
+      },
+      {
+        "src": "https://picsum.photos/seed/happy-person/1920/1080",
+        "hint": "happy person"
+      }
+    ]
+  }
+}

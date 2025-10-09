@@ -1,0 +1,404 @@
+{
+  "entities": {
+    "User": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "User",
+      "type": "object",
+      "description": "Represents a user of the Cabzi application.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the user."
+        },
+        "phoneNumber": {
+          "type": "string",
+          "description": "User's phone number used for authentication.",
+          "format": "string"
+        },
+        "userType": {
+          "type": "string",
+          "description": "The type of user: 'rider' or 'driver'."
+        }
+      },
+      "required": [
+        "id",
+        "phoneNumber",
+        "userType"
+      ]
+    },
+    "Rider": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Rider",
+      "type": "object",
+      "description": "Represents a rider in the Cabzi application.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Rider entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to User. (Relationship: User 1:1 Rider)"
+        }
+      },
+      "required": [
+        "id",
+        "userId"
+      ]
+    },
+    "Driver": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Driver",
+      "type": "object",
+      "description": "Represents a driver in the Cabzi application.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Driver entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to User. (Relationship: User 1:1 Driver)"
+        },
+        "licenseImage": {
+          "type": "string",
+          "description": "URL of the driver's license image stored in Firebase Storage.",
+          "format": "uri"
+        },
+        "aadhaarImage": {
+          "type": "string",
+          "description": "URL of the driver's Aadhaar image stored in Firebase Storage.",
+          "format": "uri"
+        },
+        "vehicleRcImage": {
+          "type": "string",
+          "description": "URL of the driver's Vehicle Registration Certificate image stored in Firebase Storage.",
+          "format": "uri"
+        },
+        "vehicleType": {
+          "type": "string",
+          "description": "The type of vehicle the driver uses (e.g., Bike, Auto, Cab, Toto)."
+        },
+        "subscriptionId": {
+          "type": "string",
+          "description": "Reference to Subscription. (Relationship: Driver 1:1 Subscription)"
+        },
+        "insuranceStatus": {
+          "type": "string",
+          "description": "The current insurance status of the driver: Active or Pending."
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "licenseImage",
+        "aadhaarImage",
+        "vehicleRcImage",
+        "vehicleType",
+        "subscriptionId",
+        "insuranceStatus"
+      ]
+    },
+    "Ride": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Ride",
+      "type": "object",
+      "description": "Represents a ride request and its details.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Ride entity."
+        },
+        "riderId": {
+          "type": "string",
+          "description": "Reference to Rider. (Relationship: Rider 1:N Ride)"
+        },
+        "driverId": {
+          "type": "string",
+          "description": "Reference to Driver. (Relationship: Driver 1:N Ride). Nullable if ride not accepted."
+        },
+        "pickupLocation": {
+          "type": "string",
+          "description": "Pickup location of the ride (e.g., address or coordinates)."
+        },
+        "dropoffLocation": {
+          "type": "string",
+          "description": "Drop-off location of the ride."
+        },
+        "fareEstimate": {
+          "type": "number",
+          "description": "Estimated fare for the ride."
+        },
+        "rideStatus": {
+          "type": "string",
+          "description": "Current status of the ride (e.g., requested, accepted, inProgress, completed, cancelled)."
+        },
+        "paymentMethod": {
+          "type": "string",
+          "description": "Payment method used for the ride (e.g., cash, UPI, wallet)."
+        },
+        "startTime": {
+          "type": "string",
+          "description": "Timestamp indicating the ride start time",
+          "format": "date-time"
+        },
+        "endTime": {
+          "type": "string",
+          "description": "Timestamp indicating the ride end time",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "riderId",
+        "pickupLocation",
+        "dropoffLocation",
+        "fareEstimate",
+        "rideStatus",
+        "paymentMethod"
+      ]
+    },
+    "Subscription": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Subscription",
+      "type": "object",
+      "description": "Represents a driver's subscription plan.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Subscription entity."
+        },
+        "planName": {
+          "type": "string",
+          "description": "Name of the subscription plan (e.g., Free, Basic, Premium)."
+        },
+        "price": {
+          "type": "number",
+          "description": "Price of the subscription plan."
+        },
+        "durationMonths": {
+          "type": "number",
+          "description": "Duration of the subscription in months."
+        },
+        "benefits": {
+          "type": "array",
+          "description": "Array of strings describing the benefits included in the subscription.",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "id",
+        "planName",
+        "price",
+        "durationMonths",
+        "benefits"
+      ]
+    },
+    "Wallet": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Wallet",
+      "type": "object",
+      "description": "Represents the wallet of a driver.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Wallet entity."
+        },
+        "driverId": {
+          "type": "string",
+          "description": "Reference to Driver. (Relationship: Driver 1:1 Wallet)"
+        },
+        "totalEarnings": {
+          "type": "number",
+          "description": "Total earnings in the wallet."
+        }
+      },
+      "required": [
+        "id",
+        "driverId",
+        "totalEarnings"
+      ]
+    },
+    "Transaction": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Transaction",
+      "type": "object",
+      "description": "Represents a transaction in the wallet.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Transaction entity."
+        },
+        "walletId": {
+          "type": "string",
+          "description": "Reference to Wallet. (Relationship: Wallet 1:N Transaction)"
+        },
+        "amount": {
+          "type": "number",
+          "description": "The amount of the transaction."
+        },
+        "transactionType": {
+          "type": "string",
+          "description": "Type of transaction (e.g., credit, debit, subscription payment)."
+        },
+        "transactionDate": {
+          "type": "string",
+          "description": "Timestamp indicating when the transaction occurred.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "walletId",
+        "amount",
+        "transactionType",
+        "transactionDate"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/users/{userId}",
+        "definition": {
+          "entityName": "User",
+          "schema": {
+            "$ref": "#/backend/entities/User"
+          },
+          "description": "Stores user data. Only the authenticated user can read/write their own data.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/riders/{riderId}",
+        "definition": {
+          "entityName": "Rider",
+          "schema": {
+            "$ref": "#/backend/entities/Rider"
+          },
+          "description": "Stores rider data. Only the authenticated user can read/write their own data, after verifying that the rider.userId matches request.auth.uid.",
+          "params": [
+            {
+              "name": "riderId",
+              "description": "The unique identifier of the rider."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/drivers/{driverId}",
+        "definition": {
+          "entityName": "Driver",
+          "schema": {
+            "$ref": "#/backend/entities/Driver"
+          },
+          "description": "Stores driver data. Only the authenticated user can read/write their own data, after verifying that the driver.userId matches request.auth.uid.",
+          "params": [
+            {
+              "name": "driverId",
+              "description": "The unique identifier of the driver."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/rides/{rideId}",
+        "definition": {
+          "entityName": "Ride",
+          "schema": {
+            "$ref": "#/backend/entities/Ride"
+          },
+          "description": "Stores ride data. Riders can create rides. Drivers can accept rides (update driverId).  The creator (rider) and the assigned driver can modify the ride. No external data is required to validate these rules.",
+          "params": [
+            {
+              "name": "rideId",
+              "description": "The unique identifier of the ride."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/subscriptions/{subscriptionId}",
+        "definition": {
+          "entityName": "Subscription",
+          "schema": {
+            "$ref": "#/backend/entities/Subscription"
+          },
+          "description": "Stores subscription plan data. Publicly readable, but only admins (roles_admin) can create/modify.",
+          "params": [
+            {
+              "name": "subscriptionId",
+              "description": "The unique identifier of the subscription."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/wallets/{walletId}",
+        "definition": {
+          "entityName": "Wallet",
+          "schema": {
+            "$ref": "#/backend/entities/Wallet"
+          },
+          "description": "Stores driver wallet data. Only the driver who owns the wallet can access it, after verifying that wallet.driverId matches driver.id and driver.userId matches request.auth.uid.",
+          "params": [
+            {
+              "name": "walletId",
+              "description": "The unique identifier of the wallet."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/wallets/{walletId}/transactions/{transactionId}",
+        "definition": {
+          "entityName": "Transaction",
+          "schema": {
+            "$ref": "#/backend/entities/Transaction"
+          },
+          "description": "Stores transaction history for a wallet. Only the owner of the wallet can access transactions.",
+          "params": [
+            {
+              "name": "walletId",
+              "description": "The unique identifier of the wallet."
+            },
+            {
+              "name": "transactionId",
+              "description": "The unique identifier of the transaction."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/roles_admin/{userId}",
+        "definition": {
+          "entityName": "roles_admin",
+          "schema": {
+            "$ref": "#/backend/entities/User"
+          },
+          "description": "Indicates that a user is an admin. Existence-based role. Admins can manage subscription plans.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the admin user."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The Firestore structure is designed to ensure security, scalability, and debuggability, adhering to the core principles of Authorization Independence, Clarity of Intent, DBAC (Database-Based Access Control), and QAPs (Rules are not Filters). Authorization Independence is achieved through denormalization, copying relevant authorization data (like user roles or membership maps) into child documents to avoid costly and insecure `get()` calls in security rules.\n\n**Explanation of the Structure and Authorization Independence:**\n\n*   **Users Collection:** Stores core user information.  Access is restricted to the user themselves.\n*   **Riders Collection:** Stores rider-specific data, linked to the User via `userId`.  Access is restricted to the rider themselves.\n*   **Drivers Collection:** Stores driver-specific data, linked to the User via `userId`.  Access is restricted to the driver themselves.\n*   **Rides Collection:** Stores ride information. The `riderId` field establishes ownership. Security rules enforce that only the rider who created the ride or the assigned driver can modify it.  The `driverId` can be null until a driver accepts the ride. Crucially, no data from the `Users`, `Riders` or `Drivers` collections is required to validate access to the `Rides` collection.\n*   **Subscriptions Collection:** Stores subscription plan details. These can be publicly readable, as they define the available plans.  Creation/modification is restricted to admins (via the `/roles_admin/{uid}` collection).\n*   **Wallets Collection:** Stores wallet information for drivers, linked to the Driver via `driverId`. Access is restricted to the driver themselves.\n*   **Transactions Collection:** Stores transaction history for wallets, linked to the Wallet via `walletId`. Access is restricted to the owner of the wallet.\n*   **Roles (roles_admin):**  The existence of a document in `/roles_admin/{uid}` grants admin privileges. This is an existence-based global role check, providing Authorization Independence.\n\n**QAPs (Rules Are Not Filters):**\n\nThe structure supports secure `list` operations by:\n\n*   **Structural Segregation:**  Each top-level collection (`users`, `riders`, `drivers`, `rides`, `subscriptions`, `wallets`, `transactions`, `roles_admin`) has a clear and distinct security posture. This prevents mixing data with different access requirements in the same collection, which simplifies security rules and prevents the need for filtering based on document content.\n*   **Path-Based Ownership:** User-owned data (e.g., wallets, transactions) are nested under the `/users/{userId}` path, enabling simple and efficient security rules based on `request.auth.uid`."
+  }
+}

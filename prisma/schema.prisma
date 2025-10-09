@@ -1,0 +1,271 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ENUMS for defining specific roles, types, and statuses
+
+enum Role {
+  RIDER
+  PARTNER
+  ADMIN
+  AMBULANCE_DRIVER
+}
+
+enum PartnerType {
+  PATH
+  RESQ
+  CURE
+}
+
+enum PartnerStatus {
+  PENDING
+  VERIFIED
+  REJECTED
+  SUSPENDED
+}
+
+enum RideStatus {
+  SEARCHING
+  ACCEPTED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum TransactionType {
+  CREDIT
+  DEBIT
+}
+
+// MODELS for database tables
+
+model User {
+  id        String   @id @default(cuid())
+  phone     String   @unique
+  name      String
+  gender    String
+  role      Role     @default(RIDER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  isOnline  Boolean  @default(false)
+  lastSeen  DateTime?
+  currentLat Float?
+  currentLon Float?
+
+  partnerProfile        Partner?
+  ridesAsRider          Ride[]          @relation("RiderRides")
+  ridesAsDriver         Ride[]          @relation("DriverRides")
+  garageRequestsAsDriver GarageRequest[] @relation("RequestingDriver")
+  emergencyCasesAsRider EmergencyCase[] @relation("PatientCases")
+
+  @@map("users")
+}
+
+model Partner {
+  id                 String        @id @default(cuid())
+  userId             String        @unique
+  user               User          @relation(fields: [userId], references: [id])
+  partnerId          String        @unique
+  type               PartnerType
+  status             PartnerStatus @default(PENDING)
+  photoUrl           String?
+  panCard            String        @unique
+  aadhaarNumber      String        @unique
+  isCabziPinkPartner Boolean       @default(false)
+  rating             Float         @default(5.0)
+  ridesToday         Int           @default(0)
+  jobsToday          Int           @default(0)
+  casesToday         Int           @default(0)
+  suspensionEndDate  DateTime?
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+
+  vehicle         Vehicle?
+  wallet          Wallet?
+  hospitalProfile Hospital?
+  mechanicProfile Mechanic?
+
+  @@map("partners")
+}
+
+model Vehicle {
+  id             String   @id @default(cuid())
+  partnerId      String   @unique
+  partner        Partner  @relation(fields: [partnerId], references: [id])
+  type           String
+  modelName      String
+  rcNumber       String   @unique
+  drivingLicence String   @unique
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@map("vehicles")
+}
+
+model Hospital {
+  id                 String      @id @default(cuid())
+  partnerId          String      @unique
+  partner            Partner     @relation(fields: [partnerId], references: [id])
+  registrationNumber String      @unique
+  address            String
+  totalBeds          Int         @default(0)
+  bedsOccupied       Int         @default(0)
+  createdAt          DateTime    @default(now())
+  updatedAt          DateTime    @updatedAt
+  
+  ambulances     Ambulance[]
+  emergencyCases EmergencyCase[] @relation("AssignedHospital")
+
+  @@map("hospitals")
+}
+
+model Ambulance {
+  id        String   @id @default(cuid())
+  hospitalId String
+  hospital   Hospital @relation(fields: [hospitalId], references: [id])
+  vehicleName String
+  rcNumber  String   @unique
+  type      String   // e.g., BLS, ALS
+  status    String   // e.g., Available, On-Duty
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  driver         AmbulanceDriver?
+  emergencyCases EmergencyCase[] @relation("AssignedAmbulance")
+
+  @@map("ambulances")
+}
+
+model AmbulanceDriver {
+  id        String    @id @default(cuid())
+  ambulanceId String?   @unique
+  ambulance   Ambulance? @relation(fields: [ambulanceId], references: [id])
+  partnerId String    @unique
+  name      String
+  phone     String    @unique
+  password  String    // Hashed password
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  emergencyCases EmergencyCase[] @relation("AssignedAmbulanceDriver")
+  
+  @@map("ambulance_drivers")
+}
+
+model Mechanic {
+  id         String   @id @default(cuid())
+  partnerId  String   @unique
+  partner    Partner  @relation(fields: [partnerId], references: [id])
+  services   String[]
+  garageName String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@map("mechanics")
+}
+
+model Wallet {
+  id           String   @id @default(cuid())
+  partnerId    String   @unique
+  partner      Partner  @relation(fields: [partnerId], references: [id])
+  balance      Float    @default(0)
+  interestRate Float    @default(5.0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  transactions Transaction[]
+
+  @@map("wallets")
+}
+
+model Transaction {
+  id          String          @id @default(cuid())
+  walletId    String
+  wallet      Wallet          @relation(fields: [walletId], references: [id])
+  amount      Float
+  type        TransactionType
+  description String
+  timestamp   DateTime        @default(now())
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  @@map("transactions")
+}
+
+model Ride {
+  id             String     @id @default(cuid())
+  pickupAddress  String
+  dropoffAddress String
+  pickupLat      Float
+  pickupLon      Float
+  dropoffLat     Float
+  dropoffLon     Float
+  status         RideStatus
+  fare           Float
+  otp            String
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+
+  riderId String
+  rider   User   @relation("RiderRides", fields: [riderId], references: [id])
+
+  driverId String?
+  driver   User?  @relation("DriverRides", fields: [driverId], references: [id])
+
+  @@map("rides")
+}
+
+model GarageRequest {
+  id             String   @id @default(cuid())
+  issue          String
+  pickupAddress  String
+  pickupLat      Float
+  pickupLon      Float
+  status         String
+  description    String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  requesterId String
+  requester   User   @relation("RequestingDriver", fields: [requesterId], references: [id])
+  
+  // Later we can link a mechanic here
+  // mechanicId String?
+  // mechanic User? @relation("MechanicJobs", fields: [mechanicId], references: [id])
+
+  @@map("garage_requests")
+}
+
+model EmergencyCase {
+  id          String   @id @default(cuid())
+  severity    String
+  status      String
+  patientLat  Float
+  patientLon  Float
+  patientAddress String?
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  patientId String
+  patient   User   @relation("PatientCases", fields: [patientId], references: [id])
+  
+  assignedHospitalId String?
+  assignedHospital   Hospital? @relation("AssignedHospital", fields: [assignedHospitalId], references: [id])
+  
+  assignedAmbulanceId String?
+  assignedAmbulance   Ambulance? @relation("AssignedAmbulance", fields: [assignedAmbulanceId], references: [id])
+  
+  assignedAmbulanceDriverId String?
+  assignedAmbulanceDriver   AmbulanceDriver? @relation("AssignedAmbulanceDriver", fields: [assignedAmbulanceDriverId], references: [id])
+
+  @@map("emergency_cases")
+}
