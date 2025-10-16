@@ -5,6 +5,7 @@ export async function POST(req: Request) {
   try {
     const body = await req.json();
     console.log('Webhook received:', body);
+    // In a real app, you would process this data, e.g., trigger an email
     return NextResponse.json({ status: 'ok', message: 'Webhook received' });
   } catch (error: any) {
     console.error('Error processing webhook:', error);
