@@ -6,13 +6,13 @@
  * plugins for different AI providers here (e.g., Google AI, Ollama for Open Router).
  */
 
-import { configureGenkit } from '@genkit-ai/core';
+import { genkit } from '@genkit-ai/core';
 import { googleAI } from '@genkit-ai/google-genai';
 import { firebase } from '@genkit-ai/firebase';
 
 // Initialize and export Genkit configuration.
 // Other parts of the application will import 'ai' from this file.
-export const ai = configureGenkit({
+export const ai = genkit({
   plugins: [
     firebase(),
     googleAI({
