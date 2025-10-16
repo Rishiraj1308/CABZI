@@ -1,3 +1,4 @@
+
 'use client'
 
 import { useState, useEffect, useMemo } from 'react';
@@ -10,7 +11,7 @@ import { PlusCircle, Search } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
-import { useFirestore } from '@/firebase/client-provider';
+import { useDb } from '@/firebase/client-provider';
 import { collection, addDoc, onSnapshot, query, orderBy, doc, updateDoc } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -31,7 +32,7 @@ export default function AdminVendorsPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('')
   const { toast } = useToast();
-  const db = useFirestore();
+  const db = useDb();
   
   useEffect(() => {
       if (!db) {

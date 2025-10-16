@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useToast } from '@/hooks/use-toast'
-import { db } from '@/lib/firebase'
+import { useDb } from '@/firebase/client-provider'
 import { collection, query, where, onSnapshot, orderBy, Timestamp } from 'firebase/firestore'
 
 interface Case {
@@ -27,6 +27,7 @@ export default function CureCasesPage() {
     const [cases, setCases] = useState<Case[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const { toast } = useToast();
+    const db = useDb();
 
     useEffect(() => {
         if (!db) {
@@ -63,7 +64,7 @@ export default function CureCasesPage() {
         });
 
         return () => unsubscribe();
-    }, [toast]);
+    }, [toast, db]);
 
     const financialStats = useMemo(() => {
         const completedCases = cases.filter(c => c.status === 'completed');

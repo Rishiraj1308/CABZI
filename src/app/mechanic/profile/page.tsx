@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { CheckCircle, BadgeCheck, Wrench, KeyRound } from 'lucide-react'
-import { useFirebase, useDb, useAuth } from '@/firebase/client-provider'
+import { useDb, useAuth } from '@/firebase/client-provider'
 import { collection, query, where, getDocs } from 'firebase/firestore'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useToast } from '@/hooks/use-toast'

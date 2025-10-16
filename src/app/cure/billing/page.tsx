@@ -7,7 +7,7 @@ import { History, IndianRupee, Landmark, Download, TrendingUp, TrendingDown } fr
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useToast } from '@/hooks/use-toast'
-import { db } from '@/lib/firebase'
+import { useDb } from '@/firebase/client-provider'
 import { collection, query, where, onSnapshot, orderBy, Timestamp } from 'firebase/firestore'
 import { Button } from '@/components/ui/button'
 
@@ -23,6 +23,7 @@ export default function CureBillingPage() {
     const [transactions, setTransactions] = useState<Transaction[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const { toast } = useToast();
+    const db = useDb();
 
     useEffect(() => {
         if (!db) {
@@ -72,7 +73,7 @@ export default function CureBillingPage() {
         });
 
         return () => unsubscribe();
-    }, [toast]);
+    }, [toast, db]);
 
     const financialStats = useMemo(() => {
         const totalEarnings = transactions
@@ -169,7 +170,7 @@ export default function CureBillingPage() {
                                 ))
                             ) : (
                                 <TableRow>
-                                    <TableCell colSpan={3} className="h-24 text-center">
+                                    <TableCell colSpan={3} className="text-center h-24">
                                         No transactions recorded yet.
                                     </TableCell>
                                 </TableRow>

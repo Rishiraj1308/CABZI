@@ -1,3 +1,4 @@
+
 'use client'
 
 import { useState, useEffect, useMemo } from 'react'
@@ -7,7 +8,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { useToast } from '@/hooks/use-toast'
 import { MessageSquare, Phone, MoreHorizontal, User, Car, Filter, FileText } from 'lucide-react'
-import { useFirestore } from '@/firebase/client-provider'
+import { useDb } from '@/firebase/client-provider'
 import { collection, query, getDocs, orderBy, Timestamp, doc, updateDoc, arrayUnion } from 'firebase/firestore'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
@@ -45,7 +46,7 @@ export default function AdminSupportPage() {
   const [statusFilter, setStatusFilter] = useState('All');
   const [userTypeFilter, setUserTypeFilter] = useState('All');
   const { toast } = useToast();
-  const db = useFirestore();
+  const db = useDb();
   
   const adminName = 'Support Exec'; // In a real app, this would come from the admin's session
 
@@ -282,5 +283,3 @@ export default function AdminSupportPage() {
     </Card>
   )
 }
-
-    

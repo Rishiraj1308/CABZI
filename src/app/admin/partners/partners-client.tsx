@@ -1,3 +1,4 @@
+
 'use client'
 
 import { useState, useMemo, useEffect } from 'react'
@@ -28,7 +29,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Input } from '@/components/ui/input'
 import Link from 'next/link'
-import { useFirestore } from '@/firebase/client-provider'
+import { useDb } from '@/firebase/client-provider'
 import { collection, getDocs, query, doc, updateDoc, deleteDoc } from 'firebase/firestore'
 import { Skeleton } from '@/components/ui/skeleton'
 
@@ -47,7 +48,7 @@ export default function PartnersClient() {
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
-  const db = useFirestore();
+  const db = useDb();
 
   const fetchAllPartners = async () => {
     if(!db) return;

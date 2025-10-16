@@ -1,3 +1,4 @@
+
 'use client'
 
 import { useState, useEffect } from 'react'
@@ -6,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { CheckCircle, BadgeCheck, Ambulance, KeyRound, IndianRupee, Save } from 'lucide-react'
-import { db } from '@/lib/firebase'
+import { useDb } from '@/firebase/client-provider'
 import { collection, query, where, getDocs, doc, updateDoc } from 'firebase/firestore'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useToast } from '@/hooks/use-toast'
@@ -31,6 +32,7 @@ export default function CureProfilePage() {
     const [partnerDocId, setPartnerDocId] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const { toast } = useToast();
+    const db = useDb();
 
     // Fare management state
     const [baseFare, setBaseFare] = useState<number | string>('');
@@ -79,7 +81,7 @@ export default function CureProfilePage() {
             }
         };
         fetchProfile();
-    }, [toast]);
+    }, [toast, db]);
     
      const getInitials = (name: string) => {
         if (!name) return 'C';

@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { useToast } from '@/hooks/use-toast'
-import { useFirestore, useFunctions } from '@/firebase/client-provider'
+import { useDb, useFunctions } from '@/firebase/client-provider'
 import { doc, getDoc, setDoc } from 'firebase/firestore'
 import { Building, Landmark, Save, FileText, IndianRupee, DatabaseZap } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -38,7 +38,7 @@ export default function CompanySettingsPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [isSeeding, setIsSeeding] = useState(false);
     const { toast } = useToast();
-    const db = useFirestore();
+    const db = useDb();
     const functions = useFunctions();
 
     useEffect(() => {

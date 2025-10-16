@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { useToast } from '@/hooks/use-toast'
 import { Gem, MoreHorizontal, Search, Check, CircleX, Calendar, Star } from 'lucide-react'
-import { useFirestore } from '@/firebase/client-provider'
+import { useDb } from '@/firebase/client-provider'
 import { collection, query, getDocs, doc, updateDoc, Timestamp } from 'firebase/firestore'
 import { Skeleton } from '@/components/ui/skeleton'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
@@ -37,7 +37,7 @@ export default function AdminSubscriptionsPage() {
     const [selectedPartner, setSelectedPartner] = useState<PartnerSubscription | null>(null);
     const [newPlan, setNewPlan] = useState('');
     const { toast } = useToast();
-    const db = useFirestore();
+    const db = useDb();
 
     const fetchSubscriptions = async () => {
          if (!db) {

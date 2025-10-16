@@ -13,7 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { useToast } from '@/hooks/use-toast'
 import { Skeleton } from '@/components/ui/skeleton'
 import dynamic from 'next/dynamic'
-import { useFirestore } from '@/firebase/client-provider'
+import { useDb } from '@/firebase/client-provider'
 import { collection, query, where, onSnapshot, doc, updateDoc, GeoPoint, serverTimestamp, arrayUnion, addDoc, getDocs, getDoc, orderBy, Timestamp, writeBatch, deleteDoc } from 'firebase/firestore'
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
@@ -114,7 +114,7 @@ export default function HospitalMissionControl() {
     const [newChecklistItem, setNewChecklistItem] = useState('');
     const [selectedDriver, setSelectedDriver] = useState<AmbulanceDriver | null>(null);
     const [isDriverDetailsOpen, setIsDriverDetailsOpen] = useState(false);
-    const db = useFirestore();
+    const db = useDb();
 
     // Bed Management State
     const [totalBeds, setTotalBeds] = useState(0);
@@ -772,7 +772,7 @@ export default function HospitalMissionControl() {
                                                 <Label htmlFor="driverPhone">Phone Number</Label>
                                                 <div className="flex items-center gap-0 rounded-md border border-input focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2">
                                                   <span className="pl-3 text-muted-foreground text-sm">+91</span>
-                                                  <Input id="driverPhone" name="phone" type="tel" maxLength={10} placeholder="12345 67890" required className="border-0 h-9 focus-visible:ring-0 focus-visible:ring-offset-0 flex-1" />
+                                                  <Input id="driverPhone" name="driverPhone" type="tel" maxLength={10} placeholder="12345 67890" required className="border-0 h-9 focus-visible:ring-0 focus-visible:ring-offset-0 flex-1" />
                                                 </div>
                                             </div>
                                             <div className="space-y-2"><Label htmlFor="driverAge">Age</Label><Input id="driverAge" name="driverAge" type="number" required /></div>
