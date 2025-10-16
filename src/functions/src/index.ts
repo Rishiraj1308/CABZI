@@ -7,7 +7,7 @@
 
 import { onDocumentCreated, onDocumentUpdated } from 'firebase-functions/v2/firestore';
 import { onSchedule } from "firebase-functions/v2/scheduler";
-import { getFirestore, GeoPoint, Timestamp, arrayUnion } from 'firebase-admin/firestore';
+import { getFirestore, GeoPoint, Timestamp, FieldValue } from 'firebase-admin/firestore';
 import { getMessaging } from 'firebase-admin/messaging';
 import { initializeApp, getApps } from 'firebase-admin/app';
 import { HttpsError, onCall } from "firebase-functions/v2/https";
@@ -180,7 +180,7 @@ const handleEmergencyDispatch = async (caseData: any, caseId: string) => {
         console.log(`Emergency request ${caseId} dispatched to hospital ${targetHospital.id}.`);
     } else {
         console.log(`Hospital ${targetHospital.id} has no FCM token. Cascading to next...`);
-        await db.doc(`emergencyCases/${caseId}`).update({ rejectedBy: arrayUnion(targetHospital.id) });
+        await db.doc(`emergencyCases/${caseId}`).update({ rejectedBy: FieldValue.arrayUnion(targetHospital.id) });
     }
 }
 
@@ -321,7 +321,7 @@ export const emergencyCaseTimeout = onSchedule("every 1 minutes", async (event) 
             
             // Mark the hospital as having rejected (timed out) and trigger the update function
             await db.doc(`emergencyCases/${caseId}`).update({
-                rejectedBy: arrayUnion(timedOutHospitalId)
+                rejectedBy: FieldValue.arrayUnion(timedOutHospitalId)
             });
         }
     }
@@ -415,5 +415,7 @@ export const simulateHighDemand = onCall(async (request) => {
 
     return { success: true, message: `High demand alert triggered for ${zoneName}.` };
 });
+
+    
 
     
