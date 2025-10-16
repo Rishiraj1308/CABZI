@@ -7,7 +7,6 @@
 
 import {ai} from '@/ai/genkit-client';
 import {z} from 'zod';
-import {doc, collection, addDoc, serverTimestamp} from 'firebase/firestore';
 import { getFirestore } from 'firebase-admin/firestore';
 import {initializeApp, getApps} from 'firebase-admin/app';
 
@@ -82,12 +81,12 @@ const supportChatFlow = ai.defineFlow(
         userType: input.userType,
         query: input.query,
         status: 'Pending', // Initially pending, can be 'Resolved by AI' later
-        createdAt: serverTimestamp(),
+        createdAt: new Date(), // Use standard Date for admin sdk
     };
 
     if (db) {
       try {
-        await addDoc(collection(db, 'supportQueries'), queryData);
+        await db.collection('supportQueries').add(queryData);
       } catch (e) {
         console.error('Failed to log support ticket:', e);
         // Even if logging fails, we should still try to help the user.
