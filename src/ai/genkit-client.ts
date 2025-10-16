@@ -4,13 +4,12 @@
  * plugins for different AI providers here (e.g., Google AI, Ollama for Open Router).
  */
 
-import {genkit} from '@genkit-ai/core';
-import {googleAI} from '@genkit-ai/google-genai';
-import {firebase} from '@genkit-ai/firebase';
-
+import { configureGenkit } from '@genkit-ai/core';
+import { googleAI } from '@genkit-ai/google-genai';
+import { firebase } from '@genkit-ai/firebase';
 
 // Initialize Genkit with the Google AI plugin.
-export const ai = genkit({
+export const ai = configureGenkit({
   plugins: [
     firebase(),
     googleAI({
@@ -20,4 +19,6 @@ export const ai = genkit({
   // Log all traces to the console for debugging.
   traceStore: 'firebase',
   flowStateStore: 'firebase',
+  logLevel: 'debug',
+  enableTracingAndMetrics: true,
 });

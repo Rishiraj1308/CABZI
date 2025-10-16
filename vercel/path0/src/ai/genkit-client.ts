@@ -6,7 +6,7 @@
 
 import {genkit} from '@genkit-ai/core';
 import {googleAI} from '@genkit-ai/google-genai';
-import {firebase} from '@genkit-ai/firebase/plugin';
+import { firebase } from '@genkit-ai/firebase';
 
 
 // Initialize Genkit with the Google AI plugin.
