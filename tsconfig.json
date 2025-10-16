@@ -1,0 +1,40 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",                    // Modern JS target
+    "lib": ["dom", "dom.iterable", "esnext"],
+    "allowJs": true,
+    "skipLibCheck": true,
+    "strict": false,
+    "forceConsistentCasingInFileNames": true,
+    "noEmit": false,                       // Must emit JS for running scripts
+    "esModuleInterop": true,               // Allows default imports like 'import axios from "axios"'
+    "module": "CommonJS",                  // Node can run compiled JS
+    "moduleResolution": "node",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "jsx": "preserve",
+    "incremental": true,
+    "outDir": "dist",                       // Output folder for compiled JS
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ],
+    "paths": {
+      "@/*": ["./src/*"]
+    }
+  },
+  "include": [
+    "next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    ".next/types/**/*.ts",
+    "src/firebase/client-provider.tsx",
+    "src/lib/error-handling.ts",
+    "src/components/firebase-error-listener.tsx",
+    "src/hooks/use-firebase.ts",
+    "src/lib/firebase-functions.ts",
+    "src/ai/**/*.ts"                       // Include MCP scripts for compilation
+  ],
+  "exclude": ["node_modules"]
+}

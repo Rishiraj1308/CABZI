@@ -1,0 +1,169 @@
+/**
+ * @fileoverview Firestore Security Rules for the Cabzi application.
+ *
+ * Core Philosophy:
+ * This ruleset prioritizes a secure, scalable, and easily debuggable data model.
+ * It strictly enforces user-ownership for private data and employs
+ * denormalization to avoid costly `get()` calls in the rules. This ensures
+ * authorization independence and atomic operations, improving performance and
+ * simplifying debugging.
+ *
+ * Data Structure:
+ * - /users/{userId}: Stores core user information.  Only the user can read/write their document.
+ * - /users/{userId}/rider: Stores rider profile data. Only the user can read/write their document.
+ * - /users/{userId}/driver: Stores driver profile data. Only the user can read/write their document.
+ * - /rides/{rideId}: Stores ride information. Access is controlled via `riderId` and `driverId` fields.
+ * - /subscriptions/{subscriptionId}: Stores subscription plan details. Publicly readable.
+ * - /wallet_transactions/{transactionId}: Stores wallet transaction data for drivers. Access controlled via the `driverId` field.
+ *
+ * Key Security Decisions:
+ * - User data is strictly segregated under `/users/{userId}` to enforce ownership.
+ * - Ride data access is controlled via the `riderId` and `driverId` within the document.
+ * - Subscriptions are publicly readable but linked to a specific driver.
+ * - The rules avoid hierarchical authorization dependencies (`get()` calls) for performance and simplicity.
+ * - In this prototyping phase, data type validation is relaxed to allow for rapid iteration.
+ *
+ * Denormalization for Authorization:
+ * - Ride documents contain `riderId` and `driverId` to avoid needing to query separate user documents for authorization.
+ */
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    /**
+     * @description Manages user data. Only the user can read/write their document.
+     * @path /users/{userId}
+     * @allow (create) User with matching ID can create their own document.
+     * @allow (get, update, delete) User can access their own document.
+     * @deny (create) User cannot create a document with a mismatched ID.
+     * @deny (get, list, create, update, delete) Other users cannot access this document.
+     * @principle Enforces document ownership; users can only manage their own data.
+     */
+    match /users/{userId} {
+      function isOwner(userId) {
+        return request.auth.uid == userId;
+      }
+
+      function isSignedIn() {
+        return request.auth != null;
+      }
+
+      allow get: if isSignedIn() && isOwner(userId);
+      allow list: if false;
+      allow create: if isSignedIn() && isOwner(userId);
+      allow update: if isSignedIn() && isOwner(userId);
+      allow delete: if isSignedIn() && isOwner(userId);
+    }
+
+    /**
+     * @description Manages rider profile data for a user.
+     * @path /users/{userId}/rider
+     * @allow (create) User with matching ID can create their own rider profile.
+     * @allow (get, update, delete) User can access their own rider profile.
+     * @deny (create) User cannot create a rider profile with a mismatched ID.
+     * @deny (get, list, create, update, delete) Other users cannot access this rider profile.
+     * @principle Enforces document ownership; users can only manage their own rider data.
+     */
+    match /users/{userId}/rider {
+      function isOwner(userId) {
+        return request.auth.uid == userId;
+      }
+
+      function isSignedIn() {
+        return request.auth != null;
+      }
+
+      allow get: if isSignedIn() && isOwner(userId);
+      allow list: if false;
+      allow create: if isSignedIn() && isOwner(userId);
+      allow update: if isSignedIn() && isOwner(userId);
+      allow delete: if isSignedIn() && isOwner(userId);
+    }
+
+    /**
+     * @description Manages driver profile data for a user.
+     * @path /users/{userId}/driver
+     * @allow (create) User with matching ID can create their own driver profile.
+     * @allow (get, update, delete) User can access their own driver profile.
+     * @deny (create) User cannot create a driver profile with a mismatched ID.
+     * @deny (get, list, create, update, delete) Other users cannot access this driver profile.
+     * @principle Enforces document ownership; users can only manage their own driver data.
+     */
+    match /users/{userId}/driver {
+      function isOwner(userId) {
+        return request.auth.uid == userId;
+      }
+
+      function isSignedIn() {
+        return request.auth != null;
+      }
+
+      allow get: if isSignedIn() && isOwner(userId);
+      allow list: if false;
+      allow create: if isSignedIn() && isOwner(userId);
+      allow update: if isSignedIn() && isOwner(userId);
+      allow delete: if isSignedIn() && isOwner(userId);
+    }
+
+    /**
+     * @description Manages ride data.  Access is controlled via riderId and driverId.
+     * @path /rides/{rideId}
+     * @allow (get, list) Any authenticated user can read ride data.
+     * @allow (create) Rider can create ride if riderId matches their UID.
+     * @allow (update, delete) Only the rider or driver associated with the ride can modify it.
+     * @deny (create, update, delete) Unauthorized users cannot manage ride data.
+     * @principle Enforces shared access based on the riderId and driverId fields.
+     */
+    match /rides/{rideId} {
+      function isRideParticipant(riderId, driverId) {
+        return request.auth.uid == riderId || request.auth.uid == driverId;
+      }
+
+      function isSignedIn() {
+        return request.auth != null;
+      }
+
+      allow get: if isSignedIn();
+      allow list: if isSignedIn();
+      allow create: if isSignedIn() && request.resource.data.riderId == request.auth.uid;
+      allow update: if isSignedIn() && isRideParticipant(resource.data.riderId, resource.data.driverId);
+      allow delete: if isSignedIn() && isRideParticipant(resource.data.riderId, resource.data.driverId);
+    }
+
+    /**
+     * @description Manages subscription plan data.  Publicly readable.
+     * @path /subscriptions/{subscriptionId}
+     * @allow (get, list) Any user can read subscription data.
+     * @deny (create, update, delete) No one can create, update, or delete subscription data (admin only).
+     */
+    match /subscriptions/{subscriptionId} {
+      allow get, list: if true;
+      allow create, update, delete: if false;
+    }
+
+    /**
+     * @description Manages wallet transaction data for drivers.  Access controlled via the driverId field.
+     * @path /wallet_transactions/{transactionId}
+     * @allow (get, list) Any authenticated user can read transaction data.
+     * @allow (create) Driver can create transaction if driverId matches their UID.
+     * @allow (update, delete) Only the driver associated with the transaction can modify or delete it.
+     * @deny (create, update, delete) Unauthorized users cannot manage wallet transactions.
+     * @principle Enforces shared access based on the driverId field.
+     */
+    match /wallet_transactions/{transactionId} {
+      function isOwner(driverId) {
+        return request.auth.uid == driverId;
+      }
+
+      function isSignedIn() {
+        return request.auth != null;
+      }
+
+      allow get: if isSignedIn();
+      allow list: if isSignedIn();
+      allow create: if isSignedIn() && request.resource.data.driverId == request.auth.uid;
+      allow update: if isSignedIn() && isOwner(resource.data.driverId);
+      allow delete: if isSignedIn() && isOwner(resource.data.driverId);
+    }
+  }
+}

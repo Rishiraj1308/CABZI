@@ -1,0 +1,13 @@
+services:
+  cabzi-app:
+    # Build the Docker image from the Dockerfile in the current directory
+    build: .
+    container_name: cabzi_app_container
+    # Map port 3000 of the host machine to port 3000 in the container
+    ports:
+      - "3000:3000"
+    # Pass environment variables from the .env file to the container
+    env_file:
+      - .env
+    # Automatically restart the container if it stops
+    restart: unless-stopped

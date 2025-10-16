@@ -1,0 +1,333 @@
+
+{
+  "name": "Cabzi Business Automations",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "52857434-2e21-4f46-9d33-722a7f5b3b5e",
+      "name": "Start",
+      "type": "n8n-nodes-base.start",
+      "typeVersion": 1,
+      "position": [
+        -260,
+        220
+      ]
+    },
+    {
+      "parameters": {
+        "path": "new-partner-alert",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "id": "e44d32a7-5136-4a47-a720-d38318873f2c",
+      "name": "New Partner Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        -60,
+        80
+      ],
+      "webhookId": "b1a1c97a-9a3b-48e0-a7d9-3fdee6c85e2b",
+      "notes": "Receives data when a new partner (Driver, Mechanic, Hospital) completes the onboarding form."
+    },
+    {
+      "parameters": {
+        "channel": "admin-alerts",
+        "text": "=Partner Application Received!\n\nA new *{{ $json.body.type }}* named *{{ $json.body.name }}* has just applied.\n\n*Phone:* {{ $json.body.phone }}\n*Email:* {{ $json.body.email }}\n\nPlease review their application in the Admin Panel.",
+        "options": {}
+      },
+      "id": "0d2077e6-7c09-408c-9a48-8a8b0ccb00b7",
+      "name": "Send Slack Alert",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 1,
+      "position": [
+        200,
+        -40
+      ],
+      "credentials": {
+        "slackApi": {
+          "id": "YOUR_SLACK_CREDENTIAL_ID",
+          "name": "Slack account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "path": "high-demand",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "id": "c1f7b2e8-5b1a-4f9c-8e3d-9f2a6b7c0d1e",
+      "name": "High Demand Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        -60,
+        360
+      ],
+      "webhookId": "YOUR_WEBHOOK_ID",
+      "notes": "Receives data from the Admin Panel's 'Simulate High Demand' button."
+    },
+    {
+      "parameters": {
+        "channel": "driver-incentives",
+        "text": "@channel :zap: *High Demand Alert!* :zap:\n\nEarn more now! High demand for rides in *{{$json.body.zoneName}}*.\n\n*Bonus Offer:* Complete a ride in this zone within the next hour and get a *₹{{$json.body.incentiveAmount}} bonus* credited instantly to your wallet.\n\nGo online and head to the zone now!",
+        "options": {}
+      },
+      "id": "a3b9d8e0-2f1c-4b5a-9e6d-1a2b3c4d5e6f",
+      "name": "Send Incentive to Slack",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 1,
+      "position": [
+        200,
+        360
+      ],
+      "credentials": {
+        "slackApi": {
+          "id": "YOUR_SLACK_CREDENTIAL_ID",
+          "name": "Slack account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "hour": 8
+            }
+          ]
+        },
+        "triggerAt": "hour"
+      },
+      "id": "3e9b1a5d-4c7b-4f9a-8e2d-6b8c7d9a1b3c",
+      "name": "Daily at 8 AM",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [
+        -60,
+        600
+      ],
+      "notes": "Runs every day to perform daily checks."
+    },
+    {
+      "parameters": {
+        "authentication": "firebase",
+        "operation": "getMany",
+        "collection": "partners",
+        "limit": 1000
+      },
+      "id": "f5d9e8b0-5a1c-4b9e-9e3d-7a6b4c5d6e7f",
+      "name": "Get All Path Partners",
+      "type": "n8n-nodes-base.firestore",
+      "typeVersion": 1,
+      "position": [
+        200,
+        520
+      ],
+      "credentials": {
+        "firebase": {
+          "id": "YOUR_FIREBASE_CREDENTIAL_ID",
+          "name": "Firebase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "number": [
+            {
+              "value1": "={{$node[\"Get All Path Partners\"].json[\"walletBalance\"]}}",
+              "operation": "lower",
+              "value2": 50
+            }
+          ]
+        }
+      },
+      "id": "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d",
+      "name": "If Wallet Balance < ₹50",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        460,
+        700
+      ]
+    },
+    {
+      "parameters": {
+        "channel": "partner-quality",
+        "text": "📉 *Low Rating Alert!*\n\nPartner *{{$node[\"Get All Path Partners\"].json[\"name\"]}}* (ID: `{{$node[\"Get All Path Partners\"].json[\"partnerId\"]}}`) has a low rating of *{{$node[\"Get All Path Partners\"].json[\"rating\"]}}*.\n\nPlease review their recent trips and consider reaching out.",
+        "options": {}
+      },
+      "id": "d9e8f7a6-b5c4-4d3e-2f1c-0a9b8c7d6e5f",
+      "name": "Send Low Rating Alert",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 1,
+      "position": [
+        720,
+        480
+      ],
+      "credentials": {
+        "slackApi": {
+          "id": "YOUR_SLACK_CREDENTIAL_ID",
+          "name": "Slack account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "number": [
+            {
+              "value1": "={{$node[\"Get All Path Partners\"].json[\"rating\"]}}",
+              "operation": "lower",
+              "value2": 3.5
+            }
+          ]
+        }
+      },
+      "id": "e6f5d4c3-b2a1-4f9e-8d7c-6b5a4d3c2b1a",
+      "name": "If Rating < 3.5",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        460,
+        520
+      ]
+    },
+    {
+      "parameters": {
+        "accountSid": "YOUR_TWILIO_ACCOUNT_SID",
+        "to": "={{$node[\"Get All Path Partners\"].json[\"phone\"]}}",
+        "from": "Cabzi",
+        "message": "Hi {{$node[\"Get All Path Partners\"].json[\"name\"]}}, your Cabzi Wallet balance is low (₹{{$node[\"Get All Path Partners\"].json[\"walletBalance\"]}}). Please add funds to avoid any service interruptions for fuel payments. Thank you!"
+      },
+      "id": "c3b2a1d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d",
+      "name": "Send Low Balance SMS",
+      "type": "n8n-nodes-base.twilio",
+      "typeVersion": 1,
+      "position": [
+        720,
+        700
+      ],
+      "credentials": {
+        "twilioApi": {
+          "id": "YOUR_TWILIO_CREDENTIAL_ID",
+          "name": "Twilio account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "to": "={{$json.body.email}}",
+        "subject": "Welcome to Cabzi! Your Application is Under Review.",
+        "text": "=Welcome to the Cabzi Family, {{$json.body.name}}!\n\nThank you for choosing to partner with us as a {{$json.body.type}}. We are excited to have you on board.\n\nYour application has been successfully submitted and is now under review by our team. We typically verify applications within 24-48 hours.\n\nOnce your verification is complete, you will receive another notification. After that, you can log in to your Partner Dashboard and start earning.\n\nThank you for your patience.\n\nBest Regards,\nThe Cabzi Team",
+        "options": {}
+      },
+      "id": "a4d38c64-42f7-4180-87a3-5c2f82161741",
+      "name": "Send Welcome Email via Gmail",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 1,
+      "position": [
+        200,
+        200
+      ],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "YOUR_GMAIL_CREDENTIAL_ID",
+          "name": "Gmail account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "New Partner Webhook": {
+      "main": [
+        [
+          {
+            "node": "Send Slack Alert",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Send Welcome Email via Gmail",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "High Demand Webhook": {
+      "main": [
+        [
+          {
+            "node": "Send Incentive to Slack",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Daily at 8 AM": {
+      "main": [
+        [
+          {
+            "node": "Get All Path Partners",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get All Path Partners": {
+      "main": [
+        [
+          {
+            "node": "If Rating < 3.5",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "If Wallet Balance < ₹50",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If Wallet Balance < ₹50": {
+      "main": [
+        [
+          {
+            "node": "Send Low Balance SMS",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If Rating < 3.5": {
+      "main": [
+        [
+          {
+            "node": "Send Low Rating Alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "id": "kR1q0d6nI4jP2sYt",
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "tags": []
+}
+
+    

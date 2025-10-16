@@ -1,0 +1,136 @@
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 180 50% 98%;
+    --foreground: 180 25% 20%;
+
+    --card: 180 50% 98%;
+    --card-foreground: 180 25% 20%;
+ 
+    --popover: 180 50% 98%;
+    --popover-foreground: 180 25% 20%;
+ 
+    --primary: 180 35% 25%;
+    --primary-foreground: 180 50% 98%;
+ 
+    --secondary: 180 20% 94%;
+    --secondary-foreground: 180 35% 25%;
+ 
+    --muted: 180 20% 94%;
+    --muted-foreground: 180 15% 45%;
+ 
+    --accent: 45 100% 50%;
+    --accent-foreground: 45 60% 10%;
+ 
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 180 20% 88%;
+    --input: 180 20% 88%;
+    --ring: 180 35% 35%;
+ 
+    --radius: 0.8rem;
+  }
+ 
+  .dark {
+    --background: 180 35% 8%;
+    --foreground: 180 50% 98%;
+ 
+    --card: 180 35% 8%;
+    --card-foreground: 180 50% 98%;
+ 
+    --popover: 180 35% 8%;
+    --popover-foreground: 180 50% 98%;
+ 
+    --primary: 180 35% 30%;
+    --primary-foreground: 180 50% 98%;
+ 
+    --secondary: 180 25% 15%;
+    --secondary-foreground: 180 50% 98%;
+ 
+    --muted: 180 25% 15%;
+    --muted-foreground: 180 15% 65%;
+ 
+    --accent: 45 100% 50%;
+    --accent-foreground: 45 60% 10%;
+ 
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+ 
+    --border: 180 25% 15%;
+    --input: 180 25% 15%;
+    --ring: 180 35% 40%;
+  }
+
+  .pink {
+    --background: 340 100% 97%;
+    --foreground: 340 82% 20%;
+    --card: 340 100% 97%;
+    --card-foreground: 340 82% 20%;
+    --popover: 340 100% 97%;
+    --popover-foreground: 340 82% 20%;
+    --primary: 340 90% 55%;
+    --primary-foreground: 340 82% 98%;
+    --secondary: 340 100% 94%;
+    --secondary-foreground: 340 90% 40%;
+    --muted: 340 100% 94%;
+    --muted-foreground: 340 82% 45%;
+    --accent: 330 90% 70%;
+    --accent-foreground: 340 82% 10%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 340 100% 88%;
+    --input: 340 100% 88%;
+    --ring: 340 90% 55%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Poppins', sans-serif;
+  }
+}
+
+@layer utilities {
+    .btn-glow {
+      box-shadow: 0 0 10px hsl(var(--accent)), 0 0 20px hsl(var(--accent));
+      transition: box-shadow 0.3s ease-in-out;
+    }
+    .btn-glow:hover {
+       box-shadow: 0 0 15px hsl(var(--accent)), 0 0 30px hsl(var(--accent));
+    }
+}
+
+
+.leaflet-container {
+    height: 100%;
+    width: 100%;
+    z-index: 0;
+}
+
+.animate-text-gradient {
+  background: linear-gradient(45deg, hsl(var(--primary)), hsl(var(--accent)), hsl(var(--primary)));
+  background-size: 200% 200%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: text-gradient-animation 5s ease infinite;
+}
+
+@keyframes text-gradient-animation {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.font-headline {
+    font-family: var(--font-poppins), sans-serif;
+}
