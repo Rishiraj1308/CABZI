@@ -7,7 +7,7 @@
 
 import { onDocumentCreated, onDocumentUpdated } from 'firebase-functions/v2/firestore';
 import { onSchedule } from "firebase-functions/v2/scheduler";
-import { getFirestore, GeoPoint, Timestamp, arrayUnion } from 'firebase-admin/firestore';
+import { getFirestore, GeoPoint, Timestamp, FieldValue } from 'firebase-admin/firestore';
 import { getMessaging } from 'firebase-admin/messaging';
 import { initializeApp, getApps } from 'firebase-admin/app';
 import { HttpsError, onCall } from "firebase-functions/v2/https";
@@ -180,7 +180,7 @@ const handleEmergencyDispatch = async (caseData: any, caseId: string) => {
         console.log(`Emergency request ${caseId} dispatched to hospital ${targetHospital.id}.`);
     } else {
         console.log(`Hospital ${targetHospital.id} has no FCM token. Cascading to next...`);
-        await db.doc(`emergencyCases/${caseId}`).update({ rejectedBy: arrayUnion(targetHospital.id) });
+        await db.doc(`emergencyCases/${caseId}`).update({ rejectedBy: FieldValue.arrayUnion(targetHospital.id) });
     }
 }
 
@@ -282,13 +282,60 @@ export const statusCleanup = onSchedule("every 1 minutes", async (event) => {
   }
 });
 
+// New scheduled function to handle timeouts for emergency cases
+export const emergencyCaseTimeout = onSchedule("every 1 minutes", async (event) => {
+    console.log("Running scheduled emergency case timeout check...");
+
+    const now = Timestamp.now();
+    // A case is considered timed out if it's pending for more than 2 minutes
+    const timeoutThreshold = new Timestamp(now.seconds - 120, now.nanoseconds); 
+    
+    const pendingCasesQuery = db.collection('emergencyCases')
+        .where('status', '==', 'pending')
+        .where('createdAt', '<', timeoutThreshold);
+
+    const snapshot = await pendingCasesQuery.get();
+
+    if (snapshot.empty) {
+        console.log("No timed-out emergency cases found.");
+        return;
+    }
+
+    for (const doc of snapshot.docs) {
+        const caseData = doc.data();
+        const caseId = doc.id;
+
+        const dispatchedHospitals = await db.collection('ambulances')
+            .where('fcmToken', '!=', null) // Crude way to check who it could have been sent to
+            .get();
+        
+        // This is a simplified logic. A more robust system would log which hospital the request was sent to.
+        // For now, we assume it was sent to the first available one that hasn't rejected it.
+        const allHospitals = (await db.collection('ambulances').get()).docs.map(d => d.id);
+        const rejectedBy = caseData.rejectedBy || [];
+        const potentialTargets = allHospitals.filter(id => !rejectedBy.includes(id));
+        
+        if(potentialTargets.length > 0) {
+            const timedOutHospitalId = potentialTargets[0]; 
+            console.log(`Case ${caseId} timed out for hospital ${timedOutHospitalId}. Cascading...`);
+            
+            // Mark the hospital as having rejected (timed out) and trigger the update function
+            await db.doc(`emergencyCases/${caseId}`).update({
+                rejectedBy: FieldValue.arrayUnion(timedOutHospitalId)
+            });
+        }
+    }
+});
+
+
+
 // ============== AUTOMATION TRIGGERS ==============
 
 const callAutomationWebhook = async (payload: any, partnerType: string) => {
   const webhookUrl = process.env.AUTOMATION_WEBHOOK_URL; 
   if (!webhookUrl) {
-    console.log(`AUTOMATION_WEBHOOK_URL not set. Skipping webhook for new ${partnerType} partner.`);
-    return Promise.resolve(); // IMPORTANT: Exit the function to prevent loop
+    console.log(`AUTOMATION_WEBHOOK_URL not set. Skipping alert for new ${partnerType}. Payload:`, payload);
+    return;
   }
 
   try {
@@ -314,28 +361,24 @@ const callAutomationWebhook = async (payload: any, partnerType: string) => {
 export const onNewPathPartner = onDocumentCreated('partners/{partnerId}', (event) => {
   const data = event.data?.data();
   if (data) {
-    // IMPORTANT: Return the promise to ensure the function waits for it to complete.
-    return callAutomationWebhook({ id: event.params.partnerId, ...data }, 'path');
+    callAutomationWebhook({ id: event.params.partnerId, ...data }, 'path');
   }
-  return null;
 });
 
 // Trigger for new ResQ Partners (Mechanics)
 export const onNewResQPartner = onDocumentCreated('mechanics/{mechanicId}', (event) => {
   const data = event.data?.data();
   if (data) {
-    return callAutomationWebhook({ id: event.params.mechanicId, ...data }, 'resq');
+    callAutomationWebhook({ id: event.params.mechanicId, ...data }, 'resq');
   }
-  return null;
 });
 
 // Trigger for new Cure Partners (Hospitals)
 export const onNewCurePartner = onDocumentCreated('ambulances/{ambulanceId}', (event) => {
   const data = event.data?.data();
   if (data) {
-    return callAutomationWebhook({ id: event.params.ambulanceId, ...data }, 'cure');
+    callAutomationWebhook({ id: event.params.ambulanceId, ...data }, 'cure');
   }
-  return null;
 });
 
 
@@ -372,3 +415,7 @@ export const simulateHighDemand = onCall(async (request) => {
 
     return { success: true, message: `High demand alert triggered for ${zoneName}.` };
 });
+
+    
+
+    
