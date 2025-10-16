@@ -4,60 +4,51 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { NewLogoIcon } from '@/components/brand-logo'
-import { useAuth } from '@/firebase/client-provider'
 
 export default function SplashPage() {
   const router = useRouter()
-  const { user, isUserLoading } = useAuth();
   const [isMounted, setIsMounted] = useState(false);
   
   useEffect(() => {
+    // This effect runs only on the client-side
     setIsMounted(true);
   }, []);
 
   useEffect(() => {
-    // Only run this logic on the client-side after the component has mounted and auth state is resolved.
-    if (!isMounted || isUserLoading) {
-      return;
-    }
-
-    const handleRedirect = () => {
-      let targetRoute = '/home'; // Default route
-      let sessionFound = false;
-
-      // Check all possible session keys
-      const sessionKeys = ['cabzi-session', 'cabzi-resq-session', 'cabzi-cure-session', 'cabzi-ambulance-session'];
-      for (const key of sessionKeys) {
-        const session = localStorage.getItem(key);
-        if (session) {
-          try {
-            const { role } = JSON.parse(session);
-            if (role) {
-              targetRoute = `/${role}`;
-              sessionFound = true;
-              break; 
+    // This effect also runs only on the client-side.
+    // By waiting for isMounted, we ensure localStorage is available.
+    if (isMounted) {
+      const handleRedirect = () => {
+        let targetRoute = '/home'; // Default route
+        
+        // Safely check all possible session keys
+        const sessionKeys = ['cabzi-session', 'cabzi-resq-session', 'cabzi-cure-session', 'cabzi-ambulance-session'];
+        for (const key of sessionKeys) {
+          const session = localStorage.getItem(key);
+          if (session) {
+            try {
+              const { role } = JSON.parse(session);
+              if (role) {
+                targetRoute = `/${role}`;
+                break; 
+              }
+            } catch (e) {
+              // If parsing fails, the session is corrupt, remove it.
+              localStorage.removeItem(key);
             }
-          } catch (e) {
-            localStorage.removeItem(key);
           }
         }
-      }
+        router.replace(targetRoute);
+      };
 
-      // If a Firebase user exists but no valid session, it's a broken state. Clear it.
-      if (user && !sessionFound) {
-        localStorage.clear();
-      }
+      // Delay the redirect to allow the splash animation to run
+      const timer = setTimeout(() => {
+          handleRedirect();
+      }, 2500);
 
-      router.replace(targetRoute);
-    };
-
-    // Delay the redirect to allow the splash animation to run
-    const timer = setTimeout(() => {
-        handleRedirect();
-    }, 2500);
-
-    return () => clearTimeout(timer);
-  }, [isMounted, isUserLoading, user, router]);
+      return () => clearTimeout(timer);
+    }
+  }, [isMounted, router]);
 
   return (
     <motion.div
