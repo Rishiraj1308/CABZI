@@ -21,6 +21,13 @@ if (!getApps().length) {
 const db = getFirestore();
 const messaging = getMessaging();
 
+// Define a type for our partner data to satisfy TypeScript
+interface Partner {
+    id: string;
+    currentLocation?: GeoPoint;
+    fcmToken?: string;
+    [key: string]: any; // Allow other properties
+}
 
 // Calculate distance between two geopoints in km
 function getDistance(lat1: number, lon1: number, lat2: number, lon2: number) {
@@ -58,7 +65,7 @@ const handleRideDispatch = async (rideData: any, rideId: string) => {
 
     const rideLocation = rideData.pickup.location as GeoPoint;
     const nearbyPartners = partnersSnapshot.docs
-        .map(doc => ({ id: doc.id, ...doc.data() }))
+        .map(doc => ({ id: doc.id, ...doc.data() } as Partner))
         .filter(partner => {
             if (!partner.currentLocation) return false;
             const partnerLocation = partner.currentLocation as GeoPoint;
@@ -115,7 +122,7 @@ const handleGarageRequestDispatch = async (requestData: any, requestId: string) 
     
     const driverLocation = requestData.location as GeoPoint;
     const nearbyMechanics = mechanicsSnapshot.docs
-        .map(doc => ({ id: doc.id, ...doc.data() }))
+        .map(doc => ({ id: doc.id, ...doc.data() } as Partner))
         .filter(mechanic => {
             if (!mechanic.currentLocation) return false;
             const mechanicLocation = mechanic.currentLocation as GeoPoint;
@@ -153,7 +160,7 @@ const handleEmergencyDispatch = async (caseData: any, caseId: string) => {
     const rejectedBy = caseData.rejectedBy || [];
 
     const availableHospitals = hospitalsSnapshot.docs
-        .map(doc => ({ id: doc.id, ...doc.data() }))
+        .map(doc => ({ id: doc.id, ...doc.data() } as Partner))
         .filter(hospital => !rejectedBy.includes(hospital.id))
         .map(hospital => {
             const hospitalLocation = hospital.location as GeoPoint;
@@ -415,7 +422,3 @@ export const simulateHighDemand = onCall(async (request) => {
 
     return { success: true, message: `High demand alert triggered for ${zoneName}.` };
 });
-
-    
-
-    
