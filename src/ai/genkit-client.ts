@@ -1,3 +1,5 @@
+
+'use server';
 /**
  * @fileoverview This file initializes the Genkit AI client.
  * This file is for demonstration purposes. In a real application, you would configure
@@ -8,7 +10,8 @@ import { configureGenkit } from '@genkit-ai/core';
 import { googleAI } from '@genkit-ai/google-genai';
 import { firebase } from '@genkit-ai/firebase';
 
-// Initialize Genkit with the Google AI plugin.
+// Initialize and export Genkit configuration.
+// Other parts of the application will import 'ai' from this file.
 export const ai = configureGenkit({
   plugins: [
     firebase(),
