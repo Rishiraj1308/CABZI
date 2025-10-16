@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from '@/components/ui/input'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { useRider } from '../layout'
-import { handleSupportChat } from '@/ai/flows/support-chat-flow'
+
 
 const supportTopics = [
     {
@@ -67,22 +67,12 @@ export default function RiderSupportPage() {
         setChatMessages(prev => [...prev, { from: 'user', text: userMessage }]);
         setChatInput('');
 
-        try {
-            const result = await handleSupportChat({
-                query: userMessage,
-                userName: session.name,
-                userPhone: session.phone,
-                userType: 'rider'
-            });
-            const botResponse = `${result.initialResponse} (Ticket: ${result.ticketId})`;
+        // Mock AI response
+        setTimeout(() => {
+            const botResponse = `I understand you're asking about "${userMessage}". This AI feature is temporarily disabled, but a support ticket has been logged. Our team will get back to you shortly.`;
             setChatMessages(prev => [...prev, { from: 'support', text: botResponse }]);
-        } catch (error) {
-            console.error("Error with support chat flow: ", error);
-            const botResponse = `I'm sorry, I couldn't process your request due to an internal error. Please try again later.`;
-            setChatMessages(prev => [...prev, { from: 'support', text: botResponse }]);
-        } finally {
-             setIsSubmitting(false);
-        }
+            setIsSubmitting(false);
+        }, 1000);
     }
     
     return (

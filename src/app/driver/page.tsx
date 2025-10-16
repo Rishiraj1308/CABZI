@@ -29,7 +29,6 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 import BrandLogo from '@/components/brand-logo'
-import { getEarningsTip, type DriverStatsInput, type DriverTipOutput } from '@/ai/flows/earnings-coach-flow'
 import SearchingIndicator from '@/components/ui/searching-indicator'
 import { onMessage } from 'firebase/messaging'
 
@@ -148,7 +147,7 @@ export default function DriverDashboard() {
   const [showOtpModal, setShowOtpModal] = useState(false);
   const [enteredOtp, setEnteredOtp] = useState('');
   const [isOnline, setIsOnline] = useState(false);
-  const [aiTip, setAiTip] = useState<string | null>("Click 'Get Tip' to get started.");
+  const [aiTip, setAiTip] = useState<string | null>("AI features are temporarily disabled.");
   const [isGettingAiTip, setIsGettingAiTip] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [partnerData, setPartnerData] = useState<PartnerData | null>(null);
@@ -963,26 +962,9 @@ export default function DriverDashboard() {
   }
   
   const handleGetAiTip = async () => {
-    if (!partnerData) {
-      toast({ variant: 'destructive', title: 'Error', description: 'Partner data not available to generate a tip.' });
-      return;
-    }
     setIsGettingAiTip(true);
-    try {
-      const stats: DriverStatsInput = {
-        ridesToday: partnerData.ridesToday || 0,
-        acceptanceRate: partnerData.acceptanceRate || 100,
-        rating: partnerData.rating || 5,
-        subscriptionTier: partnerData.subscription?.planName || 'Free Trial',
-      };
-      const result = await getEarningsTip(stats);
-      setAiTip(result.tip);
-    } catch (error) {
-      console.error("Error getting AI tip:", error);
-      toast({ variant: 'destructive', title: 'AI Coach Error', description: 'Could not generate a tip at this time.' });
-    } finally {
-      setIsGettingAiTip(false);
-    }
+    toast({ title: "AI Coach Disabled", description: "This feature is temporarily unavailable." });
+    setIsGettingAiTip(false);
   }
 
   const handleBankDetailsSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -1210,5 +1192,3 @@ export default function DriverDashboard() {
     </div>
   )
 }
-
-    
