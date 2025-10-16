@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { NewLogoIcon } from '@/components/brand-logo'
@@ -9,8 +9,18 @@ import { useAuth } from '@/firebase/client-provider'
 export default function SplashPage() {
   const router = useRouter()
   const { user, isUserLoading } = useAuth();
+  const [isMounted, setIsMounted] = useState(false);
   
   useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  useEffect(() => {
+    // Only run this logic on the client-side after the component has mounted and auth state is resolved.
+    if (!isMounted || isUserLoading) {
+      return;
+    }
+
     const handleRedirect = () => {
       let targetRoute = '/home'; // Default route
       let sessionFound = false;
@@ -33,8 +43,7 @@ export default function SplashPage() {
         }
       }
 
-      // If no valid session is found, but a user is logged into Firebase, it might be a broken session.
-      // Clear localStorage to force a fresh login flow.
+      // If a Firebase user exists but no valid session, it's a broken state. Clear it.
       if (user && !sessionFound) {
         localStorage.clear();
       }
@@ -42,36 +51,13 @@ export default function SplashPage() {
       router.replace(targetRoute);
     };
 
+    // Delay the redirect to allow the splash animation to run
     const timer = setTimeout(() => {
-      // Wait for auth state to be resolved before redirecting
-      if (!isUserLoading) {
         handleRedirect();
-      }
     }, 2500);
 
     return () => clearTimeout(timer);
-  }, [router, user, isUserLoading]);
-  
-   useEffect(() => {
-    // This effect runs if auth state changes after the initial timeout
-    if (!isUserLoading) {
-        const timer = setTimeout(() => {
-            // Re-check where to redirect
-            let targetRoute = '/home';
-            const session = localStorage.getItem('cabzi-session') || localStorage.getItem('cabzi-resq-session') || localStorage.getItem('cabzi-cure-session');
-            if (session) {
-                 try {
-                    const { role } = JSON.parse(session);
-                    if (role) targetRoute = `/${role}`;
-                 } catch(e) {/* ignore */}
-            }
-            if (window.location.pathname === '/') {
-                 router.replace(targetRoute);
-            }
-        }, 500); // Shorter delay for subsequent checks
-        return () => clearTimeout(timer);
-    }
-   }, [isUserLoading, router]);
+  }, [isMounted, isUserLoading, user, router]);
 
   return (
     <motion.div
