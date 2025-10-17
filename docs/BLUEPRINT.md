@@ -1,136 +1,117 @@
 # Cabzi: The Technical Blueprint
 
-This document provides a complete technical overview of the Cabzi application. It is intended for developers to understand the project structure, data flow, and core logic.
+## 1. Core Mission
 
----
+India ka pehla complete mobility, safety, aur life-saving ecosystem.
 
-## 1. Project DNA
+Goal: Fair, transparent, aur scalable platform for Riders, Drivers (Path), Mechanics (ResQ), and Hospitals (Cure).
 
-*   **Core Mission:** To build India's first complete mobility, safety, and life-saving ecosystem on a fair, transparent, and scalable tech stack.
-*   **Tech Stack:**
-    *   **Frontend:** Next.js (App Router), React, TypeScript
-    *   **UI:** ShadCN UI, Tailwind CSS, Lucide Icons, Lottie for animations
-    *   **Backend:** Firebase (Platform-as-a-Service)
-        *   **Database:** Firestore (NoSQL, Document-based)
-        *   **Authentication:** Firebase Authentication (Phone OTP)
-        *   **Serverless Logic:** Firebase Cloud Functions (for dispatching, cleanup, etc.)
-        *   **Push Notifications:** Firebase Cloud Messaging (FCM)
-    *   **Mapping:** Leaflet (Client-side) with OpenStreetMap tiles.
-    *   **Routing & Geocoding:** OSRM (Open Source Routing Machine) & Nominatim API.
+## 2. Tech Stack
 
----
+Frontend: Next.js (App Router), React, TypeScript
 
-## 2. Code Ka Naksha (Directory Structure)
+UI: ShadCN UI + Tailwind CSS + Lucide Icons + Lottie (animations)
 
-The `src` directory is organized to keep the codebase clean and scalable.
+Backend: Firebase (Platform-as-a-Service)
 
-*   `src/app/`: This is the core of the Next.js App Router.
-    *   `(unauthenticated)`: Contains the login page (`/login`), which is a shared entry point for all user roles.
-    *   `admin/`: All pages related to the Admin Panel (Dashboard, Partners, Map, etc.).
-    *   `driver/`: All pages for the **Path Partner** (Driver) role.
-    *   `rider/`: All pages for the **Rider** (Customer) role.
-    *   `mechanic/`: All pages for the **ResQ Partner** (Mechanic) role.
-    *   `cure/`: All pages for the **Cure Partner** (Hospital) role, including their Mission Control Dashboard.
-    *   `ambulance/`: The dedicated dashboard for an **Ambulance Driver**, separate from the hospital's main panel.
-    *   `partner-hub/`: A central page to select between Path, ResQ, and Cure Partner onboarding.
-    *   `layout.tsx`: The root layout of the entire application.
-    *   `globals.css`: The heart of our design system. It contains all the HSL color variables for our ShadCN theme.
+Database: Firestore (NoSQL, document-based)
 
-*   `src/components/`: Reusable React components used across the app.
-    *   `ui/`: Contains all the base ShadCN components (Button, Card, Input, etc.).
-    *   `brand-logo.tsx`: The "Cabzi" logo component.
-    *   `live-map.tsx`: The powerful, interactive Leaflet map component.
-    *   `driver-id-card.tsx`: The special ID card component for the driver's profile.
+Auth: Firebase Auth (Phone OTP)
 
-*   `src/hooks/`: Custom React hooks for shared logic.
-    *   `use-language.tsx`: The brain behind our multi-language (English/Hindi) support.
-    *   `use-toast.ts`: Manages the display of notifications (toasts).
+Serverless Logic: Firebase Cloud Functions
 
-*   `src/lib/`: Core utilities and helper functions.
-    *   `firebase.ts`: Initializes and configures the connection to your Firebase project.
-    *   `translations.ts`: Stores all the English and Hindi text for the app.
-    *   `utils.ts`: Contains the `cn` utility for merging Tailwind CSS classes.
+Push Notifications: Firebase Cloud Messaging (FCM)
 
-*   `src/functions/`: Contains the server-side Cloud Functions.
-    *   `src/index.ts`: The core "No Cost Architecture" dispatch logic. Contains the Cloud Functions that trigger on new database entries to find and notify the right partners via FCM.
+Mapping: Leaflet + OpenStreetMap
 
----
+Routing/Geocoding: OSRM + Nominatim API
 
-## 3. The "No Cost" Real-Time Architecture (The Nervous System)
+## 3. Directory Structure & Components
 
-This is the most critical part of the app. It's how all our apps talk to each other efficiently without incurring massive costs. We use a **server-centric push model** instead of a client-heavy pull model.
+`src/app/` → core app router
 
-**The entire system is secured with granular `firestore.rules` to prevent unauthorized data access.**
+- `(unauthenticated)/` → login page
+- `admin/` → admin panel (dashboard, partners, map, etc.)
+- `driver/` → Path partner dashboard
+- `rider/` → Rider dashboard
+- `mechanic/` → ResQ partner dashboard
+- `cure/` → Hospital dashboard (Mission Control)
+- `ambulance/` → Ambulance driver-specific dashboard
+- `partner-hub/` → central onboarding page
 
-### Generic Dispatch Flow (For Path, ResQ, and Cure)
+**Components (`src/components`)**
 
-*   **Step 1: User Creates a Request**
-    *   A Rider/Driver creates a **new document** in the relevant collection (`rides`, `garageRequests`, `emergencyCases`) with a `pending` status. This is a single, cheap write operation.
+- Reusable UI components (`ui/`)
+- `brand-logo.tsx` → logo
+- `live-map.tsx` → interactive Leaflet map
+- `driver-id-card.tsx` → driver profile card
 
-*   **Step 2: A Cloud Function Triggers**
-    *   A dedicated Cloud Function (written in `src/functions/src/index.ts`) is listening for new documents in that specific collection.
-    *   **Crucially, partner apps (Driver, Mechanic, Hospital) DO NOT listen to the entire collection.** This prevents the "500 reads for 1 request" problem.
+**Hooks (`src/hooks/`)**
 
-*   **Step 3: The Function Finds the Best Partners**
-    *   The Cloud Function reads the request document and performs an efficient geo-query on the appropriate partner collection (`partners`, `mechanics`, `ambulances`) to find the 5-10 closest, most suitable partners.
+- `use-language.tsx` → multi-language support
+- `use-toast.ts` → notifications
 
-*   **Step 4: The Function Sends Targeted Push Notifications**
-    *   Using Firebase Cloud Messaging (FCM), the function sends a **private data message** directly to only those 5-10 selected partners. This is free.
-    *   The partner's app receives the push notification and shows the request pop-up.
+**Lib (`src/lib/`)**
 
-*   **Step 5: Partner Accepts & Updates Document**
-    *   When a partner accepts, their app writes back to the *specific* request document, updating its status to `accepted` and adding their details.
-    *   The original user's app, which is only listening to that one single document, gets the update instantly.
+- `firebase.ts` → Firebase initialization
+- `translations.ts` → English/Hindi texts
+- `utils.ts` → helper functions
 
-This architecture reduces database reads by over 99% compared to a simple listener model, making it highly scalable and cost-effective.
+**Functions (`src/functions/`)**
 
----
+- `index.ts` → “No Cost Architecture”: server-centric dispatch via Cloud Functions & FCM
 
-## 4. User Journeys (The "Happy Paths")
+## 4. No Cost Real-Time Architecture
 
-### Rider's Journey
+- Rider/Driver creates a request → single Firestore write
+- Cloud Function triggers → listens for new docs only
+- Geo-query finds closest 5-10 partners → avoids full collection listens
+- Sends targeted FCM push to partners → free
+- Partner accepts → updates single request doc, Rider app instantly sees update
 
-1.  **Login:** Enters Name and Phone, verifies OTP.
-2.  **Booking:** Enters Pickup & Destination OR **Triggers SOS**.
-3.  **SOS Flow:** If SOS, uses the **Smart Triage** system, sees a list of nearest verified hospitals, and confirms the request.
-4.  **Confirmation:** A `ride` or `emergencyCase` document is created, triggering a Cloud Function.
-5.  **Partner Assigned:** The UI listens to the *single* document and updates when a Path or Cure partner accepts the FCM notification and updates the document.
-6.  **Trip/Transit:** Shares OTP with the driver/paramedic to start the trip. Tracks the vehicle live on the map.
-7.  **Completion:** Rates the partner after the service ends.
+**Impact:**
 
-### Path Partner's (Driver's) Journey
+- 99% fewer reads, scalable & cost-efficient.
 
-1.  **Onboarding:** Navigates from `/partner-hub`. Fills a form. A `partners` document is created.
-2.  **Go Online:** The app sends its live location to Firestore. It does **not** listen for all rides.
-3.  **Accept Ride:** Receives a ride request via a **Push Notification (FCM)**. Accepts it, which updates the `ride` document.
-4.  **Completion:** The fare is credited to their Cabzi Bank Wallet.
-5.  **SOS Garage:** If needed, creates a `garageRequest` to get help from a ResQ Partner.
+## 5. User Flows
 
-### ResQ Partner's (Mechanic's) Journey
+**Rider:**
 
-1.  **Onboarding:** Navigates from `/partner-hub` and completes the ResQ onboarding form.
-2.  **Go "Available":** App sends location and waits for FCM push notifications for new jobs.
-3.  **Accept Job & OTP:** Accepts the job, navigates to the driver. Verifies the driver's OTP to start the service.
-4.  **Generate Bill:** After service, uses the app to create a digital bill with service items and costs.
-5.  **Payment:** The bill is sent to the driver's app in real-time. The driver can pay via Wallet or Cash, which completes the job cycle.
+1.  Login → Name + Phone OTP
+2.  Book ride / SOS → create `ride` / `emergencyCase`
+3.  Cloud Function triggers → assigns partner
+4.  Trip → OTP verification, live map
+5.  Completion → rating
 
-### Cure Partner's (Hospital's) Journey
+**Path Partner (Driver):**
 
-1.  **Onboarding:** Completes a multi-step, professional form with hospital details, document uploads, etc. An `ambulances` document is created.
-2.  **Login:** Enters Phone, verifies OTP. Redirected to the **Hospital Mission Control** dashboard (`/cure`).
-3.  **Manage Fleet & Drivers:** Adds and manages their ambulance fleet and individual ambulance drivers (who get their own separate login).
-4.  **Go "Available":** The hospital's status is set to online. They do not listen to the database.
-5.  **Accept Case:** A new emergency request appears in their "Action Feed" (simulating an FCM push). They accept it and dispatch a specific ambulance from their fleet. This updates the `emergencyCase` document.
-6.  **Patient Admitted:** Marks the case as `completed` in the system.
+1.  Onboarding → `partners` doc creation
+2.  Go Online → send live location
+3.  Accept Ride → via FCM
+4.  Trip → OTP verification
+5.  Completion → fare credited to Cabzi Wallet
 
----
+**ResQ Partner (Mechanic):**
 
-## 5. Admin Panel
+- Onboarding, go "Available", accept `garageRequest`, generate digital bill
 
-The Admin Panel (`/admin`) is a powerful, internal tool built to manage the entire Cabzi CPR (Cure-Path-ResQ) ecosystem.
+**Cure Partner (Hospital):**
 
-*   **Unified Partner Management (`/admin/partners`):** View, Approve, Reject, or Suspend all three types of partners (Path, ResQ, Cure) from a single, unified interface.
-*   **Live Operations Map (`/admin/map`):** A real-time map showing the live location of all active partners and riders.
-*   **Audit Trail:** View lists of all registered customers (`/admin/customers`), rides (`/admin/rides`), and emergency cases (`/admin/cure-cases`).
-*   **Financial Oversight:** Dedicated "Cabzi Bank" and "Accounts" panels to manage finances and P&L statements.
-*   **Support Center (`/admin/support`):** A unified dashboard to manage all support tickets from riders and partners.
+1.  Onboarding → create `ambulances` doc
+2.  Login → Mission Control dashboard
+3.  Manage fleet & drivers
+4.  Go "Available"
+5.  Accept emergency cases → dispatch ambulance
+6.  Patient admitted → mark completed
+
+**Admin Panel:**
+
+- Unified partner management, live map, audit trail, financial oversight, support tickets
+
+## 6. Key Takeaways
+
+- Highly modular structure → clean separation of user roles & components
+- Server-centric push model → drastically reduces Firestore reads & costs
+- Scalable for India-wide deployment → can handle millions of users without huge costs
+- Granular security → Firestore rules prevent unauthorized access
+- Professional partner onboarding → multi-step forms & document uploads
