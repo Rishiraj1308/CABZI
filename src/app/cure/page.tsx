@@ -658,6 +658,17 @@ export default function HospitalMissionControl() {
             });
         }
     }
+
+    const handleDeleteDoctor = async (doctorId: string, doctorName: string) => {
+        if (!db || !hospitalData) return;
+        const doctorRef = doc(db, `ambulances/${hospitalData.id}/doctors`, doctorId);
+        try {
+            await deleteDoc(doctorRef);
+            toast({ variant: 'destructive', title: 'Doctor Removed', description: `Dr. ${doctorName} has been removed.` });
+        } catch (error) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Could not remove the doctor.' });
+        }
+    }
     
     const handleAddChecklistItem = async () => {
         if (!newChecklistItem.trim() || !hospitalData?.id || !db) return;
@@ -879,3 +890,5 @@ export default function HospitalMissionControl() {
         </div>
     )
 }
+
+    
