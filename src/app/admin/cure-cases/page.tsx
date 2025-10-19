@@ -50,30 +50,31 @@ export default function AdminCureCasesPage() {
   const { toast } = useToast();
   const db = useFirestore();
 
-  useEffect(() => {
-    const fetchCases = async () => {
-        if (!db) {
-          toast({ variant: 'destructive', title: 'Database Error' });
-          setIsLoading(false);
-          return;
-        }
-        
-        try {
-            const q = query(collection(db, 'emergencyCases'), orderBy('createdAt', 'desc'));
-            const querySnapshot = await getDocs(q);
-            const casesData: EmergencyCase[] = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as EmergencyCase));
-            setCases(casesData);
-        } catch (error) {
-            console.error("Error fetching emergency cases: ", error);
-            toast({
-              variant: 'destructive',
-              title: 'Error',
-              description: 'Could not fetch emergency cases data.',
-            });
-        } finally {
-            setIsLoading(false);
-        }
+  const fetchCases = async () => {
+    if (!db) {
+      toast({ variant: 'destructive', title: 'Database Error' });
+      setIsLoading(false);
+      return;
     }
+    
+    try {
+        const q = query(collection(db, 'emergencyCases'), orderBy('createdAt', 'desc'));
+        const querySnapshot = await getDocs(q);
+        const casesData: EmergencyCase[] = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as EmergencyCase));
+        setCases(casesData);
+    } catch (error) {
+        console.error("Error fetching emergency cases: ", error);
+        toast({
+          variant: 'destructive',
+          title: 'Error',
+          description: 'Could not fetch emergency cases data.',
+        });
+    } finally {
+        setIsLoading(false);
+    }
+  }
+
+  useEffect(() => {
     fetchCases();
   }, [toast, db]);
 
@@ -97,7 +98,6 @@ export default function AdminCureCasesPage() {
       case 'onTheWay':
       case 'inTransit':
         return <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200 capitalize">{status.replace(/([A-Z])/g, ' $1')}</Badge>;
-      case 'cancelled_by_driver':
       case 'cancelled_by_rider':
       case 'cancelled_by_partner':
       case 'cancelled_by_admin':
@@ -144,6 +144,7 @@ export default function AdminCureCasesPage() {
             title: 'Case Cancelled',
             description: `The emergency case has been manually cancelled.`,
         });
+        fetchCases(); // Re-fetch data to update UI
     } catch (error) {
         console.error("Error cancelling case: ", error);
         toast({
@@ -176,6 +177,7 @@ export default function AdminCureCasesPage() {
             title: 'Case Deleted',
             description: `The emergency case has been permanently removed.`,
         });
+        fetchCases(); // Re-fetch data to update UI
     } catch (error) {
         console.error("Error deleting case: ", error);
         toast({

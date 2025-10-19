@@ -1,3 +1,4 @@
+
 'use client'
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -57,7 +58,13 @@ export default function LiveMapPage() {
             const allEntitiesData: ActiveEntity[] = [];
             const queries = collections.map((collName, i) => {
                 const typeName = types[i];
-                const q = query(collection(db, collName), where('isOnline', '==', true));
+                let q;
+                if (collName === 'users') {
+                    q = query(collection(db, collName), where('isOnline', '==', true), where('role', '==', 'rider'));
+                } else {
+                    q = query(collection(db, collName), where('isOnline', '==', true));
+                }
+
                 return getDocs(q).then(snapshot => {
                     snapshot.forEach(doc => {
                         const data = doc.data();
@@ -216,5 +223,3 @@ export default function LiveMapPage() {
         </div>
     );
 }
-
-    
