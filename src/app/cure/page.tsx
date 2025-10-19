@@ -154,7 +154,7 @@ export default function HospitalMissionControl() {
     // Add Ambulance/Driver/Doctor Form State
     const [isAddAmbulanceOpen, setIsAddAmbulanceOpen] = useState(false);
     const [newAmbulanceName, setNewAmbulanceName] = useState('');
-    const [newAmbulanceType, setNewAmbulanceType] = useState<'BLS' | 'ALS' | 'Cardiac' | ''>('');
+    const [newAmbulanceType, setNewAmbulanceType, setNewAmbulanceType] = useState<'BLS' | 'ALS' | 'Cardiac' | ''>('');
     const [newAmbulanceDriverId, setNewAmbulanceDriverId] = useState('');
     const [newRcNumber, setNewRcNumber] = useState('');
     
