@@ -1,4 +1,3 @@
-
 'use client'
 
 import React, { useState, useEffect, useRef, useMemo } from 'react'
@@ -658,7 +657,7 @@ export default function HospitalMissionControl() {
             });
         }
     }
-
+    
     const handleDeleteDoctor = async (doctorId: string, doctorName: string) => {
         if (!db || !hospitalData) return;
         const doctorRef = doc(db, `ambulances/${hospitalData.id}/doctors`, doctorId);
@@ -668,8 +667,8 @@ export default function HospitalMissionControl() {
         } catch (error) {
             toast({ variant: 'destructive', title: 'Error', description: 'Could not remove the doctor.' });
         }
-    }
-    
+    };
+
     const handleAddChecklistItem = async () => {
         if (!newChecklistItem.trim() || !hospitalData?.id || !db) return;
         const checklistRef = collection(db, `ambulances/${hospitalData.id}/checklistTemplate`);
@@ -756,46 +755,9 @@ export default function HospitalMissionControl() {
 
     return (
         <div className="grid lg:grid-cols-2 xl:grid-cols-3 gap-6 items-start h-full">
-            {/* Left & Middle Column */}
-            <div className="lg:col-span-1 xl:col-span-2 space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <Card className="md:col-span-1">
-                        <CardHeader className="pb-2">
-                           <CardTitle className="flex items-center gap-2 text-lg"><Settings className="w-5 h-5 text-primary"/> Master Controls</CardTitle>
-                        </CardHeader>
-                        <CardContent className="flex items-center justify-between p-4">
-                           <Label htmlFor="online-status" className="font-bold text-lg">{isOnline ? "Accepting Cases" : "Offline"}</Label>
-                           <Switch id="online-status" checked={isOnline} onCheckedChange={handleOnlineStatusChange} className="data-[state=checked]:bg-green-500" />
-                        </CardContent>
-                    </Card>
-                    <Card className="md:col-span-2">
-                       <CardHeader className="pb-2">
-                           <CardTitle className="flex items-center gap-2 text-lg"><BedDouble className="w-5 h-5 text-primary"/> Bed Availability</CardTitle>
-                       </CardHeader>
-                       <CardContent className="flex items-center justify-between p-4 gap-2">
-                           <div className="text-center"><Label className="text-xs">Total</Label><Input type="number" value={totalBeds || 0} onChange={(e) => setTotalBeds(Number(e.target.value))} className="w-20 h-9 text-center font-bold"/></div>
-                           <Minus className="text-muted-foreground"/>
-                           <div className="text-center"><Label className="text-xs">Occupied</Label><Input type="number" value={bedsOccupied || 0} onChange={(e) => setBedsOccupied(Number(e.target.value))} className="w-20 h-9 text-center font-bold"/></div>
-                           <div className="text-center p-2 rounded-md bg-green-100 dark:bg-green-900/30">
-                               <Label className="text-xs text-green-700 dark:text-green-300">Available</Label>
-                               <p className="text-xl font-bold text-green-600 dark:text-green-200">{availableBeds < 0 ? 0 : availableBeds}</p>
-                           </div>
-                           <Button size="sm" onClick={handleBedStatusUpdate}>Update</Button>
-                       </CardContent>
-                   </Card>
-                </div>
-                <div className="h-[calc(100vh-22rem)] rounded-lg overflow-hidden border">
-                   <LiveMap 
-                       activePartners={mapFleet} 
-                       riderLocation={patientLocation}
-                       driverLocation={activeAmbulanceLocation}
-                   />
-               </div>
-            </div>
-            
-            {/* Right Column */}
+            {/* Right Column (Action Feed) */}
             <div className="lg:col-span-1 space-y-6">
-                {ongoingCase && (
+                 {ongoingCase && (
                     <Card className="bg-primary/5 border-primary animate-fade-in">
                         <CardHeader><CardTitle className="flex items-center gap-2"><Siren className="w-6 h-6 text-primary animate-pulse"/> Ongoing Case</CardTitle><CardDescription>Patient: {ongoingCase.riderName}</CardDescription></CardHeader>
                         <CardContent className="space-y-4">
@@ -873,6 +835,43 @@ export default function HospitalMissionControl() {
                      </Tabs>
                 </Card>
             </div>
+
+            {/* Left & Middle Column (Map & Management) */}
+            <div className="lg:col-span-1 xl:col-span-2 space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <Card className="md:col-span-1">
+                        <CardHeader className="pb-2">
+                           <CardTitle className="flex items-center gap-2 text-lg"><Settings className="w-5 h-5 text-primary"/> Master Controls</CardTitle>
+                        </CardHeader>
+                        <CardContent className="flex items-center justify-between p-4">
+                           <Label htmlFor="online-status" className="font-bold text-lg">{isOnline ? "Accepting Cases" : "Offline"}</Label>
+                           <Switch id="online-status" checked={isOnline} onCheckedChange={handleOnlineStatusChange} className="data-[state=checked]:bg-green-500" />
+                        </CardContent>
+                    </Card>
+                    <Card className="md:col-span-2">
+                       <CardHeader className="pb-2">
+                           <CardTitle className="flex items-center gap-2 text-lg"><BedDouble className="w-5 h-5 text-primary"/> Bed Availability</CardTitle>
+                       </CardHeader>
+                       <CardContent className="flex items-center justify-between p-4 gap-2">
+                           <div className="text-center"><Label className="text-xs">Total</Label><Input type="number" value={totalBeds || 0} onChange={(e) => setTotalBeds(Number(e.target.value))} className="w-20 h-9 text-center font-bold"/></div>
+                           <Minus className="text-muted-foreground"/>
+                           <div className="text-center"><Label className="text-xs">Occupied</Label><Input type="number" value={bedsOccupied || 0} onChange={(e) => setBedsOccupied(Number(e.target.value))} className="w-20 h-9 text-center font-bold"/></div>
+                           <div className="text-center p-2 rounded-md bg-green-100 dark:bg-green-900/30">
+                               <Label className="text-xs text-green-700 dark:text-green-300">Available</Label>
+                               <p className="text-xl font-bold text-green-600 dark:text-green-200">{availableBeds < 0 ? 0 : availableBeds}</p>
+                           </div>
+                           <Button size="sm" onClick={handleBedStatusUpdate}>Update</Button>
+                       </CardContent>
+                   </Card>
+                </div>
+                <div className="h-[calc(100vh-22rem)] rounded-lg overflow-hidden border">
+                   <LiveMap 
+                       activePartners={mapFleet} 
+                       riderLocation={patientLocation}
+                       driverLocation={activeAmbulanceLocation}
+                   />
+               </div>
+            </div>
             
             <AlertDialog open={isCredsDialogOpen} onOpenChange={(isOpen) => {
                 if(!isOpen) setGeneratedDriverCreds(null);
@@ -890,5 +889,3 @@ export default function HospitalMissionControl() {
         </div>
     )
 }
-
-    
