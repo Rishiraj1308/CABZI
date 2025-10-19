@@ -1,4 +1,3 @@
-
 'use client'
 
 import { useState, useEffect } from 'react'
@@ -109,8 +108,8 @@ export default function AmbulanceCasesPage() {
                                         <TableCell className="text-right"><Skeleton className="h-5 w-16 ml-auto" /></TableCell>
                                     </TableRow>
                                 ))
-                            ) : jobs.length > 0 ? (
-                                jobs.map(c => (
+                            ) : cases.length > 0 ? (
+                                cases.map(c => (
                                     <TableRow key={c.id}>
                                         <TableCell className="font-mono text-xs">{c.caseId}</TableCell>
                                         <TableCell>{c.createdAt.toDate().toLocaleDateString()}</TableCell>

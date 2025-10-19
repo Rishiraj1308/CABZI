@@ -1,4 +1,3 @@
-
 'use client'
 
 import React, { useState, useEffect, useRef } from 'react'
@@ -8,7 +7,7 @@ import { KeyRound, Navigation, Phone, Siren, User, MapPin, Activity, CheckCircle
 import { useToast } from '@/hooks/use-toast'
 import { Skeleton } from '@/components/ui/skeleton'
 import dynamic from 'next/dynamic'
-import { db } from '@/lib/firebase'
+import { useDb } from '@/firebase/client-provider'
 import { collection, query, where, onSnapshot, doc, updateDoc, GeoPoint } from 'firebase/firestore'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Input } from '@/components/ui/input'
@@ -28,7 +27,7 @@ interface OngoingCase {
     phone: string;
     location: GeoPoint;
     hospitalLocation: GeoPoint;
-    status: 'onTheWay' | 'arrived' | 'inTransit';
+    status: 'onTheWay' | 'arrived' | 'inTransit' | 'completed';
     otp: string;
 }
 
@@ -46,6 +45,7 @@ export default function AmbulanceDriverDashboard() {
     const [isOnDuty, setIsOnDuty] = useState(false);
     const [checklist, setChecklist] = useState<ChecklistItem[]>([]);
     const [checkedItems, setCheckedItems] = useState<Record<string, boolean>>({});
+    const db = useDb();
 
     useEffect(() => {
         const session = localStorage.getItem('cabzi-ambulance-session');
@@ -99,7 +99,7 @@ export default function AmbulanceDriverDashboard() {
             unsubscribe();
             unsubChecklist();
         };
-    }, [toast]);
+    }, [toast, db]);
     
     // Live location tracking
     useEffect(() => {
@@ -125,6 +125,9 @@ export default function AmbulanceDriverDashboard() {
         const caseRef = doc(db, 'emergencyCases', assignedCase.id);
         try {
             await updateDoc(caseRef, { status });
+            if (status === 'completed' && onDone) {
+              onDone();
+            }
             toast({ title: "Status Updated", description: `Case status is now: ${status}` });
         } catch (error) {
             toast({ variant: 'destructive', title: "Update Failed", description: "Could not update case status." });
@@ -150,6 +153,10 @@ export default function AmbulanceDriverDashboard() {
         setIsOnDuty(true);
         toast({ title: "You are now On-Duty", description: "Waiting for Mission Control to assign a case." });
     };
+
+    const onDone = () => {
+      setAssignedCase(null);
+    }
 
     const patientLocation = assignedCase ? { lat: assignedCase.location.latitude, lon: assignedCase.location.longitude } : undefined;
     const destinationLocation = assignedCase?.status === 'inTransit' ? { lat: assignedCase.hospitalLocation.latitude, lon: assignedCase.hospitalLocation.longitude } : patientLocation;
