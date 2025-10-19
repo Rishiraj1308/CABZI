@@ -1,3 +1,4 @@
+
 'use client'
 
 import React, { useState, useEffect, useRef, useMemo } from 'react'
@@ -6,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
-import { Ambulance, Check, X, PlusCircle, Car, User, Siren, Map, Waves, Settings, ServerCrash, BedDouble, BarChart, Clock, Users, KeyRound, Navigation, UserPlus, Phone, Share2, MoreHorizontal, Trash2, ListChecks, FileText, Minus, Plus, Hospital, Calendar, PersonStanding } from 'lucide-react'
+import { Ambulance, Check, X, PlusCircle, Car, User, Siren, Map, Waves, Settings, ServerCrash, BedDouble, BarChart, Clock, Users, KeyRound, Navigation, UserPlus, Phone, Share2, MoreHorizontal, Trash2, ListChecks, FileText, Minus, Plus, Hospital, Calendar, PersonStanding, Repeat, Stethoscope } from 'lucide-react'
 import { AlertDialog, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogCancel, AlertDialogAction, AlertDialogTrigger } from '@/components/ui/alert-dialog'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription, DialogFooter } from '@/components/ui/dialog'
 import { useToast } from '@/hooks/use-toast'
@@ -63,6 +64,14 @@ interface AmbulanceDriver {
     assignedAmbulanceName?: string;
 }
 
+interface Doctor {
+    id: string;
+    name: string;
+    specialization: string;
+    phone: string;
+    createdAt: Timestamp;
+}
+
 interface ChecklistItem {
     id: string;
     text: string;
@@ -79,6 +88,16 @@ interface EmergencyRequest {
     rejectedBy?: string[];
     createdAt: any;
     otp?: string;
+}
+
+interface AppointmentRequest {
+    id: string;
+    patientName: string;
+    department: string;
+    appointmentDate: string;
+    appointmentTime: string;
+    status: 'Pending' | 'Confirmed' | 'Cancelled';
+    isRecurring: boolean;
 }
 
 interface OngoingCase extends EmergencyRequest {
@@ -99,12 +118,25 @@ interface HospitalData {
     location?: GeoPoint;
 }
 
+const mockAppointments: AppointmentRequest[] = [
+    { id: 'APT001', patientName: 'Priya Singh', department: 'Cardiology', appointmentDate: '2024-09-10', appointmentTime: '11:00 AM', status: 'Pending', isRecurring: true },
+    { id: 'APT002', patientName: 'Rajesh Verma', department: 'Orthopedics', appointmentDate: '2024-09-10', appointmentTime: '02:00 PM', status: 'Confirmed', isRecurring: false },
+    { id: 'APT003', patientName: 'Anita Desai', department: 'General Physician', appointmentDate: '2024-09-11', appointmentTime: '10:00 AM', status: 'Pending', isRecurring: false },
+]
+
+const doctorSpecializations = [
+  'Cardiology', 'Neurology', 'Orthopedics', 'Pediatrics', 'Oncology', 
+  'Gastroenterology', 'General Physician', 'Dermatology', 'ENT Specialist'
+];
+
 export default function HospitalMissionControl() {
     const [isMounted, setIsMounted] = useState(false);
     const [hospitalData, setHospitalData] = useState<HospitalData | null>(null);
     const [fleet, setFleet] = useState<AmbulanceVehicle[]>([]);
     const [drivers, setDrivers] = useState<AmbulanceDriver[]>([]);
+    const [doctors, setDoctors] = useState<Doctor[]>([]);
     const [incomingRequests, setIncomingRequests] = useState<EmergencyRequest[]>([]);
+    const [appointments, setAppointments] = useState<AppointmentRequest[]>(mockAppointments);
     const [ongoingCase, setOngoingCase] = useState<OngoingCase | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isOnline, setIsOnline] = useState(false);
@@ -119,7 +151,7 @@ export default function HospitalMissionControl() {
     const [totalBeds, setTotalBeds] = useState(0);
     const [bedsOccupied, setBedsOccupied] = useState(0);
 
-    // Add Ambulance/Driver Form State
+    // Add Ambulance/Driver/Doctor Form State
     const [isAddAmbulanceOpen, setIsAddAmbulanceOpen] = useState(false);
     const [newAmbulanceName, setNewAmbulanceName] = useState('');
     const [newAmbulanceType, setNewAmbulanceType] = useState<'BLS' | 'ALS' | 'Cardiac' | ''>('');
@@ -127,6 +159,7 @@ export default function HospitalMissionControl() {
     const [newRcNumber, setNewRcNumber] = useState('');
     
     const [isAddDriverOpen, setIsAddDriverOpen] = useState(false);
+    const [isAddDoctorOpen, setIsAddDoctorOpen] = useState(false);
     
     const [generatedDriverCreds, setGeneratedDriverCreds] = useState<{ id: string, pass: string } | null>(null);
     const [isCredsDialogOpen, setIsCredsDialogOpen] = useState(false);
@@ -218,6 +251,12 @@ export default function HospitalMissionControl() {
             setDrivers(driversData);
         });
 
+        const doctorsRef = query(collection(db, `ambulances/${partnerId}/doctors`), orderBy('createdAt', 'desc'));
+        const unsubDoctors = onSnapshot(doctorsRef, (snapshot) => {
+            const doctorsData = snapshot.docs.map(d => ({id: d.id, ...d.data()} as Doctor));
+            setDoctors(doctorsData);
+        });
+
         const checklistRef = collection(db, `ambulances/${partnerId}/checklistTemplate`);
         const qChecklist = query(checklistRef, orderBy('createdAt', 'asc'));
         const unsubChecklist = onSnapshot(qChecklist, (snapshot) => {
@@ -273,6 +312,7 @@ export default function HospitalMissionControl() {
             unsubFleet();
             unsubAllCases();
             unsubDrivers();
+            unsubDoctors();
             unsubChecklist();
             unsubRequests();
             if (watchIdRef.current) navigator.geolocation.clearWatch(watchIdRef.current);
@@ -475,6 +515,37 @@ export default function HospitalMissionControl() {
             toast({ variant: 'destructive', title: 'Error', description: 'Could not add driver.' });
         }
     }
+    
+    const handleAddDoctor = async (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+        if (!hospitalData || !db) return;
+
+        const formData = new FormData(e.currentTarget);
+        const name = formData.get('doctorName') as string;
+        const phone = formData.get('doctorPhone') as string;
+        const specialization = formData.get('specialization') as string;
+
+        if (!name || !phone || !specialization) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Please provide all doctor details.' });
+            return;
+        }
+
+        const doctorsRef = collection(db, `ambulances/${hospitalData.id}/doctors`);
+        try {
+            await addDoc(doctorsRef, {
+                name,
+                phone,
+                specialization,
+                createdAt: serverTimestamp(),
+            });
+            toast({ title: 'Doctor Added', description: `Dr. ${name} has been added to your roster.` });
+            setIsAddDoctorOpen(false);
+            (e.target as HTMLFormElement).reset();
+        } catch (error) {
+            console.error(error);
+            toast({ variant: 'destructive', title: 'Error', description: 'Could not add doctor.' });
+        }
+    };
 
     const handleAcceptRequest = async (request: EmergencyRequest, ambulanceId: string) => {
         if (!hospitalData || !db) return;
@@ -658,12 +729,12 @@ export default function HospitalMissionControl() {
 
     if (isLoading) {
       return (
-          <div className="grid lg:grid-cols-3 gap-6 h-full">
-              <div className="lg:col-span-2 space-y-6">
+          <div className="grid lg:grid-cols-2 xl:grid-cols-3 gap-6 h-full">
+              <div className="lg:col-span-1 xl:col-span-2 space-y-6">
                   <Skeleton className="h-24 w-full"/>
                   <Skeleton className="h-[calc(100vh-20rem)] w-full"/>
               </div>
-              <div className="space-y-6">
+              <div className="lg:col-span-1 space-y-6">
                   <Card><CardHeader><Skeleton className="h-8 w-full"/></CardHeader><CardContent><Skeleton className="h-96 w-full"/></CardContent></Card>
               </div>
           </div>
@@ -673,54 +744,46 @@ export default function HospitalMissionControl() {
     const availableBeds = (totalBeds || 0) - (bedsOccupied || 0);
 
     return (
-        <div className="grid lg:grid-cols-3 gap-6 items-start h-full">
-            {/* Left Column */}
+        <div className="grid lg:grid-cols-2 xl:grid-cols-3 gap-6 items-start h-full">
+            {/* Left & Middle Column */}
+            <div className="lg:col-span-1 xl:col-span-2 space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <Card className="md:col-span-1">
+                        <CardHeader className="pb-2">
+                           <CardTitle className="flex items-center gap-2 text-lg"><Settings className="w-5 h-5 text-primary"/> Master Controls</CardTitle>
+                        </CardHeader>
+                        <CardContent className="flex items-center justify-between p-4">
+                           <Label htmlFor="online-status" className="font-bold text-lg">{isOnline ? "Accepting Cases" : "Offline"}</Label>
+                           <Switch id="online-status" checked={isOnline} onCheckedChange={handleOnlineStatusChange} className="data-[state=checked]:bg-green-500" />
+                        </CardContent>
+                    </Card>
+                    <Card className="md:col-span-2">
+                       <CardHeader className="pb-2">
+                           <CardTitle className="flex items-center gap-2 text-lg"><BedDouble className="w-5 h-5 text-primary"/> Bed Availability</CardTitle>
+                       </CardHeader>
+                       <CardContent className="flex items-center justify-between p-4 gap-2">
+                           <div className="text-center"><Label className="text-xs">Total</Label><Input type="number" value={totalBeds || 0} onChange={(e) => setTotalBeds(Number(e.target.value))} className="w-20 h-9 text-center font-bold"/></div>
+                           <Minus className="text-muted-foreground"/>
+                           <div className="text-center"><Label className="text-xs">Occupied</Label><Input type="number" value={bedsOccupied || 0} onChange={(e) => setBedsOccupied(Number(e.target.value))} className="w-20 h-9 text-center font-bold"/></div>
+                           <div className="text-center p-2 rounded-md bg-green-100 dark:bg-green-900/30">
+                               <Label className="text-xs text-green-700 dark:text-green-300">Available</Label>
+                               <p className="text-xl font-bold text-green-600 dark:text-green-200">{availableBeds < 0 ? 0 : availableBeds}</p>
+                           </div>
+                           <Button size="sm" onClick={handleBedStatusUpdate}>Update</Button>
+                       </CardContent>
+                   </Card>
+                </div>
+                <div className="h-[calc(100vh-22rem)] rounded-lg overflow-hidden border">
+                   <LiveMap 
+                       activePartners={mapFleet} 
+                       riderLocation={patientLocation}
+                       driverLocation={activeAmbulanceLocation}
+                   />
+               </div>
+            </div>
+            
+            {/* Right Column */}
             <div className="lg:col-span-1 space-y-6">
-                 <Card className={cn("transition-all", ongoingCase && 'opacity-30')}>
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2"><Waves className="w-5 h-5 text-primary" /> Action Feed</CardTitle>
-                        <CardDescription>Live incoming requests will appear here.</CardDescription>
-                         <div className="pt-2 flex gap-2">
-                            <Button onClick={simulateNewCase} size="sm" variant="outline">Create Test Alert</Button>
-                        </div>
-                    </CardHeader>
-                    <CardContent className="space-y-4 max-h-96 overflow-y-auto pr-2">
-                         {ongoingCase ? (
-                             <div className="text-center text-muted-foreground py-10">
-                                <p className="font-bold">A case is already in progress.</p>
-                                <p className="text-sm">Please resolve the ongoing case before accepting new requests.</p>
-                            </div>
-                         ) : incomingRequests.length > 0 ? (
-                            incomingRequests.map(req => (
-                                <Card key={req.id} className="bg-destructive/10 border-destructive shadow-lg animate-pulse-intense">
-                                    <CardHeader className="p-4">
-                                        {getSeverityBadge(req.severity)}
-                                        <CardDescription className="pt-2">New {req.severity || 'Non-Critical'} case from patient {req.riderName}.</CardDescription>
-                                    </CardHeader>
-                                    <CardFooter className="p-4 pt-0 grid grid-cols-3 gap-2">
-                                         <Button variant="outline" asChild><a href={`tel:${req.phone}`}><Phone className="w-4 h-4"/> Call Patient</a></Button>
-                                        <Dialog>
-                                            <DialogTrigger asChild><Button className="w-full col-span-1">Accept</Button></DialogTrigger>
-                                            <DialogContent>
-                                                <DialogHeader><DialogTitle>Dispatch Ambulance</DialogTitle><DialogDescription>Select an available ambulance for this case.</DialogDescription></DialogHeader>
-                                                <div className="py-4 space-y-2 max-h-60 overflow-y-auto">
-                                                    {fleet.filter(a => a.status === 'Available').map(a => (<Button key={a.id} variant="outline" className="w-full justify-start h-12" onClick={() => handleAcceptRequest(req, a.id)}><Ambulance className="mr-4"/><div><p className="font-semibold">{a.name}</p><p className="text-xs text-muted-foreground">{a.type}</p></div></Button>))}
-                                                    {fleet.filter(a => a.status === 'Available').length === 0 && (<p className="text-center text-muted-foreground py-4">No ambulances are currently available.</p>)}
-                                                </div>
-                                            </DialogContent>
-                                        </Dialog>
-                                        <Button variant="destructive" className="w-full col-span-1" onClick={() => handleRejectRequest(req.id)}>Reject</Button>
-                                    </CardFooter>
-                                </Card>
-                            ))
-                         ) : (
-                            <div className="text-center text-muted-foreground h-48 flex items-center justify-center flex-col">
-                                <SearchingIndicator partnerType="cure" />
-                                <p className="mt-4 font-semibold">Listening for emergency requests...</p>
-                            </div>
-                        )}
-                    </CardContent>
-                </Card>
                 {ongoingCase && (
                     <Card className="bg-primary/5 border-primary animate-fade-in">
                         <CardHeader><CardTitle className="flex items-center gap-2"><Siren className="w-6 h-6 text-primary animate-pulse"/> Ongoing Case</CardTitle><CardDescription>Patient: {ongoingCase.riderName}</CardDescription></CardHeader>
@@ -733,196 +796,73 @@ export default function HospitalMissionControl() {
                         </CardContent>
                     </Card>
                 )}
-            </div>
-            
-            {/* Middle Column */}
-            <div className="lg:col-span-1 space-y-6">
-                 <div className="h-64 rounded-lg overflow-hidden border">
-                    <LiveMap 
-                        activePartners={mapFleet} 
-                        riderLocation={patientLocation}
-                        driverLocation={activeAmbulanceLocation}
-                    />
-                </div>
-                 <Tabs defaultValue="fleet" className="w-full">
-                    <TabsList className="grid w-full grid-cols-2">
-                        <TabsTrigger value="fleet">Fleet & Drivers</TabsTrigger>
-                        <TabsTrigger value="checklist">Pre-Duty Checklist</TabsTrigger>
-                    </TabsList>
-                    <TabsContent value="fleet" className="mt-4">
-                         <Card>
-                            <CardHeader className="flex flex-row items-center justify-between p-4">
-                                <CardTitle className="text-lg">Manage Fleet</CardTitle>
-                                 <Dialog open={isAddAmbulanceOpen} onOpenChange={setIsAddAmbulanceOpen}>
-                                    <DialogTrigger asChild><Button size="sm"><PlusCircle className="mr-2 h-4 w-4"/> Add Ambulance</Button></DialogTrigger>
-                                     <DialogContent>
-                                        <DialogHeader><DialogTitle>Add Ambulance</DialogTitle></DialogHeader>
-                                        <form onSubmit={handleAddAmbulance} className="space-y-4 pt-4">
-                                            <div className="space-y-2"><Label htmlFor="ambulanceName">Vehicle Name / Number</Label><Input id="ambulanceName" value={newAmbulanceName} onChange={(e) => setNewAmbulanceName(e.target.value)} placeholder="e.g., ICU Ambulance 01" required/></div>
-                                            <div className="space-y-2"><Label htmlFor="rcNumber">Vehicle RC Number</Label><Input id="rcNumber" value={newRcNumber} onChange={(e) => setNewRcNumber(e.target.value)} placeholder="e.g., DL1A C1234" required/></div>
-                                            <div className="space-y-2"><Label htmlFor="driver">Assign Driver</Label><Select onValueChange={(v) => setNewAmbulanceDriverId(v)} required value={newAmbulanceDriverId}><SelectTrigger id="driver"><SelectValue placeholder="Select a Driver"/></SelectTrigger><SelectContent>{drivers.map(d => <SelectItem key={d.id} value={d.id}>{d.name} ({d.phone})</SelectItem>)}</SelectContent></Select></div>
-                                            <div className="space-y-2"><Label htmlFor="type">Ambulance Type</Label><Select onValueChange={(v) => setNewAmbulanceType(v as any)} required value={newAmbulanceType}><SelectTrigger id="type"><SelectValue placeholder="Select Ambulance Type"/></SelectTrigger><SelectContent><SelectItem value="BLS">BLS (Basic Life Support)</SelectItem><SelectItem value="ALS">ALS (Advanced Life Support)</SelectItem><SelectItem value="Cardiac">Cardiac / ICU</SelectItem></SelectContent></Select></div>
-                                            <DialogFooter><Button type="submit">Add to Fleet</Button></DialogFooter>
-                                        </form>
-                                    </DialogContent>
-                                </Dialog>
-                            </CardHeader>
-                            <CardContent className="p-4 pt-0">
-                               <Table>
-                                    <TableHeader><TableRow><TableHead>Ambulance</TableHead><TableHead>Driver</TableHead><TableHead>Status</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader>
-                                    <TableBody>
-                                        {fleet.map(a => (
-                                            <TableRow key={a.id}>
-                                                <TableCell className="font-semibold">{a.name} <span className="text-xs text-muted-foreground font-normal">({a.type})</span></TableCell>
-                                                <TableCell>{a.driverName}</TableCell>
-                                                <TableCell><Badge className={cn(a.status === 'Available' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800')}>{a.status}</Badge></TableCell>
-                                                <TableCell className="text-right">
-                                                    <AlertDialog>
-                                                        <DropdownMenu>
-                                                            <DropdownMenuTrigger asChild><Button variant="ghost" className="h-8 w-8 p-0"><span className="sr-only">Open menu</span><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
-                                                            <DropdownMenuContent align="end">
-                                                                <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                                                <AlertDialogTrigger asChild><DropdownMenuItem className="text-destructive focus:text-destructive" onSelect={(e) => e.preventDefault()}><Trash2 className="mr-2 h-4 w-4"/> Delete Ambulance</DropdownMenuItem></AlertDialogTrigger>
-                                                            </DropdownMenuContent>
-                                                        </DropdownMenu>
-                                                        <AlertDialogContent>
-                                                            <AlertDialogHeader><AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle><AlertDialogDescription>This will permanently remove <span className="font-bold">{a.name}</span> from your fleet. This action cannot be undone.</AlertDialogDescription></AlertDialogHeader>
-                                                            <AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={() => handleDeleteAmbulance(a)} className="bg-destructive hover:bg-destructive/90">Yes, delete ambulance</AlertDialogAction></AlertDialogFooter>
-                                                        </AlertDialogContent>
-                                                    </AlertDialog>
-                                                </TableCell>
-                                            </TableRow>
-                                        ))}
-                                        {fleet.length === 0 && <TableRow><TableCell colSpan={4} className="text-center h-24">No ambulances added.</TableCell></TableRow>}
-                                    </TableBody>
-                                </Table>
-                            </CardContent>
-                        </Card>
-                         <Card className="mt-4">
-                            <CardHeader className="flex flex-row items-center justify-between p-4">
-                                <CardTitle className="text-lg">Manage Drivers</CardTitle>
-                                <Dialog open={isAddDriverOpen} onOpenChange={setIsAddDriverOpen}>
-                                    <DialogTrigger asChild><Button size="sm"><UserPlus className="mr-2 h-4 w-4"/> Add Driver</Button></DialogTrigger>
-                                    <DialogContent>
-                                         <DialogHeader><DialogTitle>Add New Driver</DialogTitle></DialogHeader>
-                                        <form onSubmit={handleAddDriver} className="space-y-4 pt-4">
-                                            <div className="space-y-2"><Label htmlFor="driverName">Full Name</Label><Input id="driverName" name="driverName" required /></div>
-                                            <div className="space-y-2">
-                                                <Label htmlFor="driverPhone">Phone Number</Label>
-                                                <div className="flex items-center gap-0 rounded-md border border-input focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2">
-                                                  <span className="pl-3 text-muted-foreground text-sm">+91</span>
-                                                  <Input id="driverPhone" name="driverPhone" type="tel" maxLength={10} placeholder="12345 67890" required className="border-0 h-9 focus-visible:ring-0 focus-visible:ring-offset-0 flex-1" />
-                                                </div>
-                                            </div>
-                                            <div className="space-y-2"><Label htmlFor="driverAge">Age</Label><Input id="driverAge" name="driverAge" type="number" required /></div>
-                                            <div className="space-y-2"><Label>Gender</Label><RadioGroup name="gender" className="flex gap-4"><div className="flex items-center space-x-2"><RadioGroupItem value="male" id="male" /><Label htmlFor="male">Male</Label></div><div className="flex items-center space-x-2"><RadioGroupItem value="female" id="female" /><Label htmlFor="female">Female</Label></div></RadioGroup></div>
-                                            <div className="space-y-2"><Label htmlFor="drivingLicence">Driving Licence No.</Label><Input id="drivingLicence" name="drivingLicence" required /></div>
-                                            <DialogFooter><Button type="submit">Add Driver & Generate Credentials</Button></DialogFooter>
-                                        </form>
-                                    </DialogContent>
-                                </Dialog>
-                            </CardHeader>
-                            <CardContent className="p-4 pt-0">
-                                <Dialog open={isDriverDetailsOpen} onOpenChange={setIsDriverDetailsOpen}>
-                                    <Table>
-                                        <TableHeader><TableRow><TableHead>Driver</TableHead><TableHead>Phone</TableHead><TableHead>Status</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader>
-                                        <TableBody>
-                                            {drivers.map(d => (<TableRow key={d.id}><TableCell className="font-semibold">{d.name}</TableCell><TableCell>{d.phone}</TableCell><TableCell><Badge className="bg-green-100 text-green-800">{d.status}</Badge></TableCell><TableCell className="text-right"><DialogTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => {setSelectedDriver(d); setIsDriverDetailsOpen(true);}}><MoreHorizontal className="h-4 w-4" /></Button></DialogTrigger></TableCell></TableRow>))}
-                                            {drivers.length === 0 && <TableRow><TableCell colSpan={4} className="text-center h-24">No drivers added.</TableCell></TableRow>}
-                                        </TableBody>
-                                    </Table>
-                                    <DialogContent className="sm:max-w-md">
-                                        <DialogHeader><DialogTitle>Driver ID Card</DialogTitle></DialogHeader>
-                                        {selectedDriver && (<div className="space-y-4 py-4">
-                                            <Card className="bg-gradient-to-br from-primary/90 to-primary text-primary-foreground p-4 rounded-lg shadow-lg">
-                                                <div className="flex items-start gap-4">
-                                                    <Avatar className="w-20 h-20 border-2 border-white"><AvatarImage src={'https://placehold.co/100x100.png'} alt={selectedDriver.name} data-ai-hint="driver portrait"/><AvatarFallback>{getInitials(selectedDriver.name)}</AvatarFallback></Avatar>
-                                                    <div className="flex-1">
-                                                        <h3 className="text-xl font-bold">{selectedDriver.name}</h3>
-                                                        <p className="text-sm opacity-80 font-mono">{selectedDriver.partnerId}</p>
-                                                         <div className="flex items-center gap-4 text-xs mt-2">
-                                                            <span className="flex items-center gap-1"><PersonStanding className="w-3 h-3"/> {selectedDriver.gender}, {selectedDriver.age} yrs</span>
-                                                         </div>
-                                                    </div>
-                                                </div>
-                                                <div className="mt-4 pt-4 border-t border-primary-foreground/30 space-y-2 text-sm">
-                                                    <div className="flex justify-between"><span>Hospital:</span><span className="font-semibold">{hospitalData?.name}</span></div>
-                                                    <div className="flex justify-between"><span>Assigned Vehicle:</span><span className="font-semibold">{selectedDriver.assignedAmbulanceName || "Not Assigned"}</span></div>
-                                                    <div className="flex justify-between"><span>Date Joined:</span><span className="font-semibold">{selectedDriver.createdAt.toDate().toLocaleDateString()}</span></div>
-                                                </div>
-                                            </Card>
-                                            <DialogFooter className="mt-4">
-                                                <AlertDialog>
-                                                    <AlertDialogTrigger asChild><Button variant="destructive">Delete Driver</Button></AlertDialogTrigger>
-                                                    <AlertDialogContent>
-                                                        <AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle><AlertDialogDescription>This will permanently remove <span className="font-bold">{selectedDriver.name}</span> and revoke their login access.</AlertDialogDescription></AlertDialogHeader>
-                                                        <AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={() => handleDeleteDriver(selectedDriver)} className="bg-destructive hover:bg-destructive/90">Yes, delete</AlertDialogAction></AlertDialogFooter>
-                                                    </AlertDialogContent>
-                                                </AlertDialog>
-                                            </DialogFooter>
-                                        </div>)}
-                                    </DialogContent>
-                                </Dialog>
-                            </CardContent>
-                        </Card>
-                    </TabsContent>
-                    <TabsContent value="checklist" className="mt-4">
-                         <Card>
-                            <CardHeader className="p-4"><CardTitle className="flex items-center gap-2 text-lg"><ListChecks /> Pre-Duty Checklist</CardTitle></CardHeader>
-                            <CardContent className="p-4 pt-0 space-y-4">
-                                <div className="space-y-2 max-h-40 overflow-y-auto pr-2">
-                                    {checklistItems.map(item => (<div key={item.id} className="flex items-center gap-2 p-2 bg-muted rounded-md"><span className="flex-1 text-sm">{item.text}</span><Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleDeleteChecklistItem(item.id)}><Trash2 className="w-4 h-4 text-destructive"/></Button></div>))}
-                                    {checklistItems.length === 0 && <p className="text-sm text-center text-muted-foreground py-4">No checklist items defined yet.</p>}
-                                </div>
+                 <Card className={cn("transition-all", ongoingCase && 'opacity-30')}>
+                     <Tabs defaultValue="emergency">
+                         <CardHeader>
+                            <TabsList className="grid w-full grid-cols-2">
+                                <TabsTrigger value="emergency" className="gap-1">
+                                    <Waves className="w-4 h-4"/> Emergency
+                                </TabsTrigger>
+                                <TabsTrigger value="appointments" className="gap-1">
+                                    <Calendar className="w-4 h-4"/> Appointments
+                                </TabsTrigger>
+                            </TabsList>
+                         </CardHeader>
+                         <TabsContent value="emergency">
+                            <CardContent className="space-y-4 max-h-96 overflow-y-auto pr-2">
                                 <div className="flex gap-2">
-                                    <Input value={newChecklistItem} onChange={e => setNewChecklistItem(e.target.value)} placeholder="e.g., Oxygen Cylinder Full?" />
-                                    <Button onClick={handleAddChecklistItem} disabled={!newChecklistItem.trim()}><PlusCircle className="w-4 h-4 mr-2" /> Add</Button>
+                                    <Button onClick={simulateNewCase} size="sm" variant="outline" className="w-full">Create Test Alert</Button>
                                 </div>
+                                {ongoingCase ? (
+                                    <div className="text-center text-muted-foreground py-10">
+                                        <p className="font-bold">A case is already in progress.</p>
+                                        <p className="text-sm">Please resolve the ongoing case before accepting new requests.</p>
+                                    </div>
+                                ) : incomingRequests.length > 0 ? (
+                                    incomingRequests.map(req => (
+                                        <Card key={req.id} className="bg-destructive/10 border-destructive shadow-lg animate-pulse-intense">
+                                            <CardHeader className="p-4"><CardTitle>{getSeverityBadge(req.severity)}</CardTitle><CardDescription className="pt-2">New {req.severity || 'Non-Critical'} case from patient {req.riderName}.</CardDescription></CardHeader>
+                                            <CardFooter className="p-4 pt-0 grid grid-cols-3 gap-2">
+                                                <Button variant="outline" asChild><a href={`tel:${req.phone}`}><Phone className="w-4 h-4"/> Call</a></Button>
+                                                <Dialog><DialogTrigger asChild><Button className="w-full col-span-1">Accept</Button></DialogTrigger>
+                                                    <DialogContent><DialogHeader><DialogTitle>Dispatch Ambulance</DialogTitle><DialogDescription>Select an available ambulance for this case.</DialogDescription></DialogHeader>
+                                                        <div className="py-4 space-y-2 max-h-60 overflow-y-auto">
+                                                            {fleet.filter(a => a.status === 'Available').map(a => (<Button key={a.id} variant="outline" className="w-full justify-start h-12" onClick={() => handleAcceptRequest(req, a.id)}><Ambulance className="mr-4"/><div><p className="font-semibold">{a.name}</p><p className="text-xs text-muted-foreground">{a.type}</p></div></Button>))}
+                                                            {fleet.filter(a => a.status === 'Available').length === 0 && (<p className="text-center text-muted-foreground py-4">No ambulances are currently available.</p>)}
+                                                        </div>
+                                                    </DialogContent>
+                                                </Dialog>
+                                                <Button variant="destructive" className="w-full col-span-1" onClick={() => handleRejectRequest(req.id)}>Reject</Button>
+                                            </CardFooter>
+                                        </Card>
+                                    ))
+                                ) : (
+                                    <div className="text-center text-muted-foreground h-48 flex items-center justify-center flex-col">
+                                        <SearchingIndicator partnerType="cure" /><p className="mt-4 font-semibold">Listening for emergency requests...</p>
+                                    </div>
+                                )}
                             </CardContent>
-                        </Card>
-                    </TabsContent>
-                </Tabs>
-            </div>
-            
-            {/* Right Column */}
-            <div className="lg:col-span-1 space-y-6">
-                <Card>
-                    <CardHeader className="pb-2">
-                        <CardTitle className="flex items-center gap-2 text-lg"><Settings className="w-5 h-5 text-primary"/> Master Controls</CardTitle>
-                    </CardHeader>
-                    <CardContent className="flex items-center justify-between p-4">
-                        <Label htmlFor="online-status" className="font-bold text-lg">{isOnline ? "Accepting Cases" : "Offline"}</Label>
-                        <Switch id="online-status" checked={isOnline} onCheckedChange={handleOnlineStatusChange} className="data-[state=checked]:bg-green-500" />
-                    </CardContent>
-                 </Card>
-                 <Card>
-                    <CardHeader className="pb-2">
-                        <CardTitle className="flex items-center gap-2 text-lg"><BedDouble className="w-5 h-5 text-primary"/> Bed Availability</CardTitle>
-                    </CardHeader>
-                    <CardContent className="flex items-center justify-between p-4">
-                        <div className="text-center"><Label className="text-xs">Total</Label><Input type="number" value={totalBeds || 0} onChange={(e) => setTotalBeds(Number(e.target.value))} className="w-20 h-9 text-center font-bold"/></div>
-                         <Minus className="text-muted-foreground"/>
-                         <div className="text-center"><Label className="text-xs">Occupied</Label><Input type="number" value={bedsOccupied || 0} onChange={(e) => setBedsOccupied(Number(e.target.value))} className="w-20 h-9 text-center font-bold"/></div>
-                        <div className="text-center p-2 rounded-md bg-green-100 dark:bg-green-900/30">
-                            <Label className="text-xs text-green-700 dark:text-green-300">Available</Label>
-                            <p className="text-xl font-bold text-green-600 dark:text-green-200">{availableBeds < 0 ? 0 : availableBeds}</p>
-                        </div>
-                        <Button size="sm" onClick={handleBedStatusUpdate}>Update</Button>
-                    </CardContent>
-                </Card>
-                 <Card>
-                    <CardHeader className="pb-2">
-                        <CardTitle className="flex items-center gap-2 text-lg"><BarChart className="w-5 h-5 text-primary"/> Analytics Snapshot</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4 p-4">
-                        <div className="p-3 rounded-lg bg-muted flex justify-between items-center"><p className="font-medium">Total Cases Handled</p><p className="font-bold text-lg">{analytics.totalCases}</p></div>
-                        <div className="p-3 rounded-lg bg-muted flex justify-between items-center"><p className="font-medium">Avg. Response Time</p><p className="font-bold text-lg">{analytics.avgResponseTime.toFixed(1)} min</p></div>
-                        <div className="p-3 rounded-lg bg-muted flex justify-between items-center"><p className="font-medium">Fleet Utilization</p><p className="font-bold text-lg">{analytics.fleetUtilization.toFixed(0)}%</p></div>
-                    </CardContent>
+                         </TabsContent>
+                          <TabsContent value="appointments">
+                             <CardContent>
+                                 <Table>
+                                     <TableHeader><TableRow><TableHead>Time</TableHead><TableHead>Patient</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader>
+                                     <TableBody>
+                                         {appointments.map(appt => (
+                                             <TableRow key={appt.id}>
+                                                 <TableCell className="font-semibold">{appt.appointmentTime}</TableCell>
+                                                 <TableCell>{appt.patientName}{appt.isRecurring && <Badge variant="secondary" className="ml-2"><Repeat className="w-3 h-3 mr-1" /> Recurring</Badge>}</TableCell>
+                                                 <TableCell className="text-right">{appt.status === 'Pending' ? (<div className="flex gap-1 justify-end"><Button size="sm" variant="outline" className="text-green-600 border-green-600">Confirm</Button><Button size="sm" variant="ghost">Reschedule</Button></div>) : (<Badge>{appt.status}</Badge>)}</TableCell>
+                                             </TableRow>
+                                         ))}
+                                     </TableBody>
+                                 </Table>
+                             </CardContent>
+                         </TabsContent>
+                     </Tabs>
                 </Card>
             </div>
             
-            {/* Dialogs for Add/Edit */}
             <AlertDialog open={isCredsDialogOpen} onOpenChange={(isOpen) => {
                 if(!isOpen) setGeneratedDriverCreds(null);
                 setIsCredsDialogOpen(isOpen);
@@ -939,3 +879,34 @@ export default function HospitalMissionControl() {
         </div>
     )
 }
+
+```
+- src/hooks/use-firebase.ts:
+```ts
+
+    
+```
+- src/lib/firebase-admin.ts:
+```ts
+
+    
+```
+- src/lib/firebase.ts:
+```ts
+
+// This file is deprecated and will be removed. 
+// Please use the context providers from `@/firebase/client-provider` instead.
+
+import { initializeApp, getApps, getApp } from "firebase/app";
+import { getFirestore } from "firebase/firestore";
+import { getAuth } from "firebase/auth";
+import { firebaseConfig } from "@/firebase/config";
+
+const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+const db = getFirestore(app);
+const auth = getAuth(app);
+
+export { db, auth, app };
+
+    
+```
