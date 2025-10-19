@@ -1,3 +1,4 @@
+
 'use client'
 
 import React, { useState, useEffect } from 'react'
@@ -20,8 +21,8 @@ import { MotionDiv } from '@/components/ui/motion-div'
 
 const navItems = [
   { href: '/cure', label: 'Mission Control', icon: LayoutDashboard },
-  { href: '/cure/subscription', label: 'Subscription', icon: Gem },
   { href: '/cure/billing', label: 'Billing & Payouts', icon: Landmark },
+  { href: '/cure/subscription', label: 'Subscription', icon: Gem },
   { href: '/cure/cases', label: 'Case History', icon: History },
   { href: '/cure/profile', label: 'Hospital Profile', icon: User },
 ]
