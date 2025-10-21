@@ -1,4 +1,3 @@
-
 'use client'
 
 import React, { useState, useEffect, useRef, useMemo } from 'react'
@@ -7,17 +6,29 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
-import { Ambulance, Phone, Siren, Navigation, BedDouble, Settings, Minus, Plus } from 'lucide-react'
+import { Ambulance, Check, X, PlusCircle, Car, User, Siren, Map, Waves, Settings, ServerCrash, BedDouble, BarChart, Clock, Users, KeyRound, Navigation, UserPlus, Phone, Share2, MoreHorizontal, Trash2, ListChecks, FileText, Minus, Plus, Hospital, Calendar, PersonStanding, BadgeInfo } from 'lucide-react'
 import { AlertDialog, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogCancel, AlertDialogAction, AlertDialogTrigger } from '@/components/ui/alert-dialog'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription, DialogFooter } from '@/components/ui/dialog'
 import { useToast } from '@/hooks/use-toast'
 import { Skeleton } from '@/components/ui/skeleton'
 import dynamic from 'next/dynamic'
 import { useDb } from '@/firebase/client-provider'
-import { collection, query, where, onSnapshot, doc, updateDoc, GeoPoint, serverTimestamp, arrayUnion, addDoc, orderBy } from 'firebase/firestore'
+import { collection, query, where, onSnapshot, doc, updateDoc, GeoPoint, serverTimestamp, arrayUnion, addDoc, getDocs, getDoc, orderBy, Timestamp, writeBatch, deleteDoc } from 'firebase/firestore'
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import SearchingIndicator from '@/components/ui/searching-indicator'
 
 
@@ -37,6 +48,27 @@ interface AmbulanceVehicle {
     rcNumber: string;
 }
 
+interface AmbulanceDriver {
+    id: string;
+    name: string;
+    phone: string;
+    age: number;
+    gender: 'male' | 'female' | 'other';
+    drivingLicence: string;
+    status: 'Active' | 'Inactive';
+    partnerId?: string;
+    password?: string;
+    createdAt: Timestamp;
+    assignedAmbulanceId?: string;
+    assignedAmbulanceName?: string;
+}
+
+interface ChecklistItem {
+    id: string;
+    text: string;
+    createdAt: Timestamp;
+}
+
 interface EmergencyRequest {
     id: string;
     caseId: string;
@@ -47,6 +79,18 @@ interface EmergencyRequest {
     rejectedBy?: string[];
     createdAt: any;
     otp?: string;
+}
+
+// Mock data until Firestore collection is implemented for appointments
+interface Appointment {
+  id: string;
+  patientName: string;
+  department: string;
+  doctorName: string;
+  appointmentDate: string;
+  appointmentTime: string;
+  status: 'Confirmed' | 'Pending' | 'In Queue';
+  isRecurring?: boolean;
 }
 
 interface OngoingCase extends EmergencyRequest {
@@ -67,6 +111,12 @@ interface HospitalData {
     location?: GeoPoint;
 }
 
+const mockAppointments: Appointment[] = [
+  { id: 'APP001', patientName: 'Priya Singh', department: 'Cardiology', doctorName: 'Dr. Sharma', appointmentDate: '2024-09-10', appointmentTime: '11:00 AM', status: 'Confirmed', isRecurring: true },
+  { id: 'APP002', patientName: 'Rajesh Verma', department: 'Orthopedics', doctorName: 'Dr. Gupta', appointmentDate: '2024-09-10', appointmentTime: '02:00 PM', status: 'Confirmed' },
+  { id: 'APP003', patientName: 'Anita Desai', department: 'General Physician', doctorName: 'Dr. Verma', appointmentDate: '2024-09-11', appointmentTime: '10:00 AM', status: 'Pending' },
+];
+
 export default function HospitalMissionControl() {
     const [isMounted, setIsMounted] = useState(false);
     const [hospitalData, setHospitalData] = useState<HospitalData | null>(null);
@@ -76,8 +126,11 @@ export default function HospitalMissionControl() {
     const [isLoading, setIsLoading] = useState(true);
     const [isOnline, setIsOnline] = useState(false);
     const { toast } = useToast();
+    const [appointments, setAppointments] = useState<Appointment[]>(mockAppointments);
+    const [selectedDriver, setSelectedDriver] = useState<AmbulanceDriver | null>(null);
+    const [isDriverDetailsOpen, setIsDriverDetailsOpen] = useState(false);
     const db = useDb();
-    
+
     // Bed Management State
     const [totalBeds, setTotalBeds] = useState(0);
     const [bedsOccupied, setBedsOccupied] = useState(0);
@@ -171,7 +224,7 @@ export default function HospitalMissionControl() {
             
             setIncomingRequests(requestsData);
         });
-
+        
         setIsLoading(false);
 
         return () => {
@@ -201,7 +254,6 @@ export default function HospitalMissionControl() {
         }
         return () => { if (watchIdRef.current) navigator.geolocation.clearWatch(watchIdRef.current) };
     }, [ongoingCase, hospitalData?.id, db]);
-
 
     const handleOnlineStatusChange = async (checked: boolean) => {
         if (!hospitalData?.id || !db) return;
@@ -235,7 +287,7 @@ export default function HospitalMissionControl() {
             toast({ variant: 'destructive', title: 'Error', description: 'Could not update bed status.' });
         }
     }
-
+    
     const handleAcceptRequest = async (request: EmergencyRequest, ambulanceId: string) => {
         if (!hospitalData || !db) return;
         
@@ -280,6 +332,13 @@ export default function HospitalMissionControl() {
              toast({ variant: 'destructive', title: "Action Failed", description: "Could not reject the request."});
          }
     }
+    
+    const handleCheckIn = (appointmentId: string) => {
+        setAppointments(prev => prev.map(appt => 
+            appt.id === appointmentId ? { ...appt, status: 'In Queue' } : appt
+        ));
+        toast({ title: 'Patient Checked In', description: 'Patient has been added to the queue.' });
+    }
 
     const getSeverityBadge = (severity?: EmergencyRequest['severity']) => {
         switch (severity) {
@@ -315,12 +374,12 @@ export default function HospitalMissionControl() {
 
     if (isLoading) {
       return (
-          <div className="grid lg:grid-cols-2 xl:grid-cols-3 gap-6 h-full">
-              <div className="lg:col-span-1 xl:col-span-2 space-y-6">
+          <div className="grid lg:grid-cols-3 gap-6 h-full">
+              <div className="lg:col-span-2 space-y-6">
                   <Skeleton className="h-24 w-full"/>
                   <Skeleton className="h-[calc(100vh-20rem)] w-full"/>
               </div>
-              <div className="lg:col-span-1 space-y-6">
+              <div className="space-y-6">
                   <Card><CardHeader><Skeleton className="h-8 w-full"/></CardHeader><CardContent><Skeleton className="h-96 w-full"/></CardContent></Card>
               </div>
           </div>
@@ -330,8 +389,8 @@ export default function HospitalMissionControl() {
     const availableBeds = (totalBeds || 0) - (bedsOccupied || 0);
 
     return (
-        <div className="grid lg:grid-cols-2 xl:grid-cols-3 gap-6 items-start h-full">
-            <div className="lg:col-span-1 xl:col-span-2 space-y-6">
+        <div className="grid lg:grid-cols-3 gap-6 items-start h-full">
+            <div className="lg:col-span-2 space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <Card className="md:col-span-1">
                         <CardHeader className="pb-2">
@@ -382,47 +441,76 @@ export default function HospitalMissionControl() {
                     </Card>
                 )}
                  <Card className={cn("transition-all", ongoingCase && 'opacity-30')}>
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2">Emergency Feed</CardTitle>
-                        <CardDescription>Live incoming requests will appear here.</CardDescription>
-                         <div className="pt-2 flex gap-2">
-                            <Button onClick={simulateNewCase} size="sm" variant="outline" className="w-full">Create Test Alert</Button>
-                        </div>
-                    </CardHeader>
-                    <CardContent className="space-y-4 max-h-96 overflow-y-auto pr-2">
-                        {ongoingCase ? (
-                            <div className="text-center text-muted-foreground py-10">
-                                <p className="font-bold">A case is already in progress.</p>
-                                <p className="text-sm">Please resolve it before accepting new requests.</p>
-                            </div>
-                        ) : incomingRequests.length > 0 ? (
-                            incomingRequests.map(req => (
-                                <Card key={req.id} className="bg-destructive/10 border-destructive shadow-lg animate-pulse-intense">
-                                    <CardHeader className="p-4"><CardTitle>{getSeverityBadge(req.severity)}</CardTitle><CardDescription className="pt-2">New {req.severity || 'Non-Critical'} case from patient {req.riderName}.</CardDescription></CardHeader>
-                                    <CardFooter className="p-4 pt-0 grid grid-cols-3 gap-2">
-                                        <Button variant="outline" asChild><a href={`tel:${req.phone}`}><Phone className="w-4 h-4"/> Call</a></Button>
-                                        <Dialog><DialogTrigger asChild><Button className="w-full col-span-1">Accept</Button></DialogTrigger>
-                                            <DialogContent><DialogHeader><DialogTitle>Dispatch Ambulance</DialogTitle><DialogDescription>Select an available ambulance for this case.</DialogDescription></DialogHeader>
-                                                <div className="py-4 space-y-2 max-h-60 overflow-y-auto">
-                                                    {fleet.filter(a => a.status === 'Available').map(a => (<Button key={a.id} variant="outline" className="w-full justify-start h-12" onClick={() => handleAcceptRequest(req, a.id)}><Ambulance className="mr-4"/><div><p className="font-semibold">{a.name}</p><p className="text-xs text-muted-foreground">{a.type}</p></div></Button>))}
-                                                    {fleet.filter(a => a.status === 'Available').length === 0 && (<p className="text-center text-muted-foreground py-4">No ambulances are currently available.</p>)}
-                                                </div>
-                                            </DialogContent>
-                                        </Dialog>
-                                        <Button variant="destructive" className="w-full col-span-1" onClick={() => handleRejectRequest(req.id)}>Reject</Button>
-                                    </CardFooter>
-                                </Card>
-                            ))
-                        ) : (
-                            <div className="text-center text-muted-foreground h-48 flex items-center justify-center flex-col">
-                                <SearchingIndicator partnerType="cure" /><p className="mt-4 font-semibold">Listening for emergency requests...</p>
-                            </div>
-                        )}
-                    </CardContent>
+                    <Tabs defaultValue="emergency">
+                        <TabsList className="grid w-full grid-cols-2">
+                            <TabsTrigger value="emergency">Emergency</TabsTrigger>
+                            <TabsTrigger value="appointments">Appointments</TabsTrigger>
+                        </TabsList>
+                        <TabsContent value="emergency">
+                            <CardHeader>
+                                <CardTitle className="flex items-center gap-2">Emergency Feed</CardTitle>
+                                <CardDescription>Live incoming requests will appear here.</CardDescription>
+                                <div className="pt-2 flex gap-2">
+                                    <Button onClick={simulateNewCase} size="sm" variant="outline" className="w-full">Create Test Alert</Button>
+                                </div>
+                            </CardHeader>
+                            <CardContent className="space-y-4 max-h-96 overflow-y-auto pr-2">
+                                {ongoingCase ? (
+                                    <div className="text-center text-muted-foreground py-10">
+                                        <p className="font-bold">A case is already in progress.</p>
+                                        <p className="text-sm">Please resolve it before accepting new requests.</p>
+                                    </div>
+                                ) : incomingRequests.length > 0 ? (
+                                    incomingRequests.map(req => (
+                                        <Card key={req.id} className="bg-destructive/10 border-destructive shadow-lg animate-pulse-intense">
+                                            <CardHeader className="p-4"><CardTitle>{getSeverityBadge(req.severity)}</CardTitle><CardDescription className="pt-2">New {req.severity || 'Non-Critical'} case from patient {req.riderName}.</CardDescription></CardHeader>
+                                            <CardFooter className="p-4 pt-0 grid grid-cols-3 gap-2">
+                                                <Button variant="outline" asChild><a href={`tel:${req.phone}`}><Phone className="w-4 h-4"/> Call</a></Button>
+                                                <Dialog><DialogTrigger asChild><Button className="w-full col-span-1">Accept</Button></DialogTrigger>
+                                                    <DialogContent><DialogHeader><DialogTitle>Dispatch Ambulance</DialogTitle><DialogDescription>Select an available ambulance for this case.</DialogDescription></DialogHeader>
+                                                        <div className="py-4 space-y-2 max-h-60 overflow-y-auto">
+                                                            {fleet.filter(a => a.status === 'Available').map(a => (<Button key={a.id} variant="outline" className="w-full justify-start h-12" onClick={() => handleAcceptRequest(req, a.id)}><Ambulance className="mr-4"/><div><p className="font-semibold">{a.name}</p><p className="text-xs text-muted-foreground">{a.type}</p></div></Button>))}
+                                                            {fleet.filter(a => a.status === 'Available').length === 0 && (<p className="text-center text-muted-foreground py-4">No ambulances are currently available.</p>)}
+                                                        </div>
+                                                    </DialogContent>
+                                                </Dialog>
+                                                <Button variant="destructive" className="w-full col-span-1" onClick={() => handleRejectRequest(req.id)}>Reject</Button>
+                                            </CardFooter>
+                                        </Card>
+                                    ))
+                                ) : (
+                                    <div className="text-center text-muted-foreground h-48 flex items-center justify-center flex-col">
+                                        <SearchingIndicator partnerType="cure" /><p className="mt-4 font-semibold">Listening for emergency requests...</p>
+                                    </div>
+                                )}
+                            </CardContent>
+                        </TabsContent>
+                         <TabsContent value="appointments">
+                            <CardHeader>
+                                <CardTitle>Appointment Queue</CardTitle>
+                                <CardDescription>Manage incoming patient appointments.</CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-2">
+                                {appointments.map(appt => (
+                                     <Card key={appt.id}>
+                                         <CardContent className="p-3 flex items-center gap-3">
+                                            <Avatar className="h-10 w-10"><AvatarFallback>{appt.patientName.substring(0,1)}</AvatarFallback></Avatar>
+                                             <div className="flex-1">
+                                                 <p className="font-semibold">{appt.patientName}</p>
+                                                 <p className="text-xs text-muted-foreground">Dr. {appt.doctorName} ({appt.department})</p>
+                                                 <p className="text-xs">{appt.appointmentDate} at {appt.appointmentTime}</p>
+                                             </div>
+                                             {appt.status === 'Pending' && <Button size="sm">Confirm</Button>}
+                                             {appt.status === 'Confirmed' && <Button size="sm" variant="secondary" onClick={() => handleCheckIn(appt.id)}>Check-in</Button>}
+                                             {appt.status === 'In Queue' && <Badge className="bg-blue-100 text-blue-800">In Queue</Badge>}
+                                         </CardContent>
+                                     </Card>
+                                ))}
+                            </CardContent>
+                        </TabsContent>
+                    </Tabs>
                 </Card>
             </div>
         </div>
     )
 }
-
-    
