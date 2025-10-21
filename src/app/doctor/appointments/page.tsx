@@ -9,15 +9,9 @@ import { Input } from '@/components/ui/input'
 import { Search, Calendar, Filter } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-
-// Mock data until Firestore is connected
-const mockAppointments = [
-    { id: 'APT001', patientName: 'Priya Singh', appointmentDate: '2024-09-10', appointmentTime: '11:00 AM', status: 'Confirmed', isRecurring: true },
-    { id: 'APT002', patientName: 'Rajesh Verma', appointmentDate: '2024-09-10', appointmentTime: '02:00 PM', status: 'Completed', isRecurring: false },
-    { id: 'APT003', patientName: 'Anita Desai', appointmentDate: '2024-09-11', appointmentTime: '10:00 AM', status: 'Confirmed', isRecurring: false },
-    { id: 'APT004', patientName: 'Suresh Kumar', appointmentDate: '2024-09-11', appointmentTime: '04:00 PM', status: 'Cancelled', isRecurring: false },
-    { id: 'APT005', patientName: 'Geeta Iyer', appointmentDate: '2024-09-12', appointmentTime: '09:30 AM', status: 'Confirmed', isRecurring: false },
-];
+import { useDb } from '@/firebase/client-provider'
+import { collection, query, where, onSnapshot, Timestamp, orderBy } from 'firebase/firestore'
+import { useToast } from '@/hooks/use-toast'
 
 interface Appointment {
     id: string;
@@ -33,15 +27,35 @@ export default function DoctorAppointmentsPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
     const [statusFilter, setStatusFilter] = useState('All');
+    const { toast } = useToast()
+    const db = useDb()
     
-    // Simulate fetching data
     useEffect(() => {
-        setTimeout(() => {
-            // A doctor should only see confirmed or completed appointments for their schedule
-            setAppointments(mockAppointments.filter(a => a.status === 'Confirmed' || a.status === 'Completed'));
+        if (!db) return;
+
+        const session = localStorage.getItem('cabzi-doctor-session');
+        if (!session) {
             setIsLoading(false);
-        }, 1000);
-    }, []);
+            toast({ variant: 'destructive', title: 'Not Authenticated' });
+            return;
+        }
+        
+        const { name } = JSON.parse(session);
+        
+        // This is a mock query for now. In a real app, you'd have an appointments collection
+        // For demonstration, we'll keep the mock data filtered by the logged-in doctor's name
+        const mockAppointments = [
+            { id: 'APT001', patientName: 'Priya Singh', doctorName: 'Dr. Ramesh Sharma', appointmentDate: '2024-09-10', appointmentTime: '11:00 AM', status: 'Confirmed', isRecurring: true },
+            { id: 'APT002', patientName: 'Rajesh Verma', doctorName: name, appointmentDate: '2024-09-10', appointmentTime: '02:00 PM', status: 'Completed', isRecurring: false },
+            { id: 'APT003', patientName: 'Anita Desai', doctorName: name, appointmentDate: '2024-09-11', appointmentTime: '10:00 AM', status: 'Confirmed', isRecurring: false },
+            { id: 'APT004', patientName: 'Suresh Kumar', doctorName: 'Dr. Priya Gupta', appointmentDate: '2024-09-11', appointmentTime: '04:00 PM', status: 'Cancelled', isRecurring: false },
+            { id: 'APT005', patientName: 'Geeta Iyer', doctorName: name, appointmentDate: '2024-09-12', appointmentTime: '09:30 AM', status: 'Confirmed', isRecurring: false },
+        ];
+        
+        setAppointments(mockAppointments.filter(a => a.doctorName === name));
+        setIsLoading(false);
+
+    }, [db, toast]);
 
     const filteredAppointments = useMemo(() => {
         return appointments
@@ -131,7 +145,7 @@ export default function DoctorAppointmentsPage() {
                         ) : (
                             <TableRow>
                                 <TableCell colSpan={4} className="text-center h-24 text-muted-foreground">
-                                    No appointments found for the selected filters.
+                                    You have no appointments scheduled.
                                 </TableCell>
                             </TableRow>
                         )}

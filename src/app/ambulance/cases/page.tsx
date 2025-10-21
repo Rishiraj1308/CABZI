@@ -1,3 +1,4 @@
+
 'use client'
 
 import { useState, useEffect } from 'react'
@@ -41,7 +42,10 @@ export default function AmbulanceCasesPage() {
             }
 
             const { partnerId } = JSON.parse(session);
-
+            
+            // This query is now scoped to the logged-in ambulance driver's assigned cases.
+            // The assignedAmbulanceId in the emergencyCases collection should match the ambulance vehicle ID,
+            // which we assume is stored as 'partnerId' in the ambulance driver's session.
             const q = query(
                 collection(db, 'emergencyCases'),
                 where('assignedAmbulanceId', '==', partnerId),
