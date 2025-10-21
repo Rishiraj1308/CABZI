@@ -4,7 +4,7 @@
 import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { LayoutDashboard, LogOut, Sun, Moon, Bell, Ambulance, NotebookText, User, PanelLeft, History, Gem, Landmark, Stethoscope, BarChart, ShieldCheck } from 'lucide-react'
+import { LayoutDashboard, LogOut, Sun, Moon, Bell, Ambulance, NotebookText, User, PanelLeft, History, Gem, Landmark, Stethoscope, BarChart, ShieldCheck, Users as UsersIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Toaster } from '@/components/ui/toaster'
@@ -21,6 +21,7 @@ import { MotionDiv } from '@/components/ui/motion-div'
 
 const navItems = [
   { href: '/cure', label: 'Mission Control', icon: LayoutDashboard },
+  { href: '/cure/fleet', label: 'Fleet & Staff', icon: UsersIcon },
   { href: '/cure/doctors', label: 'Doctors', icon: Stethoscope },
   { href: '/cure/insurance', label: 'Insurance', icon: ShieldCheck },
   { href: '/cure/billing', label: 'Billing & Payouts', icon: Landmark },
@@ -234,3 +235,5 @@ export default function CureLayout({ children }: { children: React.ReactNode }) 
     </div>
   );
 }
+
+    
