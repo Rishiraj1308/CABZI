@@ -107,14 +107,18 @@ The entire ecosystem is built on a real-time, event-driven architecture powered 
 *   **Driver status changes** (e.g., "Arrived at Patient") are immediately visible on the hospital's dashboard and the patient's app.
 *   **Appointment confirmations** from the hospital instantly sync with the doctor's and patient's schedules.
 
-### Security & Access Control
+---
+
+## 7. Security & Access Control
 
 The platform is designed with security and compliance as a top priority.
 
 *   All portals (Hospital, Doctor, Ambulance) are protected by **role-based Firebase Authentication**.
 *   Each user's access is **strictly scoped** to their assigned data. Doctors can only see their appointments, drivers can only see their active case, and hospital admins can only manage their own fleet and staff. This ensures data privacy and HIPAA compliance.
 
-### Notifications & Communication Layer
+---
+
+## 8. Notifications & Communication Layer
 
 Real-time alerts are the nervous system of the CURE platform, powered by Firebase Cloud Messaging (FCM).
 
@@ -123,7 +127,9 @@ Real-time alerts are the nervous system of the CURE platform, powered by Firebas
 *   **Doctors** get notified about new appointment requests and confirmations.
 *   **Patients** receive real-time status updates, from ambulance dispatch to arrival.
 
-### Analytics & Reports (Future Scope)
+---
+
+## 9. Analytics & Reports (Future Scope)
 
 The `/cure/analytics` module (coming soon) will provide our CURE partners with powerful data-driven insights, including:
 
