@@ -266,20 +266,26 @@ export default function RiderPage() {
     };
 
     const renderSelectionScreen = () => (
-      <CardFooter className="p-2 grid grid-cols-3 gap-2">
-          <Button variant="outline" className="flex-col h-20 gap-1" onClick={() => setView('path')}>
-              <Car className="w-6 h-6 text-primary"/>
-              <span className="text-xs">Book a Ride</span>
-          </Button>
-           <Button variant="outline" className="flex-col h-20 gap-1" onClick={() => setView('cure')}>
-              <Ambulance className="w-6 h-6 text-red-500"/>
-              <span className="text-xs">Cure Service</span>
-          </Button>
-           <Button variant="outline" className="flex-col h-20 gap-1" onClick={() => setView('resq')}>
-              <Wrench className="w-6 h-6 text-amber-500"/>
-              <span className="text-xs">ResQ Service</span>
-          </Button>
-      </CardFooter>
+        <MotionDiv initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-4 md:p-6 space-y-6">
+            <div className="text-center">
+                <h2 className="text-3xl font-bold tracking-tight">How can we help you?</h2>
+                <p className="text-muted-foreground">Choose a service to get started.</p>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <Card className="hover:border-primary hover:shadow-lg transition-all cursor-pointer text-center" onClick={() => setView('path')}>
+                    <CardHeader><Car className="w-12 h-12 text-primary mx-auto"/> <CardTitle className="pt-2">Book a Ride</CardTitle></CardHeader>
+                    <CardContent><p className="text-sm text-muted-foreground">Book a Bike, Auto, or Cab instantly.</p></CardContent>
+                </Card>
+                 <Card className="hover:border-red-500 hover:shadow-lg transition-all cursor-pointer text-center" onClick={() => setView('cure')}>
+                    <CardHeader><Ambulance className="w-12 h-12 text-red-500 mx-auto"/> <CardTitle className="pt-2">Cure Service</CardTitle></CardHeader>
+                    <CardContent><p className="text-sm text-muted-foreground">Request an ambulance or book a doctor's appointment.</p></CardContent>
+                </Card>
+                 <Card className="hover:border-amber-500 hover:shadow-lg transition-all cursor-pointer text-center" onClick={() => setView('resq')}>
+                    <CardHeader><Wrench className="w-12 h-12 text-amber-500 mx-auto"/> <CardTitle className="pt-2">ResQ Service</CardTitle></CardHeader>
+                    <CardContent><p className="text-sm text-muted-foreground">Get on-spot help for vehicle trouble.</p></CardContent>
+                </Card>
+            </div>
+        </MotionDiv>
     );
 
     const renderPathScreen = () => {
@@ -371,7 +377,7 @@ export default function RiderPage() {
                      <Button onClick={() => setView('selection')} variant="outline" size="icon"><ArrowLeft/></Button>
                     <div>
                         <h2 className="text-xl font-bold tracking-tight">ResQ Services</h2>
-                        <p className="text-muted-foreground text-sm">Get on-the-spot help for vehicle trouble.</p>
+                        <p className="text-muted-foreground text-sm">Get on-spot help for vehicle trouble.</p>
                     </div>
                 </div>
                  <EmergencyButtons 
