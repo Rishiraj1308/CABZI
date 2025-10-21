@@ -4,7 +4,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card'
-import { BikeIcon, AutoIcon, CabIcon, HeartHandIcon } from '@/components/icons'
+import { HeartHandIcon } from '@/components/icons'
 import { Star, Phone, LocateFixed, Shield, LifeBuoy, Share2, MapPin, ArrowRight, ArrowLeft, Wrench, Ambulance, Car } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useToast } from '@/hooks/use-toast'
@@ -18,6 +18,7 @@ import { MotionDiv, AnimatePresence } from '@/components/ui/motion-div'
 import SearchingIndicator from '@/components/ui/searching-indicator'
 import { getRoute, searchPlace } from '@/lib/tomtom'
 import EmergencyButtons from '@/components/EmergencyButtons'
+import LocationSelector from '@/components/location-selector'
 
 
 const LiveMap = dynamic(() => import('@/components/live-map'), { 
@@ -78,10 +79,10 @@ interface GarageRequest {
 }
 
 const initialRideTypes: RideTypeInfo[] = [
-  { name: 'Bike', description: 'Quick and affordable for solo trips', icon: BikeIcon, eta: '...', fare: '...' },
-  { name: 'Auto', description: 'The classic three-wheeler for city travel', icon: AutoIcon, eta: '...', fare: '...' },
-  { name: 'Cab (Lite)', description: 'Affordable sedans for everyday rides', icon: CabIcon, eta: '...', fare: '...' },
-  { name: 'Cabzi Pink', description: 'A safe ride option exclusively for women, with women partners.', icon: HeartHandIcon, eta: '...', fare: '...' },
+    { name: 'Bike', description: 'Quick and affordable for solo trips', icon: 'bike', eta: '...', fare: '...' },
+    { name: 'Auto', description: 'The classic three-wheeler for city travel', icon: 'auto', eta: '...', fare: '...' },
+    { name: 'Cab (Lite)', description: 'Affordable sedans for everyday rides', icon: 'cab', eta: '...', fare: '...' },
+    { name: 'Cabzi Pink', description: 'A safe ride option exclusively for women, with women partners.', icon: HeartHandIcon, eta: '...', fare: '...' },
 ]
 
 const fareConfig: {[key: string]: { base: number, perKm: number, serviceFee: number }} = {
@@ -297,41 +298,13 @@ export default function RiderPage() {
             )
         }
         return (
-            <div className="flex flex-col h-full">
-                <CardHeader>
-                    <div className="flex items-center gap-2">
-                        <Button variant="ghost" size="icon" className="w-8 h-8 -ml-2" onClick={() => { setView('selection'); setRouteGeometry(null); }}>
-                            <ArrowLeft />
-                        </Button>
-                        <div className="relative w-full">
-                            <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground"/>
-                            <Input placeholder="Enter destination" value={destination.address} onChange={e => setDestination(prev => ({...prev, address: e.target.value}))} className="pl-10 text-base" />
-                        </div>
-                    </div>
-                </CardHeader>
-                <CardContent className="flex-1 overflow-y-auto">
-                    {isFindingRides ? (
-                        <div className="text-center py-4"><SearchingIndicator partnerType="path" /><p className="font-semibold mt-2">Finding rides...</p></div>
-                    ) : routeGeometry ? (
-                            <div className="space-y-2">
-                            {rideTypes.map(ride => (
-                                <div key={ride.name} onClick={() => (ride.fare !== '...' && ride.fare !== 'N/A') && setSelectedRide(ride.name)} className={cn("p-2 rounded-lg border-2 flex items-center gap-3 cursor-pointer", selectedRide === ride.name ? "border-primary bg-primary/10" : "border-transparent bg-muted/50", (ride.fare === '...' || ride.fare === 'N/A') && 'opacity-50 cursor-not-allowed')}>
-                                    <ride.icon className="w-8 h-8 text-primary" />
-                                    <div className="flex-1"><p className="font-bold text-sm">{ride.name}</p><p className="text-xs text-muted-foreground">{ride.description}</p></div>
-                                    <p className="font-bold">{ride.fare}</p>
-                                </div>
-                            ))}
-                        </div>
-                    ) : <div className="text-center text-muted-foreground pt-10">Enter a destination to see fares.</div>}
-                </CardContent>
-                <CardFooter>
-                    {routeGeometry ? (
-                        <Button size="lg" className="w-full" onClick={handleConfirmRide}>Confirm {selectedRide}</Button>
-                    ) : (
-                        <Button size="lg" className="w-full" onClick={handleGetRideInfo} disabled={isFindingRides}>Find Rides</Button>
-                    )}
-                </CardFooter>
-            </div>
+            <LocationSelector
+                pickup={pickup}
+                setPickup={setPickup}
+                destination={destination}
+                setDestination={setDestination}
+                onBack={() => { setView('selection'); setRouteGeometry(null); }}
+            />
         );
     }
     
@@ -392,26 +365,29 @@ export default function RiderPage() {
      }
 
     return (
-        <div className="h-full w-full relative flex flex-col">
-            <div className="h-1/2">
+        <div className="h-full w-full relative">
+            <div className="absolute inset-0 z-0">
                 <LiveMap ref={liveMapRef} onLocationFound={handleLocationFound} routeGeometry={routeGeometry} />
             </div>
-            <div className="flex-1 bg-background rounded-t-2xl shadow-inner-top -mt-4 z-10 overflow-y-auto">
-                <AnimatePresence mode="wait">
-                    <MotionDiv
-                        key={view}
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -20 }}
-                        transition={{ duration: 0.3 }}
-                    >
-                        {view === 'selection' && renderSelectionScreen()}
-                        {view === 'path' && renderPathScreen()}
-                        {view === 'cure' && renderCureScreen()}
-                        {view === 'resq' && renderResqScreen()}
-                    </MotionDiv>
-                </AnimatePresence>
+            <div className="absolute bottom-0 left-0 right-0 z-10">
+                 <Card className="m-2 rounded-2xl shadow-2xl">
+                     <AnimatePresence mode="wait">
+                        <MotionDiv
+                            key={view}
+                            initial={{ opacity: 0, y: 50 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -50 }}
+                            transition={{ duration: 0.3 }}
+                        >
+                            {view === 'selection' && renderSelectionScreen()}
+                            {view === 'path' && renderPathScreen()}
+                            {view === 'cure' && renderCureScreen()}
+                            {view === 'resq' && renderResqScreen()}
+                        </MotionDiv>
+                    </AnimatePresence>
+                 </Card>
             </div>
         </div>
     );
 }
+
