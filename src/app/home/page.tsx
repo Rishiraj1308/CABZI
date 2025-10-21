@@ -1,7 +1,7 @@
 
 'use client'
 
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import BrandLogo, { NewLogoIcon } from '@/components/brand-logo'
@@ -30,7 +30,7 @@ const cprData = [
   {
     value: 'path',
     icon: Car,
-    title: 'Fair Fares with PATH',
+    title: 'Fair Fares PATH',
     description: "Our core 0% commission ride-hailing service ensures drivers earn more and riders pay fair, consistent fares. No surge, no surprises.",
     color: 'bg-primary/10',
     textColor: 'text-primary'
