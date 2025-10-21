@@ -98,7 +98,7 @@ export default function DoctorsPage() {
     const qualifications = formData.get('qualifications') as string;
     const experience = formData.get('experience') as string;
 
-    if (!name || !phone || !specialization || !qualifications) {
+    if (!name || !phone || !specialization || !qualifications || !experience) {
       toast({ variant: 'destructive', title: 'Error', description: 'Please provide all doctor details.' });
       return;
     }
@@ -176,13 +176,15 @@ export default function DoctorsPage() {
                         <Input id="doctorPhone" name="doctorPhone" type="tel" required />
                     </div>
                 </div>
-                 <div className="space-y-2">
-                  <Label htmlFor="qualifications">Qualifications</Label>
-                  <Input id="qualifications" name="qualifications" placeholder="e.g., MBBS, MD (Cardiology)" required />
-                </div>
-                 <div className="space-y-2">
-                  <Label htmlFor="experience">Past Experience</Label>
-                  <Input id="experience" name="experience" placeholder="e.g., Senior Resident at AIIMS, Delhi" />
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="qualifications">Qualifications</Label>
+                      <Input id="qualifications" name="qualifications" placeholder="e.g., MBBS, MD (Cardiology)" required />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="experience">Experience (in years)</Label>
+                      <Input id="experience" name="experience" type="number" placeholder="e.g., 10" required />
+                    </div>
                 </div>
                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
@@ -232,7 +234,7 @@ export default function DoctorsPage() {
                       <div className="text-xs text-muted-foreground">{doctor.qualifications || 'N/A'}</div>
                       {doctor.experience && (
                         <div className="text-xs text-muted-foreground flex items-center gap-1.5 pt-1">
-                          <Briefcase className="w-3 h-3" /> {doctor.experience}
+                          <Briefcase className="w-3 h-3" /> {doctor.experience} years exp.
                         </div>
                       )}
                   </TableCell>
