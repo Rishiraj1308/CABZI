@@ -6,7 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { useToast } from '@/hooks/use-toast'
-import { Stethoscope, UserPlus, MoreHorizontal, Trash2 } from 'lucide-react'
+import { Stethoscope, UserPlus, MoreHorizontal, Trash2, Upload, BadgeCheck, Clock } from 'lucide-react'
 import { useDb } from '@/firebase/client-provider'
 import { collection, query, onSnapshot, addDoc, doc, deleteDoc, serverTimestamp, Timestamp, orderBy } from 'firebase/firestore'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -44,6 +44,9 @@ interface Doctor {
   specialization: string;
   phone: string;
   createdAt: Timestamp;
+  photoUrl?: string; // To store uploaded photo URL
+  degreeUrl?: string; // To store uploaded degree URL
+  docStatus?: 'Verified' | 'Pending';
 }
 
 const doctorSpecializations = [
@@ -94,15 +97,21 @@ export default function DoctorsPage() {
       toast({ variant: 'destructive', title: 'Error', description: 'Please provide all doctor details.' });
       return;
     }
+    
+    // In a real app, file upload logic to Firebase Storage would go here.
+    // For this prototype, we'll just store placeholder values.
 
     try {
       await addDoc(collection(db, `ambulances/${hospitalId}/doctors`), {
         name,
         phone,
         specialization,
+        photoUrl: 'pending_upload',
+        degreeUrl: 'pending_upload',
+        docStatus: 'Pending',
         createdAt: serverTimestamp(),
       });
-      toast({ title: 'Doctor Added', description: `Dr. ${name} has been added to your roster.` });
+      toast({ title: 'Doctor Added', description: `Dr. ${name} has been added. Documents are pending verification.` });
       setIsDialogOpen(false);
     } catch (error) {
       console.error('Error adding doctor:', error);
@@ -132,7 +141,7 @@ export default function DoctorsPage() {
           <DialogTrigger asChild>
             <Button><UserPlus className="mr-2 h-4 w-4" /> Add Doctor</Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="sm:max-w-xl">
             <DialogHeader>
               <DialogTitle>Add New Doctor</DialogTitle>
               <DialogDescription>Enter the details for the new doctor to add them to your hospital's roster.</DialogDescription>
@@ -143,20 +152,32 @@ export default function DoctorsPage() {
                   <Label htmlFor="doctorName">Doctor's Full Name</Label>
                   <Input id="doctorName" name="doctorName" required />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="specialization">Specialization</Label>
-                  <Select name="specialization" required>
-                    <SelectTrigger><SelectValue placeholder="Select a specialization" /></SelectTrigger>
-                    <SelectContent>
-                      {doctorSpecializations.map(spec => (
-                        <SelectItem key={spec} value={spec}>{spec}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="specialization">Specialization</Label>
+                        <Select name="specialization" required>
+                            <SelectTrigger><SelectValue placeholder="Select a specialization" /></SelectTrigger>
+                            <SelectContent>
+                            {doctorSpecializations.map(spec => (
+                                <SelectItem key={spec} value={spec}>{spec}</SelectItem>
+                            ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                     <div className="space-y-2">
+                        <Label htmlFor="doctorPhone">Contact Phone</Label>
+                        <Input id="doctorPhone" name="doctorPhone" type="tel" required />
+                    </div>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="doctorPhone">Contact Phone</Label>
-                  <Input id="doctorPhone" name="doctorPhone" type="tel" required />
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="doctorPhoto">Passport-size Photo</Label>
+                        <Input id="doctorPhoto" name="doctorPhoto" type="file" required className="cursor-pointer"/>
+                    </div>
+                     <div className="space-y-2">
+                        <Label htmlFor="degreeCert">Qualification Degree</Label>
+                        <Input id="degreeCert" name="degreeCert" type="file" required className="cursor-pointer"/>
+                    </div>
                 </div>
               </div>
               <DialogFooter>
@@ -173,6 +194,7 @@ export default function DoctorsPage() {
               <TableHead>Doctor Name</TableHead>
               <TableHead>Specialization</TableHead>
               <TableHead>Contact</TableHead>
+              <TableHead>Documents</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -183,6 +205,7 @@ export default function DoctorsPage() {
                   <TableCell><Skeleton className="h-5 w-32" /></TableCell>
                   <TableCell><Skeleton className="h-5 w-28" /></TableCell>
                   <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+                   <TableCell><Skeleton className="h-6 w-24" /></TableCell>
                   <TableCell className="text-right"><Skeleton className="h-8 w-8 ml-auto" /></TableCell>
                 </TableRow>
               ))
@@ -192,6 +215,13 @@ export default function DoctorsPage() {
                   <TableCell className="font-medium">Dr. {doctor.name}</TableCell>
                   <TableCell><Badge variant="secondary">{doctor.specialization}</Badge></TableCell>
                   <TableCell>{doctor.phone}</TableCell>
+                  <TableCell>
+                     {doctor.docStatus === 'Verified' ? (
+                        <Badge className="bg-green-100 text-green-800"><BadgeCheck className="w-3 h-3 mr-1"/>Verified</Badge>
+                     ) : (
+                        <Badge variant="destructive" className="bg-yellow-100 text-yellow-800"><Clock className="w-3 h-3 mr-1"/>Pending</Badge>
+                     )}
+                  </TableCell>
                   <TableCell className="text-right">
                     <AlertDialog>
                       <DropdownMenu>
@@ -219,7 +249,7 @@ export default function DoctorsPage() {
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={4} className="text-center h-24">No doctors have been added yet.</TableCell>
+                <TableCell colSpan={5} className="text-center h-24">No doctors have been added yet.</TableCell>
               </TableRow>
             )}
           </TableBody>
