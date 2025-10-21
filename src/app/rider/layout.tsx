@@ -1,10 +1,10 @@
 
 'use client'
 
-import { useState, useEffect, useRef, createContext, useContext } from 'react'
+import React, { useState, useEffect, createContext, useContext, useRef } from 'react'
 import { Toaster } from "@/components/ui/toaster";
 import { Button } from '@/components/ui/button';
-import { Home, History, Menu, LogOut, Heart, Gift, PanelLeft, Landmark, Sun, Moon, Settings, User } from 'lucide-react';
+import { Home, History, Menu, LogOut, Heart, Gift, PanelLeft, Landmark, Sun, Moon, Settings, User, Calendar } from 'lucide-react';
 import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
@@ -58,6 +58,7 @@ export function useRider() {
 
 const navItems = [
     { href: '/rider', label: 'Book a Ride', icon: Home, comingSoon: false },
+    { href: '/rider/appointments', label: 'Book Appointment', icon: Calendar, comingSoon: false },
     { href: '/rider/rides', label: 'My Rides', icon: History, comingSoon: false },
     { href: '/rider/wallet', label: 'Cabzi Bank', icon: Landmark, comingSoon: true },
     { href: '/rider/offers', label: 'Offers', icon: Gift, comingSoon: false },

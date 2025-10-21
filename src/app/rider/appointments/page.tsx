@@ -4,7 +4,7 @@
 import React, { useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Calendar as CalendarIcon, Hospital, Stethoscope, Clock, Search, ArrowLeft, User, IndianRupee } from 'lucide-react'
+import { Calendar as CalendarIcon, Stethoscope, Clock, Search, ArrowLeft, IndianRupee } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Calendar } from '@/components/ui/calendar'
@@ -13,6 +13,7 @@ import { format } from 'date-fns'
 import { cn } from '@/lib/utils'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { toast } from '@/hooks/use-toast'
+import Link from 'next/link'
 
 const mockDoctors = [
     { id: 'd1', name: 'Dr. Ramesh Sharma', specialization: 'Cardiology', qualifications: 'MD, FACC', experience: '15+ Years', photoUrl: 'https://i.pravatar.cc/100?u=doc1', consultationFee: 1200 },
@@ -52,6 +53,9 @@ export default function BookAppointmentPage() {
   return (
     <div className="p-4 md:p-6 space-y-6">
       <div className="animate-fade-in pl-16">
+         <Button asChild variant="outline" size="sm" className="mb-4">
+            <Link href="/rider"><ArrowLeft className="mr-2 h-4 w-4" /> Back to Services</Link>
+        </Button>
         <h2 className="text-3xl font-bold tracking-tight flex items-center gap-2">
             <CalendarIcon className="w-8 h-8 text-primary" />
             Book a Doctor's Appointment
