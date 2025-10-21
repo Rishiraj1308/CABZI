@@ -103,7 +103,7 @@ Every doctor added by the hospital gets their own secure login to manage their s
 
 The entire ecosystem is built on a real-time, event-driven architecture powered by Firestore.
 
-*   **Hospital updates** (e.g., dispatching an ambulance) instantly reflect on the patient's and driver's apps.
+*   **Hospital dashboard updates** → instantly reflect on the patient's and driver's apps.
 *   **Driver status changes** (e.g., "Arrived at Patient") are immediately visible on the hospital's dashboard and the patient's app.
 *   **Appointment confirmations** from the hospital instantly sync with the doctor's and patient's schedules.
 
