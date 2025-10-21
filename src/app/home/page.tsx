@@ -456,30 +456,8 @@ export default function HomePage() {
                 </div>
             </section>
 
-            {/* Survey Section */}
-            <section className="py-20 md:py-24">
-                <div className="container">
-                    <Card className="bg-primary text-primary-foreground text-center p-8 md:p-12">
-                         <CardHeader>
-                            <CardTitle className="text-3xl font-extrabold font-headline">Help Us Build a Better Cabzi</CardTitle>
-                            <CardDescription className="text-primary-foreground/80 max-w-2xl mx-auto mt-4">
-                                Your feedback is crucial. Take our 2-minute market survey and tell us what you want to see in a ride-hailing app. Your voice will directly shape our future.
-                            </CardDescription>
-                         </CardHeader>
-                         <CardContent>
-                              <Button size="lg" variant="secondary" className="btn-glow" asChild>
-                                <Link href="/survey">
-                                    Take the Survey Now <ArrowRight className="ml-2 h-5 w-5" />
-                                </Link>
-                              </Button>
-                         </CardContent>
-                    </Card>
-                </div>
-            </section>
-
-
              {/* Partner CTA Section */}
-            <section className="py-20 md:py-24 bg-muted/40">
+            <section className="py-20 md:py-24">
                 <div className="container text-center">
                     <h2 className="text-3xl font-bold tracking-tight sm:text-4xl font-headline">Join Our Driver-First Revolution</h2>
                     <p className="mt-4 text-lg text-muted-foreground max-w-2xl mx-auto">

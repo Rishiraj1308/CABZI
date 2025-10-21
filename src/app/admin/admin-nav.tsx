@@ -42,7 +42,6 @@ const navItems = {
         { title: "Subscriptions", href: "/admin/subscriptions", description: "Manage and activate partner subscriptions.", icon: Gem },
     ],
     growth: [
-        { title: "Survey Report", href: "/admin/survey-report", description: "Analyze market research and user feedback.", icon: NotebookText },
         { title: "Team Management", href: "/admin/team", description: "Manage your admin team and their roles.", icon: UserCog },
         { title: "Settings", href: "/admin/settings", description: "Configure global company settings.", icon: Settings },
     ]
