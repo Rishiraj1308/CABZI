@@ -264,87 +264,67 @@ export default function RiderPage() {
             toast({ variant: 'destructive', title: 'Booking Failed' });
         }
     };
-    
+
     const renderSelectionScreen = () => (
-        <MotionDiv initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-4 md:p-6 space-y-6">
-            <div className="text-center">
-                <h2 className="text-3xl font-bold tracking-tight">How can we help you?</h2>
-                <p className="text-muted-foreground">Choose a service to get started.</p>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <Card className="hover:border-primary hover:shadow-lg transition-all cursor-pointer text-center" onClick={() => setView('path')}>
-                    <CardHeader><Car className="w-12 h-12 text-primary mx-auto"/> <CardTitle className="pt-2">Book a Ride</CardTitle></CardHeader>
-                    <CardContent><p className="text-sm text-muted-foreground">Book a Bike, Auto, or Cab instantly.</p></CardContent>
-                </Card>
-                 <Card className="hover:border-red-500 hover:shadow-lg transition-all cursor-pointer text-center" onClick={() => setView('cure')}>
-                    <CardHeader><Ambulance className="w-12 h-12 text-red-500 mx-auto"/> <CardTitle className="pt-2">Cure Service</CardTitle></CardHeader>
-                    <CardContent><p className="text-sm text-muted-foreground">Request an ambulance or book a doctor's appointment.</p></CardContent>
-                </Card>
-                 <Card className="hover:border-amber-500 hover:shadow-lg transition-all cursor-pointer text-center" onClick={() => setView('resq')}>
-                    <CardHeader><Wrench className="w-12 h-12 text-amber-500 mx-auto"/> <CardTitle className="pt-2">ResQ Service</CardTitle></CardHeader>
-                    <CardContent><p className="text-sm text-muted-foreground">Get on-spot help for vehicle trouble.</p></CardContent>
-                </Card>
-            </div>
-        </MotionDiv>
+      <CardFooter className="p-2 grid grid-cols-3 gap-2">
+          <Button variant="outline" className="flex-col h-20 gap-1" onClick={() => setView('path')}>
+              <Car className="w-6 h-6 text-primary"/>
+              <span className="text-xs">Book a Ride</span>
+          </Button>
+           <Button variant="outline" className="flex-col h-20 gap-1" onClick={() => setView('cure')}>
+              <Ambulance className="w-6 h-6 text-red-500"/>
+              <span className="text-xs">Cure Service</span>
+          </Button>
+           <Button variant="outline" className="flex-col h-20 gap-1" onClick={() => setView('resq')}>
+              <Wrench className="w-6 h-6 text-amber-500"/>
+              <span className="text-xs">ResQ Service</span>
+          </Button>
+      </CardFooter>
     );
 
     const renderPathScreen = () => {
          if (activeRide) {
             return (
-                <div className="absolute inset-0 z-20 bg-black/30 backdrop-blur-sm p-4 flex items-center justify-center">
+                <div className="p-1">
                     <RideStatus ride={activeRide} onCancel={resetFlow} onDone={resetFlow} />
                 </div>
             )
         }
         return (
-            <div className="h-full w-full flex flex-col">
-                <div className="absolute top-20 left-4 z-10"><Button onClick={() => setView('selection')} variant="outline" size="icon"><ArrowLeft/></Button></div>
-                <div className="h-1/2 relative">
-                    <LiveMap ref={liveMapRef} onLocationFound={handleLocationFound} routeGeometry={routeGeometry} />
-                    <div className="absolute bottom-4 right-4 z-10">
-                       <EmergencyButtons 
-                            liveMapRef={liveMapRef}
-                            pickupCoords={pickup.coords}
-                            setIsRequestingSos={setIsRequestingSos}
-                            setActiveAmbulanceCase={setActiveAmbulanceCase}
-                            setActiveGarageRequest={setActiveGarageRequest}
-                        />
-                    </div>
-                </div>
-                <Card className="rounded-t-2xl shadow-2xl flex-1 flex flex-col">
-                    <CardHeader>
-                        <div className="relative">
+            <div className="flex flex-col h-full">
+                <CardHeader>
+                    <div className="flex items-center gap-2">
+                        <Button variant="ghost" size="icon" className="w-8 h-8 -ml-2" onClick={() => { setView('selection'); setRouteGeometry(null); }}>
+                            <ArrowLeft />
+                        </Button>
+                        <div className="relative w-full">
                             <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground"/>
-                            <Input placeholder="Enter pickup location" value={pickup.address} onChange={e => setPickup(prev => ({...prev, address: e.target.value}))} className="pl-10 text-base" />
-                        </div>
-                         <div className="relative">
-                             <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground"/>
                             <Input placeholder="Enter destination" value={destination.address} onChange={e => setDestination(prev => ({...prev, address: e.target.value}))} className="pl-10 text-base" />
                         </div>
-                    </CardHeader>
-                    <CardContent className="flex-1 overflow-y-auto">
-                        {isFindingRides ? (
-                            <div className="text-center py-4"><SearchingIndicator partnerType="path" /><p className="font-semibold mt-2">Finding rides...</p></div>
-                        ) : routeGeometry ? (
-                             <div className="space-y-2">
-                                {rideTypes.map(ride => (
-                                    <div key={ride.name} onClick={() => (ride.fare !== '...' && ride.fare !== 'N/A') && setSelectedRide(ride.name)} className={cn("p-2 rounded-lg border-2 flex items-center gap-3 cursor-pointer", selectedRide === ride.name ? "border-primary bg-primary/10" : "border-transparent bg-muted/50", (ride.fare === '...' || ride.fare === 'N/A') && 'opacity-50 cursor-not-allowed')}>
-                                        <ride.icon className="w-8 h-8 text-primary" />
-                                        <div className="flex-1"><p className="font-bold text-sm">{ride.name}</p><p className="text-xs text-muted-foreground">{ride.description}</p></div>
-                                        <p className="font-bold">{ride.fare}</p>
-                                    </div>
-                                ))}
-                            </div>
-                        ) : null}
-                    </CardContent>
-                    <CardFooter>
-                        {routeGeometry ? (
-                           <Button size="lg" className="w-full" onClick={handleConfirmRide}>Confirm {selectedRide}</Button>
-                        ) : (
-                           <Button size="lg" className="w-full" onClick={handleGetRideInfo} disabled={isFindingRides}>Find Rides</Button>
-                        )}
-                    </CardFooter>
-                </Card>
+                    </div>
+                </CardHeader>
+                <CardContent className="flex-1 overflow-y-auto">
+                    {isFindingRides ? (
+                        <div className="text-center py-4"><SearchingIndicator partnerType="path" /><p className="font-semibold mt-2">Finding rides...</p></div>
+                    ) : routeGeometry ? (
+                            <div className="space-y-2">
+                            {rideTypes.map(ride => (
+                                <div key={ride.name} onClick={() => (ride.fare !== '...' && ride.fare !== 'N/A') && setSelectedRide(ride.name)} className={cn("p-2 rounded-lg border-2 flex items-center gap-3 cursor-pointer", selectedRide === ride.name ? "border-primary bg-primary/10" : "border-transparent bg-muted/50", (ride.fare === '...' || ride.fare === 'N/A') && 'opacity-50 cursor-not-allowed')}>
+                                    <ride.icon className="w-8 h-8 text-primary" />
+                                    <div className="flex-1"><p className="font-bold text-sm">{ride.name}</p><p className="text-xs text-muted-foreground">{ride.description}</p></div>
+                                    <p className="font-bold">{ride.fare}</p>
+                                </div>
+                            ))}
+                        </div>
+                    ) : <div className="text-center text-muted-foreground pt-10">Enter a destination to see fares.</div>}
+                </CardContent>
+                <CardFooter>
+                    {routeGeometry ? (
+                        <Button size="lg" className="w-full" onClick={handleConfirmRide}>Confirm {selectedRide}</Button>
+                    ) : (
+                        <Button size="lg" className="w-full" onClick={handleGetRideInfo} disabled={isFindingRides}>Find Rides</Button>
+                    )}
+                </CardFooter>
             </div>
         );
     }
@@ -352,46 +332,46 @@ export default function RiderPage() {
     const renderCureScreen = () => {
          if (activeAmbulanceCase) {
              return (
-                 <div className="absolute inset-0 z-20 bg-black/30 backdrop-blur-sm p-4 flex items-center justify-center">
+                 <div className="p-1">
                     <RideStatus ride={activeAmbulanceCase} onCancel={resetFlow} onDone={resetFlow} />
                 </div>
             )
         }
         return (
-            <MotionDiv initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-4 md:p-6 space-y-6">
-                 <div className="flex items-center gap-4">
+            <div className="p-4">
+                 <div className="flex items-center gap-4 mb-4">
                      <Button onClick={() => setView('selection')} variant="outline" size="icon"><ArrowLeft/></Button>
                     <div>
-                        <h2 className="text-3xl font-bold tracking-tight">Cure Services</h2>
-                        <p className="text-muted-foreground">Emergency ambulance and doctor appointments.</p>
+                        <h2 className="text-xl font-bold tracking-tight">Cure Services</h2>
+                        <p className="text-muted-foreground text-sm">Emergency ambulance and doctor appointments.</p>
                     </div>
                 </div>
-                <EmergencyButtons 
+                 <EmergencyButtons 
                     liveMapRef={liveMapRef}
                     pickupCoords={pickup.coords}
                     setIsRequestingSos={setIsRequestingSos}
                     setActiveAmbulanceCase={setActiveAmbulanceCase}
                     setActiveGarageRequest={() => {}} // dummy function for this view
                 />
-            </MotionDiv>
+            </div>
         );
     }
     
      const renderResqScreen = () => {
          if(activeGarageRequest) {
             return (
-                 <div className="absolute inset-0 z-20 bg-black/30 backdrop-blur-sm p-4 flex items-center justify-center">
+                 <div className="p-1">
                     <RideStatus ride={activeGarageRequest as any} isGarageRequest onCancel={resetFlow} onDone={resetFlow} />
                 </div>
             );
          }
         return (
-            <MotionDiv initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-4 md:p-6 space-y-6">
-                 <div className="flex items-center gap-4">
+            <div className="p-4">
+                 <div className="flex items-center gap-4 mb-4">
                      <Button onClick={() => setView('selection')} variant="outline" size="icon"><ArrowLeft/></Button>
                     <div>
-                        <h2 className="text-3xl font-bold tracking-tight">ResQ Services</h2>
-                        <p className="text-muted-foreground">Get on-the-spot help for vehicle trouble.</p>
+                        <h2 className="text-xl font-bold tracking-tight">ResQ Services</h2>
+                        <p className="text-muted-foreground text-sm">Get on-the-spot help for vehicle trouble.</p>
                     </div>
                 </div>
                  <EmergencyButtons 
@@ -401,19 +381,32 @@ export default function RiderPage() {
                     setActiveAmbulanceCase={() => {}} // dummy function
                     setActiveGarageRequest={setActiveGarageRequest}
                  />
-            </MotionDiv>
+            </div>
         );
      }
 
     return (
-        <div className="h-full w-full relative">
-            <AnimatePresence mode="wait">
-                {view === 'selection' && renderSelectionScreen()}
-                {view === 'path' && renderPathScreen()}
-                {view === 'cure' && renderCureScreen()}
-                {view === 'resq' && renderResqScreen()}
-            </AnimatePresence>
+        <div className="h-full w-full relative flex flex-col">
+            <div className="flex-1 relative">
+                <LiveMap ref={liveMapRef} onLocationFound={handleLocationFound} routeGeometry={routeGeometry} />
+            </div>
+            
+             <Card className="absolute bottom-4 left-4 right-4 z-10 shadow-2xl rounded-2xl">
+                <AnimatePresence mode="wait">
+                    <MotionDiv
+                        key={view}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -20 }}
+                        transition={{ duration: 0.3 }}
+                    >
+                        {view === 'selection' && renderSelectionScreen()}
+                        {view === 'path' && renderPathScreen()}
+                        {view === 'cure' && renderCureScreen()}
+                        {view === 'resq' && renderResqScreen()}
+                    </MotionDiv>
+                </AnimatePresence>
+            </Card>
         </div>
     );
 }
-
