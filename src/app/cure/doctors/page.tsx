@@ -1,4 +1,3 @@
-
 'use client'
 
 import React, { useState, useEffect } from 'react'
@@ -9,7 +8,7 @@ import { Button } from '@/components/ui/button'
 import { useToast } from '@/hooks/use-toast'
 import { Stethoscope, UserPlus, MoreHorizontal, Trash2 } from 'lucide-react'
 import { useDb } from '@/firebase/client-provider'
-import { collection, query, onSnapshot, addDoc, doc, deleteDoc, serverTimestamp, Timestamp } from 'firebase/firestore'
+import { collection, query, onSnapshot, addDoc, doc, deleteDoc, serverTimestamp, Timestamp, orderBy } from 'firebase/firestore'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
   Dialog,
