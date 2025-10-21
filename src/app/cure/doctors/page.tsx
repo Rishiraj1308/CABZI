@@ -7,7 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { useToast } from '@/hooks/use-toast'
-import { Stethoscope, UserPlus, MoreHorizontal, Trash2, Upload, BadgeCheck, Clock } from 'lucide-react'
+import { Stethoscope, UserPlus, MoreHorizontal, Trash2, Upload, BadgeCheck, Clock, Briefcase } from 'lucide-react'
 import { useDb } from '@/firebase/client-provider'
 import { collection, query, onSnapshot, addDoc, doc, deleteDoc, serverTimestamp, Timestamp, orderBy } from 'firebase/firestore'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -44,6 +44,7 @@ interface Doctor {
   name: string;
   specialization: string;
   qualifications?: string;
+  experience?: string;
   phone: string;
   createdAt: Timestamp;
   photoUrl?: string; // To store uploaded photo URL
@@ -95,6 +96,7 @@ export default function DoctorsPage() {
     const phone = formData.get('doctorPhone') as string;
     const specialization = formData.get('specialization') as string;
     const qualifications = formData.get('qualifications') as string;
+    const experience = formData.get('experience') as string;
 
     if (!name || !phone || !specialization || !qualifications) {
       toast({ variant: 'destructive', title: 'Error', description: 'Please provide all doctor details.' });
@@ -110,6 +112,7 @@ export default function DoctorsPage() {
         phone,
         specialization,
         qualifications,
+        experience,
         photoUrl: 'pending_upload',
         degreeUrl: 'pending_upload',
         docStatus: 'Pending',
@@ -177,6 +180,10 @@ export default function DoctorsPage() {
                   <Label htmlFor="qualifications">Qualifications</Label>
                   <Input id="qualifications" name="qualifications" placeholder="e.g., MBBS, MD (Cardiology)" required />
                 </div>
+                 <div className="space-y-2">
+                  <Label htmlFor="experience">Past Experience</Label>
+                  <Input id="experience" name="experience" placeholder="e.g., Senior Resident at AIIMS, Delhi" />
+                </div>
                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
                         <Label htmlFor="doctorPhoto">Passport-size Photo</Label>
@@ -223,6 +230,11 @@ export default function DoctorsPage() {
                   <TableCell>
                       <div className="font-medium">Dr. {doctor.name}</div>
                       <div className="text-xs text-muted-foreground">{doctor.qualifications || 'N/A'}</div>
+                      {doctor.experience && (
+                        <div className="text-xs text-muted-foreground flex items-center gap-1.5 pt-1">
+                          <Briefcase className="w-3 h-3" /> {doctor.experience}
+                        </div>
+                      )}
                   </TableCell>
                   <TableCell><Badge variant="secondary">{doctor.specialization}</Badge></TableCell>
                   <TableCell>{doctor.phone}</TableCell>
