@@ -107,6 +107,7 @@ interface AppointmentRequest {
     appointmentTime: string;
     status: 'Pending' | 'Confirmed' | 'Cancelled';
     isRecurring: boolean;
+    doctorName?: string;
 }
 
 interface OngoingCase extends EmergencyRequest {
@@ -128,9 +129,9 @@ interface HospitalData {
 }
 
 const mockAppointments: AppointmentRequest[] = [
-    { id: 'APT001', patientName: 'Priya Singh', department: 'Cardiology', appointmentDate: '2024-09-10', appointmentTime: '11:00 AM', status: 'Pending', isRecurring: true },
-    { id: 'APT002', patientName: 'Rajesh Verma', department: 'Orthopedics', appointmentDate: '2024-09-10', appointmentTime: '02:00 PM', status: 'Confirmed', isRecurring: false },
-    { id: 'APT003', patientName: 'Anita Desai', department: 'General Physician', appointmentDate: '2024-09-11', appointmentTime: '10:00 AM', status: 'Pending', isRecurring: false },
+    { id: 'APT001', patientName: 'Priya Singh', department: 'Cardiology', doctorName: 'Dr. Sharma', appointmentDate: '2024-09-10', appointmentTime: '11:00 AM', status: 'Pending', isRecurring: true },
+    { id: 'APT002', patientName: 'Rajesh Verma', department: 'Orthopedics', doctorName: 'Dr. Gupta', appointmentDate: '2024-09-10', appointmentTime: '02:00 PM', status: 'Confirmed', isRecurring: false },
+    { id: 'APT003', patientName: 'Anita Desai', department: 'General Physician', doctorName: 'Dr. Verma', appointmentDate: '2024-09-11', appointmentTime: '10:00 AM', status: 'Pending', isRecurring: false },
 ]
 
 const doctorSpecializations = [
@@ -815,12 +816,12 @@ export default function HospitalMissionControl() {
                             </CardContent>
                          </TabsContent>
                           <TabsContent value="appointments">
-                             <CardContent>
+                            <CardContent>
                                  <Table>
                                      <TableHeader>
                                          <TableRow>
                                             <TableHead>Patient</TableHead>
-                                            <TableHead>Department</TableHead>
+                                            <TableHead>Doctor</TableHead>
                                             <TableHead className="text-right">Actions</TableHead>
                                          </TableRow>
                                      </TableHeader>
@@ -832,8 +833,8 @@ export default function HospitalMissionControl() {
                                                     <div className="text-xs text-muted-foreground">{appt.appointmentDate} at {appt.appointmentTime}</div>
                                                  </TableCell>
                                                  <TableCell>
-                                                      {appt.isRecurring && <Badge variant="secondary" className="mb-1">Recurring</Badge>}
-                                                      <div className="font-medium">{appt.department}</div>
+                                                      <div className="font-medium">{appt.doctorName}</div>
+                                                      <div className="text-xs text-muted-foreground">{appt.department}</div>
                                                  </TableCell>
                                                  <TableCell className="text-right">
                                                     {appt.status === 'Pending' ? (
