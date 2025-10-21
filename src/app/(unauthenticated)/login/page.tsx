@@ -129,13 +129,12 @@ export default function LoginPage() {
     
     let collectionName = '';
     let targetRole = '';
-    let sessionKey = '';
+    let sessionKey = 'cabzi-session'; // Use a unified session key
     let redirectPath = '';
 
     if (roleFromQuery === 'doctor') {
       collectionName = 'doctors';
       targetRole = 'doctor';
-      sessionKey = 'cabzi-doctor-session';
       redirectPath = '/doctor';
     }
 
@@ -174,15 +173,37 @@ export default function LoginPage() {
     }
   }
 
+  const handleAdminLogin = (e: React.FormEvent<HTMLFormElement>) => {
+      e.preventDefault();
+      setIsLoading(true);
+
+      const user = MOCK_ADMIN_USERS.find(u => u.id === partnerIdInput && u.password === partnerPassword);
+
+      if (user) {
+          localStorage.setItem('cabzi-session', JSON.stringify({ role: 'admin', phone: '', name: user.name, adminRole: user.role }));
+          toast({ title: "Login Successful", description: `Welcome, ${user.role}!`});
+          router.push('/admin');
+      } else {
+          toast({
+              variant: 'destructive',
+              title: "Authentication Failed",
+              description: "Invalid Admin ID or Password.",
+          });
+      }
+      setIsLoading(false);
+  }
+
 
  const findAndSetSession = async (user: { uid: string; email?: string | null; phoneNumber?: string | null }) => {
     if (!db) return false;
 
+    // A standard user (non-admin) can have multiple roles, but they all lead to the same user-centric dashboard.
+    // We check `users` collection first as it's the primary customer identity.
     const collectionsToSearch = [
-        { name: 'partners', role: 'driver', sessionKey: 'cabzi-session' },
-        { name: 'mechanics', role: 'mechanic', sessionKey: 'cabzi-resq-session' },
-        { name: 'ambulances', role: 'cure', sessionKey: 'cabzi-cure-session' },
-        { name: 'users', role: 'rider', sessionKey: 'cabzi-session' },
+        { name: 'users', role: 'rider' },
+        { name: 'partners', role: 'driver' },
+        { name: 'mechanics', role: 'mechanic' },
+        { name: 'ambulances', role: 'cure' },
     ];
     
     let userIdentifier: string | undefined;
@@ -196,7 +217,7 @@ export default function LoginPage() {
     
     if (!userIdentifier) return false;
 
-    for (const { name: colName, role, sessionKey } of collectionsToSearch) {
+    for (const { name: colName, role } of collectionsToSearch) {
         const q = query(collection(db, colName), where(identifierField, "==", userIdentifier));
         const snapshot = await getDocs(q);
 
@@ -204,25 +225,23 @@ export default function LoginPage() {
             const userDoc = snapshot.docs[0];
             const userData = userDoc.data();
             
-            const isRiderLogin = roleFromQuery === 'rider';
-            const isPartnerLogin = ['driver', 'mechanic', 'cure', 'doctor'].includes(roleFromQuery);
-            
-            const foundRider = role === 'rider';
-            const foundPartner = ['driver', 'mechanic', 'cure'].includes(role);
+            // All non-admin roles now redirect to the main rider/service hub.
+            const targetRole = role; 
+            const targetRedirect = `/${targetRole}`;
 
-            if ((isRiderLogin && foundRider) || (isPartnerLogin && foundPartner)) {
-                const sessionData = { 
-                    role,
-                    phone: userData.phone, 
-                    name: userData.name, 
-                    partnerId: userDoc.id, 
-                    userId: userData.role === 'rider' ? userDoc.id : undefined
-                };
-                localStorage.setItem(sessionKey, JSON.stringify(sessionData));
-                toast({ title: "Login Successful" });
-                router.push(`/${role}`);
-                return true;
-            }
+            const sessionData = { 
+                role: targetRole,
+                phone: userData.phone, 
+                name: userData.name, 
+                partnerId: userDoc.id, 
+                userId: role === 'rider' ? userDoc.id : undefined // Keep userId for primary user identity
+            };
+            
+            // Use a single unified session key
+            localStorage.setItem('cabzi-session', JSON.stringify(sessionData));
+            toast({ title: "Login Successful" });
+            router.push(targetRedirect);
+            return true;
         }
     }
     return false;
@@ -260,11 +279,13 @@ export default function LoginPage() {
       const userFound = await findAndSetSession(userCredential.user);
       
       if (!userFound) {
+        // If user is not found in any collection, and they are trying to sign up as a rider,
+        // take them to the details form. Otherwise, show an error.
         if (roleFromQuery === 'rider') {
-            setStep('details'); // New rider, go to details form.
+            setStep('details');
         } else {
             if (auth) auth.signOut();
-            toast({ variant: 'destructive', title: 'Partner Not Found', description: 'This account does not exist or you are trying to log into the wrong portal.' });
+            toast({ variant: 'destructive', title: 'Partner Not Found', description: 'This account does not exist. Please use the Partner Hub to onboard first.' });
         }
       }
     } catch (error: any) {
@@ -367,6 +388,7 @@ export default function LoginPage() {
             throw new Error("Could not get email from Google Sign-In.");
         }
 
+        // Rider is the default user type for Google Sign-In
         const userQuery = query(collection(db, 'users'), where('email', '==', userEmail));
         const userSnapshot = await getDocs(userQuery);
 
@@ -382,7 +404,7 @@ export default function LoginPage() {
             localStorage.setItem('cabzi-session', JSON.stringify(sessionData));
             toast({ title: "Login Successful" });
             router.push('/rider');
-        } else { // New user, create a document
+        } else { // New user, create a document in 'users' collection
             const newUserRef = doc(db, "users", user.uid);
             await setDoc(newUserRef, {
                 name: user.displayName,
@@ -410,7 +432,7 @@ export default function LoginPage() {
       if (roleFromQuery === 'doctor') return 'Doctor Login';
       if (step === 'details') return 'Create Your Account';
       if (step === 'otp') return 'Verify OTP';
-      if (roleFromQuery === 'rider') return 'Rider Login or Signup';
+      if (roleFromQuery === 'rider') return 'User Login or Signup';
       return 'Partner Login';
   };
   
@@ -548,7 +570,7 @@ export default function LoginPage() {
     if (roleFromQuery === 'driver') return t('role_partner')
     if (roleFromQuery === 'admin') return t('role_admin')
     if (roleFromQuery === 'doctor') return 'Doctor'
-    return t('role_rider')
+    return 'User'; // Use a more generic term for the main user
   }
 
   const renderContent = () => {
@@ -572,8 +594,8 @@ export default function LoginPage() {
       return (
         <p>
         Want to partner with us?{' '}
-        <Link href="/login?role=driver" className="underline text-primary" onClick={() => { setStep('login'); setLoginInput(''); setPassword(''); }}>
-            Login as a Partner
+        <Link href="/partner-hub" className="underline text-primary">
+            Become a Partner
         </Link>
         </p>
       )
@@ -582,9 +604,9 @@ export default function LoginPage() {
       return (
           <div className="space-y-2">
               <p>
-                Looking for a ride?{' '}
+                Not a partner?{' '}
                 <Link href="/login?role=rider" className="underline text-primary" onClick={() => { setStep('login'); setLoginInput(''); setPassword(''); }}>
-                  Login as a Rider
+                  Login as a User
                 </Link>
               </p>
               {roleFromQuery !== 'doctor' && (
@@ -628,7 +650,7 @@ export default function LoginPage() {
                     <div className="mt-4 text-center text-sm text-muted-foreground">
                         {getFooterLink()}
                          <p className="mt-2">
-                            <Link href="/login?role=admin" className="text-xs underline" onClick={() => setStep('login')}>
+                            <Link href="/login?role=admin" className="text-xs underline" onClick={() => { setStep('login'); setPartnerIdInput(''); setPartnerPassword(''); }}>
                                 Admin Login
                             </Link>
                         </p>

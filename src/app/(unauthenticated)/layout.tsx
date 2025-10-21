@@ -21,29 +21,35 @@ export default function UnauthenticatedLayout({
 
   useEffect(() => {
     setIsMounted(true);
-    // Unify session key checking
-    const sessionKeys = ['cabzi-session', 'cabzi-resq-session', 'cabzi-cure-session', 'cabzi-ambulance-session'];
-    let sessionFound = false;
+    // A single, unified session for all user types (rider, driver, etc.)
+    // Only admin has a truly separate flow.
+    const session = localStorage.getItem('cabzi-session');
 
-    for (const key of sessionKeys) {
-        const session = localStorage.getItem(key);
-        if (session) {
-            try {
-                const { role } = JSON.parse(session);
-                if (role) {
-                    router.replace(`/${role}`);
-                    sessionFound = true;
-                    break;
-                }
-            } catch (e) {
-                localStorage.removeItem(key);
+    if (session) {
+        try {
+            const { role, adminRole } = JSON.parse(session);
+            
+            // Handle admin redirection separately
+            if (role === 'admin' || adminRole) {
+                 router.replace(`/admin`);
+                 return;
             }
+
+            // All other logged-in users go to the main user dashboard
+            if (role) {
+                router.replace(`/${role}`);
+                return;
+            }
+            
+        } catch (e) {
+            // Corrupt session, remove it and show login.
+            localStorage.removeItem('cabzi-session');
         }
     }
+    
+    // If no valid session is found, show the login/onboarding page.
+    setShowChildren(true);
 
-    if (!sessionFound) {
-        setShowChildren(true);
-    }
   }, [router]);
   
   if (!isMounted || !showChildren) {
