@@ -105,7 +105,7 @@ interface AppointmentRequest {
     department: string;
     appointmentDate: string;
     appointmentTime: string;
-    status: 'Pending' | 'Confirmed' | 'Cancelled';
+    status: 'Pending' | 'Confirmed' | 'In Queue' | 'Cancelled';
     isRecurring: boolean;
     doctorName?: string;
 }
@@ -129,7 +129,7 @@ interface HospitalData {
 }
 
 const mockAppointments: AppointmentRequest[] = [
-    { id: 'APT001', patientName: 'Priya Singh', department: 'Cardiology', doctorName: 'Dr. Sharma', appointmentDate: '2024-09-10', appointmentTime: '11:00 AM', status: 'Pending', isRecurring: true },
+    { id: 'APT001', patientName: 'Priya Singh', department: 'Cardiology', doctorName: 'Dr. Sharma', appointmentDate: '2024-09-10', appointmentTime: '11:00 AM', status: 'Confirmed', isRecurring: true },
     { id: 'APT002', patientName: 'Rajesh Verma', department: 'Orthopedics', doctorName: 'Dr. Gupta', appointmentDate: '2024-09-10', appointmentTime: '02:00 PM', status: 'Confirmed', isRecurring: false },
     { id: 'APT003', patientName: 'Anita Desai', department: 'General Physician', doctorName: 'Dr. Verma', appointmentDate: '2024-09-11', appointmentTime: '10:00 AM', status: 'Pending', isRecurring: false },
 ]
@@ -742,15 +742,20 @@ export default function HospitalMissionControl() {
 
     const availableBeds = (totalBeds || 0) - (bedsOccupied || 0);
     
-    const getStatusBadge = (status: AppointmentRequest['status']) => {
+    const getAppointmentStatusBadge = (status: AppointmentRequest['status']) => {
         switch (status) {
-            case 'Confirmed': return <Badge className="bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-200">{status}</Badge>;
-            case 'Pending': return <Badge className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-200">{status}</Badge>;
+            case 'Confirmed': return <Badge className="bg-blue-100 text-blue-800">{status}</Badge>;
+            case 'In Queue': return <Badge className="bg-purple-100 text-purple-800">{status}</Badge>;
+            case 'Pending': return <Badge className="bg-yellow-100 text-yellow-800">{status}</Badge>;
             case 'Cancelled': return <Badge variant="destructive">{status}</Badge>;
             default: return <Badge variant="secondary">{status}</Badge>;
         }
     }
-
+    
+    const handlePatientCheckIn = (id: string) => {
+        setAppointments(prev => prev.map(appt => appt.id === id ? { ...appt, status: 'In Queue' } : appt));
+        toast({ title: "Patient Checked In", description: "The patient has been added to the waiting queue." });
+    }
 
     return (
         <div className="grid lg:grid-cols-2 xl:grid-cols-3 gap-6 items-start h-full">
@@ -822,33 +827,32 @@ export default function HospitalMissionControl() {
                                          <TableRow>
                                             <TableHead>Patient</TableHead>
                                             <TableHead>Doctor</TableHead>
-                                            <TableHead className="text-right">Actions</TableHead>
+                                            <TableHead>Status</TableHead>
+                                            <TableHead className="text-right">Action</TableHead>
                                          </TableRow>
                                      </TableHeader>
                                      <TableBody>
                                          {appointments.map(appt => (
-                                             <TableRow key={appt.id}>
+                                             <TableRow key={appt.id} className={cn(appt.status === 'In Queue' && 'bg-purple-100/50 dark:bg-purple-900/20')}>
                                                  <TableCell>
                                                     <div className="font-semibold">{appt.patientName}</div>
-                                                    <div className="text-xs text-muted-foreground">{appt.appointmentDate} at {appt.appointmentTime}</div>
+                                                    <div className="text-xs text-muted-foreground">{appt.appointmentTime}</div>
                                                  </TableCell>
                                                  <TableCell>
                                                       <div className="font-medium">{appt.doctorName}</div>
                                                       <div className="text-xs text-muted-foreground">{appt.department}</div>
                                                  </TableCell>
+                                                 <TableCell>{getAppointmentStatusBadge(appt.status)}</TableCell>
                                                  <TableCell className="text-right">
-                                                    {appt.status === 'Pending' ? (
-                                                        <div className="flex gap-1 justify-end">
-                                                            <Button size="sm" variant="outline" className="h-7 px-2"><Check className="w-4 h-4"/></Button>
-                                                            <Button size="sm" variant="outline" className="h-7 px-2"><X className="w-4 h-4"/></Button>
-                                                        </div>
+                                                    {appt.status === 'Confirmed' ? (
+                                                        <Button size="sm" onClick={() => handlePatientCheckIn(appt.id)}>Check-in</Button>
                                                     ) : (
-                                                        getStatusBadge(appt.status)
+                                                        <Button size="sm" variant="outline" disabled>{appt.status}</Button>
                                                     )}
                                                  </TableCell>
                                              </TableRow>
                                          ))}
-                                          {appointments.length === 0 && <TableRow><TableCell colSpan={3} className="text-center h-24">No appointments scheduled.</TableCell></TableRow>}
+                                          {appointments.length === 0 && <TableRow><TableCell colSpan={4} className="text-center h-24">No appointments scheduled.</TableCell></TableRow>}
                                      </TableBody>
                                  </Table>
                              </CardContent>
@@ -919,3 +923,5 @@ export default function HospitalMissionControl() {
         </div>
     )
 }
+
+    
