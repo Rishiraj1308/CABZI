@@ -3,7 +3,7 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
-import { BarChart, Clock, Users, Activity } from 'lucide-react'
+import { BarChart, Clock, Users, Activity, AlertTriangle } from 'lucide-react'
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 
 const StatCard = ({ title, value, icon: Icon, description }: { title: string, value: string, icon: React.ElementType, description: string }) => (
@@ -28,7 +28,7 @@ export default function AnalyticsPage() {
             </div>
             
              <Alert variant="destructive">
-                <Clock className="h-4 w-4" />
+                <AlertTriangle className="h-4 w-4" />
                 <AlertTitle>Feature Under Development</AlertTitle>
                 <AlertDescription>
                     This analytics dashboard is a preview of upcoming features. The data shown here is for demonstration purposes only.
