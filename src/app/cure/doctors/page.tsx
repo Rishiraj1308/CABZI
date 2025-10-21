@@ -7,7 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { useToast } from '@/hooks/use-toast'
-import { Stethoscope, UserPlus, MoreHorizontal, Trash2, BadgeCheck, Clock, Briefcase, Calendar } from 'lucide-react'
+import { Stethoscope, UserPlus, MoreHorizontal, Trash2, BadgeCheck, Clock, Briefcase, Calendar, IndianRupee } from 'lucide-react'
 import { useDb } from '@/firebase/client-provider'
 import { collection, query, onSnapshot, addDoc, doc, deleteDoc, serverTimestamp, Timestamp, orderBy, writeBatch, getDocs, where } from 'firebase/firestore'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -54,6 +54,7 @@ interface Doctor {
   docStatus?: 'Verified' | 'Pending';
   partnerId?: string; // For Doctor's own login
   password?: string; // For Doctor's own login
+  consultationFee?: number;
 }
 
 interface Appointment {
@@ -129,9 +130,10 @@ export default function DoctorsPage() {
     const specialization = formData.get('specialization') as string;
     const qualifications = formData.get('qualifications') as string;
     const experience = formData.get('experience') as string;
+    const consultationFee = formData.get('consultationFee') as string;
 
-    if (!name || !phone || !specialization || !qualifications || !experience) {
-      toast({ variant: 'destructive', title: 'Error', description: 'Please provide all doctor details.' });
+    if (!name || !phone || !specialization || !qualifications || !experience || !consultationFee) {
+      toast({ variant: 'destructive', title: 'Error', description: 'Please provide all doctor details, including the fee.' });
       return;
     }
     
@@ -141,6 +143,7 @@ export default function DoctorsPage() {
     try {
       await addDoc(collection(db, `ambulances/${hospitalId}/doctors`), {
         name, phone, specialization, qualifications, experience,
+        consultationFee: parseFloat(consultationFee),
         photoUrl: 'pending_upload', degreeUrl: 'pending_upload', docStatus: 'Pending',
         partnerId, password, // Save credentials
         createdAt: serverTimestamp(),
@@ -209,7 +212,7 @@ export default function DoctorsPage() {
                         <DialogTrigger asChild>
                           <Button><UserPlus className="mr-2 h-4 w-4" /> Add Doctor</Button>
                         </DialogTrigger>
-                        <DialogContent className="sm:max-w-xl">
+                        <DialogContent className="sm:max-w-2xl">
                           <DialogHeader>
                             <DialogTitle>Add New Doctor</DialogTitle>
                             <DialogDescription>Enter the details for the new doctor to add them to your hospital's roster.</DialogDescription>
@@ -257,6 +260,10 @@ export default function DoctorsPage() {
                                       <Input id="degreeCert" name="degreeCert" type="file" className="cursor-pointer"/>
                                   </div>
                               </div>
+                              <div className="space-y-2">
+                                <Label htmlFor="consultationFee">Consultation Fee (INR)</Label>
+                                <Input id="consultationFee" name="consultationFee" type="number" placeholder="e.g., 800" required />
+                              </div>
                             </div>
                             <DialogFooter>
                               <Button type="submit">Add Doctor to Roster</Button>
@@ -271,7 +278,7 @@ export default function DoctorsPage() {
                           <TableRow>
                             <TableHead>Doctor Name</TableHead>
                             <TableHead>Specialization</TableHead>
-                            <TableHead>Contact</TableHead>
+                            <TableHead>Fee</TableHead>
                             <TableHead>Documents</TableHead>
                             <TableHead className="text-right">Actions</TableHead>
                           </TableRow>
@@ -282,7 +289,7 @@ export default function DoctorsPage() {
                               <TableRow key={i}>
                                 <TableCell><Skeleton className="h-5 w-32" /></TableCell>
                                 <TableCell><Skeleton className="h-5 w-28" /></TableCell>
-                                <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+                                <TableCell><Skeleton className="h-5 w-20" /></TableCell>
                                  <TableCell><Skeleton className="h-6 w-24" /></TableCell>
                                 <TableCell className="text-right"><Skeleton className="h-8 w-8 ml-auto" /></TableCell>
                               </TableRow>
@@ -300,7 +307,7 @@ export default function DoctorsPage() {
                                     )}
                                 </TableCell>
                                 <TableCell><Badge variant="secondary">{doctor.specialization}</Badge></TableCell>
-                                <TableCell>{doctor.phone}</TableCell>
+                                <TableCell className="font-semibold">₹{doctor.consultationFee?.toLocaleString() || 'N/A'}</TableCell>
                                 <TableCell>
                                    {doctor.docStatus === 'Verified' ? (
                                       <Badge className="bg-green-100 text-green-800"><BadgeCheck className="w-3 h-3 mr-1"/>Verified</Badge>

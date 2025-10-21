@@ -4,7 +4,7 @@
 import React, { useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Calendar as CalendarIcon, Hospital, Stethoscope, Clock, Search, ArrowLeft, User } from 'lucide-react'
+import { Calendar as CalendarIcon, Hospital, Stethoscope, Clock, Search, ArrowLeft, User, IndianRupee } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Calendar } from '@/components/ui/calendar'
@@ -15,9 +15,9 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { toast } from '@/hooks/use-toast'
 
 const mockDoctors = [
-    { id: 'd1', name: 'Dr. Ramesh Sharma', specialization: 'Cardiology', qualifications: 'MD, FACC', experience: '15+ Years', photoUrl: 'https://i.pravatar.cc/100?u=doc1' },
-    { id: 'd2', name: 'Dr. Priya Gupta', specialization: 'Orthopedics', qualifications: 'MS (Ortho)', experience: '10+ Years', photoUrl: 'https://i.pravatar.cc/100?u=doc2' },
-    { id: 'd3', name: 'Dr. Alok Verma', specialization: 'General Physician', qualifications: 'MBBS, MD', experience: '8+ Years', photoUrl: 'https://i.pravatar.cc/100?u=doc3' },
+    { id: 'd1', name: 'Dr. Ramesh Sharma', specialization: 'Cardiology', qualifications: 'MD, FACC', experience: '15+ Years', photoUrl: 'https://i.pravatar.cc/100?u=doc1', consultationFee: 1200 },
+    { id: 'd2', name: 'Dr. Priya Gupta', specialization: 'Orthopedics', qualifications: 'MS (Ortho)', experience: '10+ Years', photoUrl: 'https://i.pravatar.cc/100?u=doc2', consultationFee: 1000 },
+    { id: 'd3', name: 'Dr. Alok Verma', specialization: 'General Physician', qualifications: 'MBBS, MD', experience: '8+ Years', photoUrl: 'https://i.pravatar.cc/100?u=doc3', consultationFee: 800 },
 ];
 
 const timeSlots = [
@@ -82,6 +82,10 @@ export default function BookAppointmentPage() {
                                     <p className="font-bold">Dr. {doctor.name}</p>
                                     <p className="text-sm text-muted-foreground">{doctor.specialization} &bull; {doctor.qualifications}</p>
                                 </div>
+                                <div className="text-right">
+                                    <p className="font-bold text-lg text-primary flex items-center justify-end"><IndianRupee className="w-4 h-4" />{doctor.consultationFee}</p>
+                                    <p className="text-xs text-muted-foreground">Fee</p>
+                                </div>
                            </Card>
                        ))}
                     </div>
@@ -97,6 +101,10 @@ export default function BookAppointmentPage() {
                     <CardDescription>Choose a slot for your appointment with <span className="font-bold text-primary">Dr. {selectedDoctor.name}</span>.</CardDescription>
                 </CardHeader>
                  <CardContent className="space-y-6">
+                    <div className="p-3 rounded-lg border bg-muted/50 flex justify-between items-center">
+                        <span className="font-semibold">Consultation Fee</span>
+                        <span className="font-bold text-lg text-primary">₹{selectedDoctor.consultationFee}</span>
+                    </div>
                     <div className="space-y-2">
                         <Label>Select Appointment Date</Label>
                         <Popover>
