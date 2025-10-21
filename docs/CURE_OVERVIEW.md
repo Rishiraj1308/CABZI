@@ -1,6 +1,6 @@
-# Cabzi CURE: The Complete Partner Workflow Guide
+# Cabzi CURE: The Partner Workflow & Technical Architecture
 
-This document provides a comprehensive overview of the **Cabzi CURE** ecosystem, designed for our hospital and clinic partners. It details the end-to-end workflow, from initial onboarding to managing live emergency cases and daily operations.
+This document provides a comprehensive overview of the **Cabzi CURE** ecosystem, designed for our hospital and clinic partners. It details the end-to-end workflow, from initial onboarding to managing live emergency cases, daily operations, and the underlying technology that powers it all.
 
 ---
 
@@ -27,7 +27,7 @@ This is the central command center for all hospital operations on the Cabzi plat
 *   **Emergency Feed:** This is the live pulse of the dashboard. New, incoming emergency requests appear here as prominent, pulsing alert cards. Each card shows the patient's name, the severity of the case (Critical, Serious, etc.), and their location.
 *   **Accept & Dispatch:** With one click, the hospital staff can accept a case. A dialog then appears, showing all **available ambulances** from their fleet, allowing them to dispatch the most suitable vehicle instantly.
 *   **Reject:** If the hospital cannot take the case, they can reject it. Our "Smart Cascade" logic automatically and instantly re-assigns the request to the next nearest hospital, ensuring no patient is left waiting.
-*   **Appointment Queue:** A separate tab shows all incoming doctor appointment requests from riders, with options to "Confirm" or "Reschedule". Recurring appointments are clearly marked.
+*   **Appointment Queue:** A separate tab shows all incoming doctor appointment requests from riders, with options to "Confirm" or "Reschedule." Recurring appointments are clearly marked.
 
 ### C. Live Map: The "God's-Eye View"
 *   A real-time map displays the live GPS location of all ambulances in the hospital's fleet.
@@ -80,5 +80,56 @@ Every doctor added by the hospital gets their own secure login to manage their s
 
 *   **Subscription Management (`/cure/subscription`):** A dedicated page to view and upgrade subscription plans. It clearly lists the features of each plan and provides company bank details for payment.
 *   **Billing & Payouts (`/cure/billing`):** A transparent financial ledger showing all earnings from completed ambulance services and doctor consultations, and tracking the total amount to be paid out by Cabzi.
+
+---
+
+## 6. The Technical Architecture
+
+### Tech Snapshot
+
+| Layer                       | Tech Stack                                       |
+| --------------------------- | ------------------------------------------------ |
+| **Frontend**                | Next.js (Web)                                    |
+| **Backend**                 | Firebase Cloud Functions                         |
+| **Database**                | Firestore (Real-time)                            |
+| **Authentication**          | Firebase Auth (Email & Password, Phone OTP)      |
+| **Notifications**           | Firebase Cloud Messaging (FCM)                   |
+| **Maps & Geolocation**      | Leaflet.js, OpenStreetMap, OSRM API              |
+| **Storage**                 | Firebase Storage (for document uploads)          |
+| **Hosting**                 | Firebase Hosting                                 |
+| **Scheduled Jobs**          | Firebase Cloud Scheduler                         |
+
+### Data Flow Snapshot: How Everyone Stays in Sync
+
+The entire ecosystem is built on a real-time, event-driven architecture powered by Firestore.
+
+*   **Hospital updates** (e.g., dispatching an ambulance) instantly reflect on the patient's and driver's apps.
+*   **Driver status changes** (e.g., "Arrived at Patient") are immediately visible on the hospital's dashboard and the patient's app.
+*   **Appointment confirmations** from the hospital instantly sync with the doctor's and patient's schedules.
+
+### Security & Access Control
+
+The platform is designed with security and compliance as a top priority.
+
+*   All portals (Hospital, Doctor, Ambulance) are protected by **role-based Firebase Authentication**.
+*   Each user's access is **strictly scoped** to their assigned data. Doctors can only see their appointments, drivers can only see their active case, and hospital admins can only manage their own fleet and staff. This ensures data privacy and HIPAA compliance.
+
+### Notifications & Communication Layer
+
+Real-time alerts are the nervous system of the CURE platform, powered by Firebase Cloud Messaging (FCM).
+
+*   **Hospitals** get private, targeted notifications for new emergency cases.
+*   **Drivers** receive instant alerts for their assigned case.
+*   **Doctors** get notified about new appointment requests and confirmations.
+*   **Patients** receive real-time status updates, from ambulance dispatch to arrival.
+
+### Analytics & Reports (Future Scope)
+
+The `/cure/analytics` module (coming soon) will provide our CURE partners with powerful data-driven insights, including:
+
+*   **Average emergency response times** by zone and time of day.
+*   Heatmaps of emergency case locations.
+*   Doctor performance metrics and patient feedback.
+*   Ambulance fleet utilization graphs and maintenance alerts.
 
 This comprehensive workflow ensures that our CURE partners have a powerful, intuitive, and complete toolset to manage their emergency response and consultation services efficiently and professionally.
