@@ -3,7 +3,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Car, FilePieChart, Landmark, UserCog, NotebookText, Users, Map, Handshake, MessageSquare, Settings, LayoutDashboard, Gem, Ambulance, Wrench } from 'lucide-react'
+import { Car, FilePieChart, Landmark, UserCog, NotebookText, Users, Map, Handshake, MessageSquare, Settings, LayoutDashboard, Gem, Ambulance, Wrench, CalendarCheck } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import {
   NavigationMenu,
@@ -34,6 +34,7 @@ const navItems = {
         { title: "Rides Log", href: "/admin/rides", description: "An audit trail of all rides on the platform.", icon: Car },
         { title: "Cure Cases", href: "/admin/cure-cases", description: "An audit trail of all emergency cases.", icon: Ambulance },
         { title: "ResQ Jobs", href: "/admin/resq-cases", description: "An audit trail of all service requests.", icon: Wrench },
+        { title: "Appointments Log", href: "/admin/appointments", description: "Track all booked doctor appointments.", icon: CalendarCheck },
     ],
     financial: [
         { title: "Cabzi Bank", href: "/admin/bank", description: "Monitor the core financial engine and partner loans.", icon: Landmark },
