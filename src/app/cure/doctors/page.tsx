@@ -69,10 +69,29 @@ interface Appointment {
 }
 
 const mockAppointments: Appointment[] = [
-  { id: 'APP001', patientName: 'Priya Singh', department: 'Cardiology', doctorName: 'Dr. Ramesh Sharma', appointmentDate: '2024-09-10', appointmentTime: '11:00 AM', status: 'Confirmed', isRecurring: true },
+  { id: 'APP001', patientName: 'Priya Singh', department: 'Cardiology', doctorName: 'Dr. Ramesh Sharma', appointmentDate: '2024-09-10', appointmentTime: '11:00 AM', status: 'Pending', isRecurring: true },
   { id: 'APP002', patientName: 'Rajesh Verma', department: 'Orthopedics', doctorName: 'Dr. Priya Gupta', appointmentDate: '2024-09-10', appointmentTime: '02:00 PM', status: 'Confirmed' },
   { id: 'APP003', patientName: 'Anita Desai', department: 'General Physician', doctorName: 'Dr. Alok Verma', appointmentDate: '2024-09-11', appointmentTime: '10:00 AM', status: 'Pending' },
 ];
+
+const mockSchedule = {
+    'Dr. Ramesh Sharma': {
+        '09:00': { patient: 'Anjali Mehra', status: 'Confirmed' },
+        '11:00': { patient: 'Priya Singh', status: 'Pending' },
+        '14:00': { patient: 'Vikram Rathore', status: 'Confirmed' },
+    },
+    'Dr. Priya Gupta': {
+        '10:00': { patient: 'Suresh Raina', status: 'Confirmed' },
+        '14:00': { patient: 'Rajesh Verma', status: 'Confirmed' },
+    },
+     'Dr. Alok Verma': {
+        '10:00': { patient: 'Anita Desai', status: 'Pending' },
+        '11:00': null, // Available slot
+        '12:00': { patient: 'Karan Malhotra', status: 'Confirmed' },
+    },
+};
+
+const timeSlots = ['09:00', '10:00', '11:00', '12:00', '14:00', '15:00', '16:00'];
 
 
 const doctorSpecializations = [
@@ -172,9 +191,10 @@ export default function DoctorsPage() {
   return (
     <div className="space-y-6">
         <Tabs defaultValue="appointments">
-            <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="appointments">Appointments</TabsTrigger>
-                <TabsTrigger value="doctors">Manage Doctors</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-3">
+                <TabsTrigger value="appointments">Appointment Queue</TabsTrigger>
+                <TabsTrigger value="schedules">Doctor Schedules</TabsTrigger>
+                <TabsTrigger value="doctors">Manage Roster</TabsTrigger>
             </TabsList>
             <TabsContent value="appointments" className="mt-4">
                 <Card>
@@ -198,6 +218,67 @@ export default function DoctorsPage() {
                                  </CardContent>
                              </Card>
                         ))}
+                    </CardContent>
+                </Card>
+            </TabsContent>
+            <TabsContent value="schedules" className="mt-4">
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Weekly Doctor Schedules</CardTitle>
+                        <CardDescription>An overview of all doctor availability and booked slots for the current week.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="overflow-x-auto">
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead className="min-w-[200px]">Doctor</TableHead>
+                                        {timeSlots.map(slot => <TableHead key={slot} className="text-center">{slot}</TableHead>)}
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {isLoading ? (
+                                        Array.from({length: 3}).map((_, i) => (
+                                             <TableRow key={i}>
+                                                <TableCell><Skeleton className="h-5 w-32"/></TableCell>
+                                                {timeSlots.map(slot => <TableCell key={slot}><Skeleton className="h-10 w-full"/></TableCell>)}
+                                            </TableRow>
+                                        ))
+                                    ) : doctors.length > 0 ? (
+                                        doctors.map(doctor => (
+                                            <TableRow key={doctor.id}>
+                                                <TableCell className="font-semibold">
+                                                    <div>Dr. {doctor.name}</div>
+                                                    <div className="text-xs text-muted-foreground font-normal">{doctor.specialization}</div>
+                                                </TableCell>
+                                                {timeSlots.map(slot => {
+                                                    // @ts-ignore
+                                                    const appointment = mockSchedule[doctor.name]?.[slot];
+                                                    return (
+                                                        <TableCell key={slot}>
+                                                            {appointment ? (
+                                                                <Card className="p-2 text-xs text-center bg-muted">
+                                                                    <p className="font-semibold truncate">{appointment.patient}</p>
+                                                                    <Badge variant={appointment.status === 'Confirmed' ? 'default' : 'secondary'} className={appointment.status === 'Confirmed' ? 'bg-green-100 text-green-800' : ''}>{appointment.status}</Badge>
+                                                                </Card>
+                                                            ) : (
+                                                                <div className="h-12 w-full flex items-center justify-center text-green-600">
+                                                                    <div className="w-2 h-2 rounded-full bg-current"></div>
+                                                                </div>
+                                                            )}
+                                                        </TableCell>
+                                                    )
+                                                })}
+                                            </TableRow>
+                                        ))
+                                    ) : (
+                                        <TableRow>
+                                            <TableCell colSpan={timeSlots.length + 1} className="text-center h-24">No doctors on the roster.</TableCell>
+                                        </TableRow>
+                                    )}
+                                </TableBody>
+                            </Table>
+                        </div>
                     </CardContent>
                 </Card>
             </TabsContent>
