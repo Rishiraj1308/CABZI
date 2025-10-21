@@ -268,7 +268,7 @@ export default function RiderLayout({
                   <SheetContent side="left" className="w-full max-w-sm p-0 flex flex-col">
                       <SheetHeader className="p-4 border-b">
                           <SheetTitle>
-                              <Link href="/" legacyBehavior>
+                              <Link href="/">
                                   <BrandLogo />
                               </Link>
                           </SheetTitle>
@@ -299,8 +299,7 @@ export default function RiderLayout({
                               <Link
                                   key={item.href}
                                   href={item.href}
-                                  onClick={() => setOpen(false)}
-                                  legacyBehavior>
+                                  onClick={() => setOpen(false)}>
                                   {linkContent}
                               </Link>
                           );
