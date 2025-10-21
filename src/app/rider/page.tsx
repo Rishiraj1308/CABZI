@@ -4,12 +4,12 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card'
-import { BikeIcon, AutoIcon, CabIcon, TotoIcon, HeartHandIcon } from '@/components/icons'
-import { Star, Phone, LocateFixed, Shield, LifeBuoy, Share2, MapPin, ArrowRight, ArrowLeft, KeyRound, IndianRupee, Clock, Info, Check, Wrench, Ambulance, Car, Siren } from 'lucide-react'
+import { BikeIcon, AutoIcon, CabIcon, HeartHandIcon } from '@/components/icons'
+import { Star, Phone, LocateFixed, Shield, LifeBuoy, Share2, MapPin, ArrowRight, ArrowLeft, Wrench, Ambulance, Car } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useToast } from '@/hooks/use-toast'
 import dynamic from 'next/dynamic'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose, DialogFooter } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useFirestore } from '@/firebase/client-provider'
@@ -301,7 +301,7 @@ export default function RiderPage() {
         return (
             <div className="h-full w-full flex flex-col">
                 <div className="absolute top-20 left-4 z-10"><Button onClick={() => setView('selection')} variant="outline" size="icon"><ArrowLeft/></Button></div>
-                <div className="flex-1 relative">
+                <div className="flex-1 relative h-1/2">
                     <LiveMap ref={liveMapRef} onLocationFound={handleLocationFound} routeGeometry={routeGeometry} />
                      <div className="absolute bottom-4 right-4 z-10">
                         <EmergencyButtons 
@@ -313,7 +313,7 @@ export default function RiderPage() {
                         />
                     </div>
                 </div>
-                <Card className="rounded-t-2xl shadow-2xl">
+                <Card className="rounded-t-2xl shadow-2xl flex-1 flex flex-col">
                     <CardHeader>
                         <div className="relative">
                             <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground"/>
@@ -324,7 +324,7 @@ export default function RiderPage() {
                             <Input placeholder="Enter destination" value={destination.address} onChange={e => setDestination(prev => ({...prev, address: e.target.value}))} className="pl-10 text-base" />
                         </div>
                     </CardHeader>
-                    <CardContent>
+                    <CardContent className="flex-1 overflow-y-auto">
                         {isFindingRides ? (
                             <div className="text-center py-4"><SearchingIndicator partnerType="path" /><p className="font-semibold mt-2">Finding rides...</p></div>
                         ) : routeGeometry ? (
