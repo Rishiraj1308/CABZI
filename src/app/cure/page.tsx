@@ -1,3 +1,4 @@
+
 'use client'
 
 import React, { useState, useEffect, useRef, useMemo } from 'react'
@@ -12,11 +13,12 @@ import { useToast } from '@/hooks/use-toast'
 import { Skeleton } from '@/components/ui/skeleton'
 import dynamic from 'next/dynamic'
 import { useDb } from '@/firebase/client-provider'
-import { collection, query, where, onSnapshot, doc, updateDoc, GeoPoint, serverTimestamp, arrayUnion, addDoc, getDocs, orderBy } from 'firebase/firestore'
+import { collection, query, where, onSnapshot, doc, updateDoc, GeoPoint, serverTimestamp, arrayUnion, addDoc, getDocs, orderBy, Timestamp } from 'firebase/firestore'
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 import SearchingIndicator from '@/components/ui/searching-indicator'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 
 
 const LiveMap = dynamic(() => import('@/components/live-map'), {
@@ -372,24 +374,55 @@ export default function HospitalMissionControl() {
 
     const availableBeds = (totalBeds || 0) - (bedsOccupied || 0);
 
+    const StatCard = ({ title, value, description, staffList, listTitle, listCols }: any) => (
+      <Dialog>
+        <DialogTrigger asChild>
+          <Card className="cursor-pointer hover:bg-muted">
+            <CardHeader className="p-4 pb-2"><CardTitle className="text-sm font-medium flex items-center gap-2">{title}</CardTitle></CardHeader>
+            <CardContent className="p-4 pt-0">
+                <div className="text-2xl font-bold">{value}</div>
+                <p className="text-xs text-muted-foreground">{description}</p>
+            </CardContent>
+          </Card>
+        </DialogTrigger>
+        <DialogContent>
+            <DialogHeader><DialogTitle>{listTitle}</DialogTitle></DialogHeader>
+            <Table>
+                <TableHeader><TableRow>{listCols.map((col: any) => <TableHead key={col}>{col}</TableHead>)}</TableRow></TableHeader>
+                <TableBody>
+                    {staffList.map((item: any) => (
+                        <TableRow key={item.id}>
+                            <TableCell>{item.name}</TableCell>
+                            {item.specialization && <TableCell>{item.specialization}</TableCell>}
+                            <TableCell><Badge variant={item.status === 'Active' || item.status === 'Available' ? 'default' : 'secondary'} className={item.status === 'Active' || item.status === 'Available' ? 'bg-green-100 text-green-800' : ''}>{item.status}</Badge></TableCell>
+                        </TableRow>
+                    ))}
+                </TableBody>
+            </Table>
+        </DialogContent>
+      </Dialog>
+    );
+
     return (
         <div className="grid lg:grid-cols-3 gap-6 items-start h-full">
             <div className="lg:col-span-2 space-y-6">
                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                    <Card>
-                        <CardHeader className="p-4 pb-2"><CardTitle className="text-sm font-medium flex items-center gap-2"><Users className="text-primary"/> Drivers</CardTitle></CardHeader>
-                        <CardContent className="p-4 pt-0">
-                            <div className="text-2xl font-bold">{onlineDrivers} <span className="text-base font-normal text-muted-foreground">Online</span></div>
-                            <p className="text-xs text-muted-foreground">{onDutyDrivers} On-Duty</p>
-                        </CardContent>
-                    </Card>
-                    <Card>
-                        <CardHeader className="p-4 pb-2"><CardTitle className="text-sm font-medium flex items-center gap-2"><UserCheck className="text-primary"/> Doctors</CardTitle></CardHeader>
-                        <CardContent className="p-4 pt-0">
-                            <div className="text-2xl font-bold">{availableDoctors} <span className="text-base font-normal text-muted-foreground">Available</span></div>
-                            <p className="text-xs text-muted-foreground">Total: {doctors.length}</p>
-                        </CardContent>
-                    </Card>
+                    <StatCard 
+                      title={<><Users className="text-primary"/> Drivers</>}
+                      value={`${onlineDrivers} Online`}
+                      description={`${onDutyDrivers} On-Duty`}
+                      staffList={drivers}
+                      listTitle="Ambulance Driver Roster"
+                      listCols={['Name', 'Status']}
+                    />
+                     <StatCard 
+                      title={<><UserCheck className="text-primary"/> Doctors</>}
+                      value={`${availableDoctors} Available`}
+                      description={`Total: ${doctors.length}`}
+                      staffList={doctors}
+                      listTitle="Doctor Roster"
+                      listCols={['Name', 'Specialization', 'Status']}
+                    />
                  </div>
                  <div className="h-[calc(100vh-14rem)] rounded-lg overflow-hidden border">
                    <LiveMap 
