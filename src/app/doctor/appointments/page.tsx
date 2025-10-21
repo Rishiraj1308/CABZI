@@ -1,3 +1,4 @@
+
 'use client'
 
 import { useState, useEffect, useMemo } from 'react'
@@ -13,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 const mockAppointments = [
     { id: 'APT001', patientName: 'Priya Singh', appointmentDate: '2024-09-10', appointmentTime: '11:00 AM', status: 'Confirmed', isRecurring: true },
     { id: 'APT002', patientName: 'Rajesh Verma', appointmentDate: '2024-09-10', appointmentTime: '02:00 PM', status: 'Completed', isRecurring: false },
-    { id: 'APT003', patientName: 'Anita Desai', appointmentDate: '2024-09-11', appointmentTime: '10:00 AM', status: 'Pending', isRecurring: false },
+    { id: 'APT003', patientName: 'Anita Desai', appointmentDate: '2024-09-11', appointmentTime: '10:00 AM', status: 'Confirmed', isRecurring: false },
     { id: 'APT004', patientName: 'Suresh Kumar', appointmentDate: '2024-09-11', appointmentTime: '04:00 PM', status: 'Cancelled', isRecurring: false },
     { id: 'APT005', patientName: 'Geeta Iyer', appointmentDate: '2024-09-12', appointmentTime: '09:30 AM', status: 'Confirmed', isRecurring: false },
 ];
@@ -36,7 +37,8 @@ export default function DoctorAppointmentsPage() {
     // Simulate fetching data
     useEffect(() => {
         setTimeout(() => {
-            setAppointments(mockAppointments);
+            // A doctor should only see confirmed or completed appointments for their schedule
+            setAppointments(mockAppointments.filter(a => a.status === 'Confirmed' || a.status === 'Completed'));
             setIsLoading(false);
         }, 1000);
     }, []);
@@ -64,9 +66,9 @@ export default function DoctorAppointmentsPage() {
                     <div>
                         <CardTitle className="flex items-center gap-2">
                             <Calendar className="w-6 h-6 text-primary"/>
-                            My Appointments
+                            My Schedule
                         </CardTitle>
-                        <CardDescription>A complete log of all your consultations.</CardDescription>
+                        <CardDescription>A complete log of your confirmed and past consultations.</CardDescription>
                     </div>
                     <div className="flex items-center gap-2">
                         <div className="relative w-full md:w-auto">
@@ -85,10 +87,8 @@ export default function DoctorAppointmentsPage() {
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="All">All Statuses</SelectItem>
-                                <SelectItem value="Pending">Pending</SelectItem>
                                 <SelectItem value="Confirmed">Confirmed</SelectItem>
                                 <SelectItem value="Completed">Completed</SelectItem>
-                                <SelectItem value="Cancelled">Cancelled</SelectItem>
                             </SelectContent>
                         </Select>
                     </div>
