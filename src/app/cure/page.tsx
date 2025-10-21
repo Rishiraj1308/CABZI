@@ -1,3 +1,4 @@
+
 'use client'
 
 import React, { useState, useEffect, useRef, useMemo } from 'react'
@@ -30,6 +31,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import SearchingIndicator from '@/components/ui/searching-indicator'
+import Link from 'next/link'
 
 
 const LiveMap = dynamic(() => import('@/components/live-map'), {
@@ -123,17 +125,11 @@ const mockAppointments: AppointmentRequest[] = [
     { id: 'APT003', patientName: 'Anita Desai', department: 'General Physician', appointmentDate: '2024-09-11', appointmentTime: '10:00 AM', status: 'Pending', isRecurring: false },
 ]
 
-const doctorSpecializations = [
-  'Cardiology', 'Neurology', 'Orthopedics', 'Pediatrics', 'Oncology', 
-  'Gastroenterology', 'General Physician', 'Dermatology', 'ENT Specialist'
-];
-
 export default function HospitalMissionControl() {
     const [isMounted, setIsMounted] = useState(false);
     const [hospitalData, setHospitalData] = useState<HospitalData | null>(null);
     const [fleet, setFleet] = useState<AmbulanceVehicle[]>([]);
     const [drivers, setDrivers] = useState<AmbulanceDriver[]>([]);
-    const [doctors, setDoctors] = useState<Doctor[]>([]);
     const [incomingRequests, setIncomingRequests] = useState<EmergencyRequest[]>([]);
     const [appointments, setAppointments] = useState<AppointmentRequest[]>(mockAppointments);
     const [ongoingCase, setOngoingCase] = useState<OngoingCase | null>(null);
@@ -158,7 +154,6 @@ export default function HospitalMissionControl() {
     const [newRcNumber, setNewRcNumber] = useState('');
     
     const [isAddDriverOpen, setIsAddDriverOpen] = useState(false);
-    const [isAddDoctorOpen, setIsAddDoctorOpen] = useState(false);
     
     const [generatedDriverCreds, setGeneratedDriverCreds] = useState<{ id: string, pass: string } | null>(null);
     const [isCredsDialogOpen, setIsCredsDialogOpen] = useState(false);
@@ -250,18 +245,6 @@ export default function HospitalMissionControl() {
             setDrivers(driversData);
         });
 
-        const doctorsRef = query(collection(db, `ambulances/${partnerId}/doctors`), orderBy('createdAt', 'desc'));
-        const unsubDoctors = onSnapshot(doctorsRef, (snapshot) => {
-            const doctorsData = snapshot.docs.map(d => ({id: d.id, ...d.data()} as Doctor));
-            setDoctors(doctorsData);
-        });
-
-        const checklistRef = collection(db, `ambulances/${partnerId}/checklistTemplate`);
-        const qChecklist = query(checklistRef, orderBy('createdAt', 'asc'));
-        const unsubChecklist = onSnapshot(qChecklist, (snapshot) => {
-            setChecklistItems(snapshot.docs.map(d => ({ id: d.id, ...d.data() } as ChecklistItem)));
-        });
-
         const allCasesQuery = query(collection(db, "emergencyCases"), where("assignedPartner.id", "==", partnerId), orderBy("createdAt", "desc"));
         const unsubAllCases = onSnapshot(allCasesQuery, (snapshot) => {
             const activeCase = snapshot.docs
@@ -311,8 +294,6 @@ export default function HospitalMissionControl() {
             unsubFleet();
             unsubAllCases();
             unsubDrivers();
-            unsubDoctors();
-            unsubChecklist();
             unsubRequests();
             if (watchIdRef.current) navigator.geolocation.clearWatch(watchIdRef.current);
         };
@@ -515,37 +496,6 @@ export default function HospitalMissionControl() {
         }
     }
     
-    const handleAddDoctor = async (e: React.FormEvent<HTMLFormElement>) => {
-        e.preventDefault();
-        if (!hospitalData || !db) return;
-
-        const formData = new FormData(e.currentTarget);
-        const name = formData.get('doctorName') as string;
-        const phone = formData.get('doctorPhone') as string;
-        const specialization = formData.get('specialization') as string;
-
-        if (!name || !phone || !specialization) {
-            toast({ variant: 'destructive', title: 'Error', description: 'Please provide all doctor details.' });
-            return;
-        }
-
-        const doctorsRef = collection(db, `ambulances/${hospitalData.id}/doctors`);
-        try {
-            await addDoc(doctorsRef, {
-                name,
-                phone,
-                specialization,
-                createdAt: serverTimestamp(),
-            });
-            toast({ title: 'Doctor Added', description: `Dr. ${name} has been added to your roster.` });
-            setIsAddDoctorOpen(false);
-            (e.target as HTMLFormElement).reset();
-        } catch (error) {
-            console.error(error);
-            toast({ variant: 'destructive', title: 'Error', description: 'Could not add doctor.' });
-        }
-    };
-
     const handleAcceptRequest = async (request: EmergencyRequest, ambulanceId: string) => {
         if (!hospitalData || !db) return;
         
@@ -658,17 +608,6 @@ export default function HospitalMissionControl() {
         }
     }
     
-    const handleDeleteDoctor = async (doctorId: string, doctorName: string) => {
-        if (!db || !hospitalData) return;
-        const doctorRef = doc(db, `ambulances/${hospitalData.id}/doctors`, doctorId);
-        try {
-            await deleteDoc(doctorRef);
-            toast({ variant: 'destructive', title: 'Doctor Removed', description: `Dr. ${doctorName} has been removed.` });
-        } catch (error) {
-            toast({ variant: 'destructive', title: 'Error', description: 'Could not remove the doctor.' });
-        }
-    };
-
     const handleAddChecklistItem = async () => {
         if (!newChecklistItem.trim() || !hospitalData?.id || !db) return;
         const checklistRef = collection(db, `ambulances/${hospitalData.id}/checklistTemplate`);
