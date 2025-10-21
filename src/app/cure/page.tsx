@@ -1,3 +1,4 @@
+
 'use client'
 
 import React, { useState, useEffect, useRef, useMemo } from 'react'
@@ -390,111 +391,6 @@ export default function HospitalMissionControl() {
         }
     }
     
-    const handleAddAmbulance = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!hospitalData || !newAmbulanceName || !newAmbulanceType || !newAmbulanceDriverId || !newRcNumber || !db) {
-            toast({ variant: 'destructive', title: 'Error', description: 'Please provide all ambulance details.'});
-            return;
-        }
-        
-        const selectedDriver = drivers.find(d => d.id === newAmbulanceDriverId);
-        if (!selectedDriver) {
-             toast({ variant: 'destructive', title: 'Error', description: 'Selected driver not found.'});
-             return;
-        }
-
-        const fleetRef = collection(db, `ambulances/${hospitalData.id}/fleet`);
-        try {
-            const newAmbulanceDoc = await addDoc(fleetRef, {
-                name: newAmbulanceName,
-                type: newAmbulanceType,
-                driverId: selectedDriver.id,
-                driverName: selectedDriver.name,
-                driverPhone: selectedDriver.phone,
-                rcNumber: newRcNumber,
-                status: 'Available',
-                location: hospitalData.location || new GeoPoint(28.6139, 77.2090)
-            });
-            
-            // Link ambulance to the driver
-            const driverRef = doc(db, `ambulances/${hospitalData.id}/drivers`, selectedDriver.id);
-            await updateDoc(driverRef, {
-                assignedAmbulanceId: newAmbulanceDoc.id,
-                assignedAmbulanceName: newAmbulanceName,
-            });
-
-            toast({ title: 'Ambulance Added', description: `${newAmbulanceName} has been added to your fleet.`});
-            // Reset form and close dialog
-            setIsAddAmbulanceOpen(false);
-            setNewAmbulanceName('');
-            setNewAmbulanceType('');
-            setNewAmbulanceDriverId('');
-            setNewRcNumber('');
-        } catch (error) {
-            console.error(error);
-            toast({ variant: 'destructive', title: 'Error', description: 'Could not add ambulance to fleet.'});
-        }
-    }
-    
-    const handleAddDriver = async (e: React.FormEvent<HTMLFormElement>) => {
-        e.preventDefault();
-        if (!hospitalData || !db) return;
-
-        const formData = new FormData(e.currentTarget);
-        const name = formData.get('driverName') as string;
-        const phone = formData.get('driverPhone') as string;
-        const age = formData.get('driverAge') as string;
-        const gender = formData.get('gender') as 'male' | 'female' | 'other';
-        const drivingLicence = formData.get('drivingLicence') as string;
-
-        if (!name || !phone || !age || !gender || !drivingLicence) {
-            toast({ variant: 'destructive', title: 'Error', description: 'Please provide all driver details.' });
-            return;
-        }
-
-        const driversRef = collection(db, `ambulances/${hospitalData.id}/drivers`);
-        const ambulanceDriversRef = collection(db, 'ambulanceDrivers');
-
-        try {
-            const q = query(ambulanceDriversRef, where("phone", "==", phone));
-            const phoneCheck = await getDocs(q);
-            if (!phoneCheck.empty) {
-                toast({ variant: 'destructive', title: 'Driver Exists', description: 'A driver with this phone number is already registered.' });
-                return;
-            }
-
-            const partnerId = `CZA-${phone.slice(-4)}${Math.floor(10 + Math.random() * 90)}`;
-            const password = `cAbZ@${Math.floor(1000 + Math.random() * 9000)}`;
-
-            const batch = writeBatch(db);
-
-            const hospitalDriverDocRef = doc(driversRef);
-            batch.set(hospitalDriverDocRef, {
-                name, phone, drivingLicence, age: Number(age), gender,
-                status: 'Active', partnerId, createdAt: serverTimestamp(),
-            });
-
-            const globalDriverDocRef = doc(ambulanceDriversRef);
-            batch.set(globalDriverDocRef, {
-                id: globalDriverDocRef.id, name, phone, partnerId, password, drivingLicence,
-                status: 'Active', hospitalId: hospitalData.id, hospitalName: hospitalData.name,
-                driverIdInHospital: hospitalDriverDocRef.id, createdAt: serverTimestamp(),
-            });
-
-            await batch.commit();
-
-            setGeneratedDriverCreds({ id: partnerId, pass: password });
-            setIsAddDriverOpen(false);
-            setIsCredsDialogOpen(true);
-            (e.target as HTMLFormElement).reset();
-
-            toast({ title: 'Driver Added', description: `${name} has been added to your team. Their credentials are now available.` });
-        } catch (error) {
-            console.error(error);
-            toast({ variant: 'destructive', title: 'Error', description: 'Could not add driver.' });
-        }
-    }
-    
     const handleAcceptRequest = async (request: EmergencyRequest, ambulanceId: string) => {
         if (!hospitalData || !db) return;
         
@@ -539,101 +435,7 @@ export default function HospitalMissionControl() {
              toast({ variant: 'destructive', title: "Action Failed", description: "Could not reject the request."});
          }
     }
-
-    const handleDeleteDriver = async (driver: AmbulanceDriver) => {
-        if (!db || !hospitalData) return;
-
-        const batch = writeBatch(db);
-
-        // 1. Delete the driver from the hospital's private subcollection
-        const hospitalDriverRef = doc(db, `ambulances/${hospitalData.id}/drivers`, driver.id);
-        batch.delete(hospitalDriverRef);
-        
-        // 2. Find and delete the driver from the global collection to revoke login
-        const globalDriverQuery = query(collection(db, 'ambulanceDrivers'), where('phone', '==', driver.phone));
-        const globalDriverSnap = await getDocs(globalDriverQuery);
-
-        if (!globalDriverSnap.empty) {
-            const globalDriverDoc = globalDriverSnap.docs[0];
-            batch.delete(globalDriverDoc.ref);
-        }
-
-        try {
-            await batch.commit();
-            toast({
-                variant: 'destructive',
-                title: 'Driver Removed',
-                description: `${driver.name} has been removed from your roster and their access has been revoked.`
-            });
-            setIsDriverDetailsOpen(false);
-            setSelectedDriver(null);
-        } catch (error) {
-            console.error('Error removing driver:', error);
-            toast({
-                variant: 'destructive',
-                title: 'Deletion Failed',
-                description: 'Could not remove the driver from the system.'
-            });
-        }
-    };
     
-    const handleDeleteAmbulance = async (ambulance: AmbulanceVehicle) => {
-        if (!db || !hospitalData) return;
-
-        if (ambulance.status === 'On-Duty') {
-            toast({
-                variant: 'destructive',
-                title: 'Action Denied',
-                description: 'Cannot delete an ambulance that is on-duty for an active case.',
-            });
-            return;
-        }
-
-        const ambulanceRef = doc(db, `ambulances/${hospitalData.id}/fleet`, ambulance.id);
-        try {
-            await deleteDoc(ambulanceRef);
-            toast({
-                variant: 'destructive',
-                title: 'Ambulance Removed',
-                description: `${ambulance.name} has been removed from your fleet.`
-            });
-        } catch (error) {
-            console.error('Error removing ambulance:', error);
-            toast({
-                variant: 'destructive',
-                title: 'Deletion Failed',
-                description: 'Could not remove the ambulance from your fleet.'
-            });
-        }
-    }
-    
-    const handleAddChecklistItem = async () => {
-        if (!newChecklistItem.trim() || !hospitalData?.id || !db) return;
-        const checklistRef = collection(db, `ambulances/${hospitalData.id}/checklistTemplate`);
-        try {
-            await addDoc(checklistRef, {
-                text: newChecklistItem,
-                createdAt: serverTimestamp(),
-            });
-            toast({ title: 'Checklist Item Added' });
-            setNewChecklistItem('');
-        } catch (error) {
-             toast({ variant: 'destructive', title: 'Error', description: 'Could not add item.' });
-        }
-    };
-
-    const handleDeleteChecklistItem = async (itemId: string) => {
-        if (!hospitalData?.id || !db) return;
-        const itemRef = doc(db, `ambulances/${hospitalData.id}/checklistTemplate`, itemId);
-        try {
-            await deleteDoc(itemRef);
-            toast({ variant: 'destructive', title: 'Item Deleted' });
-        } catch (error) {
-             toast({ variant: 'destructive', title: 'Error', description: 'Could not delete item.' });
-        }
-    };
-
-
     const getSeverityBadge = (severity?: EmergencyRequest['severity']) => {
         switch (severity) {
             case 'Critical': return <Badge variant="destructive" className="text-base"><Siren className="w-4 h-4 mr-2 animate-pulse-intense"/>{severity}</Badge>;
@@ -666,15 +468,6 @@ export default function HospitalMissionControl() {
             }));
     }, [fleet]);
 
-    const getInitials = (name: string) => {
-        if (!name) return 'D';
-        const names = name.split(' ');
-        if (names.length > 1) {
-          return names[0][0] + names[names.length - 1][0];
-        }
-        return name.substring(0, 2);
-    }
-
     if (isLoading) {
       return (
           <div className="grid lg:grid-cols-2 xl:grid-cols-3 gap-6 h-full">
@@ -690,6 +483,16 @@ export default function HospitalMissionControl() {
     }
 
     const availableBeds = (totalBeds || 0) - (bedsOccupied || 0);
+    
+    const getStatusBadge = (status: AppointmentRequest['status']) => {
+        switch (status) {
+            case 'Confirmed': return <Badge className="bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-200">{status}</Badge>;
+            case 'Pending': return <Badge className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-200">{status}</Badge>;
+            case 'Cancelled': return <Badge variant="destructive">{status}</Badge>;
+            default: return <Badge variant="secondary">{status}</Badge>;
+        }
+    }
+
 
     return (
         <div className="grid lg:grid-cols-2 xl:grid-cols-3 gap-6 items-start h-full">
@@ -757,15 +560,37 @@ export default function HospitalMissionControl() {
                           <TabsContent value="appointments">
                              <CardContent>
                                  <Table>
-                                     <TableHeader><TableRow><TableHead>Time</TableHead><TableHead>Patient</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader>
+                                     <TableHeader>
+                                         <TableRow>
+                                            <TableHead>Patient</TableHead>
+                                            <TableHead>Details</TableHead>
+                                            <TableHead className="text-right">Actions</TableHead>
+                                         </TableRow>
+                                     </TableHeader>
                                      <TableBody>
                                          {appointments.map(appt => (
                                              <TableRow key={appt.id}>
-                                                 <TableCell className="font-semibold">{appt.appointmentTime}</TableCell>
-                                                 <TableCell>{appt.patientName}{appt.isRecurring && <Badge variant="secondary" className="ml-2"><Repeat className="w-3 h-3 mr-1" /> Recurring</Badge>}</TableCell>
-                                                 <TableCell className="text-right">{appt.status === 'Pending' ? (<div className="flex gap-1 justify-end"><Button size="sm" variant="outline" className="text-green-600 border-green-600">Confirm</Button><Button size="sm" variant="ghost">Reschedule</Button></div>) : (<Badge>{appt.status}</Badge>)}</TableCell>
+                                                 <TableCell>
+                                                    <div className="font-semibold">{appt.patientName}</div>
+                                                    <div className="text-xs text-muted-foreground">{appt.appointmentDate} at {appt.appointmentTime}</div>
+                                                 </TableCell>
+                                                 <TableCell>
+                                                     <div className="font-medium">{appt.department}</div>
+                                                      {appt.isRecurring && <Badge variant="secondary" className="mt-1"><Repeat className="w-3 h-3 mr-1" /> Recurring</Badge>}
+                                                 </TableCell>
+                                                 <TableCell className="text-right">
+                                                    {appt.status === 'Pending' ? (
+                                                        <div className="flex gap-1 justify-end">
+                                                            <Button size="sm" variant="outline" className="h-7 px-2"><Check className="w-4 h-4"/></Button>
+                                                            <Button size="sm" variant="outline" className="h-7 px-2"><X className="w-4 h-4"/></Button>
+                                                        </div>
+                                                    ) : (
+                                                        <Badge variant={appt.status === 'Confirmed' ? 'default' : 'destructive'} className="bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-200">{appt.status}</Badge>
+                                                    )}
+                                                 </TableCell>
                                              </TableRow>
                                          ))}
+                                          {appointments.length === 0 && <TableRow><TableCell colSpan={3} className="text-center h-24">No appointments scheduled.</TableCell></TableRow>}
                                      </TableBody>
                                  </Table>
                              </CardContent>
@@ -811,19 +636,6 @@ export default function HospitalMissionControl() {
                </div>
             </div>
             
-            <AlertDialog open={isCredsDialogOpen} onOpenChange={(isOpen) => {
-                if(!isOpen) setGeneratedDriverCreds(null);
-                setIsCredsDialogOpen(isOpen);
-            }}>
-                <AlertDialogContent>
-                    <AlertDialogHeader><AlertDialogTitle>Driver Added!</AlertDialogTitle><AlertDialogDescription>Share these credentials with the new driver.</AlertDialogDescription></AlertDialogHeader>
-                    <div className="space-y-4 my-4">
-                        <div className="space-y-1"><Label htmlFor="partnerId">Partner ID</Label><Input id="partnerId" value={generatedDriverCreds?.id ?? ''} readOnly /></div>
-                        <div className="space-y-1"><Label htmlFor="tempPass">Temporary Password</Label><Input id="tempPass" value={generatedDriverCreds?.pass ?? ''} readOnly /></div>
-                    </div>
-                    <AlertDialogFooter><AlertDialogAction onClick={() => { setGeneratedDriverCreds(null); setIsCredsDialogOpen(false); }}>Close</AlertDialogAction></AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
         </div>
     )
 }
