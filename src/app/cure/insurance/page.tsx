@@ -1,4 +1,3 @@
-
 'use client'
 
 import { useState, useEffect } from 'react'
@@ -9,6 +8,8 @@ import { Button } from '@/components/ui/button'
 import { ShieldCheck, Search, FileText, MoreHorizontal } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
+import { toast } from '@/hooks/use-toast'
 
 type ClaimStatus = 'Pending Verification' | 'Approved' | 'Rejected' | 'Query Raised';
 
@@ -35,6 +36,7 @@ export default function InsurancePage() {
     const [claims, setClaims] = useState<Claim[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
+    const [selectedClaim, setSelectedClaim] = useState<Claim | null>(null);
 
     useEffect(() => {
         setTimeout(() => {
@@ -61,6 +63,17 @@ export default function InsurancePage() {
                 return <Badge variant="destructive">{status}</Badge>;
         }
     };
+    
+    const handleUpdateStatus = (claimId: string, status: ClaimStatus) => {
+        setClaims(prevClaims => prevClaims.map(claim => 
+            claim.id === claimId ? { ...claim, status: status } : claim
+        ));
+        toast({
+            title: "Claim Status Updated",
+            description: `Claim ${claimId} has been marked as ${status}.`
+        });
+        setSelectedClaim(null);
+    }
 
 
     return (
@@ -124,9 +137,33 @@ export default function InsurancePage() {
                                         <TableCell className="text-right font-medium">₹{claim.claimAmount.toLocaleString()}</TableCell>
                                         <TableCell>{getStatusBadge(claim.status)}</TableCell>
                                         <TableCell className="text-right">
-                                            <Button variant="outline" size="sm">
-                                                <FileText className="mr-2 h-3.5 w-3.5"/> View Details
-                                            </Button>
+                                           <Dialog onOpenChange={(open) => !open && setSelectedClaim(null)}>
+                                                <DialogTrigger asChild>
+                                                    <Button variant="outline" size="sm" onClick={() => setSelectedClaim(claim)}>
+                                                        <FileText className="mr-2 h-3.5 w-3.5"/> View Details
+                                                    </Button>
+                                                </DialogTrigger>
+                                                <DialogContent className="sm:max-w-md">
+                                                    <DialogHeader>
+                                                        <DialogTitle>Claim Details: {selectedClaim?.id}</DialogTitle>
+                                                        <DialogDescription>
+                                                           Patient: {selectedClaim?.patientName} | Case: {selectedClaim?.caseId}
+                                                        </DialogDescription>
+                                                    </DialogHeader>
+                                                    <div className="space-y-4 py-4 text-sm">
+                                                         <div className="flex justify-between"><span>Patient Name:</span> <span className="font-semibold">{selectedClaim?.patientName}</span></div>
+                                                         <div className="flex justify-between"><span>Insurer:</span> <span className="font-semibold">{selectedClaim?.insurer}</span></div>
+                                                         <div className="flex justify-between"><span>Policy Number:</span> <span className="font-mono">{selectedClaim?.policyNumber}</span></div>
+                                                         <div className="flex justify-between"><span>Submitted On:</span> <span className="font-semibold">{selectedClaim?.submittedOn}</span></div>
+                                                         <div className="flex justify-between items-center text-lg font-bold border-t pt-2 mt-2"><span>Claim Amount:</span> <span className="text-primary">₹{selectedClaim?.claimAmount.toLocaleString()}</span></div>
+                                                    </div>
+                                                    <DialogFooter className="grid grid-cols-2 gap-2">
+                                                        <Button variant="destructive" onClick={() => selectedClaim && handleUpdateStatus(selectedClaim.id, 'Rejected')}>Reject Claim</Button>
+                                                        <Button variant="secondary" onClick={() => selectedClaim && handleUpdateStatus(selectedClaim.id, 'Query Raised')}>Raise Query</Button>
+                                                        <Button onClick={() => selectedClaim && handleUpdateStatus(selectedClaim.id, 'Approved')} className="col-span-2">Approve Claim</Button>
+                                                    </DialogFooter>
+                                                </DialogContent>
+                                            </Dialog>
                                         </TableCell>
                                     </TableRow>
                                 ))
