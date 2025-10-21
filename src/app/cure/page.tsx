@@ -1,4 +1,3 @@
-
 'use client'
 
 import React, { useState, useEffect, useRef, useMemo } from 'react'
@@ -7,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
-import { Ambulance, Siren, Waves, Settings, BedDouble, BarChart, Minus } from 'lucide-react'
+import { Ambulance, Siren, Waves, Settings, BedDouble, BarChart, Minus, Users, UserCheck } from 'lucide-react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from '@/components/ui/dialog'
 import { useToast } from '@/hooks/use-toast'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -16,8 +15,8 @@ import { useDb } from '@/firebase/client-provider'
 import { collection, query, where, onSnapshot, doc, updateDoc, GeoPoint, serverTimestamp, arrayUnion, addDoc, getDocs, orderBy } from 'firebase/firestore'
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import SearchingIndicator from '@/components/ui/searching-indicator'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 
 
 const LiveMap = dynamic(() => import('@/components/live-map'), {
@@ -32,6 +31,35 @@ interface AmbulanceVehicle {
     status: 'Available' | 'On-Duty' | 'Maintenance';
     location: GeoPoint;
 }
+
+interface AmbulanceDriver {
+    id: string;
+    name: string;
+    status: 'Active' | 'Inactive' | 'On-Duty';
+}
+
+interface Doctor {
+    id: string;
+    name: string;
+    specialization: string;
+    status: 'Available' | 'On-Leave';
+}
+
+interface Appointment {
+    id: string;
+    patientName: string;
+    department: string;
+    doctorName: string;
+    isRecurring?: boolean;
+    status: 'Pending' | 'Confirmed';
+}
+
+const mockAppointments: Appointment[] = [
+    { id: 'APP001', patientName: 'Priya Singh', department: 'Cardiology', doctorName: 'Dr. Ramesh Sharma', status: 'Pending', isRecurring: true },
+    { id: 'APP002', patientName: 'Rajesh Verma', department: 'Orthopedics', doctorName: 'Dr. Priya Gupta', status: 'Confirmed' },
+    { id: 'APP003', patientName: 'Anita Desai', department: 'General Physician', doctorName: 'Dr. Alok Verma', status: 'Pending' },
+];
+
 
 interface EmergencyRequest {
     id: string;
@@ -66,6 +94,9 @@ interface HospitalData {
 export default function HospitalMissionControl() {
     const [hospitalData, setHospitalData] = useState<HospitalData | null>(null);
     const [fleet, setFleet] = useState<AmbulanceVehicle[]>([]);
+    const [drivers, setDrivers] = useState<AmbulanceDriver[]>([]);
+    const [doctors, setDoctors] = useState<Doctor[]>([]);
+    const [appointments, setAppointments] = useState<Appointment[]>(mockAppointments);
     const [incomingRequests, setIncomingRequests] = useState<EmergencyRequest[]>([]);
     const [ongoingCase, setOngoingCase] = useState<OngoingCase | null>(null);
     const [isLoading, setIsLoading] = useState(true);
@@ -149,6 +180,16 @@ export default function HospitalMissionControl() {
             setFleet(fleetData);
         });
 
+        const driversRef = collection(db, `ambulances/${partnerId}/drivers`);
+        const unsubDrivers = onSnapshot(driversRef, (snapshot) => {
+            setDrivers(snapshot.docs.map(d => ({id: d.id, ...d.data()} as AmbulanceDriver)));
+        });
+
+        const doctorsRef = collection(db, `ambulances/${partnerId}/doctors`);
+        const unsubDoctors = onSnapshot(doctorsRef, (snapshot) => {
+            setDoctors(snapshot.docs.map(d => ({id: d.id, ...d.data()} as Doctor)));
+        });
+
         const allCasesQuery = query(collection(db, "emergencyCases"), where("assignedPartner.id", "==", partnerId), orderBy("createdAt", "desc"));
         const unsubAllCases = onSnapshot(allCasesQuery, (snapshot) => {
             const activeCase = snapshot.docs
@@ -171,6 +212,8 @@ export default function HospitalMissionControl() {
             unsubHospital();
             unsubFleet();
             unsubAllCases();
+            unsubDrivers();
+            unsubDoctors();
             unsubRequests();
             if (watchIdRef.current) navigator.geolocation.clearWatch(watchIdRef.current);
         };
@@ -271,6 +314,11 @@ export default function HospitalMissionControl() {
              toast({ variant: 'destructive', title: "Action Failed", description: "Could not reject the request."});
          }
     }
+    
+    const handleAppointmentConfirm = (id: string) => {
+        setAppointments(prev => prev.map(a => a.id === id ? {...a, status: 'Confirmed'} : a));
+        toast({ title: 'Appointment Confirmed!'});
+    }
 
     const getSeverityBadge = (severity?: EmergencyRequest['severity']) => {
         switch (severity) {
@@ -304,6 +352,9 @@ export default function HospitalMissionControl() {
             }));
     }, [fleet]);
 
+    const onlineDrivers = useMemo(() => drivers.filter(d => d.status === 'Active').length, [drivers]);
+    const onDutyDrivers = useMemo(() => fleet.filter(f => f.status === 'On-Duty').length, [fleet]);
+    const availableDoctors = useMemo(() => doctors.filter(d => d.status === 'Available').length, [doctors]);
 
     if (isLoading) {
       return (
@@ -324,7 +375,23 @@ export default function HospitalMissionControl() {
     return (
         <div className="grid lg:grid-cols-3 gap-6 items-start h-full">
             <div className="lg:col-span-2 space-y-6">
-                 <div className="h-[calc(100vh-10rem)] rounded-lg overflow-hidden border">
+                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                    <Card>
+                        <CardHeader className="p-4 pb-2"><CardTitle className="text-sm font-medium flex items-center gap-2"><Users className="text-primary"/> Drivers</CardTitle></CardHeader>
+                        <CardContent className="p-4 pt-0">
+                            <div className="text-2xl font-bold">{onlineDrivers} <span className="text-base font-normal text-muted-foreground">Online</span></div>
+                            <p className="text-xs text-muted-foreground">{onDutyDrivers} On-Duty</p>
+                        </CardContent>
+                    </Card>
+                    <Card>
+                        <CardHeader className="p-4 pb-2"><CardTitle className="text-sm font-medium flex items-center gap-2"><UserCheck className="text-primary"/> Doctors</CardTitle></CardHeader>
+                        <CardContent className="p-4 pt-0">
+                            <div className="text-2xl font-bold">{availableDoctors} <span className="text-base font-normal text-muted-foreground">Available</span></div>
+                            <p className="text-xs text-muted-foreground">Total: {doctors.length}</p>
+                        </CardContent>
+                    </Card>
+                 </div>
+                 <div className="h-[calc(100vh-14rem)] rounded-lg overflow-hidden border">
                    <LiveMap 
                        activePartners={mapFleet} 
                        riderLocation={patientLocation}
@@ -360,35 +427,64 @@ export default function HospitalMissionControl() {
                 </Card>
                 <Card className={cn("transition-all", ongoingCase && 'opacity-30')}>
                     <CardHeader className="flex flex-row items-center justify-between">
-                        <CardTitle className="flex items-center gap-2">Emergency Feed</CardTitle>
+                        <CardTitle className="flex items-center gap-2"><Waves className="w-5 h-5 text-primary" />Action Feed</CardTitle>
                         <Button onClick={simulateNewCase} size="sm" variant="outline">Test Alert</Button>
                     </CardHeader>
-                    <CardContent className="space-y-4 max-h-96 overflow-y-auto pr-2">
-                        {ongoingCase ? ( <div className="text-center text-muted-foreground py-10"><p className="font-bold">A case is already in progress.</p><p className="text-sm">Please resolve it before accepting new requests.</p></div>
-                        ) : incomingRequests.length > 0 ? (
-                            incomingRequests.map(req => (
-                                <Card key={req.id} className="bg-destructive/10 border-destructive shadow-lg animate-pulse-intense">
-                                    <CardHeader className="p-4"><CardTitle>{getSeverityBadge(req.severity)}</CardTitle><CardDescription className="pt-2">New {req.severity || 'Non-Critical'} case from patient {req.riderName}.</CardDescription></CardHeader>
-                                    <CardFooter className="p-4 pt-0 grid grid-cols-2 gap-2">
-                                        <Button variant="destructive" className="w-full" onClick={() => handleRejectRequest(req.id)}>Reject</Button>
-                                        <Dialog><DialogTrigger asChild><Button className="w-full">Accept</Button></DialogTrigger>
-                                            <DialogContent><DialogHeader><DialogTitle>Dispatch Ambulance</DialogTitle><DialogDescription>Select an available ambulance for this case.</DialogDescription></DialogHeader>
-                                                <div className="py-4 space-y-2 max-h-60 overflow-y-auto">
-                                                    {fleet.filter(a => a.status === 'Available').map(a => (<Button key={a.id} variant="outline" className="w-full justify-start h-12" onClick={() => handleAcceptRequest(req, a.id)}><Ambulance className="mr-4"/><div><p className="font-semibold">{a.name}</p><p className="text-xs text-muted-foreground">{a.type}</p></div></Button>))}
-                                                    {fleet.filter(a => a.status === 'Available').length === 0 && (<p className="text-center text-muted-foreground py-4">No ambulances are currently available.</p>)}
+                    <CardContent className="space-y-4 max-h-[50vh] overflow-y-auto pr-2">
+                        <Tabs defaultValue="emergencies">
+                            <TabsList className="grid w-full grid-cols-2">
+                                <TabsTrigger value="emergencies">Emergency Feed</TabsTrigger>
+                                <TabsTrigger value="appointments">Appointments</TabsTrigger>
+                            </TabsList>
+                            <TabsContent value="emergencies" className="mt-4">
+                                {ongoingCase ? ( <div className="text-center text-muted-foreground py-10"><p className="font-bold">A case is already in progress.</p><p className="text-sm">Please resolve it before accepting new requests.</p></div>
+                                ) : incomingRequests.length > 0 ? (
+                                    incomingRequests.map(req => (
+                                        <Card key={req.id} className="bg-destructive/10 border-destructive shadow-lg animate-pulse-intense">
+                                            <CardHeader className="p-4"><CardTitle>{getSeverityBadge(req.severity)}</CardTitle><CardDescription className="pt-2">New {req.severity || 'Non-Critical'} case from patient {req.riderName}.</CardDescription></CardHeader>
+                                            <CardFooter className="p-4 pt-0 grid grid-cols-2 gap-2">
+                                                <Button variant="destructive" className="w-full" onClick={() => handleRejectRequest(req.id)}>Reject</Button>
+                                                <Dialog><DialogTrigger asChild><Button className="w-full">Accept</Button></DialogTrigger>
+                                                    <DialogContent><DialogHeader><DialogTitle>Dispatch Ambulance</DialogTitle><DialogDescription>Select an available ambulance for this case.</DialogDescription></DialogHeader>
+                                                        <div className="py-4 space-y-2 max-h-60 overflow-y-auto">
+                                                            {fleet.filter(a => a.status === 'Available').map(a => (<Button key={a.id} variant="outline" className="w-full justify-start h-12" onClick={() => handleAcceptRequest(req, a.id)}><Ambulance className="mr-4"/><div><p className="font-semibold">{a.name}</p><p className="text-xs text-muted-foreground">{a.type}</p></div></Button>))}
+                                                            {fleet.filter(a => a.status === 'Available').length === 0 && (<p className="text-center text-muted-foreground py-4">No ambulances are currently available.</p>)}
+                                                        </div>
+                                                    </DialogContent>
+                                                </Dialog>
+                                            </CardFooter>
+                                        </Card>
+                                    ))
+                                ) : ( <div className="text-center text-muted-foreground h-48 flex items-center justify-center flex-col"><SearchingIndicator partnerType="cure" /><p className="mt-4 font-semibold">Listening for emergency requests...</p></div>
+                                )}
+                            </TabsContent>
+                            <TabsContent value="appointments" className="mt-4">
+                                {appointments.length > 0 ? (
+                                    appointments.map(appt => (
+                                        <Card key={appt.id} className="mb-2">
+                                            <CardContent className="p-3 flex items-center gap-3">
+                                                <div className="flex-1">
+                                                    <p className="font-semibold">{appt.patientName} <span className="font-normal text-muted-foreground text-xs">for {appt.doctorName}</span></p>
+                                                    <p className="text-xs text-muted-foreground">{appt.department}</p>
                                                 </div>
-                                            </DialogContent>
-                                        </Dialog>
-                                    </CardFooter>
-                                </Card>
-                            ))
-                        ) : ( <div className="text-center text-muted-foreground h-48 flex items-center justify-center flex-col"><SearchingIndicator partnerType="cure" /><p className="mt-4 font-semibold">Listening for emergency requests...</p></div>
-                        )}
+                                                {appt.status === 'Pending' ? (
+                                                     <Button size="sm" variant="outline" onClick={() => handleAppointmentConfirm(appt.id)}>Confirm</Button>
+                                                ) : (
+                                                    <Badge className="bg-green-100 text-green-800">{appt.status}</Badge>
+                                                )}
+                                            </CardContent>
+                                        </Card>
+                                    ))
+                                ) : (
+                                    <div className="text-center text-muted-foreground h-48 flex items-center justify-center flex-col">
+                                        <p>No new appointment requests.</p>
+                                    </div>
+                                )}
+                            </TabsContent>
+                        </Tabs>
                     </CardContent>
                 </Card>
             </div>
         </div>
     )
 }
-
-    
