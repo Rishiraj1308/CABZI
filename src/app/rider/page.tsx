@@ -19,6 +19,7 @@ import { useRider } from './layout'
 import { MotionDiv, AnimatePresence } from '@/components/ui/motion-div'
 import SearchingIndicator from '@/components/ui/searching-indicator'
 import { getRoute, searchPlace } from '@/lib/tomtom'
+import EmergencyButtons from '@/components/EmergencyButtons'
 
 
 const LiveMap = dynamic(() => import('@/components/live-map'), { 
@@ -42,7 +43,7 @@ interface LocationWithCoords {
     coords: { lat: number; lon: number; } | null;
 }
 
-interface RideData {
+export interface RideData {
     id: string;
     pickup: { address: string; location: { latitude: number; longitude: number; } };
     destination: { address: string; location: { latitude: number; longitude: number; } };
@@ -53,7 +54,7 @@ interface RideData {
     fare?: number;
 }
 
-interface AmbulanceCase {
+export interface AmbulanceCase {
     id: string;
     caseId: string;
     riderId: string;
@@ -65,7 +66,17 @@ interface AmbulanceCase {
     assignedPartner?: { id: string; name: string; phone: string; ambulanceName?: string; photoUrl?: string; } | null;
     partnerEta?: number | null;
     partnerLocation?: GeoPoint | null;
+    hospitalEta?: number | null;
     severity?: 'Non-Critical' | 'Serious' | 'Critical';
+}
+
+interface GarageRequest {
+    id: string;
+    status: 'pending' | 'accepted' | 'in_progress' | 'completed' | 'cancelled_by_driver' | 'cancelled_by_mechanic';
+    mechanicName?: string;
+    mechanicPhone?: string;
+    eta?: number;
+    partnerLocation?: GeoPoint | null;
 }
 
 const initialRideTypes: RideTypeInfo[] = [
@@ -97,8 +108,11 @@ export default function RiderPage() {
     const [activeRide, setActiveRide] = useState<RideData | null>(null);
     const [routeGeometry, setRouteGeometry] = useState<any>(null);
 
-    // States for CURE service
+    // States for CURE and ResQ services
     const [activeAmbulanceCase, setActiveAmbulanceCase] = useState<AmbulanceCase | null>(null);
+    const [activeGarageRequest, setActiveGarageRequest] = useState<GarageRequest | null>(null);
+    const [isRequestingSos, setIsRequestingSos] = useState(false);
+
 
     const liveMapRef = useRef<any>(null);
     const { session } = useRider();
@@ -211,14 +225,50 @@ export default function RiderPage() {
         setView('selection');
         setActiveRide(null);
         setActiveAmbulanceCase(null);
+        setActiveGarageRequest(null);
         setRouteGeometry(null);
         setPickup({ address: '', coords: null });
         setDestination({ address: '', coords: null });
+        setIsRequestingSos(false);
         localStorage.removeItem('activeRideId');
+        localStorage.removeItem('activeGarageRequestId');
+    };
+    
+    const handleConfirmRide = async () => {
+        if (!pickup.coords || !destination.coords || !session || !db) return;
+        
+        const selectedRideInfo = rideTypes.find(rt => rt.name === selectedRide);
+        if (!selectedRideInfo?.fareDetails) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Could not get ride fare details.' });
+            return;
+        }
+
+        const generatedOtp = Math.floor(1000 + Math.random() * 9000).toString();
+        const rideData = {
+            riderId: session.phone,
+            riderName: session.name,
+            riderGender: session.gender,
+            pickup: { address: pickup.address, location: new GeoPoint(pickup.coords.lat, pickup.coords.lon) },
+            destination: { address: destination.address, location: new GeoPoint(destination.coords.lat, destination.coords.lon) },
+            rideType: selectedRide,
+            status: 'searching' as const,
+            fare: selectedRideInfo.fareDetails.total,
+            otp: generatedOtp,
+            createdAt: serverTimestamp(),
+        };
+
+        try {
+            const docRef = await addDoc(collection(db, 'rides'), rideData);
+            setActiveRide({ id: docRef.id, ...rideData } as RideData);
+            localStorage.setItem('activeRideId', docRef.id);
+        } catch (error) {
+            console.error("Error creating ride:", error);
+            toast({ variant: 'destructive', title: 'Booking Failed' });
+        }
     };
     
     const renderSelectionScreen = () => (
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-4 md:p-6 space-y-6">
+        <MotionDiv initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-4 md:p-6 space-y-6">
             <div className="text-center">
                 <h2 className="text-3xl font-bold tracking-tight">How can we help you?</h2>
                 <p className="text-muted-foreground">Choose a service to get started.</p>
@@ -237,7 +287,7 @@ export default function RiderPage() {
                     <CardContent><p className="text-sm text-muted-foreground">Get on-spot assistance for vehicle trouble.</p></CardContent>
                 </Card>
             </div>
-        </motion.div>
+        </MotionDiv>
     );
 
     const renderPathScreen = () => {
@@ -253,6 +303,15 @@ export default function RiderPage() {
                 <div className="absolute top-20 left-4 z-10"><Button onClick={() => setView('selection')} variant="outline" size="icon"><ArrowLeft/></Button></div>
                 <div className="flex-1 relative">
                     <LiveMap ref={liveMapRef} onLocationFound={handleLocationFound} routeGeometry={routeGeometry} />
+                     <div className="absolute bottom-4 right-4 z-10">
+                        <EmergencyButtons 
+                            liveMapRef={liveMapRef}
+                            pickupCoords={pickup.coords}
+                            setIsRequestingSos={setIsRequestingSos}
+                            setActiveAmbulanceCase={setActiveAmbulanceCase}
+                            setActiveGarageRequest={setActiveGarageRequest}
+                        />
+                    </div>
                 </div>
                 <Card className="rounded-t-2xl shadow-2xl">
                     <CardHeader>
@@ -301,7 +360,7 @@ export default function RiderPage() {
             )
         }
         return (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-4 md:p-6 space-y-6">
+            <MotionDiv initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-4 md:p-6 space-y-6">
                  <div className="flex items-center gap-4">
                      <Button onClick={() => setView('selection')} variant="outline" size="icon"><ArrowLeft/></Button>
                     <div>
@@ -309,23 +368,27 @@ export default function RiderPage() {
                         <p className="text-muted-foreground">Emergency ambulance and doctor appointments.</p>
                     </div>
                 </div>
-                <Card>
-                    <CardHeader><CardTitle className="flex items-center gap-2"><Siren className="w-5 h-5 text-red-500" /> Emergency Ambulance</CardTitle></CardHeader>
-                    <CardContent><p className="text-muted-foreground">In case of a medical emergency, request an ambulance from our network of partner hospitals.</p></CardContent>
-                    <CardFooter><Button className="w-full" variant="destructive">Request Ambulance</Button></CardFooter>
-                </Card>
-                 <Card>
-                    <CardHeader><CardTitle className="flex items-center gap-2"><Stethoscope className="w-5 h-5 text-primary" /> Doctor Appointment</CardTitle></CardHeader>
-                    <CardContent><p className="text-muted-foreground">Book a consultation with a specialist at one of our partner hospitals.</p></CardContent>
-                    <CardFooter><Button className="w-full">Book Appointment</Button></CardFooter>
-                </Card>
-            </motion.div>
+                <EmergencyButtons 
+                    liveMapRef={liveMapRef}
+                    pickupCoords={pickup.coords}
+                    setIsRequestingSos={setIsRequestingSos}
+                    setActiveAmbulanceCase={setActiveAmbulanceCase}
+                    setActiveGarageRequest={() => {}} // dummy function for this view
+                />
+            </MotionDiv>
         );
     }
     
      const renderResqScreen = () => {
+         if(activeGarageRequest) {
+            return (
+                 <div className="absolute inset-0 z-20 bg-black/30 backdrop-blur-sm p-4 flex items-center justify-center">
+                    <RideStatus ride={activeGarageRequest as any} isGarageRequest onCancel={resetFlow} onDone={resetFlow} />
+                </div>
+            );
+         }
         return (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-4 md:p-6 space-y-6">
+            <MotionDiv initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-4 md:p-6 space-y-6">
                  <div className="flex items-center gap-4">
                      <Button onClick={() => setView('selection')} variant="outline" size="icon"><ArrowLeft/></Button>
                     <div>
@@ -333,12 +396,14 @@ export default function RiderPage() {
                         <p className="text-muted-foreground">Get on-the-spot help for vehicle trouble.</p>
                     </div>
                 </div>
-                 <Card>
-                    <CardHeader><CardTitle className="flex items-center gap-2"><Wrench className="w-5 h-5 text-amber-500" /> Roadside Assistance</CardTitle></CardHeader>
-                    <CardContent><p className="text-muted-foreground">Flat tyre, battery trouble, or other issues? Get help from a nearby mechanic.</p></CardContent>
-                    <CardFooter><Button className="w-full">Request Assistance</Button></CardFooter>
-                </Card>
-            </motion.div>
+                 <EmergencyButtons 
+                    liveMapRef={liveMapRef}
+                    pickupCoords={pickup.coords}
+                    setIsRequestingSos={setIsRequestingSos}
+                    setActiveAmbulanceCase={() => {}} // dummy function
+                    setActiveGarageRequest={setActiveGarageRequest}
+                 />
+            </MotionDiv>
         );
      }
 
