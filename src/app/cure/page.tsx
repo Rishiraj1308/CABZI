@@ -154,7 +154,7 @@ export default function HospitalMissionControl() {
     const [newChecklistItem, setNewChecklistItem] = useState('');
     const [selectedDriver, setSelectedDriver] = useState<AmbulanceDriver | null>(null);
     const [isDriverDetailsOpen, setIsDriverDetailsOpen] = useState(false);
-    const db = useFirestore();
+    const db = useDb();
 
     // Bed Management State
     const [totalBeds, setTotalBeds] = useState(0);
