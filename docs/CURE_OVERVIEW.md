@@ -37,10 +37,18 @@ This is the central command center for all hospital operations on the Cabzi plat
     *   **Gray:** In Maintenance
 *   When a case is active, the map automatically shows the ambulance, the patient's location, and the optimal route.
 
-### D. Fleet & Driver Management
+### D. Fleet & Staff Management
+
+This section provides a unified interface to manage both ambulance drivers and doctors.
+
+#### **Ambulance Fleet & Drivers:**
 *   **Add Ambulances:** A simple form to add new vehicles to the fleet, specifying their type (BLS, ALS, Cardiac) and assigning a verified driver.
-*   **Add Drivers:** A secure form to register new ambulance drivers. The system automatically generates a unique **Partner ID** and a temporary **Password** for each driver, which they can use to log into their own dedicated portal.
-*   **Manage Staff:** View a complete list of all registered drivers, their assigned vehicles, and their current status.
+*   **Add Ambulance Drivers:** A secure form to register new ambulance drivers. The system automatically generates a unique **Partner ID** and a temporary **Password** for each driver, which they can use to log into their own dedicated portal.
+
+#### **Doctor Management:**
+*   **Add Doctors:** A professional form to add doctors to the hospital's roster, including their name, specialization, qualifications, and years of experience.
+*   **Generate Doctor Credentials:** For each doctor added, the system automatically creates a unique **Doctor ID** and a temporary **Password**. The hospital admin shares these credentials with the doctor, allowing them to log into their own secure Doctor Portal.
+*   **Manage Staff:** View a complete list of all registered ambulance drivers and doctors, their assigned vehicles/departments, and their current status.
 
 ---
 
@@ -58,9 +66,19 @@ Every driver added by the hospital gets their own secure login and a simplified 
 
 ---
 
-## 4. Financials: Subscriptions & Payouts
+## 4. The Doctor's Portal (`/doctor`)
+
+Every doctor added by the hospital gets their own secure login to manage their schedule and consultations.
+
+*   **View Schedule:** A clean dashboard view showing all upcoming appointments for the day.
+*   **Appointment Management:** Doctors can view patient details for their confirmed appointments.
+*   **Manage Availability (Future Scope):** Doctors will be able to set their own available time slots, which will automatically be reflected in the rider's booking interface.
+
+---
+
+## 5. Financials: Subscriptions & Payouts
 
 *   **Subscription Management (`/cure/subscription`):** A dedicated page to view and upgrade subscription plans. It clearly lists the features of each plan and provides company bank details for payment.
-*   **Billing & Payouts (`/cure/billing`):** A transparent financial ledger showing all earnings from completed ambulance services and tracking the total amount to be paid out by Cabzi.
+*   **Billing & Payouts (`/cure/billing`):** A transparent financial ledger showing all earnings from completed ambulance services and doctor consultations, and tracking the total amount to be paid out by Cabzi.
 
-This comprehensive workflow ensures that our CURE partners have a powerful, intuitive, and complete toolset to manage their emergency response services efficiently and professionally.
+This comprehensive workflow ensures that our CURE partners have a powerful, intuitive, and complete toolset to manage their emergency response and consultation services efficiently and professionally.
