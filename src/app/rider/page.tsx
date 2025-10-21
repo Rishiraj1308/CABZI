@@ -278,7 +278,7 @@ export default function RiderPage() {
                 </Card>
                  <Card className="hover:border-red-500 hover:shadow-lg transition-all cursor-pointer text-center" onClick={() => setView('cure')}>
                     <CardHeader><Ambulance className="w-12 h-12 text-red-500 mx-auto"/> <CardTitle className="pt-2">Cure Service</CardTitle></CardHeader>
-                    <CardContent><p className="text-sm text-muted-foreground">Request an ambulance or book a doctor's appointment.</p></CardContent>
+                    <CardContent><p className="text-sm text-muted-foreground">Request an ambulance for emergencies.</p></CardContent>
                 </Card>
                  <Card className="hover:border-amber-500 hover:shadow-lg transition-all cursor-pointer text-center" onClick={() => setView('resq')}>
                     <CardHeader><Wrench className="w-12 h-12 text-amber-500 mx-auto"/> <CardTitle className="pt-2">ResQ Service</CardTitle></CardHeader>
@@ -349,7 +349,7 @@ export default function RiderPage() {
                      <Button onClick={() => setView('selection')} variant="outline" size="icon"><ArrowLeft/></Button>
                     <div>
                         <h2 className="text-xl font-bold tracking-tight">Cure Services</h2>
-                        <p className="text-muted-foreground text-sm">Emergency ambulance and doctor appointments.</p>
+                        <p className="text-muted-foreground text-sm">Emergency ambulance services.</p>
                     </div>
                 </div>
                  <EmergencyButtons 
@@ -393,11 +393,10 @@ export default function RiderPage() {
 
     return (
         <div className="h-full w-full relative flex flex-col">
-            <div className="flex-1 relative">
+            <div className="h-1/2">
                 <LiveMap ref={liveMapRef} onLocationFound={handleLocationFound} routeGeometry={routeGeometry} />
             </div>
-            
-             <Card className="absolute bottom-4 left-4 right-4 z-10 shadow-2xl rounded-2xl">
+            <div className="flex-1 bg-background rounded-t-2xl shadow-inner-top -mt-4 z-10 overflow-y-auto">
                 <AnimatePresence mode="wait">
                     <MotionDiv
                         key={view}
@@ -412,7 +411,7 @@ export default function RiderPage() {
                         {view === 'resq' && renderResqScreen()}
                     </MotionDiv>
                 </AnimatePresence>
-            </Card>
+            </div>
         </div>
     );
 }

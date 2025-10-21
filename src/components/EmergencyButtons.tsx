@@ -1,3 +1,4 @@
+
 'use client'
 
 import React, { useState, useEffect } from 'react';
@@ -12,6 +13,7 @@ import { addDoc, collection, serverTimestamp, GeoPoint, getDocs, query, where } 
 import { useRider } from '@/app/rider/layout'; 
 import SearchingIndicator from './ui/searching-indicator';
 import { Card } from './ui/card';
+import { useRouter } from 'next/navigation';
 
 interface EmergencyButtonsProps {
   liveMapRef: React.RefObject<any>;
@@ -43,6 +45,7 @@ export default function EmergencyButtons({ liveMapRef, pickupCoords, setIsReques
   const [isSosDialogOpen, setIsSosDialogOpen] = useState(false);
   const [isResqDialogOpen, setIsResqDialogOpen] = useState(false);
   const [selectedIssue, setSelectedIssue] = useState('');
+  const router = useRouter();
   
   // New state for multi-step SOS dialog
   const [sosStep, setSosStep] = useState<'triage' | 'hospitals'>('triage');
@@ -200,11 +203,12 @@ export default function EmergencyButtons({ liveMapRef, pickupCoords, setIsReques
 
 
   return (
-    <div className="flex gap-2">
+    <div className="flex gap-4 p-4 justify-center">
       <Dialog open={isSosDialogOpen} onOpenChange={setIsSosDialogOpen}>
         <DialogTrigger asChild>
-            <Button variant="outline" size="icon" className="rounded-full shadow-2xl bg-red-100 dark:bg-red-900/50 border-red-500/50 hover:bg-red-200">
-                <Ambulance className="h-5 w-5 text-red-600" />
+            <Button variant="outline" size="lg" className="w-full h-24 flex-col gap-1 text-red-600 border-red-500/50 bg-red-100/50 hover:bg-red-100 dark:bg-red-900/30 dark:hover:bg-red-900/50">
+                <Ambulance className="h-8 w-8" />
+                <span className="font-semibold">Request Ambulance</span>
             </Button>
         </DialogTrigger>
         <DialogContent>
@@ -270,40 +274,6 @@ export default function EmergencyButtons({ liveMapRef, pickupCoords, setIsReques
                     </>
                 )}
             </DialogFooter>
-        </DialogContent>
-      </Dialog>
-      <Dialog open={isResqDialogOpen} onOpenChange={setIsResqDialogOpen}>
-        <DialogTrigger asChild>
-            <Button variant="outline" size="icon" className="rounded-full shadow-2xl bg-amber-100 dark:bg-amber-900/50 border-amber-500/50 hover:bg-amber-200">
-                <Wrench className="h-5 w-5 text-amber-600" />
-            </Button>
-        </DialogTrigger>
-        <DialogContent>
-             <DialogHeader>
-                <DialogTitle>Request Roadside Assistance</DialogTitle>
-                <DialogDescription>Tell us what's wrong, and we'll find a nearby mechanic for you. A fixed visit charge may apply.</DialogDescription>
-            </DialogHeader>
-            <div className="py-4">
-                <RadioGroup onValueChange={setSelectedIssue} value={selectedIssue}>
-                  <div className="space-y-2">
-                    {commonIssues.map(issue => (
-                      <div key={issue.id} className="flex items-center space-x-2">
-                        <RadioGroupItem value={issue.label} id={issue.id} />
-                        <Label htmlFor={issue.id} className="font-normal">{issue.label}</Label>
-                      </div>
-                    ))}
-                  </div>
-                </RadioGroup>
-              </div>
-              <DialogFooter>
-                <Button 
-                  onClick={handleRequestMechanic} 
-                  className="w-full" 
-                  disabled={!selectedIssue}
-                >
-                  Confirm & Find Help
-                </Button>
-              </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
