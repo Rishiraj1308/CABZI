@@ -14,7 +14,7 @@ import { useToast } from '@/hooks/use-toast'
 import { Skeleton } from '@/components/ui/skeleton'
 import dynamic from 'next/dynamic'
 import { useDb } from '@/firebase/client-provider'
-import { collection, query, where, onSnapshot, doc, updateDoc, GeoPoint, serverTimestamp, arrayUnion, addDoc } from 'firebase/firestore'
+import { collection, query, where, onSnapshot, doc, updateDoc, GeoPoint, serverTimestamp, arrayUnion, addDoc, orderBy } from 'firebase/firestore'
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -186,31 +186,18 @@ export default function HospitalMissionControl() {
      useEffect(() => {
         if (ongoingCase?.assignedAmbulanceId && hospitalData?.id && db) {
             const ambulanceRef = doc(db, `ambulances/${hospitalData.id}/fleet`, ongoingCase.assignedAmbulanceId);
-            const caseRef = doc(db, 'emergencyCases', ongoingCase.id);
-
-            let lastSentTime = 0;
-            const MIN_TIME_THRESHOLD = 30000; // 30 seconds
-            
             watchIdRef.current = navigator.geolocation.watchPosition(
                 (pos) => {
-                    const now = Date.now();
-                    if (now - lastSentTime > MIN_TIME_THRESHOLD) {
-                        const newGeoPoint = new GeoPoint(pos.coords.latitude, pos.coords.longitude);
-                        const batch = writeBatch(db);
-                        batch.update(ambulanceRef, { location: newGeoPoint });
-                        batch.update(caseRef, { partnerLocation: newGeoPoint });
-                        batch.commit().catch(e => console.error("Error updating location batch:", e));
-                        lastSentTime = now;
-                    }
+                    const newGeoPoint = new GeoPoint(pos.coords.latitude, pos.coords.longitude);
+                    updateDoc(ambulanceRef, { location: newGeoPoint });
+                    // Also update the main case document for rider to track
+                    updateDoc(doc(db, 'emergencyCases', ongoingCase.id), { partnerLocation: newGeoPoint });
                 },
                 (err) => console.error("Could not get ambulance location:", err),
                 { enableHighAccuracy: true }
             );
         } else {
-            if (watchIdRef.current) {
-                navigator.geolocation.clearWatch(watchIdRef.current);
-                watchIdRef.current = null;
-            }
+            if (watchIdRef.current) navigator.geolocation.clearWatch(watchIdRef.current);
         }
         return () => { if (watchIdRef.current) navigator.geolocation.clearWatch(watchIdRef.current) };
     }, [ongoingCase, hospitalData?.id, db]);
@@ -437,3 +424,5 @@ export default function HospitalMissionControl() {
         </div>
     )
 }
+
+    
