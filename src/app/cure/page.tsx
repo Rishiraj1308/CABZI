@@ -1,3 +1,4 @@
+
 'use client'
 
 import React, { useState, useEffect, useRef, useMemo } from 'react'
@@ -72,8 +73,8 @@ interface Doctor {
     experience?: string;
     phone: string;
     createdAt: Timestamp;
-    photoUrl?: string;
-    degreeUrl?: string;
+    photoUrl?: string; // To store uploaded photo URL
+    degreeUrl?: string; // To store uploaded degree URL
     docStatus?: 'Verified' | 'Pending';
     partnerId?: string; // For Doctor's own login
     password?: string; // For Doctor's own login
