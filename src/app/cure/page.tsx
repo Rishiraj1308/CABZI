@@ -1,4 +1,3 @@
-
 'use client'
 
 import React, { useState, useEffect, useRef, useMemo } from 'react'
@@ -7,13 +6,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
-import { Ambulance, Check, X, PlusCircle, Car, User, Siren, Map, Waves, Settings, ServerCrash, BedDouble, BarChart, Clock, Users, KeyRound, Navigation, UserPlus, Phone, Share2, MoreHorizontal, Trash2, ListChecks, FileText, Minus, Plus, Hospital, Calendar, PersonStanding } from 'lucide-react'
+import { Ambulance, Check, X, PlusCircle, Car, User, Siren, Map, Waves, Settings, ServerCrash, BedDouble, BarChart, Clock, Users, KeyRound, Navigation, UserPlus, Phone, Share2, MoreHorizontal, Trash2, ListChecks, FileText, Minus, Plus, Hospital, Calendar, PersonStanding, Briefcase, Stethoscope } from 'lucide-react'
 import { AlertDialog, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogCancel, AlertDialogAction, AlertDialogTrigger } from '@/components/ui/alert-dialog'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription, DialogFooter } from '@/components/ui/dialog'
 import { useToast } from '@/hooks/use-toast'
 import { Skeleton } from '@/components/ui/skeleton'
 import dynamic from 'next/dynamic'
-import { useFirestore } from '@/firebase/client-provider'
+import { useDb } from '@/firebase/client-provider'
 import { collection, query, where, onSnapshot, doc, updateDoc, GeoPoint, serverTimestamp, arrayUnion, addDoc, getDocs, getDoc, orderBy, Timestamp, writeBatch, deleteDoc } from 'firebase/firestore'
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
@@ -69,9 +68,17 @@ interface Doctor {
     id: string;
     name: string;
     specialization: string;
+    qualifications?: string;
+    experience?: string;
     phone: string;
     createdAt: Timestamp;
+    photoUrl?: string;
+    degreeUrl?: string;
+    docStatus?: 'Verified' | 'Pending';
+    partnerId?: string; // For Doctor's own login
+    password?: string; // For Doctor's own login
 }
+
 
 interface ChecklistItem {
     id: string;
@@ -125,11 +132,17 @@ const mockAppointments: AppointmentRequest[] = [
     { id: 'APT003', patientName: 'Anita Desai', department: 'General Physician', appointmentDate: '2024-09-11', appointmentTime: '10:00 AM', status: 'Pending', isRecurring: false },
 ]
 
+const doctorSpecializations = [
+  'Cardiology', 'Neurology', 'Orthopedics', 'Pediatrics', 'Oncology', 
+  'Gastroenterology', 'General Physician', 'Dermatology', 'ENT Specialist'
+];
+
 export default function HospitalMissionControl() {
     const [isMounted, setIsMounted] = useState(false);
     const [hospitalData, setHospitalData] = useState<HospitalData | null>(null);
     const [fleet, setFleet] = useState<AmbulanceVehicle[]>([]);
     const [drivers, setDrivers] = useState<AmbulanceDriver[]>([]);
+    const [doctors, setDoctors] = useState<Doctor[]>([]);
     const [incomingRequests, setIncomingRequests] = useState<EmergencyRequest[]>([]);
     const [appointments, setAppointments] = useState<AppointmentRequest[]>(mockAppointments);
     const [ongoingCase, setOngoingCase] = useState<OngoingCase | null>(null);
@@ -154,8 +167,9 @@ export default function HospitalMissionControl() {
     const [newRcNumber, setNewRcNumber] = useState('');
     
     const [isAddDriverOpen, setIsAddDriverOpen] = useState(false);
+    const [isAddDoctorOpen, setIsAddDoctorOpen] = useState(false);
     
-    const [generatedDriverCreds, setGeneratedDriverCreds] = useState<{ id: string, pass: string } | null>(null);
+    const [generatedCreds, setGeneratedCreds] = useState<{ id: string, pass: string, role: string } | null>(null);
     const [isCredsDialogOpen, setIsCredsDialogOpen] = useState(false);
     
     // Analytics State
@@ -244,6 +258,17 @@ export default function HospitalMissionControl() {
             const driversData = snapshot.docs.map(d => ({id: d.id, ...d.data()} as AmbulanceDriver));
             setDrivers(driversData);
         });
+        
+        const doctorsRef = query(collection(db, `ambulances/${partnerId}/doctors`), orderBy('name', 'asc'));
+        const unsubDoctors = onSnapshot(doctorsRef, (snapshot) => {
+            setDoctors(snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Doctor)));
+        });
+
+        const checklistRef = collection(db, `ambulances/${partnerId}/checklistTemplate`);
+        const qChecklist = query(checklistRef, orderBy('createdAt', 'asc'));
+        const unsubChecklist = onSnapshot(qChecklist, (snapshot) => {
+            setChecklistItems(snapshot.docs.map(d => ({ id: d.id, ...d.data() } as ChecklistItem)));
+        });
 
         const allCasesQuery = query(collection(db, "emergencyCases"), where("assignedPartner.id", "==", partnerId), orderBy("createdAt", "desc"));
         const unsubAllCases = onSnapshot(allCasesQuery, (snapshot) => {
@@ -294,6 +319,8 @@ export default function HospitalMissionControl() {
             unsubFleet();
             unsubAllCases();
             unsubDrivers();
+            unsubDoctors();
+            unsubChecklist();
             unsubRequests();
             if (watchIdRef.current) navigator.geolocation.clearWatch(watchIdRef.current);
         };
@@ -484,7 +511,7 @@ export default function HospitalMissionControl() {
 
             await batch.commit();
 
-            setGeneratedDriverCreds({ id: partnerId, pass: password });
+            setGeneratedCreds({ id: partnerId, pass: password, role: 'Ambulance Driver' });
             setIsAddDriverOpen(false);
             setIsCredsDialogOpen(true);
             (e.target as HTMLFormElement).reset();
@@ -495,6 +522,42 @@ export default function HospitalMissionControl() {
             toast({ variant: 'destructive', title: 'Error', description: 'Could not add driver.' });
         }
     }
+    
+    const handleAddDoctor = async (event: React.FormEvent<HTMLFormElement>) => {
+        event.preventDefault();
+        if (!db || !hospitalData) return;
+
+        const formData = new FormData(event.currentTarget);
+        const name = formData.get('doctorName') as string;
+        const phone = formData.get('doctorPhone') as string;
+        const specialization = formData.get('specialization') as string;
+        const qualifications = formData.get('qualifications') as string;
+        const experience = formData.get('experience') as string;
+
+        if (!name || !phone || !specialization || !qualifications || !experience) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Please provide all doctor details.' });
+            return;
+        }
+
+        const partnerId = `CZD-${phone.slice(-4)}${name.split(' ')[0].slice(0, 2).toUpperCase()}`;
+        const password = `cAbZ@${Math.floor(1000 + Math.random() * 9000)}`;
+
+        try {
+          await addDoc(collection(db, `ambulances/${hospitalData.id}/doctors`), {
+            name, phone, specialization, qualifications, experience,
+            photoUrl: 'pending_upload', degreeUrl: 'pending_upload', docStatus: 'Pending',
+            partnerId, password, // Save credentials
+            createdAt: serverTimestamp(),
+          });
+          toast({ title: 'Doctor Added', description: `Dr. ${name} has been added. Their credentials are now available.` });
+          setIsAddDoctorOpen(false);
+          setGeneratedCreds({ id: partnerId, pass: password, role: 'Doctor' });
+          setIsCredsDialogOpen(true);
+        } catch (error) {
+          console.error('Error adding doctor:', error);
+          toast({ variant: 'destructive', title: 'Error', description: 'Could not add doctor.' });
+        }
+    };
 
     const handleAcceptRequest = async (request: EmergencyRequest, ambulanceId: string) => {
         if (!hospitalData || !db) return;
@@ -607,6 +670,18 @@ export default function HospitalMissionControl() {
             });
         }
     }
+    
+    const handleDeleteDoctor = async (doctorId: string, doctorName: string) => {
+        if (!db || !hospitalData) return;
+        const doctorRef = doc(db, `ambulances/${hospitalData.id}/doctors`, doctorId);
+        try {
+          await deleteDoc(doctorRef);
+          toast({ variant: 'destructive', title: 'Doctor Removed', description: `Dr. ${doctorName} has been removed from the roster.` });
+        } catch (error) {
+           toast({ variant: 'destructive', title: 'Error', description: 'Could not remove the doctor.' });
+        }
+      };
+
 
     const getSeverityBadge = (severity?: EmergencyRequest['severity']) => {
         switch (severity) {
@@ -756,7 +831,7 @@ export default function HospitalMissionControl() {
                                                     <div className="text-xs text-muted-foreground">{appt.appointmentDate} at {appt.appointmentTime}</div>
                                                  </TableCell>
                                                  <TableCell>
-                                                      {appt.isRecurring && <Badge variant="secondary" className="mb-1"><Repeat className="w-3 h-3 mr-1" /> Recurring</Badge>}
+                                                      {appt.isRecurring && <Badge variant="secondary" className="mb-1">Recurring</Badge>}
                                                       <div className="font-medium">{appt.department}</div>
                                                  </TableCell>
                                                  <TableCell className="text-right">
@@ -816,9 +891,29 @@ export default function HospitalMissionControl() {
                    />
                </div>
             </div>
-            
+
+            <AlertDialog open={isCredsDialogOpen} onOpenChange={(isOpen) => {
+                if(!isOpen) setGeneratedCreds(null);
+                setIsCredsDialogOpen(isOpen);
+            }}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>{generatedCreds?.role || 'Staff'} Added!</AlertDialogTitle>
+                        <AlertDialogDescription>Share these credentials with the new staff member. They will be prompted to change their password on first login.</AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <div className="space-y-4 my-4">
+                        <div className="space-y-1"><Label htmlFor="partnerId">Partner ID</Label><Input id="partnerId" value={generatedCreds?.id ?? ''} readOnly /></div>
+                        <div className="space-y-1"><Label htmlFor="tempPass">Temporary Password</Label><Input id="tempPass" value={generatedCreds?.pass ?? ''} readOnly /></div>
+                    </div>
+                    <AlertDialogFooter>
+                        <Button variant="outline" onClick={() => {
+                            navigator.clipboard.writeText(`ID: ${generatedCreds?.id}\nPass: ${generatedCreds?.pass}`);
+                            toast({ title: 'Copied!' });
+                        }}>Copy</Button>
+                        <AlertDialogAction onClick={() => { setGeneratedCreds(null); setIsCredsDialogOpen(false); }}>Close</AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     )
 }
-
-    
