@@ -7,31 +7,18 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
-import { Ambulance, Check, X, PlusCircle, Car, User, Siren, Map, Waves, Settings, ServerCrash, BedDouble, BarChart, Clock, Users, KeyRound, Navigation, UserPlus, Phone, Share2, MoreHorizontal, Trash2, ListChecks, FileText, Minus, Plus, Hospital, Calendar, PersonStanding, Briefcase, Stethoscope } from 'lucide-react'
+import { Ambulance, Phone, Siren, Navigation, BedDouble, Settings, Minus, Plus } from 'lucide-react'
 import { AlertDialog, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogCancel, AlertDialogAction, AlertDialogTrigger } from '@/components/ui/alert-dialog'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription, DialogFooter } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from '@/components/ui/dialog'
 import { useToast } from '@/hooks/use-toast'
 import { Skeleton } from '@/components/ui/skeleton'
 import dynamic from 'next/dynamic'
 import { useDb } from '@/firebase/client-provider'
-import { collection, query, where, onSnapshot, doc, updateDoc, GeoPoint, serverTimestamp, arrayUnion, addDoc, getDocs, getDoc, orderBy, Timestamp, writeBatch, deleteDoc } from 'firebase/firestore'
+import { collection, query, where, onSnapshot, doc, updateDoc, GeoPoint, serverTimestamp, arrayUnion, addDoc } from 'firebase/firestore'
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
 import SearchingIndicator from '@/components/ui/searching-indicator'
-import Link from 'next/link'
 
 
 const LiveMap = dynamic(() => import('@/components/live-map'), {
@@ -50,43 +37,6 @@ interface AmbulanceVehicle {
     rcNumber: string;
 }
 
-interface AmbulanceDriver {
-    id: string;
-    name: string;
-    phone: string;
-    age: number;
-    gender: 'male' | 'female' | 'other';
-    drivingLicence: string;
-    status: 'Active' | 'Inactive';
-    partnerId?: string;
-    password?: string;
-    createdAt: Timestamp;
-    assignedAmbulanceId?: string;
-    assignedAmbulanceName?: string;
-}
-
-interface Doctor {
-    id: string;
-    name: string;
-    specialization: string;
-    qualifications?: string;
-    experience?: string;
-    phone: string;
-    createdAt: Timestamp;
-    photoUrl?: string; // To store uploaded photo URL
-    degreeUrl?: string; // To store uploaded degree URL
-    docStatus?: 'Verified' | 'Pending';
-    partnerId?: string; // For Doctor's own login
-    password?: string; // For Doctor's own login
-}
-
-
-interface ChecklistItem {
-    id: string;
-    text: string;
-    createdAt: Timestamp;
-}
-
 interface EmergencyRequest {
     id: string;
     caseId: string;
@@ -97,17 +47,6 @@ interface EmergencyRequest {
     rejectedBy?: string[];
     createdAt: any;
     otp?: string;
-}
-
-interface AppointmentRequest {
-    id: string;
-    patientName: string;
-    department: string;
-    appointmentDate: string;
-    appointmentTime: string;
-    status: 'Pending' | 'Confirmed' | 'In Queue' | 'Cancelled';
-    isRecurring: boolean;
-    doctorName?: string;
 }
 
 interface OngoingCase extends EmergencyRequest {
@@ -128,58 +67,20 @@ interface HospitalData {
     location?: GeoPoint;
 }
 
-const mockAppointments: AppointmentRequest[] = [
-    { id: 'APT001', patientName: 'Priya Singh', department: 'Cardiology', doctorName: 'Dr. Sharma', appointmentDate: '2024-09-10', appointmentTime: '11:00 AM', status: 'Confirmed', isRecurring: true },
-    { id: 'APT002', patientName: 'Rajesh Verma', department: 'Orthopedics', doctorName: 'Dr. Gupta', appointmentDate: '2024-09-10', appointmentTime: '02:00 PM', status: 'Confirmed', isRecurring: false },
-    { id: 'APT003', patientName: 'Anita Desai', department: 'General Physician', doctorName: 'Dr. Verma', appointmentDate: '2024-09-11', appointmentTime: '10:00 AM', status: 'Pending', isRecurring: false },
-]
-
-const doctorSpecializations = [
-  'Cardiology', 'Neurology', 'Orthopedics', 'Pediatrics', 'Oncology', 
-  'Gastroenterology', 'General Physician', 'Dermatology', 'ENT Specialist'
-];
-
 export default function HospitalMissionControl() {
     const [isMounted, setIsMounted] = useState(false);
     const [hospitalData, setHospitalData] = useState<HospitalData | null>(null);
     const [fleet, setFleet] = useState<AmbulanceVehicle[]>([]);
-    const [drivers, setDrivers] = useState<AmbulanceDriver[]>([]);
-    const [doctors, setDoctors] = useState<Doctor[]>([]);
     const [incomingRequests, setIncomingRequests] = useState<EmergencyRequest[]>([]);
-    const [appointments, setAppointments] = useState<AppointmentRequest[]>(mockAppointments);
     const [ongoingCase, setOngoingCase] = useState<OngoingCase | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isOnline, setIsOnline] = useState(false);
     const { toast } = useToast();
-    const [checklistItems, setChecklistItems] = useState<ChecklistItem[]>([]);
-    const [newChecklistItem, setNewChecklistItem] = useState('');
-    const [selectedDriver, setSelectedDriver] = useState<AmbulanceDriver | null>(null);
-    const [isDriverDetailsOpen, setIsDriverDetailsOpen] = useState(false);
     const db = useDb();
-
+    
     // Bed Management State
     const [totalBeds, setTotalBeds] = useState(0);
     const [bedsOccupied, setBedsOccupied] = useState(0);
-
-    // Add Ambulance/Driver/Doctor Form State
-    const [isAddAmbulanceOpen, setIsAddAmbulanceOpen] = useState(false);
-    const [newAmbulanceName, setNewAmbulanceName] = useState('');
-    const [newAmbulanceType, setNewAmbulanceType] = useState<'BLS' | 'ALS' | 'Cardiac' | ''>('');
-    const [newAmbulanceDriverId, setNewAmbulanceDriverId] = useState('');
-    const [newRcNumber, setNewRcNumber] = useState('');
-    
-    const [isAddDriverOpen, setIsAddDriverOpen] = useState(false);
-    const [isAddDoctorOpen, setIsAddDoctorOpen] = useState(false);
-    
-    const [generatedCreds, setGeneratedCreds] = useState<{ id: string, pass: string, role: string } | null>(null);
-    const [isCredsDialogOpen, setIsCredsDialogOpen] = useState(false);
-    
-    // Analytics State
-    const [analytics, setAnalytics] = useState({
-        totalCases: 0,
-        avgResponseTime: 0,
-        fleetUtilization: 0
-    });
     
     const watchIdRef = useRef<number | null>(null);
 
@@ -254,23 +155,6 @@ export default function HospitalMissionControl() {
             const fleetData = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as AmbulanceVehicle));
             setFleet(fleetData);
         });
-        
-        const driversRef = query(collection(db, `ambulances/${partnerId}/drivers`), orderBy('createdAt', 'desc'));
-        const unsubDrivers = onSnapshot(driversRef, (snapshot) => {
-            const driversData = snapshot.docs.map(d => ({id: d.id, ...d.data()} as AmbulanceDriver));
-            setDrivers(driversData);
-        });
-        
-        const doctorsRef = query(collection(db, `ambulances/${partnerId}/doctors`), orderBy('name', 'asc'));
-        const unsubDoctors = onSnapshot(doctorsRef, (snapshot) => {
-            setDoctors(snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Doctor)));
-        });
-
-        const checklistRef = collection(db, `ambulances/${partnerId}/checklistTemplate`);
-        const qChecklist = query(checklistRef, orderBy('createdAt', 'asc'));
-        const unsubChecklist = onSnapshot(qChecklist, (snapshot) => {
-            setChecklistItems(snapshot.docs.map(d => ({ id: d.id, ...d.data() } as ChecklistItem)));
-        });
 
         const allCasesQuery = query(collection(db, "emergencyCases"), where("assignedPartner.id", "==", partnerId), orderBy("createdAt", "desc"));
         const unsubAllCases = onSnapshot(allCasesQuery, (snapshot) => {
@@ -287,104 +171,49 @@ export default function HospitalMissionControl() {
             
             setIncomingRequests(requestsData);
         });
-        
-        const fetchAnalytics = async () => {
-            const casesQuery = query(collection(db, 'emergencyCases'), where('assignedPartner.id', '==', partnerId), where('status', '==', 'completed'));
-            const snapshot = await getDocs(casesQuery);
-            const cases = snapshot.docs.map(d => d.data());
-            
-            const totalCases = cases.length;
-            const totalResponseTime = cases.reduce((acc, c) => {
-                const acceptedTime = (c.acceptedAt || c.createdAt)?.toDate();
-                const createdTime = c.createdAt.toDate();
-                if (acceptedTime && createdTime) {
-                    return acc + (acceptedTime.getTime() - createdTime.getTime());
-                }
-                return acc;
-            }, 0);
 
-            const avgResponseTime = totalCases > 0 ? (totalResponseTime / totalCases) / 1000 / 60 : 0;
-            
-            const fleetSnapshot = await getDocs(collection(db, `ambulances/${partnerId}/fleet`));
-            const totalAmbulances = fleetSnapshot.size;
-            const onDutyAmbulances = fleetSnapshot.docs.filter(d => d.data().status === 'On-Duty').length;
-            const fleetUtilization = totalAmbulances > 0 ? (onDutyAmbulances / totalAmbulances) * 100 : 0;
-
-            setAnalytics({ totalCases, avgResponseTime, fleetUtilization });
-        };
-
-        fetchAnalytics();
         setIsLoading(false);
 
         return () => {
             unsubHospital();
             unsubFleet();
             unsubAllCases();
-            unsubDrivers();
-            unsubDoctors();
-            unsubChecklist();
             unsubRequests();
             if (watchIdRef.current) navigator.geolocation.clearWatch(watchIdRef.current);
         };
     }, [toast, db]);
     
-    useEffect(() => {
-    if (!ongoingCase?.assignedAmbulanceId || !hospitalData?.id || !db) {
-        if (watchIdRef.current) {
-            navigator.geolocation.clearWatch(watchIdRef.current);
-            watchIdRef.current = null;
-        }
-        return;
-    }
+     useEffect(() => {
+        if (ongoingCase?.assignedAmbulanceId && hospitalData?.id && db) {
+            const ambulanceRef = doc(db, `ambulances/${hospitalData.id}/fleet`, ongoingCase.assignedAmbulanceId);
+            const caseRef = doc(db, 'emergencyCases', ongoingCase.id);
 
-    const ambulanceRef = doc(db, `ambulances/${hospitalData.id}/fleet`, ongoingCase.assignedAmbulanceId);
-    const caseRef = doc(db, 'emergencyCases', ongoingCase.id);
-
-    let lastSentLocation: { lat: number, lon: number } | null = null;
-    let lastSentTime = 0;
-    const MIN_DISTANCE_THRESHOLD = 50; // meters
-    const MIN_TIME_THRESHOLD = 30000; // 30 seconds
-
-    const getDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
-        const R = 6371e3; // metres
-        const φ1 = lat1 * Math.PI/180;
-        const φ2 = lat2 * Math.PI/180;
-        const Δφ = (lat2-lat1) * Math.PI/180;
-        const Δλ = (lon2-lon1) * Math.PI/180;
-
-        const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
-                  Math.cos(φ1) * Math.cos(φ2) *
-                  Math.sin(Δλ/2) * Math.sin(Δλ/2);
-        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-
-        return R * c; // in metres
-    }
-    
-    watchIdRef.current = navigator.geolocation.watchPosition(
-        (pos) => {
-            const newLocation = { lat: pos.coords.latitude, lon: pos.coords.longitude };
-            const now = Date.now();
-            const distanceMoved = lastSentLocation ? getDistance(lastSentLocation.lat, lastSentLocation.lon, newLocation.lat, newLocation.lon) : Infinity;
-
-            if (distanceMoved > MIN_DISTANCE_THRESHOLD || now - lastSentTime > MIN_TIME_THRESHOLD) {
-                const newGeoPoint = new GeoPoint(newLocation.lat, newLocation.lon);
-                
-                const batch = writeBatch(db);
-                batch.update(ambulanceRef, { location: newGeoPoint });
-                batch.update(caseRef, { partnerLocation: newGeoPoint });
-                
-                batch.commit().catch(e => console.error("Error updating location batch:", e));
-                
-                lastSentLocation = newLocation;
-                lastSentTime = now;
+            let lastSentTime = 0;
+            const MIN_TIME_THRESHOLD = 30000; // 30 seconds
+            
+            watchIdRef.current = navigator.geolocation.watchPosition(
+                (pos) => {
+                    const now = Date.now();
+                    if (now - lastSentTime > MIN_TIME_THRESHOLD) {
+                        const newGeoPoint = new GeoPoint(pos.coords.latitude, pos.coords.longitude);
+                        const batch = writeBatch(db);
+                        batch.update(ambulanceRef, { location: newGeoPoint });
+                        batch.update(caseRef, { partnerLocation: newGeoPoint });
+                        batch.commit().catch(e => console.error("Error updating location batch:", e));
+                        lastSentTime = now;
+                    }
+                },
+                (err) => console.error("Could not get ambulance location:", err),
+                { enableHighAccuracy: true }
+            );
+        } else {
+            if (watchIdRef.current) {
+                navigator.geolocation.clearWatch(watchIdRef.current);
+                watchIdRef.current = null;
             }
-        },
-        (err) => console.error("Could not get ambulance location:", err),
-        { enableHighAccuracy: true }
-    );
-
-    return () => { if (watchIdRef.current) navigator.geolocation.clearWatch(watchIdRef.current) };
-}, [ongoingCase, hospitalData?.id, db]);
+        }
+        return () => { if (watchIdRef.current) navigator.geolocation.clearWatch(watchIdRef.current) };
+    }, [ongoingCase, hospitalData?.id, db]);
 
 
     const handleOnlineStatusChange = async (checked: boolean) => {
@@ -419,147 +248,6 @@ export default function HospitalMissionControl() {
             toast({ variant: 'destructive', title: 'Error', description: 'Could not update bed status.' });
         }
     }
-    
-    const handleAddAmbulance = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!hospitalData || !newAmbulanceName || !newAmbulanceType || !newAmbulanceDriverId || !newRcNumber || !db) {
-            toast({ variant: 'destructive', title: 'Error', description: 'Please provide all ambulance details.'});
-            return;
-        }
-        
-        const selectedDriver = drivers.find(d => d.id === newAmbulanceDriverId);
-        if (!selectedDriver) {
-             toast({ variant: 'destructive', title: 'Error', description: 'Selected driver not found.'});
-             return;
-        }
-
-        const fleetRef = collection(db, `ambulances/${hospitalData.id}/fleet`);
-        try {
-            const newAmbulanceDoc = await addDoc(fleetRef, {
-                name: newAmbulanceName,
-                type: newAmbulanceType,
-                driverId: selectedDriver.id,
-                driverName: selectedDriver.name,
-                driverPhone: selectedDriver.phone,
-                rcNumber: newRcNumber,
-                status: 'Available',
-                location: hospitalData.location || new GeoPoint(28.6139, 77.2090)
-            });
-            
-            // Link ambulance to the driver
-            const driverRef = doc(db, `ambulances/${hospitalData.id}/drivers`, selectedDriver.id);
-            await updateDoc(driverRef, {
-                assignedAmbulanceId: newAmbulanceDoc.id,
-                assignedAmbulanceName: newAmbulanceName,
-            });
-
-            toast({ title: 'Ambulance Added', description: `${newAmbulanceName} has been added to your fleet.`});
-            // Reset form and close dialog
-            setIsAddAmbulanceOpen(false);
-            setNewAmbulanceName('');
-            setNewAmbulanceType('');
-            setNewAmbulanceDriverId('');
-            setNewRcNumber('');
-        } catch (error) {
-            console.error(error);
-            toast({ variant: 'destructive', title: 'Error', description: 'Could not add ambulance to fleet.'});
-        }
-    }
-    
-    const handleAddDriver = async (e: React.FormEvent<HTMLFormElement>) => {
-        e.preventDefault();
-        if (!hospitalData || !db) return;
-
-        const formData = new FormData(e.currentTarget);
-        const name = formData.get('driverName') as string;
-        const phone = formData.get('driverPhone') as string;
-        const age = formData.get('driverAge') as string;
-        const gender = formData.get('gender') as 'male' | 'female' | 'other';
-        const drivingLicence = formData.get('drivingLicence') as string;
-
-        if (!name || !phone || !age || !gender || !drivingLicence) {
-            toast({ variant: 'destructive', title: 'Error', description: 'Please provide all driver details.' });
-            return;
-        }
-
-        const driversRef = collection(db, `ambulances/${hospitalData.id}/drivers`);
-        const ambulanceDriversRef = collection(db, 'ambulanceDrivers');
-
-        try {
-            const q = query(ambulanceDriversRef, where("phone", "==", phone));
-            const phoneCheck = await getDocs(q);
-            if (!phoneCheck.empty) {
-                toast({ variant: 'destructive', title: 'Driver Exists', description: 'A driver with this phone number is already registered.' });
-                return;
-            }
-
-            const partnerId = `CZA-${phone.slice(-4)}${Math.floor(10 + Math.random() * 90)}`;
-            const password = `cAbZ@${Math.floor(1000 + Math.random() * 9000)}`;
-
-            const batch = writeBatch(db);
-
-            const hospitalDriverDocRef = doc(driversRef);
-            batch.set(hospitalDriverDocRef, {
-                name, phone, drivingLicence, age: Number(age), gender,
-                status: 'Active', partnerId, createdAt: serverTimestamp(),
-            });
-
-            const globalDriverDocRef = doc(ambulanceDriversRef);
-            batch.set(globalDriverDocRef, {
-                id: globalDriverDocRef.id, name, phone, partnerId, password, drivingLicence,
-                status: 'Active', hospitalId: hospitalData.id, hospitalName: hospitalData.name,
-                driverIdInHospital: hospitalDriverDocRef.id, createdAt: serverTimestamp(),
-            });
-
-            await batch.commit();
-
-            setGeneratedCreds({ id: partnerId, pass: password, role: 'Ambulance Driver' });
-            setIsAddDriverOpen(false);
-            setIsCredsDialogOpen(true);
-            (e.target as HTMLFormElement).reset();
-
-            toast({ title: 'Driver Added', description: `${name} has been added to your team. Their credentials are now available.` });
-        } catch (error) {
-            console.error(error);
-            toast({ variant: 'destructive', title: 'Error', description: 'Could not add driver.' });
-        }
-    }
-    
-    const handleAddDoctor = async (event: React.FormEvent<HTMLFormElement>) => {
-        event.preventDefault();
-        if (!db || !hospitalData) return;
-
-        const formData = new FormData(event.currentTarget);
-        const name = formData.get('doctorName') as string;
-        const phone = formData.get('doctorPhone') as string;
-        const specialization = formData.get('specialization') as string;
-        const qualifications = formData.get('qualifications') as string;
-        const experience = formData.get('experience') as string;
-
-        if (!name || !phone || !specialization || !qualifications || !experience) {
-            toast({ variant: 'destructive', title: 'Error', description: 'Please provide all doctor details.' });
-            return;
-        }
-
-        const partnerId = `CZD-${phone.slice(-4)}${name.split(' ')[0].slice(0, 2).toUpperCase()}`;
-        const password = `cAbZ@${Math.floor(1000 + Math.random() * 9000)}`;
-
-        try {
-          await addDoc(collection(db, `ambulances/${hospitalData.id}/doctors`), {
-            name, phone, specialization, qualifications, experience,
-            photoUrl: 'pending_upload', degreeUrl: 'pending_upload', docStatus: 'Pending',
-            partnerId, password, // Save credentials
-            createdAt: serverTimestamp(),
-          });
-          toast({ title: 'Doctor Added', description: `Dr. ${name} has been added. Their credentials are now available.` });
-          setIsAddDoctorOpen(false);
-          setGeneratedCreds({ id: partnerId, pass: password, role: 'Doctor' });
-          setIsCredsDialogOpen(true);
-        } catch (error) {
-          console.error('Error adding doctor:', error);
-          toast({ variant: 'destructive', title: 'Error', description: 'Could not add doctor.' });
-        }
-    };
 
     const handleAcceptRequest = async (request: EmergencyRequest, ambulanceId: string) => {
         if (!hospitalData || !db) return;
@@ -606,85 +294,6 @@ export default function HospitalMissionControl() {
          }
     }
 
-    const handleDeleteDriver = async (driver: AmbulanceDriver) => {
-        if (!db || !hospitalData) return;
-
-        const batch = writeBatch(db);
-
-        // 1. Delete the driver from the hospital's private subcollection
-        const hospitalDriverRef = doc(db, `ambulances/${hospitalData.id}/drivers`, driver.id);
-        batch.delete(hospitalDriverRef);
-        
-        // 2. Find and delete the driver from the global collection to revoke login
-        const globalDriverQuery = query(collection(db, 'ambulanceDrivers'), where('phone', '==', driver.phone));
-        const globalDriverSnap = await getDocs(globalDriverQuery);
-
-        if (!globalDriverSnap.empty) {
-            const globalDriverDoc = globalDriverSnap.docs[0];
-            batch.delete(globalDriverDoc.ref);
-        }
-
-        try {
-            await batch.commit();
-            toast({
-                variant: 'destructive',
-                title: 'Driver Removed',
-                description: `${driver.name} has been removed from your roster and their access has been revoked.`
-            });
-            setIsDriverDetailsOpen(false);
-            setSelectedDriver(null);
-        } catch (error) {
-            console.error('Error removing driver:', error);
-            toast({
-                variant: 'destructive',
-                title: 'Deletion Failed',
-                description: 'Could not remove the driver from the system.'
-            });
-        }
-    };
-    
-    const handleDeleteAmbulance = async (ambulance: AmbulanceVehicle) => {
-        if (!db || !hospitalData) return;
-
-        if (ambulance.status === 'On-Duty') {
-            toast({
-                variant: 'destructive',
-                title: 'Action Denied',
-                description: 'Cannot delete an ambulance that is on-duty for an active case.',
-            });
-            return;
-        }
-
-        const ambulanceRef = doc(db, `ambulances/${hospitalData.id}/fleet`, ambulance.id);
-        try {
-            await deleteDoc(ambulanceRef);
-            toast({
-                variant: 'destructive',
-                title: 'Ambulance Removed',
-                description: `${ambulance.name} has been removed from your fleet.`
-            });
-        } catch (error) {
-            console.error('Error removing ambulance:', error);
-            toast({
-                variant: 'destructive',
-                title: 'Deletion Failed',
-                description: 'Could not remove the ambulance from your fleet.'
-            });
-        }
-    }
-    
-    const handleDeleteDoctor = async (doctorId: string, doctorName: string) => {
-        if (!db || !hospitalData) return;
-        const doctorRef = doc(db, `ambulances/${hospitalData.id}/doctors`, doctorId);
-        try {
-          await deleteDoc(doctorRef);
-          toast({ variant: 'destructive', title: 'Doctor Removed', description: `Dr. ${doctorName} has been removed from the roster.` });
-        } catch (error) {
-           toast({ variant: 'destructive', title: 'Error', description: 'Could not remove the doctor.' });
-        }
-      };
-
-
     const getSeverityBadge = (severity?: EmergencyRequest['severity']) => {
         switch (severity) {
             case 'Critical': return <Badge variant="destructive" className="text-base"><Siren className="w-4 h-4 mr-2 animate-pulse-intense"/>{severity}</Badge>;
@@ -717,15 +326,6 @@ export default function HospitalMissionControl() {
             }));
     }, [fleet]);
 
-    const getInitials = (name: string) => {
-        if (!name) return 'D';
-        const names = name.split(' ');
-        if (names.length > 1) {
-          return names[0][0] + names[names.length - 1][0];
-        }
-        return name.substring(0, 2);
-    }
-
     if (isLoading) {
       return (
           <div className="grid lg:grid-cols-2 xl:grid-cols-3 gap-6 h-full">
@@ -741,127 +341,9 @@ export default function HospitalMissionControl() {
     }
 
     const availableBeds = (totalBeds || 0) - (bedsOccupied || 0);
-    
-    const getAppointmentStatusBadge = (status: AppointmentRequest['status']) => {
-        switch (status) {
-            case 'Confirmed': return <Badge className="bg-blue-100 text-blue-800">{status}</Badge>;
-            case 'In Queue': return <Badge className="bg-purple-100 text-purple-800">{status}</Badge>;
-            case 'Pending': return <Badge className="bg-yellow-100 text-yellow-800">{status}</Badge>;
-            case 'Cancelled': return <Badge variant="destructive">{status}</Badge>;
-            default: return <Badge variant="secondary">{status}</Badge>;
-        }
-    }
-    
-    const handlePatientCheckIn = (id: string) => {
-        setAppointments(prev => prev.map(appt => appt.id === id ? { ...appt, status: 'In Queue' } : appt));
-        toast({ title: "Patient Checked In", description: "The patient has been added to the waiting queue." });
-    }
 
     return (
         <div className="grid lg:grid-cols-2 xl:grid-cols-3 gap-6 items-start h-full">
-            {/* Right Column (Action Feed) */}
-            <div className="lg:col-span-1 space-y-6">
-                 {ongoingCase && (
-                    <Card className="bg-primary/5 border-primary animate-fade-in">
-                        <CardHeader><CardTitle className="flex items-center gap-2"><Siren className="w-6 h-6 text-primary animate-pulse"/> Ongoing Case</CardTitle><CardDescription>Patient: {ongoingCase.riderName}</CardDescription></CardHeader>
-                        <CardContent className="space-y-4">
-                            <div className="flex gap-4 p-4 rounded-lg bg-background">
-                                <Avatar className="w-16 h-16"><AvatarImage src={'https://placehold.co/100x100.png'} alt="Patient" data-ai-hint="patient portrait" /><AvatarFallback>P</AvatarFallback></Avatar>
-                                <div className="space-y-1"><h3 className="font-bold">{ongoingCase.riderName}</h3><p className="text-sm text-muted-foreground flex items-center gap-2"><Phone className="w-3 h-3"/> {ongoingCase.phone}</p><p className="text-sm font-semibold text-primary flex items-center gap-2"><Ambulance className="w-3 h-3"/> {ongoingCase.assignedAmbulanceName}</p></div>
-                            </div>
-                            <Button className="w-full bg-blue-600 hover:bg-blue-700" size="lg" onClick={() => window.open(`https://www.google.com/maps/dir/?api=1&destination=${ongoingCase.location.latitude},${ongoingCase.location.longitude}`, '_blank')}><Navigation className="mr-2 h-5 w-5"/> Navigate</Button>
-                        </CardContent>
-                    </Card>
-                )}
-                 <Card className={cn("transition-all", ongoingCase && 'opacity-30')}>
-                     <Tabs defaultValue="emergency">
-                         <CardHeader>
-                            <TabsList className="grid w-full grid-cols-2">
-                                <TabsTrigger value="emergency" className="gap-1">
-                                    <Waves className="w-4 h-4"/> Emergency
-                                </TabsTrigger>
-                                <TabsTrigger value="appointments" className="gap-1">
-                                    <Calendar className="w-4 h-4"/> Appointments
-                                </TabsTrigger>
-                            </TabsList>
-                         </CardHeader>
-                         <TabsContent value="emergency">
-                            <CardContent className="space-y-4 max-h-96 overflow-y-auto pr-2">
-                                <div className="flex gap-2">
-                                    <Button onClick={simulateNewCase} size="sm" variant="outline" className="w-full">Create Test Alert</Button>
-                                </div>
-                                {ongoingCase ? (
-                                    <div className="text-center text-muted-foreground py-10">
-                                        <p className="font-bold">A case is already in progress.</p>
-                                        <p className="text-sm">Please resolve the ongoing case before accepting new requests.</p>
-                                    </div>
-                                ) : incomingRequests.length > 0 ? (
-                                    incomingRequests.map(req => (
-                                        <Card key={req.id} className="bg-destructive/10 border-destructive shadow-lg animate-pulse-intense">
-                                            <CardHeader className="p-4"><CardTitle>{getSeverityBadge(req.severity)}</CardTitle><CardDescription className="pt-2">New {req.severity || 'Non-Critical'} case from patient {req.riderName}.</CardDescription></CardHeader>
-                                            <CardFooter className="p-4 pt-0 grid grid-cols-3 gap-2">
-                                                <Button variant="outline" asChild><a href={`tel:${req.phone}`}><Phone className="w-4 h-4"/> Call</a></Button>
-                                                <Dialog><DialogTrigger asChild><Button className="w-full col-span-1">Accept</Button></DialogTrigger>
-                                                    <DialogContent><DialogHeader><DialogTitle>Dispatch Ambulance</DialogTitle><DialogDescription>Select an available ambulance for this case.</DialogDescription></DialogHeader>
-                                                        <div className="py-4 space-y-2 max-h-60 overflow-y-auto">
-                                                            {fleet.filter(a => a.status === 'Available').map(a => (<Button key={a.id} variant="outline" className="w-full justify-start h-12" onClick={() => handleAcceptRequest(req, a.id)}><Ambulance className="mr-4"/><div><p className="font-semibold">{a.name}</p><p className="text-xs text-muted-foreground">{a.type}</p></div></Button>))}
-                                                            {fleet.filter(a => a.status === 'Available').length === 0 && (<p className="text-center text-muted-foreground py-4">No ambulances are currently available.</p>)}
-                                                        </div>
-                                                    </DialogContent>
-                                                </Dialog>
-                                                <Button variant="destructive" className="w-full col-span-1" onClick={() => handleRejectRequest(req.id)}>Reject</Button>
-                                            </CardFooter>
-                                        </Card>
-                                    ))
-                                ) : (
-                                    <div className="text-center text-muted-foreground h-48 flex items-center justify-center flex-col">
-                                        <SearchingIndicator partnerType="cure" /><p className="mt-4 font-semibold">Listening for emergency requests...</p>
-                                    </div>
-                                )}
-                            </CardContent>
-                         </TabsContent>
-                          <TabsContent value="appointments">
-                            <CardContent>
-                                 <Table>
-                                     <TableHeader>
-                                         <TableRow>
-                                            <TableHead>Patient</TableHead>
-                                            <TableHead>Doctor</TableHead>
-                                            <TableHead>Status</TableHead>
-                                            <TableHead className="text-right">Action</TableHead>
-                                         </TableRow>
-                                     </TableHeader>
-                                     <TableBody>
-                                         {appointments.map(appt => (
-                                             <TableRow key={appt.id} className={cn(appt.status === 'In Queue' && 'bg-purple-100/50 dark:bg-purple-900/20')}>
-                                                 <TableCell>
-                                                    <div className="font-semibold">{appt.patientName}</div>
-                                                    <div className="text-xs text-muted-foreground">{appt.appointmentTime}</div>
-                                                 </TableCell>
-                                                 <TableCell>
-                                                      <div className="font-medium">{appt.doctorName}</div>
-                                                      <div className="text-xs text-muted-foreground">{appt.department}</div>
-                                                 </TableCell>
-                                                 <TableCell>{getAppointmentStatusBadge(appt.status)}</TableCell>
-                                                 <TableCell className="text-right">
-                                                    {appt.status === 'Confirmed' ? (
-                                                        <Button size="sm" onClick={() => handlePatientCheckIn(appt.id)}>Check-in</Button>
-                                                    ) : (
-                                                        <Button size="sm" variant="outline" disabled>{appt.status}</Button>
-                                                    )}
-                                                 </TableCell>
-                                             </TableRow>
-                                         ))}
-                                          {appointments.length === 0 && <TableRow><TableCell colSpan={4} className="text-center h-24">No appointments scheduled.</TableCell></TableRow>}
-                                     </TableBody>
-                                 </Table>
-                             </CardContent>
-                         </TabsContent>
-                     </Tabs>
-                </Card>
-            </div>
-
-            {/* Left & Middle Column (Map & Management) */}
             <div className="lg:col-span-1 xl:col-span-2 space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <Card className="md:col-span-1">
@@ -897,31 +379,61 @@ export default function HospitalMissionControl() {
                    />
                </div>
             </div>
-
-            <AlertDialog open={isCredsDialogOpen} onOpenChange={(isOpen) => {
-                if(!isOpen) setGeneratedCreds(null);
-                setIsCredsDialogOpen(isOpen);
-            }}>
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                        <AlertDialogTitle>{generatedCreds?.role || 'Staff'} Added!</AlertDialogTitle>
-                        <AlertDialogDescription>Share these credentials with the new staff member. They will be prompted to change their password on first login.</AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <div className="space-y-4 my-4">
-                        <div className="space-y-1"><Label htmlFor="partnerId">Partner ID</Label><Input id="partnerId" value={generatedCreds?.id ?? ''} readOnly /></div>
-                        <div className="space-y-1"><Label htmlFor="tempPass">Temporary Password</Label><Input id="tempPass" value={generatedCreds?.pass ?? ''} readOnly /></div>
-                    </div>
-                    <AlertDialogFooter>
-                        <Button variant="outline" onClick={() => {
-                            navigator.clipboard.writeText(`ID: ${generatedCreds?.id}\nPass: ${generatedCreds?.pass}`);
-                            toast({ title: 'Copied!' });
-                        }}>Copy</Button>
-                        <AlertDialogAction onClick={() => { setGeneratedCreds(null); setIsCredsDialogOpen(false); }}>Close</AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
+            
+             {/* Right Column (Action Feed) */}
+            <div className="lg:col-span-1 space-y-6">
+                 {ongoingCase && (
+                    <Card className="bg-primary/5 border-primary animate-fade-in">
+                        <CardHeader><CardTitle className="flex items-center gap-2"><Siren className="w-6 h-6 text-primary animate-pulse"/> Ongoing Case</CardTitle><CardDescription>Patient: {ongoingCase.riderName}</CardDescription></CardHeader>
+                        <CardContent className="space-y-4">
+                            <div className="flex gap-4 p-4 rounded-lg bg-background">
+                                <Avatar className="w-16 h-16"><AvatarImage src={'https://placehold.co/100x100.png'} alt="Patient" data-ai-hint="patient portrait" /><AvatarFallback>P</AvatarFallback></Avatar>
+                                <div className="space-y-1"><h3 className="font-bold">{ongoingCase.riderName}</h3><p className="text-sm text-muted-foreground flex items-center gap-2"><Phone className="w-3 h-3"/> {ongoingCase.phone}</p><p className="text-sm font-semibold text-primary flex items-center gap-2"><Ambulance className="w-3 h-3"/> {ongoingCase.assignedAmbulanceName}</p></div>
+                            </div>
+                            <Button className="w-full bg-blue-600 hover:bg-blue-700" size="lg" onClick={() => window.open(`https://www.google.com/maps/dir/?api=1&destination=${ongoingCase.location.latitude},${ongoingCase.location.longitude}`, '_blank')}><Navigation className="mr-2 h-5 w-5"/> Navigate</Button>
+                        </CardContent>
+                    </Card>
+                )}
+                 <Card className={cn("transition-all", ongoingCase && 'opacity-30')}>
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2">Emergency Feed</CardTitle>
+                        <CardDescription>Live incoming requests will appear here.</CardDescription>
+                         <div className="pt-2 flex gap-2">
+                            <Button onClick={simulateNewCase} size="sm" variant="outline" className="w-full">Create Test Alert</Button>
+                        </div>
+                    </CardHeader>
+                    <CardContent className="space-y-4 max-h-96 overflow-y-auto pr-2">
+                        {ongoingCase ? (
+                            <div className="text-center text-muted-foreground py-10">
+                                <p className="font-bold">A case is already in progress.</p>
+                                <p className="text-sm">Please resolve it before accepting new requests.</p>
+                            </div>
+                        ) : incomingRequests.length > 0 ? (
+                            incomingRequests.map(req => (
+                                <Card key={req.id} className="bg-destructive/10 border-destructive shadow-lg animate-pulse-intense">
+                                    <CardHeader className="p-4"><CardTitle>{getSeverityBadge(req.severity)}</CardTitle><CardDescription className="pt-2">New {req.severity || 'Non-Critical'} case from patient {req.riderName}.</CardDescription></CardHeader>
+                                    <CardFooter className="p-4 pt-0 grid grid-cols-3 gap-2">
+                                        <Button variant="outline" asChild><a href={`tel:${req.phone}`}><Phone className="w-4 h-4"/> Call</a></Button>
+                                        <Dialog><DialogTrigger asChild><Button className="w-full col-span-1">Accept</Button></DialogTrigger>
+                                            <DialogContent><DialogHeader><DialogTitle>Dispatch Ambulance</DialogTitle><DialogDescription>Select an available ambulance for this case.</DialogDescription></DialogHeader>
+                                                <div className="py-4 space-y-2 max-h-60 overflow-y-auto">
+                                                    {fleet.filter(a => a.status === 'Available').map(a => (<Button key={a.id} variant="outline" className="w-full justify-start h-12" onClick={() => handleAcceptRequest(req, a.id)}><Ambulance className="mr-4"/><div><p className="font-semibold">{a.name}</p><p className="text-xs text-muted-foreground">{a.type}</p></div></Button>))}
+                                                    {fleet.filter(a => a.status === 'Available').length === 0 && (<p className="text-center text-muted-foreground py-4">No ambulances are currently available.</p>)}
+                                                </div>
+                                            </DialogContent>
+                                        </Dialog>
+                                        <Button variant="destructive" className="w-full col-span-1" onClick={() => handleRejectRequest(req.id)}>Reject</Button>
+                                    </CardFooter>
+                                </Card>
+                            ))
+                        ) : (
+                            <div className="text-center text-muted-foreground h-48 flex items-center justify-center flex-col">
+                                <SearchingIndicator partnerType="cure" /><p className="mt-4 font-semibold">Listening for emergency requests...</p>
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
+            </div>
         </div>
     )
 }
-
-    
