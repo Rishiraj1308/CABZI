@@ -327,8 +327,8 @@ const LiveMap = forwardRef<any, LiveMapProps>((props, ref) => {
                     markerAnimationRef.current.delete(id);
                 } else {
                     hasActiveAnimations = true;
-                    const newLat = anim.startPos.lat + (anim.targetPos.lat - anim.startPos.lat) * progress;
-                    const newLng = anim.startPos.lng + (anim.targetPos.lng - anim.startPos.lng) * progress;
+                    const newLat = anim.startPos.lat + (anim.targetPos.lat - anim.targetPos.lat) * progress;
+                    const newLng = anim.startPos.lng + (anim.targetPos.lng - anim.targetPos.lng) * progress;
                     marker.setLatLng(new L.LatLng(newLat, newLng));
                 }
             });
@@ -482,3 +482,4 @@ const LiveMap = forwardRef<any, LiveMapProps>((props, ref) => {
 
 LiveMap.displayName = 'LiveMap';
 export default LiveMap;
+

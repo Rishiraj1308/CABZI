@@ -9,9 +9,7 @@ import { Star, Phone, LocateFixed, Shield, LifeBuoy, Share2, MapPin, ArrowRight,
 import { cn } from '@/lib/utils'
 import { useToast } from '@/hooks/use-toast'
 import dynamic from 'next/dynamic'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import { useFirestore } from '@/firebase/client-provider'
 import { collection, addDoc, serverTimestamp, doc, GeoPoint, query, where, getDocs, updateDoc, getDoc } from 'firebase/firestore'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -284,7 +282,7 @@ export default function RiderPage() {
                 </Card>
                  <Card className="hover:border-amber-500 hover:shadow-lg transition-all cursor-pointer text-center" onClick={() => setView('resq')}>
                     <CardHeader><Wrench className="w-12 h-12 text-amber-500 mx-auto"/> <CardTitle className="pt-2">ResQ Service</CardTitle></CardHeader>
-                    <CardContent><p className="text-sm text-muted-foreground">Get on-spot assistance for vehicle trouble.</p></CardContent>
+                    <CardContent><p className="text-sm text-muted-foreground">Get on-spot help for vehicle trouble.</p></CardContent>
                 </Card>
             </div>
         </MotionDiv>
@@ -301,10 +299,10 @@ export default function RiderPage() {
         return (
             <div className="h-full w-full flex flex-col">
                 <div className="absolute top-20 left-4 z-10"><Button onClick={() => setView('selection')} variant="outline" size="icon"><ArrowLeft/></Button></div>
-                <div className="flex-1 relative h-1/2">
+                <div className="h-1/2 relative">
                     <LiveMap ref={liveMapRef} onLocationFound={handleLocationFound} routeGeometry={routeGeometry} />
-                     <div className="absolute bottom-4 right-4 z-10">
-                        <EmergencyButtons 
+                    <div className="absolute bottom-4 right-4 z-10">
+                       <EmergencyButtons 
                             liveMapRef={liveMapRef}
                             pickupCoords={pickup.coords}
                             setIsRequestingSos={setIsRequestingSos}
@@ -408,7 +406,7 @@ export default function RiderPage() {
      }
 
     return (
-        <div className="h-full w-full">
+        <div className="h-full w-full relative">
             <AnimatePresence mode="wait">
                 {view === 'selection' && renderSelectionScreen()}
                 {view === 'path' && renderPathScreen()}
@@ -418,3 +416,4 @@ export default function RiderPage() {
         </div>
     );
 }
+
