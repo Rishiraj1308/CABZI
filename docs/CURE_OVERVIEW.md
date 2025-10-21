@@ -83,7 +83,22 @@ Every doctor added by the hospital gets their own secure login to manage their s
 
 ---
 
-## 6. The Technical Architecture
+## 6. Insurance Integration & Claim Workflow
+
+Cabzi CURE’s Insurance module bridges the gap between patients, hospitals, and insurance providers, ensuring that every emergency or consultation can be covered seamlessly under health policies.
+
+### A. Insurance Verification (/cure/insurance)
+
+**Real-Time Policy Check:**
+When a rider (patient) raises an SOS or books a doctor appointment, the system automatically checks if their Cabzi profile has a linked insurance policy.
+
+**Instant Verification:**
+The hospital’s dashboard receives a “Verified” or “Unverified” insurance tag on the patient’s case card.
+Verified policies display the insurer name, policy number, and coverage type (cashless / reimbursement).
+
+---
+
+## 7. The Technical Architecture
 
 ### Tech Snapshot
 
@@ -109,16 +124,16 @@ The entire ecosystem is built on a real-time, event-driven architecture powered 
 
 ---
 
-## 7. Security & Access Control
+## 8. Security & Access Control
 
 The platform is designed with security and compliance as a top priority.
 
-*   All portals (Hospital, Doctor, Ambulance) are protected by **role-based Firebase Authentication**.
-*   Each user's access is **strictly scoped** to their assigned data. Doctors can only see their appointments, drivers can only see their active case, and hospital admins can only manage their own fleet and staff. This ensures data privacy and HIPAA compliance.
+All portals (Hospital, Doctor, Ambulance) are protected by **role-based Firebase Authentication**.
+Each user's access is **strictly scoped** to their assigned data (e.g., doctors can only see their appointments, drivers can only see their active case). This ensures data privacy and HIPAA compliance.
 
 ---
 
-## 8. Notifications & Communication Layer
+## 9. Notifications & Communication Layer
 
 Real-time alerts are the nervous system of the CURE platform, powered by Firebase Cloud Messaging (FCM).
 
@@ -129,7 +144,7 @@ Real-time alerts are the nervous system of the CURE platform, powered by Firebas
 
 ---
 
-## 9. Analytics & Reports (Future Scope)
+## 10. Analytics & Reports (Future Scope)
 
 The `/cure/analytics` module (coming soon) will provide our CURE partners with powerful data-driven insights, including:
 
