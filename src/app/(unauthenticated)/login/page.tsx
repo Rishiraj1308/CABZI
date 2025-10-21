@@ -1,3 +1,4 @@
+
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
@@ -16,7 +17,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { useFirebase } from '@/firebase/client-provider'
 import { collection, query, where, getDocs, setDoc, doc, serverTimestamp } from 'firebase/firestore'
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signInWithPhoneNumber, RecaptchaVerifier, type ConfirmationResult } from 'firebase/auth'
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signInWithPhoneNumber, RecaptchaVerifier, type ConfirmationResult, GoogleAuthProvider, signInWithPopup } from 'firebase/auth'
 
 // This now matches the team page data for consistent roles
 const MOCK_ADMIN_USERS = [
@@ -85,8 +86,8 @@ export default function LoginPage() {
 
   const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
 
-  const [adminId, setAdminId] = useState('')
-  const [adminPassword, setAdminPassword] = useState('')
+  const [partnerIdInput, setPartnerIdInput] = useState('')
+  const [partnerPassword, setPartnerPassword] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [isMounted, setIsMounted] = useState(false);
   
@@ -117,26 +118,62 @@ export default function LoginPage() {
         setInputType('email');
     }
   }
+  
+  const handlePartnerLogin = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setIsLoading(true);
+    if (!db) {
+        setIsLoading(false);
+        return;
+    }
+    
+    let collectionName = '';
+    let targetRole = '';
+    let sessionKey = '';
+    let redirectPath = '';
 
-  const handleAdminLogin = (e: React.FormEvent<HTMLFormElement>) => {
-      e.preventDefault();
-      setIsLoading(true);
+    if (roleFromQuery === 'doctor') {
+      collectionName = 'doctors';
+      targetRole = 'doctor';
+      sessionKey = 'cabzi-doctor-session';
+      redirectPath = '/doctor';
+    }
 
-      const user = MOCK_ADMIN_USERS.find(u => u.id === adminId && u.password === adminPassword);
+    if (!collectionName) {
+        toast({ variant: 'destructive', title: 'Invalid Role' });
+        setIsLoading(false);
+        return;
+    }
+    
+    try {
+        const q = query(collection(db, collectionName), where("partnerId", "==", partnerIdInput), where("password", "==", partnerPassword));
+        const snapshot = await getDocs(q);
 
-      if (user) {
-          localStorage.setItem('cabzi-session', JSON.stringify({ role: 'admin', phone: '', name: user.name, adminRole: user.role }));
-          toast({ title: "Login Successful", description: `Welcome, ${user.role}!`});
-          router.push('/admin');
-      } else {
-          toast({
-              variant: 'destructive',
-              title: "Authentication Failed",
-              description: "Invalid Admin ID or Password.",
-          });
-      }
-      setIsLoading(false);
+        if (!snapshot.empty) {
+            const partnerDoc = snapshot.docs[0];
+            const partnerData = partnerDoc.data();
+            const sessionData = { 
+                role: targetRole,
+                phone: partnerData.phone, 
+                name: partnerData.name, 
+                partnerId: partnerIdInput,
+                hospitalId: partnerData.hospitalId,
+            };
+            localStorage.setItem(sessionKey, JSON.stringify(sessionData));
+            toast({ title: "Login Successful" });
+            router.push(redirectPath);
+        } else {
+            toast({ variant: 'destructive', title: 'Invalid Credentials' });
+        }
+
+    } catch (error) {
+        console.error(`Error during ${targetRole} login:`, error);
+        toast({ variant: 'destructive', title: 'Login Failed' });
+    } finally {
+        setIsLoading(false);
+    }
   }
+
 
  const findAndSetSession = async (user: { uid: string; email?: string | null; phoneNumber?: string | null }) => {
     if (!db) return false;
@@ -167,9 +204,8 @@ export default function LoginPage() {
             const userDoc = snapshot.docs[0];
             const userData = userDoc.data();
             
-            // This is the CRITICAL CHECK. Does the role we found match what the user is trying to log in as?
             const isRiderLogin = roleFromQuery === 'rider';
-            const isPartnerLogin = ['driver', 'mechanic', 'cure'].includes(roleFromQuery);
+            const isPartnerLogin = ['driver', 'mechanic', 'cure', 'doctor'].includes(roleFromQuery);
             
             const foundRider = role === 'rider';
             const foundPartner = ['driver', 'mechanic', 'cure'].includes(role);
@@ -227,7 +263,7 @@ export default function LoginPage() {
         if (roleFromQuery === 'rider') {
             setStep('details'); // New rider, go to details form.
         } else {
-            auth.signOut();
+            if (auth) auth.signOut();
             toast({ variant: 'destructive', title: 'Partner Not Found', description: 'This account does not exist or you are trying to log into the wrong portal.' });
         }
       }
@@ -260,7 +296,7 @@ export default function LoginPage() {
               if (roleFromQuery === 'rider') {
                   setStep('details');
               } else {
-                  auth.signOut();
+                  if(auth) auth.signOut();
                   toast({ variant: 'destructive', title: 'Partner Not Found', description: 'Please onboard via the Partner Hub first.' });
               }
           }
@@ -317,9 +353,61 @@ export default function LoginPage() {
           setIsLoading(false);
       }
   };
+
+  const handleGoogleSignIn = async () => {
+    if (!auth || !db) return;
+    setIsLoading(true);
+    const provider = new GoogleAuthProvider();
+    try {
+        const result = await signInWithPopup(auth, provider);
+        const user = result.user;
+        const userEmail = user.email;
+
+        if (!userEmail) {
+            throw new Error("Could not get email from Google Sign-In.");
+        }
+
+        const userQuery = query(collection(db, 'users'), where('email', '==', userEmail));
+        const userSnapshot = await getDocs(userQuery);
+
+        if (!userSnapshot.empty) { // User exists
+            const userDoc = userSnapshot.docs[0];
+            const userData = userDoc.data();
+            const sessionData = { 
+                role: 'rider',
+                phone: userData.phone, 
+                name: userData.name, 
+                userId: userDoc.id 
+            };
+            localStorage.setItem('cabzi-session', JSON.stringify(sessionData));
+            toast({ title: "Login Successful" });
+            router.push('/rider');
+        } else { // New user, create a document
+            const newUserRef = doc(db, "users", user.uid);
+            await setDoc(newUserRef, {
+                name: user.displayName,
+                email: user.email,
+                phone: '', // No phone from Google
+                gender: 'other', // Default gender
+                role: 'rider',
+                createdAt: serverTimestamp(),
+                isOnline: false,
+            });
+            localStorage.setItem('cabzi-session', JSON.stringify({ role: 'rider', email: user.email, name: user.displayName, userId: user.uid }));
+            toast({ title: "Welcome to Cabzi!", description: "Your account has been created." });
+            router.push('/rider');
+        }
+
+    } catch (error: any) {
+        toast({ variant: 'destructive', title: 'Google Sign-In Failed', description: error.message });
+    } finally {
+        setIsLoading(false);
+    }
+  }
   
   const getPageTitle = () => {
       if (roleFromQuery === 'admin') return 'Admin Panel';
+      if (roleFromQuery === 'doctor') return 'Doctor Login';
       if (step === 'details') return 'Create Your Account';
       if (step === 'otp') return 'Verify OTP';
       if (roleFromQuery === 'rider') return 'Rider Login or Signup';
@@ -328,6 +416,7 @@ export default function LoginPage() {
   
   const getPageDescription = () => {
       if (roleFromQuery === 'admin') return 'Please enter your credentials to access the panel.';
+      if (roleFromQuery === 'doctor') return 'Enter your Doctor ID and password provided by the hospital.';
       if (step === 'details') return 'Just one more step! Please provide your details.';
       if (step === 'otp') return `Enter the OTP sent to +91 ${loginInput}`;
       return `Enter your email or phone number to log in or sign up as a ${getRoleDescription()}.`;
@@ -337,11 +426,11 @@ export default function LoginPage() {
     <form onSubmit={handleAdminLogin} className="space-y-4">
         <div className="space-y-2">
             <Label htmlFor="adminId">Admin ID</Label>
-            <Input id="adminId" name="adminId" type="email" placeholder="owner@cabzi.com" required value={adminId} onChange={(e) => setAdminId(e.target.value)} disabled={isLoading} />
+            <Input id="adminId" name="adminId" type="email" placeholder="owner@cabzi.com" required value={partnerIdInput} onChange={(e) => setPartnerIdInput(e.target.value)} disabled={isLoading} />
         </div>
         <div className="space-y-2">
             <Label htmlFor="adminPassword">Password</Label>
-            <Input id="adminPassword" name="adminPassword" type="password" placeholder="••••••••" required value={adminPassword} onChange={(e) => setAdminPassword(e.target.value)} disabled={isLoading}/>
+            <Input id="adminPassword" name="adminPassword" type="password" placeholder="••••••••" required value={partnerPassword} onChange={(e) => setPartnerPassword(e.target.value)} disabled={isLoading}/>
         </div>
         <Button type="submit" className="w-full" disabled={isLoading}>
             {isLoading ? "Verifying..." : 'Login'}
@@ -349,35 +438,65 @@ export default function LoginPage() {
     </form>
   );
 
-  const renderLoginForm = () => (
-    <form onSubmit={handleLoginSubmit} className="space-y-4">
+  const renderDoctorLoginForm = () => (
+    <form onSubmit={handlePartnerLogin} className="space-y-4">
         <div className="space-y-2">
-            <Label htmlFor="loginInput">Email or Phone</Label>
-            <div className="relative">
-                {inputType === 'phone' && <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">+91</span>}
-                <Input 
-                    id="loginInput" 
-                    name="loginInput" 
-                    type="text"
-                    placeholder={inputType === 'email' ? "priya@example.com" : "9876543210"} 
-                    required 
-                    value={loginInput} 
-                    onChange={handleInputChange} 
-                    disabled={isLoading} 
-                    className={inputType === 'phone' ? 'pl-10' : ''}
-                />
-            </div>
+            <Label htmlFor="partnerId">Doctor ID</Label>
+            <Input id="partnerId" name="partnerId" placeholder="e.g., CZD-1234" required value={partnerIdInput} onChange={(e) => setPartnerIdInput(e.target.value)} disabled={isLoading} />
         </div>
-        {inputType === 'email' && (
-            <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
-                <Input id="password" name="password" type="password" placeholder="••••••••" required value={password} onChange={(e) => setPassword(e.target.value)} disabled={isLoading} />
-            </div>
-        )}
+        <div className="space-y-2">
+            <Label htmlFor="partnerPassword">Password</Label>
+            <Input id="partnerPassword" name="partnerPassword" type="password" placeholder="••••••••" required value={partnerPassword} onChange={(e) => setPartnerPassword(e.target.value)} disabled={isLoading}/>
+        </div>
         <Button type="submit" className="w-full" disabled={isLoading}>
-            {isLoading ? "Please wait..." : 'Continue'}
+            {isLoading ? "Verifying..." : 'Login'}
         </Button>
     </form>
+  )
+
+  const renderLoginForm = () => (
+    <div className="space-y-4">
+      <form onSubmit={handleLoginSubmit} className="space-y-4">
+          <div className="space-y-2">
+              <Label htmlFor="loginInput">Email or Phone</Label>
+              <div className="relative">
+                  {inputType === 'phone' && <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">+91</span>}
+                  <Input 
+                      id="loginInput" 
+                      name="loginInput" 
+                      type="text"
+                      placeholder={inputType === 'email' ? "priya@example.com" : "9876543210"} 
+                      required 
+                      value={loginInput} 
+                      onChange={handleInputChange} 
+                      disabled={isLoading} 
+                      className={inputType === 'phone' ? 'pl-10' : ''}
+                  />
+              </div>
+          </div>
+          {inputType === 'email' && (
+              <div className="space-y-2">
+                  <Label htmlFor="password">Password</Label>
+                  <Input id="password" name="password" type="password" placeholder="••••••••" required value={password} onChange={(e) => setPassword(e.target.value)} disabled={isLoading} />
+              </div>
+          )}
+          <Button type="submit" className="w-full" disabled={isLoading}>
+              {isLoading ? "Please wait..." : 'Continue'}
+          </Button>
+      </form>
+      {roleFromQuery === 'rider' && (
+        <>
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center"><span className="w-full border-t" /></div>
+            <div className="relative flex justify-center text-xs uppercase"><span className="bg-background px-2 text-muted-foreground">OR</span></div>
+          </div>
+          <Button variant="outline" className="w-full" onClick={handleGoogleSignIn} disabled={isLoading}>
+              <svg className="mr-2 h-4 w-4" viewBox="0 0 48 48"> <path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24s8.955,20,20,20s20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"></path><path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"></path><path fill="#4CAF50" d="M24,44c5.166,0,9.599-1.521,12.647-4.148l-6.365-4.931C28.147,33.433,26.166,34,24,34c-5.223,0-9.653-3.108-11.383-7.574l-6.57,4.819C9.656,39.663,16.318,44,24,44z"></path><path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.574l6.365,4.931C39.477,35.901,44,30.548,44,24C44,22.659,43.862,21.35,43.611,20.083z"></path></svg>
+              Sign in with Google
+          </Button>
+        </>
+      )}
+    </div>
   );
 
   const renderOtpForm = () => (
@@ -428,11 +547,13 @@ export default function LoginPage() {
   const getRoleDescription = () => {
     if (roleFromQuery === 'driver') return t('role_partner')
     if (roleFromQuery === 'admin') return t('role_admin')
+    if (roleFromQuery === 'doctor') return 'Doctor'
     return t('role_rider')
   }
 
   const renderContent = () => {
     if (roleFromQuery === 'admin') return renderAdminForm();
+    if (roleFromQuery === 'doctor') return renderDoctorLoginForm();
     
     switch(step) {
         case 'login':
@@ -457,7 +578,7 @@ export default function LoginPage() {
         </p>
       )
     }
-    if (roleFromQuery === 'driver' || roleFromQuery === 'mechanic' || roleFromQuery === 'cure') {
+    if (['driver', 'mechanic', 'cure', 'doctor'].includes(roleFromQuery)) {
       return (
           <div className="space-y-2">
               <p>
@@ -466,12 +587,14 @@ export default function LoginPage() {
                   Login as a Rider
                 </Link>
               </p>
-              <p>
-               New to Cabzi?{' '}
-               <Link href="/partner-hub" className="underline text-primary">
-                 Onboard as a Partner
-               </Link>
-             </p>
+              {roleFromQuery !== 'doctor' && (
+                <p>
+                New to Cabzi?{' '}
+                <Link href="/partner-hub" className="underline text-primary">
+                    Onboard as a Partner
+                </Link>
+                </p>
+              )}
           </div>
       );
     }
