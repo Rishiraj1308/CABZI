@@ -1,4 +1,3 @@
-
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
@@ -52,8 +51,8 @@ export default function OnboardingPage() {
 
     const handleGenderChange = (value: string) => {
         setFormData(prev => ({...prev, gender: value}));
-        if (value === 'male') {
-            setIsCabziPink(false); // Automatically uncheck and disable for males
+        if (value !== 'female') {
+            setIsCabziPink(false); // Automatically uncheck and disable for non-females
         }
     }
     

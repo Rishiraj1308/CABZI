@@ -391,7 +391,7 @@ export default function RiderPage() {
     setRouteGeometry(geometry);
     
     const updatedRideTypes = initialRideTypes.map(rt => {
-        if (rt.name === 'Cabzi Pink' && session?.gender === 'male') {
+        if (rt.name === 'Cabzi Pink' && session?.gender !== 'female') {
             return { ...rt, fare: 'N/A', eta: 'N/A' };
         }
         const config = fareConfig[rt.name];
