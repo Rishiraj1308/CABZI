@@ -1,3 +1,4 @@
+
 'use client'
 
 import React, { useState, useEffect } from 'react'
@@ -42,6 +43,7 @@ interface Doctor {
   id: string;
   name: string;
   specialization: string;
+  qualifications?: string;
   phone: string;
   createdAt: Timestamp;
   photoUrl?: string; // To store uploaded photo URL
@@ -92,8 +94,9 @@ export default function DoctorsPage() {
     const name = formData.get('doctorName') as string;
     const phone = formData.get('doctorPhone') as string;
     const specialization = formData.get('specialization') as string;
+    const qualifications = formData.get('qualifications') as string;
 
-    if (!name || !phone || !specialization) {
+    if (!name || !phone || !specialization || !qualifications) {
       toast({ variant: 'destructive', title: 'Error', description: 'Please provide all doctor details.' });
       return;
     }
@@ -106,6 +109,7 @@ export default function DoctorsPage() {
         name,
         phone,
         specialization,
+        qualifications,
         photoUrl: 'pending_upload',
         degreeUrl: 'pending_upload',
         docStatus: 'Pending',
@@ -169,6 +173,10 @@ export default function DoctorsPage() {
                         <Input id="doctorPhone" name="doctorPhone" type="tel" required />
                     </div>
                 </div>
+                 <div className="space-y-2">
+                  <Label htmlFor="qualifications">Qualifications</Label>
+                  <Input id="qualifications" name="qualifications" placeholder="e.g., MBBS, MD (Cardiology)" required />
+                </div>
                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
                         <Label htmlFor="doctorPhoto">Passport-size Photo</Label>
@@ -212,7 +220,10 @@ export default function DoctorsPage() {
             ) : doctors.length > 0 ? (
               doctors.map((doctor) => (
                 <TableRow key={doctor.id}>
-                  <TableCell className="font-medium">Dr. {doctor.name}</TableCell>
+                  <TableCell>
+                      <div className="font-medium">Dr. {doctor.name}</div>
+                      <div className="text-xs text-muted-foreground">{doctor.qualifications || 'N/A'}</div>
+                  </TableCell>
                   <TableCell><Badge variant="secondary">{doctor.specialization}</Badge></TableCell>
                   <TableCell>{doctor.phone}</TableCell>
                   <TableCell>
