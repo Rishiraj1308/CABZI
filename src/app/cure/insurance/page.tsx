@@ -1,3 +1,4 @@
+
 'use client'
 
 import { useState, useEffect } from 'react'
@@ -120,7 +121,7 @@ export default function InsurancePage() {
                                         <TableCell><Skeleton className="h-5 w-40" /></TableCell>
                                         <TableCell className="text-right"><Skeleton className="h-5 w-20 ml-auto" /></TableCell>
                                         <TableCell><Skeleton className="h-6 w-28" /></TableCell>
-                                        <TableCell className="text-right"><Skeleton className="h-8 w-20 ml-auto" /></TableCell>
+                                        <TableCell className="text-right"><Skeleton className="h-8 w-24 ml-auto" /></TableCell>
                                     </TableRow>
                                 ))
                             ) : filteredClaims.length > 0 ? (
@@ -140,14 +141,14 @@ export default function InsurancePage() {
                                            <Dialog onOpenChange={(open) => !open && setSelectedClaim(null)}>
                                                 <DialogTrigger asChild>
                                                     <Button variant="outline" size="sm" onClick={() => setSelectedClaim(claim)}>
-                                                        <FileText className="mr-2 h-3.5 w-3.5"/> View Details
+                                                        <FileText className="mr-2 h-3.5 w-3.5"/> Manage Claim
                                                     </Button>
                                                 </DialogTrigger>
                                                 <DialogContent className="sm:max-w-md">
                                                     <DialogHeader>
-                                                        <DialogTitle>Claim Details: {selectedClaim?.id}</DialogTitle>
+                                                        <DialogTitle>Manage Claim: {selectedClaim?.id}</DialogTitle>
                                                         <DialogDescription>
-                                                           Patient: {selectedClaim?.patientName} | Case: {selectedClaim?.caseId}
+                                                           Update the status for {selectedClaim?.patientName}'s claim based on communication from the insurer.
                                                         </DialogDescription>
                                                     </DialogHeader>
                                                     <div className="space-y-4 py-4 text-sm">
@@ -157,10 +158,10 @@ export default function InsurancePage() {
                                                          <div className="flex justify-between"><span>Submitted On:</span> <span className="font-semibold">{selectedClaim?.submittedOn}</span></div>
                                                          <div className="flex justify-between items-center text-lg font-bold border-t pt-2 mt-2"><span>Claim Amount:</span> <span className="text-primary">₹{selectedClaim?.claimAmount.toLocaleString()}</span></div>
                                                     </div>
-                                                    <DialogFooter className="grid grid-cols-2 gap-2">
-                                                        <Button variant="destructive" onClick={() => selectedClaim && handleUpdateStatus(selectedClaim.id, 'Rejected')}>Reject Claim</Button>
-                                                        <Button variant="secondary" onClick={() => selectedClaim && handleUpdateStatus(selectedClaim.id, 'Query Raised')}>Raise Query</Button>
-                                                        <Button onClick={() => selectedClaim && handleUpdateStatus(selectedClaim.id, 'Approved')} className="col-span-2">Approve Claim</Button>
+                                                    <DialogFooter className="grid grid-cols-1 gap-2">
+                                                        <Button variant="secondary" onClick={() => selectedClaim && handleUpdateStatus(selectedClaim.id, 'Query Raised')}>Mark as 'Query Raised'</Button>
+                                                        <Button variant="destructive" onClick={() => selectedClaim && handleUpdateStatus(selectedClaim.id, 'Rejected')}>Mark as Rejected</Button>
+                                                        <Button onClick={() => selectedClaim && handleUpdateStatus(selectedClaim.id, 'Approved')} className="bg-green-600 hover:bg-green-700">Mark as Approved</Button>
                                                     </DialogFooter>
                                                 </DialogContent>
                                             </Dialog>
