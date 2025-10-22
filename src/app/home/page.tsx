@@ -30,7 +30,7 @@ const cprData = [
   {
     value: 'path',
     icon: Car,
-    title: 'Fair Fares PATH',
+    title: 'Fair Fares with PATH',
     description: "Our core 0% commission ride-hailing service ensures drivers earn more and riders pay fair, consistent fares. No surge, no surprises.",
     color: 'bg-primary/10',
     textColor: 'text-primary'
@@ -264,7 +264,7 @@ export default function HomePage() {
                         </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                        <DropdownMenuItem asChild><Link href="/login?role=rider">Login as Rider</Link></DropdownMenuItem>
+                        <DropdownMenuItem asChild><Link href="/login?role=user">Login as User</Link></DropdownMenuItem>
                         <DropdownMenuItem asChild><Link href="/login?role=driver">Login as Partner</Link></DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem asChild><Link href="/admin" className="text-xs">Admin Panel</Link></DropdownMenuItem>
@@ -301,7 +301,7 @@ export default function HomePage() {
                             className="mt-8 flex justify-center lg:justify-start gap-4"
                         >
                              <Button size="lg" className="btn-glow bg-accent text-accent-foreground hover:bg-accent/90" asChild>
-                                <Link href="/login?role=rider">
+                                <Link href="/login?role=user">
                                    Get a Safe Ride <ArrowRight className="ml-2 h-5 w-5" />
                                 </Link>
                             </Button>
@@ -369,6 +369,34 @@ export default function HomePage() {
                     </motion.div>
                 </div>
             </section>
+
+             <section className="py-20 md:py-24 bg-muted/40">
+                <div className="container">
+                    <div className="mx-auto max-w-3xl text-center">
+                        <h2 className="text-3xl font-bold tracking-tight sm:text-4xl font-headline">
+                            The CPR Ecosystem: One App, Complete Peace of Mind
+                        </h2>
+                        <p className="mt-4 text-lg text-muted-foreground">
+                           Cabzi isn't just an app; it's a unified platform for urban safety and mobility, built on four powerful pillars.
+                        </p>
+                    </div>
+                     <div className="mt-16 grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-4">
+                        {cprData.map((item, i) => (
+                             <Card key={i} className={cn("text-center transition-all hover:shadow-lg", item.color)}>
+                                 <CardHeader>
+                                     <div className="mx-auto p-3 rounded-full bg-background border w-fit">
+                                         <item.icon className={cn("w-6 h-6", item.textColor)} />
+                                     </div>
+                                     <CardTitle className="pt-2">{item.title}</CardTitle>
+                                 </CardHeader>
+                                 <CardContent>
+                                     <p className="text-sm text-muted-foreground">{item.description}</p>
+                                 </CardContent>
+                             </Card>
+                        ))}
+                    </div>
+                </div>
+            </section>
             
             {/* Why Choose Us Section */}
              <section className="py-20 md:py-24">
@@ -409,64 +437,10 @@ export default function HomePage() {
                     </motion.div>
                 </div>
             </section>
-
-            {/* Interactive CPR Ecosystem Section */}
-             <section className="py-20 md:py-24 bg-muted/40">
-                <div className="container">
-                    <div className="mx-auto max-w-3xl text-center">
-                        <h2 className="text-3xl font-bold tracking-tight sm:text-4xl font-headline">
-                            India's First CPR Ecosystem
-                        </h2>
-                        <p className="mt-4 text-lg text-muted-foreground">
-                           Cabzi isn't just an app; it's a unified platform for urban safety and mobility, built on four powerful pillars.
-                        </p>
-                    </div>
-                     <div className="mt-16">
-                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 md:gap-4 p-2 bg-background rounded-full border">
-                            {cprData.map((tab) => (
-                                <button
-                                    key={tab.value}
-                                    onClick={() => setActiveTab(tab.value)}
-                                    className={cn(
-                                        "flex items-center justify-center gap-2 rounded-full px-4 py-3 text-sm md:text-base font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-                                        activeTab === tab.value ? 'bg-primary text-primary-foreground shadow' : 'hover:bg-muted/70'
-                                    )}
-                                >
-                                    <tab.icon className="w-5 h-5"/>
-                                    {tab.title.split(' ')[2]}
-                                </button>
-                            ))}
-                        </div>
-                        <div className="mt-8 relative min-h-[150px]">
-                            <AnimatePresence mode="wait">
-                                    <motion.div
-                                        key={activeTab}
-                                        initial={{ opacity: 0, y: 20 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        exit={{ opacity: 0, y: -20 }}
-                                        transition={{ duration: 0.3 }}
-                                        className="absolute inset-0"
-                                    >
-                                         <Card className={cn("p-6 md:p-8 text-center transition-colors", activeTabData.color)}>
-                                            <div className="flex flex-col items-center gap-3 mb-4">
-                                                <div className="p-3 bg-background rounded-lg border">
-                                                    <activeTabData.icon className={cn("w-8 h-8", activeTabData.textColor)}/>
-                                                </div>
-                                                <h3 className={cn("text-2xl font-bold font-headline", activeTabData.textColor)}>{activeTabData.title}</h3>
-                                            </div>
-                                             <p className="text-muted-foreground max-w-2xl mx-auto">
-                                                {activeTabData.description}
-                                            </p>
-                                        </Card>
-                                    </motion.div>
-                            </AnimatePresence>
-                        </div>
-                     </div>
-                </div>
-            </section>
+            
 
              {/* Partner CTA Section */}
-            <section className="py-20 md:py-24">
+            <section className="py-20 md:py-24 bg-muted/40">
                 <div className="container text-center">
                     <h2 className="text-3xl font-bold tracking-tight sm:text-4xl font-headline">Join Our Driver-First Revolution</h2>
                     <p className="mt-4 text-lg text-muted-foreground max-w-2xl mx-auto">
