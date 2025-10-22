@@ -17,7 +17,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import dynamic from 'next/dynamic'
 import { useFirestore, useMessaging } from '@/firebase/client-provider'
 import { collection, query, where, onSnapshot, doc, updateDoc, getDoc, serverTimestamp, GeoPoint, limit, runTransaction, addDoc, arrayUnion, orderBy, Timestamp, FieldValue } from 'firebase/firestore'
-import { useNotifications } from './layout'
+import { useNotifications } from '@/context/NotificationContext'
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert'
 import { cn } from '@/lib/utils'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -1173,5 +1173,3 @@ export default function DriverDashboard() {
     </div>
   )
 }
-
-    
