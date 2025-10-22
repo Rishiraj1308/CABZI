@@ -271,7 +271,7 @@ export default function DriverDashboard() {
                 status: "searching",
                 riderName: rideData.riderName,
                 riderId: rideData.riderId,
-                riderGender: rideData.riderGender,
+                riderGender: rideData.riderGender as 'male' | 'female' | 'other',
                 otp: rideData.otp,
             };
             
