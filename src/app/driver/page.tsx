@@ -322,6 +322,18 @@ export default function DriverDashboard() {
     }
   }
 
+  const resetRideState = useCallback(async () => {
+    if (db && partnerData) {
+        const partnerRef = doc(db, 'partners', partnerData.id);
+        await updateDoc(partnerRef, { status: 'online' });
+    }
+    localStorage.removeItem('activeRideId');
+    setAcceptedRide(null);
+    setRouteGeometry(null);
+    setRouteInfo(null);
+    setRiderLocation(null);
+  }, [db, partnerData]);
+  
   // Effect for the 10-second request timer
     useEffect(() => {
         if (activeRideRequest && !requestTimerRef.current) {
@@ -562,19 +574,6 @@ export default function DriverDashboard() {
      setRiderLocation(null);
      setRouteInfo(null);
   }
-  
-  const resetRideState = useCallback(async () => {
-    if (db && partnerData) {
-        const partnerRef = doc(db, 'partners', partnerData.id);
-        await updateDoc(partnerRef, { status: 'online' });
-    }
-    localStorage.removeItem('activeRideId');
-    setAcceptedRide(null);
-    setRouteGeometry(null);
-    setRouteInfo(null);
-    setRiderLocation(null);
-  }, [db, partnerData]);
-
 
   const handleEndRide = async () => {
       if (!db || !acceptedRide || !partnerData) return;
@@ -1174,3 +1173,5 @@ export default function DriverDashboard() {
     </div>
   )
 }
+
+    
