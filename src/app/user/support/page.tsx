@@ -20,13 +20,6 @@ const supportTopics = [
         action: 'View FAQs',
         isDialog: false,
     },
-     {
-        icon: Bot,
-        title: 'AI Support Bot',
-        description: 'Get instant help from our AI assistant for any issue, 24/7.',
-        action: 'Start Chat',
-        isDialog: true,
-    },
     {
         icon: Mail,
         title: 'Email Support',
@@ -45,34 +38,12 @@ const supportTopics = [
 
 export default function UserSupportPage() {
     const { toast } = useToast();
-    const [chatMessages, setChatMessages] = useState([
-        { from: 'support', text: 'Hello! I am your Cabzi AI Assistant. How can I help you today?' }
-    ]);
-    const [chatInput, setChatInput] = useState('');
-    const [isSubmitting, setIsSubmitting] = useState(false);
-    const { session } = useUser();
-
+    
     const handleActionClick = (action: string) => {
         toast({
             title: 'Action Triggered',
             description: `This will ${action}. This feature is coming soon.`,
         });
-    }
-
-    const handleSendMessage = async () => {
-        if (chatInput.trim() === '' || isSubmitting || !session) return;
-        
-        const userMessage = chatInput;
-        setIsSubmitting(true);
-        setChatMessages(prev => [...prev, { from: 'user', text: userMessage }]);
-        setChatInput('');
-
-        // Mock AI response
-        setTimeout(() => {
-            const botResponse = `I understand you're asking about "${userMessage}". This AI feature is temporarily disabled, but a support ticket has been logged. Our team will get back to you shortly.`;
-            setChatMessages(prev => [...prev, { from: 'support', text: botResponse }]);
-            setIsSubmitting(false);
-        }, 1000);
     }
     
     return (
@@ -106,56 +77,11 @@ export default function UserSupportPage() {
                         </Card>
                     );
 
-                    if (topic.isDialog) {
-                        return (
-                             <Dialog key={topic.title}>
-                                <DialogTrigger asChild>
-                                    <div className="cursor-pointer h-full">{cardContent}</div>
-                                </DialogTrigger>
-                                <DialogContent className="max-w-md w-full flex flex-col h-[70vh]">
-                                    <DialogHeader>
-                                        <DialogTitle>AI Support Bot</DialogTitle>
-                                        <DialogDescription>Ask me anything about rides, payments, or app features.</DialogDescription>
-                                    </DialogHeader>
-                                    <div className="flex-1 overflow-y-auto p-4 bg-muted/50 rounded-lg space-y-4">
-                                        {chatMessages.map((msg, index) => (
-                                            <div key={index} className={`flex items-end gap-2 ${msg.from === 'user' ? 'justify-end' : 'justify-start'}`}>
-                                                {msg.from === 'support' && (
-                                                    <Avatar className="w-8 h-8">
-                                                        <AvatarImage src="/avatars/01.png" alt="Support" data-ai-hint="support avatar" />
-                                                        <AvatarFallback>AI</AvatarFallback>
-                                                    </Avatar>
-                                                )}
-                                                <div className={`max-w-[75%] p-3 rounded-2xl ${msg.from === 'user' ? 'bg-primary text-primary-foreground rounded-br-none' : 'bg-background border rounded-bl-none'}`}>
-                                                    <p className="text-sm">{msg.text}</p>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                    <div className="flex items-center gap-2 border-t pt-4">
-                                        <Input 
-                                            placeholder="Type your message..."
-                                            value={chatInput}
-                                            onChange={(e) => setChatInput(e.target.value)}
-                                            onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-                                            disabled={isSubmitting}
-                                        />
-                                        <Button onClick={handleSendMessage} disabled={isSubmitting}>
-                                            {isSubmitting ? (
-                                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary-foreground"></div>
-                                            ) : (
-                                                <Send className="w-4 h-4" />
-                                            )}
-                                        </Button>
-                                    </div>
-                                </DialogContent>
-                            </Dialog>
-                        )
-                    }
-
                     return <div key={topic.title} onClick={() => handleActionClick(topic.action)}>{cardContent}</div>
                 })}
             </div>
         </div>
     )
 }
+
+    

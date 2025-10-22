@@ -271,7 +271,7 @@ export default function DriverDashboard() {
                 status: "searching",
                 riderName: rideData.riderName,
                 riderId: rideData.riderId,
-                riderGender: rideData.riderGender as 'male' | 'female' | 'other',
+                riderGender: rideData.riderGender,
                 otp: rideData.otp,
             };
             
@@ -881,7 +881,7 @@ export default function DriverDashboard() {
     const requestDocRef = await addDoc(collection(db, 'garageRequests'), requestData);
 
     localStorage.setItem('activeGarageRequestId', requestDocRef.id);
-    setActiveGarageRequest({ id: requestDocRef.id, ...requestData, status: 'pending' });
+    setActiveGarageRequest({ id: requestDocRef.id, ...requestData } as GarageRequest);
     toast({ title: "Request Sent!", description: "We are finding a nearby ResQ partner for you." });
     setIsIssueDialogOpen(false);
   }
