@@ -57,7 +57,7 @@ if (typeof window !== 'undefined') {
 // =================================================================
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
-  const language = useSyncExternalStore(subscribe, getSnapshot, () => 'en');
+  const language: Locale = useSyncExternalStore(subscribe, getSnapshot, () => 'en');
 
   const t = useCallback((key: string): string => {
     return translations[language]?.[key] || translations['en']?.[key] || key;

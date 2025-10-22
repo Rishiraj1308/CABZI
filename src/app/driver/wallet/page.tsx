@@ -8,7 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { IndianRupee, TrendingUp, PiggyBank, CircleHelp, Landmark, KeyRound, Download, Banknote, Building, Sparkles, Send, ScanLine } from 'lucide-react'
 import { Progress } from '@/components/ui/progress'
 import { db } from '@/lib/firebase'
-import { collection, query, where, onSnapshot, doc, getDoc, runTransaction, addDoc, Timestamp, orderBy, updateDoc } from 'firebase/firestore'
+import { collection, query, where, onSnapshot, doc, getDoc, runTransaction, addDoc, Timestamp, orderBy, updateDoc, serverTimestamp } from 'firebase/firestore'
 import { useToast } from '@/hooks/use-toast'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Input } from '@/components/ui/input'
@@ -332,9 +332,10 @@ export default function WalletPage() {
         );
     }
 
+
     if (isLoading) {
         return (
-            <div className="grid gap-6 animate-fade-in">
+             <div className="grid gap-6 animate-fade-in">
                 <Skeleton className="h-8 w-48" />
                 <Card><CardContent className="p-6 grid md:grid-cols-2 gap-6"><Skeleton className="h-40 w-full" /><Skeleton className="h-40 w-full" /></CardContent></Card>
                 <div className="grid md:grid-cols-2 gap-6"><Card><CardContent className="p-6"><Skeleton className="h-32 w-full"/></CardContent></Card><Card><CardContent className="p-6"><Skeleton className="h-32 w-full"/></CardContent></Card></div>
@@ -403,12 +404,12 @@ export default function WalletPage() {
             <Dialog>
                 <DialogTrigger asChild>
                     <Button variant="outline" className="flex-col h-24">
-                        <ScanLine className="w-8 h-8 mb-2 text-primary"/>
-                        Scan & Pay
+                        <QrCode className="w-8 h-8 mb-2 text-primary"/>
+                        My QR
                     </Button>
                 </DialogTrigger>
                 <DialogContent className="max-w-xs">
-                    <DialogHeader><DialogTitle className="text-center">Scan UPI QR to Pay</DialogTitle></DialogHeader>
+                    <DialogHeader><DialogTitle className="text-center">My Cabzi UPI QR Code</DialogTitle></DialogHeader>
                     <div className="flex flex-col items-center gap-4 py-4">
                         <div className="p-4 bg-white rounded-lg border">
                             <Image 
@@ -416,8 +417,10 @@ export default function WalletPage() {
                                 alt="UPI QR Code"
                                 width={200}
                                 height={200}
+                                data-ai-hint="qr code"
                             />
                         </div>
+                        <p className="font-semibold text-lg text-center">{partner?.upiId || '...'}</p>
                     </div>
                 </DialogContent>
             </Dialog>
