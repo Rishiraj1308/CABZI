@@ -6,21 +6,22 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
-import { Ambulance, Building, HospitalIcon, LocateFixed, Wrench, ArrowLeft } from 'lucide-react';
+import { Ambulance, HospitalIcon, ArrowLeft, Wrench } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useFirestore } from '@/firebase/client-provider';
 import { addDoc, collection, serverTimestamp, GeoPoint, getDocs, query, where } from 'firebase/firestore';
 import { useUser } from '@/components/client-session-provider'; 
 import SearchingIndicator from './ui/searching-indicator';
 import { Card, CardContent } from './ui/card';
-import { useRouter } from 'next/navigation';
+import type { AmbulanceCase, GarageRequest } from '@/lib/types';
+
 
 interface EmergencyButtonsProps {
   serviceType: 'cure' | 'resq';
   liveMapRef: React.RefObject<any>;
   pickupCoords: { lat: number, lon: number } | null;
   setIsRequestingSos: (isRequesting: boolean) => void;
-  setActiveAmbulanceCase: (caseData: any) => void;
+  setActiveAmbulanceCase: (caseData: AmbulanceCase) => void;
   setActiveGarageRequest: (requestData: any) => void;
   onBack: () => void;
 }
@@ -33,6 +34,18 @@ interface HospitalInfo {
     location: GeoPoint;
     businessType: string;
 }
+
+// Add a specific type for the data fetched from Firestore
+interface AmbulancePartner {
+    id: string;
+    name: string;
+    address: string;
+    location: GeoPoint;
+    businessType: string;
+    // Add other potential fields if they exist
+    [key: string]: any; 
+}
+
 
 const commonIssues = [
     { id: 'flat_tyre', label: 'Flat Tyre / Puncture' },
@@ -109,7 +122,7 @@ export default function EmergencyButtons({ serviceType, liveMapRef, pickupCoords
     try {
         const q = query(collection(db, 'ambulances'), where('isOnline', '==', true));
         const snapshot = await getDocs(q);
-        const hospitalsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
+        const hospitalsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as AmbulancePartner))
             .filter(h => h.location)
             .map(h => ({
                 id: h.id,
@@ -153,7 +166,7 @@ export default function EmergencyButtons({ serviceType, liveMapRef, pickupCoords
         phone: session.phone,
         severity,
         location: new GeoPoint(currentCoords.lat, currentCoords.lon),
-        status: 'pending',
+        status: 'pending' as const,
         otp: generatedOtp,
         createdAt: serverTimestamp(),
         rejectedBy: [],
@@ -184,7 +197,7 @@ export default function EmergencyButtons({ serviceType, liveMapRef, pickupCoords
         driverPhone: session.phone,
         issue: selectedIssue,
         location: new GeoPoint(pickupCoords.lat, pickupCoords.lon),
-        status: 'pending',
+        status: 'pending' as const,
         otp: generatedOtp,
         createdAt: serverTimestamp(),
     };

@@ -121,7 +121,7 @@ export default function RideStatus({
                         </CardHeader>
                         <div className="p-4 rounded-lg bg-muted text-center">
                             <p className="text-sm text-muted-foreground">Estimated Arrival Time</p>
-                            <p className="text-4xl font-bold text-primary">{Math.ceil(caseData.partnerEta || 0)} min</p>
+                            <p className="text-4xl font-bold text-primary">{caseData.partnerEta ? `${Math.ceil(caseData.partnerEta)} min` : '...'}</p>
                         </div>
                         <Button className="w-full" asChild><a href={`tel:${caseData.assignedPartner?.phone}`}><Phone className="mr-2 h-4 w-4"/> Call Paramedic</a></Button>
                      </div>
@@ -248,7 +248,8 @@ export default function RideStatus({
             </div>
         );
       default:
-        return null;
+        // This handles any status not explicitly covered, including 'arrived' for a regular ride
+        return <p>Current status: {ride.status}</p>;
     }
   };
 
@@ -321,5 +322,3 @@ export default function RideStatus({
     </Card>
   );
 }
-
-    

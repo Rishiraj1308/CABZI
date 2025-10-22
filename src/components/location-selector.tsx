@@ -116,7 +116,7 @@ export default function LocationSelector({
         return;
     }
     
-    setDestination(prev => ({ ...prev, coords: endCoords }));
+    setDestination({ address: destination.address, coords: endCoords });
 
     const routeInfo: any = await getRoute(startCoords, endCoords);
     if (!routeInfo || !routeInfo.routes || routeInfo.routes.length === 0) {
@@ -201,7 +201,7 @@ export default function LocationSelector({
              <div className="relative">
                 <Input 
                     value={destination.address}
-                    onChange={e => setDestination(prev => ({ ...prev, address: e.target.value }))}
+                    onChange={e => setDestination({ address: e.target.value, coords: null })}
                     placeholder="Where to?"
                     className="bg-muted border-primary focus-visible:ring-primary text-base font-semibold"
                     onKeyDown={(e) => e.key === 'Enter' && handleGetRideInfo()}
@@ -242,5 +242,3 @@ export default function LocationSelector({
     </div>
   )
 }
-
-    
