@@ -1,4 +1,3 @@
-
 'use client'
 
 import { Toaster } from '@/components/ui/toaster';
@@ -20,37 +19,47 @@ export default function UnauthenticatedLayout({
 
   useEffect(() => {
     setIsMounted(true);
-    const session = localStorage.getItem('cabzi-session');
-    if (session) {
-      try {
-        const { role } = JSON.parse(session);
-        if (role === 'rider') {
-          router.replace('/rider');
-        } else if (role === 'driver') {
-          router.replace('/driver');
-        } else if (role === 'admin') {
-          router.replace('/admin');
-        } else {
-           // Invalid role, show login page
-           setShowChildren(true);
+    // A single, unified session for all user types (rider, driver, etc.)
+    // Only admin has a truly separate flow.
+    const sessionKeys = ['cabzi-session', 'cabzi-resq-session', 'cabzi-cure-session', 'cabzi-ambulance-session'];
+    let loggedIn = false;
+
+    for (const key of sessionKeys) {
+        const session = localStorage.getItem(key);
+        if (session) {
+            try {
+                const { role, adminRole } = JSON.parse(session);
+                
+                // Handle admin redirection separately
+                if (role === 'admin' || adminRole) {
+                     router.replace(`/admin`);
+                     loggedIn = true;
+                     break;
+                }
+
+                // All other logged-in users go to the main user dashboard
+                if (role) {
+                    router.replace(`/${role}`);
+                    loggedIn = true;
+                    break;
+                }
+                
+            } catch (e) {
+                // Corrupt session, remove it and continue checking.
+                localStorage.removeItem(key);
+            }
         }
-      } catch (e) {
-        // Corrupt session, let them log in again.
-        localStorage.removeItem('cabzi-session');
-        setShowChildren(true);
-      }
-    } else {
-        // No session, show login page
+    }
+    
+    // If no valid session is found, show the login/onboarding page.
+    if (!loggedIn) {
         setShowChildren(true);
     }
+
   }, [router]);
   
-  if (!isMounted) {
-    return null; 
-  }
-
-  if (!showChildren) {
-    return null;
+  if (!isMounted || !showChildren) {
+    return null; // Render nothing until logic decides.
   }
 
   return (
