@@ -43,6 +43,7 @@
     "events": "^3.3.0",
     "firebase": "^12.4.0",
     "firebase-admin": "^12.1.1",
+    "firebase-functions": "^6.6.0",
     "framer-motion": "^11.5.0",
     "leaflet": "^1.9.4",
     "leaflet.locatecontrol": "^0.81.0",

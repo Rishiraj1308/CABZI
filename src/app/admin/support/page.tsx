@@ -197,8 +197,8 @@ export default function AdminSupportPage() {
                     <TableCell>
                         <div className="font-medium flex items-center gap-2">
                            {q.userType === 'partner' ? 
-                             <Car className="w-4 h-4 text-muted-foreground" title="Partner" /> : 
-                             <User className="w-4 h-4 text-muted-foreground" title="Rider" />
+                             <Car className="w-4 h-4 text-muted-foreground" aria-label="Partner" /> : 
+                             <User className="w-4 h-4 text-muted-foreground" arial-label="Rider" />
                            }
                            {q.customerName}
                         </div>

@@ -1,4 +1,3 @@
-
 'use client'
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -16,7 +15,13 @@ const LiveMap = dynamic(() => import('@/components/live-map'), {
     loading: () => <div className="w-full h-full bg-muted flex items-center justify-center"><p>Loading Map...</p></div>
 });
 
-export type EntityStatus = 'online' | 'on_trip' | 'available' | 'sos_mechanical' | 'sos_medical' | 'sos_security';
+export type EntityStatus =
+    | 'online'
+    | 'on_trip'
+    | 'available'
+    | 'sos_mechanical'
+    | 'sos_medical'
+    | 'sos_security';
 
 export interface ActiveEntity {
     id: string;
@@ -40,7 +45,7 @@ const legendItems = [
 ];
 
 export default function LiveMapPage() {
-    const [allPartners, setAllPartners] = useState<any[]>([]);
+    const [allPartners, setAllPartners] = useState<ActiveEntity[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isHudVisible, setIsHudVisible] = useState(true);
     const db = useFirestore();
@@ -48,55 +53,69 @@ export default function LiveMapPage() {
     const { toast } = useToast();
 
     useEffect(() => {
-      async function fetchData() {
-        if (!db) return;
-        setIsLoading(true);
-        const collections = ['partners', 'mechanics', 'ambulances', 'users'];
-        const types: ActiveEntity['type'][] = ['driver', 'mechanic', 'ambulance', 'rider'];
-        
-        try {
-            const allEntitiesData: ActiveEntity[] = [];
-            const queries = collections.map((collName, i) => {
-                const typeName = types[i];
-                let q;
-                if (collName === 'users') {
-                    q = query(collection(db, collName), where('isOnline', '==', true), where('role', '==', 'rider'));
-                } else {
-                    q = query(collection(db, collName), where('isOnline', '==', true));
-                }
+        async function fetchData() {
+            if (!db) return;
+            setIsLoading(true);
 
-                return getDocs(q).then(snapshot => {
-                    snapshot.forEach(doc => {
-                        const data = doc.data();
-                        if (data.currentLocation) {
-                            allEntitiesData.push({
-                                id: doc.id,
-                                name: data.name,
-                                type: typeName,
-                                status: data.status,
-                                location: {
-                                    lat: data.currentLocation.latitude,
-                                    lon: data.currentLocation.longitude,
-                                },
-                                phone: data.phone,
-                                vehicle: data.vehicleName
-                            });
-                        }
+            const collections = ['partners', 'mechanics', 'ambulances', 'users'];
+            const types: ActiveEntity['type'][] = ['driver', 'mechanic', 'ambulance', 'rider'];
+
+            try {
+                const allEntitiesData: ActiveEntity[] = [];
+
+                const queries = collections.map((collName, i) => {
+                    const typeName = types[i];
+                    let q;
+
+                    if (collName === 'users') {
+                        q = query(
+                            collection(db, collName),
+                            where('isOnline', '==', true),
+                            where('role', '==', 'rider')
+                        );
+                    } else {
+                        q = query(collection(db, collName), where('isOnline', '==', true));
+                    }
+
+                    return getDocs(q).then(snapshot => {
+                        snapshot.forEach(doc => {
+                            const data = doc.data() as {
+                                name?: string;
+                                status?: string;
+                                phone?: string;
+                                vehicleName?: string;
+                                currentLocation?: { latitude: number; longitude: number };
+                            };
+
+                            if (data.currentLocation) {
+                                allEntitiesData.push({
+                                    id: doc.id,
+                                    name: data.name || 'Unknown',
+                                    type: typeName,
+                                    status: data.status,
+                                    location: {
+                                        lat: data.currentLocation.latitude,
+                                        lon: data.currentLocation.longitude,
+                                    },
+                                    phone: data.phone,
+                                    vehicle: data.vehicleName,
+                                });
+                            }
+                        });
                     });
                 });
-            });
 
-            await Promise.all(queries);
-            setAllPartners(allEntitiesData);
-
-        } catch(error) {
-            console.error("Error fetching live map data:", error);
-        } finally {
-            setIsLoading(false);
+                await Promise.all(queries);
+                setAllPartners(allEntitiesData);
+            } catch (error) {
+                console.error('Error fetching live map data:', error);
+            } finally {
+                setIsLoading(false);
+            }
         }
-      }
-      fetchData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
+        fetchData();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [db]);
 
     const liveMetrics = useMemo(() => {
@@ -115,7 +134,7 @@ export default function LiveMapPage() {
             toast({ variant: 'destructive', title: 'Functions not available.' });
             return;
         }
-        
+
         const simulateHighDemand = httpsCallable(functions, 'simulateHighDemand');
         try {
             await simulateHighDemand({ zoneName: 'Cyber Hub, Gurgaon' });
@@ -124,7 +143,7 @@ export default function LiveMapPage() {
                 description: 'A high-demand alert has been triggered for automation workflows.',
             });
         } catch (error) {
-            console.error("Error calling simulateHighDemand function:", error);
+            console.error('Error calling simulateHighDemand function:', error);
             toast({
                 variant: 'destructive',
                 title: 'Simulation Failed',
@@ -132,9 +151,17 @@ export default function LiveMapPage() {
             });
         }
     };
-    
-    const HUDPanel = ({ children, className }: { children: React.ReactNode, className?: string }) => (
-        <div className={`bg-background/80 backdrop-blur-sm p-3 rounded-lg border border-border/50 shadow-lg ${className}`}>
+
+    const HUDPanel = ({
+        children,
+        className,
+    }: {
+        children: React.ReactNode;
+        className?: string;
+    }) => (
+        <div
+            className={`bg-background/80 backdrop-blur-sm p-3 rounded-lg border border-border/50 shadow-lg ${className}`}
+        >
             {children}
         </div>
     );
@@ -142,76 +169,101 @@ export default function LiveMapPage() {
     return (
         <div className="relative w-full h-full flex-1">
             {isLoading ? (
-               <Skeleton className="h-full w-full" />
-           ) : (
-               <div className="absolute inset-0">
-                   <LiveMap activePartners={allPartners} enableCursorTooltip={true} />
-               </div>
-           )}
+                <Skeleton className="h-full w-full" />
+            ) : (
+                <div className="absolute inset-0">
+                    <LiveMap activePartners={allPartners} enableCursorTooltip={true} />
+                </div>
+            )}
+
             <div className="absolute top-4 left-4 z-10 flex gap-2">
-                 <Button onClick={() => setIsHudVisible(!isHudVisible)}>
+                <Button onClick={() => setIsHudVisible(!isHudVisible)}>
                     <View className="mr-2 h-4 w-4" />
                     {isHudVisible ? 'Hide Details' : 'View Details'}
                 </Button>
-                 <Button onClick={handleSimulateDemand} variant="outline">
+                <Button onClick={handleSimulateDemand} variant="outline">
                     <Zap className="mr-2 h-4 w-4 text-amber-500" />
                     Simulate High Demand
                 </Button>
             </div>
+
             {isHudVisible && (
                 <>
                     <div className="absolute top-20 left-4 z-10 w-64 space-y-3 animate-fade-in">
                         <HUDPanel>
                             <h3 className="font-bold text-lg mb-2">Mission Control</h3>
                             <div className="grid grid-cols-2 gap-2">
-                                 <div className="p-2 rounded-md bg-muted">
-                                    <p className="text-xs text-muted-foreground flex items-center gap-1.5"><UserIcon className="w-3 h-3"/> Active Riders</p>
+                                <div className="p-2 rounded-md bg-muted">
+                                    <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+                                        <UserIcon className="w-3 h-3" /> Active Riders
+                                    </p>
                                     <p className="text-xl font-bold">{liveMetrics.activeRiders}</p>
                                 </div>
                                 <div className="p-2 rounded-md bg-muted">
-                                    <p className="text-xs text-muted-foreground flex items-center gap-1.5"><Car className="w-3 h-3"/> Drivers</p>
+                                    <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+                                        <Car className="w-3 h-3" /> Drivers
+                                    </p>
                                     <p className="text-xl font-bold">{liveMetrics.activeDrivers}</p>
                                 </div>
                                 <div className="p-2 rounded-md bg-muted">
-                                    <p className="text-xs text-muted-foreground flex items-center gap-1.5"><Wrench className="w-3 h-3"/> ResQ</p>
+                                    <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+                                        <Wrench className="w-3 h-3" /> ResQ
+                                    </p>
                                     <p className="text-xl font-bold">{liveMetrics.activeResQ}</p>
                                 </div>
                                 <div className="p-2 rounded-md bg-muted">
-                                    <p className="text-xs text-muted-foreground flex items-center gap-1.5"><Ambulance className="w-3 h-3"/> Cure</p>
+                                    <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+                                        <Ambulance className="w-3 h-3" /> Cure
+                                    </p>
                                     <p className="text-xl font-bold">{liveMetrics.activeCure}</p>
                                 </div>
                                 <div className="p-2 rounded-md bg-muted col-span-2">
-                                    <p className="text-xs text-muted-foreground flex items-center gap-1.5"><Route className="w-3 h-3"/> Ongoing Trips</p>
+                                    <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+                                        <Route className="w-3 h-3" /> Ongoing Trips
+                                    </p>
                                     <p className="text-xl font-bold">{liveMetrics.ongoingTrips}</p>
                                 </div>
                             </div>
                         </HUDPanel>
                     </div>
-                    
+
                     <div className="absolute top-4 right-4 z-10 w-64 space-y-3 animate-fade-in">
                         <HUDPanel>
-                            <h3 className="font-bold text-lg mb-2 flex items-center gap-2"><MapPinned /> Map Legend</h3>
+                            <h3 className="font-bold text-lg mb-2 flex items-center gap-2">
+                                <MapPinned /> Map Legend
+                            </h3>
                             <div className="space-y-1.5">
                                 {legendItems.map(item => (
                                     <div key={item.label} className="flex items-center gap-2">
-                                        <div className={`w-4 h-4 rounded-full ${item.color} flex-shrink-0 flex items-center justify-center`}>
-                                            <item.icon className="w-2.5 h-2.5 text-white"/>
+                                        <div
+                                            className={`w-4 h-4 rounded-full ${item.color} flex-shrink-0 flex items-center justify-center`}
+                                        >
+                                            <item.icon className="w-2.5 h-2.5 text-white" />
                                         </div>
                                         <span className="text-xs font-medium">{item.label}</span>
                                     </div>
                                 ))}
                             </div>
                         </HUDPanel>
-                        <HUDPanel className={liveMetrics.sosAlerts > 0 ? "border-destructive" : ""}>
+
+                        <HUDPanel
+                            className={liveMetrics.sosAlerts > 0 ? 'border-destructive' : ''}
+                        >
                             <h3 className="font-bold text-lg mb-2 flex items-center gap-2">
-                                <Activity className={liveMetrics.sosAlerts > 0 ? "text-destructive animate-pulse" : ""}/>
+                                <Activity
+                                    className={
+                                        liveMetrics.sosAlerts > 0
+                                            ? 'text-destructive animate-pulse'
+                                            : ''
+                                    }
+                                />
                                 Active Alerts
                             </h3>
                             <div className="space-y-2">
                                 {liveMetrics.sosAlerts > 0 ? (
-                                  <p>SOS alerts will appear here.</p>
+                                    <p>SOS alerts will appear here.</p>
                                 ) : (
-                                <div className="p-3 rounded-lg text-center text-sm text-muted-foreground">
+                                    <div className="p-3 rounded-lg text-center text-sm text-muted-foreground">
                                         No active alerts.
                                     </div>
                                 )}

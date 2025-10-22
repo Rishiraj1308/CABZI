@@ -7,7 +7,7 @@
 
 import { onDocumentCreated, onDocumentUpdated } from 'firebase-functions/v2/firestore';
 import { onSchedule } from "firebase-functions/v2/scheduler";
-import { getFirestore, GeoPoint, Timestamp } from 'firebase-admin/firestore';
+import { getFirestore, GeoPoint, Timestamp, FieldValue } from 'firebase-admin/firestore';
 import { getMessaging } from 'firebase-admin/messaging';
 import { initializeApp, getApps } from 'firebase-admin/app';
 
@@ -18,6 +18,15 @@ if (!getApps().length) {
 
 const db = getFirestore();
 const messaging = getMessaging();
+
+// Define a type for our partner data to satisfy TypeScript
+interface Partner {
+    id: string;
+    currentLocation?: GeoPoint;
+    fcmToken?: string;
+    location?: GeoPoint; // For hospitals
+    [key: string]: any; // Allow other properties
+}
 
 // Calculate distance between two geopoints in km
 function getDistance(lat1: number, lon1: number, lat2: number, lon2: number) {
@@ -52,7 +61,7 @@ const handleRideDispatch = async (rideData: any, rideId: string) => {
 
     const rideLocation = rideData.pickup.location as GeoPoint;
     const nearbyPartners = partnersSnapshot.docs
-        .map(doc => ({ id: doc.id, ...doc.data() }))
+        .map(doc => ({ id: doc.id, ...doc.data() } as Partner))
         .filter(partner => {
             if (!partner.currentLocation) return false;
             const partnerLocation = partner.currentLocation as GeoPoint;
@@ -88,7 +97,7 @@ const handleGarageRequestDispatch = async (requestData: any, requestId: string) 
     
     const driverLocation = requestData.location as GeoPoint;
     const nearbyMechanics = mechanicsSnapshot.docs
-        .map(doc => ({ id: doc.id, ...doc.data() }))
+        .map(doc => ({ id: doc.id, ...doc.data() } as Partner))
         .filter(mechanic => {
             if (!mechanic.currentLocation) return false;
             const mechanicLocation = mechanic.currentLocation as GeoPoint;
@@ -126,7 +135,7 @@ const handleEmergencyDispatch = async (caseData: any, caseId: string) => {
     const rejectedBy = caseData.rejectedBy || [];
 
     const availableHospitals = hospitalsSnapshot.docs
-        .map(doc => ({ id: doc.id, ...doc.data() }))
+        .map(doc => ({ id: doc.id, ...doc.data() } as Partner))
         .filter(hospital => !rejectedBy.includes(hospital.id))
         .map(hospital => {
             const hospitalLocation = hospital.location as GeoPoint;
@@ -153,7 +162,7 @@ const handleEmergencyDispatch = async (caseData: any, caseId: string) => {
         console.log(`Emergency request ${caseId} dispatched to hospital ${targetHospital.id}.`);
     } else {
         console.log(`Hospital ${targetHospital.id} has no FCM token. Cascading to next...`);
-        await db.doc(`emergencyCases/${caseId}`).update({ rejectedBy: arrayUnion(targetHospital.id) });
+        await db.doc(`emergencyCases/${caseId}`).update({ rejectedBy: FieldValue.arrayUnion(targetHospital.id) });
     }
 }
 
@@ -253,3 +262,5 @@ export const statusCleanup = onSchedule("every 1 minutes", async (event) => {
     console.error("Error during scheduled status cleanup:", error);
   }
 });
+
+export const triggerRide = handleRideDispatch;

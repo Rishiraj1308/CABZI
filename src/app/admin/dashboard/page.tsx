@@ -5,11 +5,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { Car, Wrench, Handshake, Users, CircleHelp, Activity, FilePieChart } from 'lucide-react'
 import { useFirestore } from '@/firebase/client-provider'
-import { collection, query, Timestamp, orderBy, limit, where, getCountFromServer, getDocs } from 'firebase/firestore'
+import { collection, query, Timestamp, orderBy, where, getCountFromServer, getDocs } from 'firebase/firestore'
 import { Skeleton } from '@/components/ui/skeleton'
 import Link from 'next/link'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { MotionDiv } from '@/components/ui/motion-div'
+import { Button } from '@/components/ui/button'
 
 interface TodayPartner {
     id: string;
@@ -26,7 +27,6 @@ interface OngoingActivity {
   status: string;
   timestamp: Timestamp;
 }
-
 
 interface StatCardProps {
     title: string;
@@ -58,45 +58,45 @@ const getInitials = (name: string) => {
 }
 
 export default function AdminDashboardPage() {
-    const [todayPartners, setTodayPartners] = useState<TodayPartner[]>([]);
-    const [ongoingActivities, setOngoingActivities] = useState<OngoingActivity[]>([]);
+    const [todayPartners, setTodayPartners] = useState<TodayPartner[]>([])
+    const [ongoingActivities, setOngoingActivities] = useState<OngoingActivity[]>([])
     const [stats, setStats] = useState({ 
         totalPartners: 0, 
         totalCustomers: 0,
         pendingPartners: 0,
         ongoingRides: 0,
-    });
-    const [isLoading, setIsLoading] = useState(true);
-    const db = useFirestore();
+    })
+    const [isLoading, setIsLoading] = useState(true)
+    const db = useFirestore()
 
     useEffect(() => {
         if (!db) {
-            setIsLoading(false);
-            return;
+            setIsLoading(false)
+            return
         }
 
         const fetchData = async () => {
-            setIsLoading(true);
+            setIsLoading(true)
             try {
-                const today = new Date();
-                today.setHours(0, 0, 0, 0);
-                const todayTimestamp = Timestamp.fromDate(today);
+                const today = new Date()
+                today.setHours(0, 0, 0, 0)
+                const todayTimestamp = Timestamp.fromDate(today)
 
                 // Fetch Today's Signups
-                const partnersQuery = query(collection(db, 'partners'), where('createdAt', '>=', todayTimestamp), orderBy('createdAt', 'desc'));
-                const partnersSnap = await getDocs(partnersQuery);
+                const partnersQuery = query(collection(db, 'partners'), where('createdAt', '>=', todayTimestamp), orderBy('createdAt', 'desc'))
+                const partnersSnap = await getDocs(partnersQuery)
                 const newPartners = partnersSnap.docs.map(doc => ({
                     id: doc.id,
                     type: 'driver',
                     ...doc.data()
-                } as TodayPartner));
-                setTodayPartners(newPartners);
+                } as TodayPartner))
+                setTodayPartners(newPartners)
 
                 // Fetch Ongoing Rides
-                const ridesQuery = query(collection(db, 'rides'), where('status', 'in', ['accepted', 'in-progress']));
-                const ridesSnap = await getDocs(ridesQuery);
+                const ridesQuery = query(collection(db, 'rides'), where('status', 'in', ['accepted', 'in-progress']))
+                const ridesSnap = await getDocs(ridesQuery)
                 const rideActivities = ridesSnap.docs.map(doc => {
-                    const data = doc.data();
+                    const data = doc.data()
                     return {
                         id: doc.id,
                         type: 'Ride',
@@ -104,14 +104,14 @@ export default function AdminDashboardPage() {
                         partnerName: data.driverName,
                         status: data.status,
                         timestamp: data.createdAt
-                    } as OngoingActivity;
-                });
+                    } as OngoingActivity
+                })
 
                 // Fetch Ongoing Services
-                const jobsQuery = query(collection(db, 'garageRequests'), where('status', 'in', ['accepted', 'in_progress']));
-                const jobsSnap = await getDocs(jobsQuery);
+                const jobsQuery = query(collection(db, 'garageRequests'), where('status', 'in', ['accepted', 'in_progress']))
+                const jobsSnap = await getDocs(jobsQuery)
                 const jobActivities = jobsSnap.docs.map(doc => {
-                    const data = doc.data();
+                    const data = doc.data()
                     return {
                         id: doc.id,
                         type: 'Service',
@@ -119,18 +119,18 @@ export default function AdminDashboardPage() {
                         partnerName: data.mechanicName,
                         status: data.status,
                         timestamp: data.createdAt
-                    } as OngoingActivity;
-                });
+                    } as OngoingActivity
+                })
 
-                const allActivities = [...rideActivities, ...jobActivities].sort((a,b) => b.timestamp.toMillis() - a.timestamp.toMillis());
-                setOngoingActivities(allActivities);
+                const allActivities = [...rideActivities, ...jobActivities].sort((a,b) => b.timestamp.toMillis() - a.timestamp.toMillis())
+                setOngoingActivities(allActivities)
 
                 // Fetch Aggregate Stats
-                const allPartnersQuery = getCountFromServer(collection(db, 'partners'));
-                const allMechanicsQuery = getCountFromServer(collection(db, 'mechanics'));
-                const allCureQuery = getCountFromServer(collection(db, 'ambulances'));
-                const allCustomersQuery = getCountFromServer(query(collection(db, 'users'), where('role', '==', 'rider')));
-                const pendingPartnersQuery = getCountFromServer(query(collection(db, 'partners'), where('status', '==', 'pending_verification')));
+                const allPartnersQuery = getCountFromServer(collection(db, 'partners'))
+                const allMechanicsQuery = getCountFromServer(collection(db, 'mechanics'))
+                const allCureQuery = getCountFromServer(collection(db, 'ambulances'))
+                const allCustomersQuery = getCountFromServer(query(collection(db, 'users'), where('role', '==', 'rider')))
+                const pendingPartnersQuery = getCountFromServer(query(collection(db, 'partners'), where('status', '==', 'pending_verification')))
 
                 const [partnersCount, mechanicsCount, cureCount, customersCount, pendingCount] = await Promise.all([
                     allPartnersQuery,
@@ -138,9 +138,9 @@ export default function AdminDashboardPage() {
                     allCureQuery,
                     allCustomersQuery,
                     pendingPartnersQuery
-                ]);
+                ])
                 
-                const totalPartnersCount = partnersCount.data().count + mechanicsCount.data().count + cureCount.data().count;
+                const totalPartnersCount = partnersCount.data().count + mechanicsCount.data().count + cureCount.data().count
 
                 setStats(prev => ({
                     ...prev,
@@ -148,19 +148,19 @@ export default function AdminDashboardPage() {
                     totalCustomers: customersCount.data().count,
                     pendingPartners: pendingCount.data().count,
                     ongoingRides: rideActivities.length
-                }));
+                }))
 
             } catch (error) {
-                console.error("Error fetching admin dashboard data:", error);
+                console.error("Error fetching admin dashboard data:", error)
             } finally {
-                setIsLoading(false);
+                setIsLoading(false)
             }
-        };
+        }
 
-        fetchData();
+        fetchData()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [db]);
-    
+    }, [db])
+
     if (isLoading) {
         return (
             <div className="space-y-6">
@@ -187,6 +187,7 @@ export default function AdminDashboardPage() {
                 visible: { transition: { staggerChildren: 0.1 } }
             }}
         >
+            {/* --- Stats Cards --- */}
             <MotionDiv 
                  className="grid gap-4 md:grid-cols-2 lg:grid-cols-4"
                  variants={{
@@ -207,6 +208,36 @@ export default function AdminDashboardPage() {
                     <StatCard title="Pending Verifications" value={stats.pendingPartners} description="Partners awaiting approval" icon={CircleHelp} link="/admin/partners"/>
                 </MotionDiv>
             </MotionDiv>
+
+            {/* --- Trigger Dev Button --- */}
+            <div className="mt-4 flex justify-end">
+              <Button
+                onClick={async () => {
+                  try {
+                    const res = await fetch('/api/trigger-dev', {
+                      method: 'POST',
+                      body: JSON.stringify({
+                        rideId: 'RIDE123',
+                        vehicleType: 'car',
+                        rideType: 'Cabzi Pink',
+                        pickup: { location: { latitude: 28.4, longitude: 77.0 } },
+                        destination: { location: { latitude: 28.5, longitude: 77.1 } },
+                      }),
+                    });
+                    const data = await res.json();
+                    console.log('Dev Trigger Response:', data);
+                    alert('Dev function triggered successfully!');
+                  } catch (err) {
+                    console.error(err);
+                    alert('Error triggering dev function.');
+                  }
+                }}
+              >
+                Trigger Dev Function
+              </Button>
+            </div>
+
+            {/* --- Live Operations Feed --- */}
             <div className="grid gap-6 lg:grid-cols-3">
                  <Card className="lg:col-span-2">
                     <CardHeader>
@@ -274,5 +305,5 @@ export default function AdminDashboardPage() {
                 </Card>
             </div>
         </MotionDiv>
-    );
+    )
 }
