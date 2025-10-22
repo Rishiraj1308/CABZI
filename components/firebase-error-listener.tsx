@@ -19,12 +19,7 @@ export function FirebaseErrorListener() {
       toast({
         variant: 'destructive',
         duration: 20000,
-        title: (
-            <div className="flex items-center gap-2">
-                <AlertCircle className="h-5 w-5" />
-                Firestore: Missing or Insufficient Permissions
-            </div>
-        ) as unknown as ReactNode,
+        title: "Firestore: Missing or Insufficient Permissions",
         description: (
           <div className="space-y-4 pt-2">
             <AlertDescription>
@@ -34,7 +29,7 @@ export function FirebaseErrorListener() {
               {JSON.stringify(error.context, null, 2)}
             </CodeBlock>
           </div>
-        ) as unknown as ReactNode,
+        ) as ReactNode,
       });
     };
 
