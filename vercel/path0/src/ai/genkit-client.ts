@@ -17,10 +17,6 @@ const genkitOptions: GenkitOptions = {
       apiVersion: 'v1beta',
     }),
   ],
-  // Log all traces to the console for debugging.
-  // In production, you would want to use a persistent trace store.
-  logLevel: 'debug',
-  flowStateStore: 'firebase',
 };
 
 export const ai = genkit(genkitOptions);
