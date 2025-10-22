@@ -450,24 +450,25 @@ export default function HomePage() {
                     <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-8 text-left">
                         <Card>
                             <CardHeader>
-                                <CardTitle className="flex items-center gap-2"><User /> For Riders</CardTitle>
+                                <CardTitle className="flex items-center gap-2"><User /> For Users</CardTitle>
                             </CardHeader>
                             <CardContent className="space-y-3">
                                 <p className="flex items-start gap-2"><CheckCircle className="w-5 h-5 text-green-500 mt-0.5 shrink-0" /> <span><span className="font-semibold">Fair & Transparent Fares:</span> No random surge pricing. Ever.</span></p>
                                 <p className="flex items-start gap-2"><CheckCircle className="w-5 h-5 text-green-500 mt-0.5 shrink-0" /> <span><span className="font-semibold">Unmatched Safety:</span> An integrated CURE network for real emergencies.</span></p>
                                 <p className="flex items-start gap-2"><CheckCircle className="w-5 h-5 text-green-500 mt-0.5 shrink-0" /> <span><span className="font-semibold">Professional Service:</span> Happy, respected partners provide better service and well-maintained vehicles.</span></p>
                                 <p className="flex items-start gap-2"><CheckCircle className="w-5 h-5 text-green-500 mt-0.5 shrink-0" /> <span><span className="font-semibold">Reliable Rides:</span> Our driver-first model means fewer cancellations and more reliability.</span></p>
+                                <p className="flex items-start gap-2"><CheckCircle className="w-5 h-5 text-green-500 mt-0.5 shrink-0" /> <span><span className="font-semibold">Cashless Insurance Feel:</span> Seamless insurance verification at partner hospitals during emergencies.</span></p>
                             </CardContent>
                         </Card>
                          <Card className="ring-2 ring-primary border-primary shadow-lg">
                             <CardHeader>
                                 <CardTitle className="flex items-center gap-2"><HeartHandshake /> For Partners</CardTitle>
                             </CardHeader>
-                            <CardContent className="space-y-3">
-                                <p className="flex items-start gap-2"><CheckCircle className="w-5 h-5 text-green-500 mt-0.5 shrink-0" /> <span><span className="font-semibold">Just ONE Monthly Recharge:</span> No commission, no hidden fees. Get unlimited rides for a price you can't even imagine.</span></p>
-                                <p className="flex items-start gap-2"><CheckCircle className="w-5 h-5 text-green-500 mt-0.5 shrink-0" /> <span><span className="font-semibold">Stop Losing Money:</span> Other apps take ₹200-300 from your ₹1000 earning. With Cabzi, you keep the whole ₹1000.</span></p>
+                             <CardContent className="space-y-3">
+                                <p className="flex items-start gap-2"><CheckCircle className="w-5 h-5 text-green-500 mt-0.5 shrink-0" /> <span><span className="font-semibold">Just ONE Monthly Recharge:</span> Stop losing 20-30% on every ride. Keep 100% of your earnings.</span></p>
+                                <p className="flex items-start gap-2"><CheckCircle className="w-5 h-5 text-green-500 mt-0.5 shrink-0" /> <span><span className="font-semibold">Imagine This:</span> On a ₹1000 earning, other apps take ₹300. With Cabzi, you take home the full ₹1000.</span></p>
                                 <p className="flex items-start gap-2"><CheckCircle className="w-5 h-5 text-green-500 mt-0.5 shrink-0" /> <span><span className="font-semibold">True Financial Security:</span> Access instant loans and high-interest savings via Cabzi Bank.</span></p>
-                                <p className="flex items-start gap-2"><CheckCircle className="w-5 h-5 text-green-500 mt-0.5 shrink-0" /> <span><span className="font-semibold">Respect & Dignity:</span> You are our partner, not just a number on a screen. We are committed to your growth and well-being.</span></p>
+                                <p className="flex items-start gap-2"><CheckCircle className="w-5 h-5 text-green-500 mt-0.5 shrink-0" /> <span><span className="font-semibold">Respect & Dignity:</span> You are our partner, not just a number. We are committed to your growth.</span></p>
                             </CardContent>
                         </Card>
                          <Card>
