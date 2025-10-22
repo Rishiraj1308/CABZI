@@ -76,11 +76,11 @@ export default function LoginPage() {
   const roleFromQuery = searchParams.get('role') || 'user'
 
   const [step, setStep] = useState<'login' | 'details' | 'otp'>('login');
-  const [loginMethod, setLoginMethod] = useState<'email' | 'phone'>('email');
-
-  const [email, setEmail] = useState(searchParams.get('email') || '')
+  
+  const [identifier, setIdentifier] = useState(searchParams.get('email') || '');
+  const [inputType, setInputType] = useState<'email' | 'phone' | 'none'>('none');
+  
   const [password, setPassword] = useState('')
-  const [phone, setPhone] = useState('')
   const [otp, setOtp] = useState('')
   const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
 
@@ -95,6 +95,16 @@ export default function LoginPage() {
   useEffect(() => {
     setIsMounted(true);
   }, []);
+
+  useEffect(() => {
+    if (identifier.includes('@')) {
+      setInputType('email');
+    } else if (/^\d{10}$/.test(identifier)) {
+      setInputType('phone');
+    } else {
+      setInputType('none');
+    }
+  }, [identifier]);
 
   const handleAdminLogin = (e: React.FormEvent<HTMLFormElement>) => {
       e.preventDefault();
@@ -134,21 +144,21 @@ export default function LoginPage() {
         ? [...partnerCollections, ...userCollections] 
         : [...userCollections, ...partnerCollections];
     
-    let identifier: string | undefined;
-    let identifierField: 'email' | 'phone' = 'phone';
+    let searchIdentifier: string | undefined;
+    let identifierField: 'email' | 'phone' = 'email';
 
-    if (loginMethod === 'email' && user.email) {
-        identifier = user.email;
+    if (inputType === 'email' && user.email) {
+        searchIdentifier = user.email;
         identifierField = 'email';
-    } else if (user.phoneNumber) {
-        identifier = user.phoneNumber.replace('+91', '');
+    } else if (inputType === 'phone' && user.phoneNumber) {
+        searchIdentifier = user.phoneNumber.replace('+91', '');
         identifierField = 'phone';
     }
     
-    if (!identifier) return false;
+    if (!searchIdentifier) return false;
 
     for (const { name: colName, role } of collectionsToSearch) {
-        const q = query(collection(db, colName), where(identifierField, "==", identifier), limit(1));
+        const q = query(collection(db, colName), where(identifierField, "==", searchIdentifier), limit(1));
         const snapshot = await getDocs(q);
 
         if (!snapshot.empty) {
@@ -198,13 +208,21 @@ export default function LoginPage() {
     }
   }
 
-  const handleEmailSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleIdentifierSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (inputType === 'email') {
+      await handleEmailSubmit();
+    } else if (inputType === 'phone') {
+      await handlePhoneSubmit();
+    }
+  }
+
+  const handleEmailSubmit = async () => {
     setIsLoading(true);
     if (!auth || !db) return;
 
     try {
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const userCredential = await signInWithEmailAndPassword(auth, identifier, password);
       await findAndSetSession(userCredential.user);
       
     } catch (error: any) {
@@ -224,13 +242,12 @@ export default function LoginPage() {
     }
   }
 
-  const handlePhoneSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
+  const handlePhoneSubmit = async () => {
     setIsLoading(true);
-    if (!auth || !phone || !recaptchaContainerRef.current) return;
+    if (!auth || !identifier || !recaptchaContainerRef.current) return;
     
     try {
-        const fullPhoneNumber = `+91${phone}`;
+        const fullPhoneNumber = `+91${identifier}`;
         const verifier = new RecaptchaVerifier(auth, recaptchaContainerRef.current, { size: 'invisible' });
         const confirmation = await signInWithPhoneNumber(auth, fullPhoneNumber, verifier);
         setConfirmationResult(confirmation);
@@ -273,14 +290,14 @@ export default function LoginPage() {
           let user = auth.currentUser;
 
           if (!user) { // This handles the case for email/password signup
-              user = (await createUserWithEmailAndPassword(auth, email, password)).user;
+              user = (await createUserWithEmailAndPassword(auth, identifier, password)).user;
           }
 
           const newUserRef = doc(db, "users", user.uid);
           await setDoc(newUserRef, {
               name,
-              email: user.email || email,
-              phone: user.phoneNumber ? user.phoneNumber.replace('+91','') : phone,
+              email: user.email || identifier,
+              phone: user.phoneNumber ? user.phoneNumber.replace('+91','') : identifier,
               gender,
               role: 'user', 
               createdAt: serverTimestamp(),
@@ -310,7 +327,8 @@ export default function LoginPage() {
     const provider = new GoogleAuthProvider();
     try {
         const result = await signInWithPopup(auth, provider);
-        setEmail(result.user.email || ''); 
+        setIdentifier(result.user.email || ''); 
+        setInputType('email');
         await findAndSetSession(result.user);
 
     } catch (error: any) {
@@ -333,7 +351,7 @@ export default function LoginPage() {
        const isPartnerFlow = ['driver', 'mechanic', 'cure', 'doctor', 'ambulance'].includes(roleFromQuery);
       if (roleFromQuery === 'admin') return 'Please enter your credentials to access the panel.'
       if (step === 'details') return 'Just one more step! Please provide your details.'
-      if (step === 'otp') return `Enter the 6-digit code sent to +91 ${phone}`
+      if (step === 'otp') return `Enter the 6-digit code sent to +91 ${identifier}`
        if (isPartnerFlow) return `Enter your credentials to log in.`
       return `Sign in or create an account to get started.`
   };
@@ -358,36 +376,24 @@ export default function LoginPage() {
     if (step === 'login') {
         return (
             <div className="space-y-4">
-                {loginMethod === 'phone' ? (
-                    <form onSubmit={handlePhoneSubmit} className="space-y-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="phone">Phone Number</Label>
-                          <div className="flex items-center gap-0 rounded-md border border-input focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2">
-                            <span className="pl-3 text-muted-foreground text-sm">+91</span>
-                            <Input id="phone" name="phone" type="tel" placeholder="12345 67890" maxLength={10} required value={phone} onChange={(e) => setPhone(e.target.value)} disabled={isLoading} className="border-0 h-9 focus-visible:ring-0 focus-visible:ring-offset-0 flex-1" />
-                          </div>
-                        </div>
-                        <Button type="submit" className="w-full" disabled={isLoading}>
-                            {isLoading ? "Sending..." : 'Send OTP'}
-                        </Button>
-                        <Button variant="link" size="sm" className="w-full" onClick={() => setLoginMethod('email')}>Sign in with Email instead</Button>
-                    </form>
-                ) : (
-                    <form onSubmit={handleEmailSubmit} className="space-y-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="email">Email Address</Label>
-                            <Input id="email" name="email" type="email" placeholder="priya@example.com" required value={email} onChange={(e) => setEmail(e.target.value)} disabled={isLoading} />
-                        </div>
+                <form onSubmit={handleIdentifierSubmit} className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="identifier">Email or Phone Number</Label>
+                      <Input id="identifier" name="identifier" type="text" placeholder="name@example.com or 1234567890" required value={identifier} onChange={(e) => setIdentifier(e.target.value)} disabled={isLoading} />
+                    </div>
+
+                    {inputType === 'email' && (
                         <div className="space-y-2">
                             <Label htmlFor="password">Password</Label>
                             <Input id="password" name="password" type="password" placeholder="••••••••" required value={password} onChange={(e) => setPassword(e.target.value)} disabled={isLoading} />
                         </div>
-                        <Button type="submit" className="w-full" disabled={isLoading}>
-                            {isLoading ? "Please wait..." : 'Continue with Email'}
-                        </Button>
-                         <Button variant="link" size="sm" className="w-full" onClick={() => setLoginMethod('phone')}>Sign in with Phone instead</Button>
-                    </form>
-                )}
+                    )}
+                    
+                    <Button type="submit" className="w-full" disabled={isLoading || inputType === 'none'}>
+                        {isLoading ? "Please wait..." : (inputType === 'phone' ? 'Send OTP' : 'Continue')}
+                    </Button>
+                </form>
+
                 {roleFromQuery === 'user' && (
                     <>
                         <div className="relative">
@@ -420,11 +426,11 @@ export default function LoginPage() {
     if (step === 'details') {
          return (
             <form onSubmit={handleDetailsSubmit} className="space-y-4">
-                 {loginMethod === 'email' ? (
+                 {inputType === 'email' ? (
                      <>
                         <div className="space-y-2">
                             <Label htmlFor="email">Email Address</Label>
-                            <Input id="email" value={email} disabled />
+                            <Input id="email" value={identifier} disabled />
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="password_details">Create Password</Label>
@@ -434,7 +440,7 @@ export default function LoginPage() {
                  ) : (
                      <div className="space-y-2">
                         <Label htmlFor="phone_details">Phone Number</Label>
-                        <Input id="phone_details" value={phone} disabled />
+                        <Input id="phone_details" value={identifier} disabled />
                     </div>
                  )}
                 <div className="space-y-2">
@@ -489,7 +495,7 @@ export default function LoginPage() {
                         <p>Want to partner with us? <Link href="/partner-hub" className="underline text-primary">Become a Partner</Link></p>
                     )}
                     {isPartnerFlow && (
-                        <p>Looking for a ride? <Link href="/login?role=user" className="underline text-primary" onClick={() => {setStep('login'); setLoginMethod('email');}}>Login as a User</Link></p>
+                        <p>Looking for a ride? <Link href="/login?role=user" className="underline text-primary" onClick={() => {setStep('login'); setInputType('none'); setIdentifier('');}}>Login as a User</Link></p>
                     )}
                     {roleFromQuery !== 'admin' && (
                          <p>
@@ -504,4 +510,3 @@ export default function LoginPage() {
       </div>
   );
 }
-
