@@ -24,14 +24,14 @@ export default function UnauthenticatedLayout({
 
     if (session) {
         try {
-            const { role, adminRole } = JSON.parse(session);
+            const { role } = JSON.parse(session);
             
             // Redirect based on the primary role
             if (role) {
                  if (role === 'admin') router.replace('/admin');
                  else if (role === 'user') router.replace('/user');
                  else router.replace(`/${role}`); // For driver, mechanic, cure, etc.
-                 return;
+                 return; // Stop further execution to prevent rendering login page
             }
         } catch (e) {
             // Corrupt session, remove it and allow login page to show.
@@ -45,7 +45,7 @@ export default function UnauthenticatedLayout({
   }, [router]);
   
   if (!isMounted || !showChildren) {
-    return null; // Render nothing until logic decides.
+    return null; // Render nothing until redirection logic completes or decides to show children.
   }
 
   return (
