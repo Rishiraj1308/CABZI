@@ -147,8 +147,6 @@ export default function DriverDashboard() {
   const [showOtpModal, setShowOtpModal] = useState(false);
   const [enteredOtp, setEnteredOtp] = useState('');
   const [isOnline, setIsOnline] = useState(false);
-  const [aiTip, setAiTip] = useState<string | null>("AI features are temporarily disabled.");
-  const [isGettingAiTip, setIsGettingAiTip] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [partnerData, setPartnerData] = useState<PartnerData | null>(null);
   const [routeGeometry, setRouteGeometry] = useState<any>(null);
@@ -961,12 +959,6 @@ export default function DriverDashboard() {
     }
   }
   
-  const handleGetAiTip = async () => {
-    setIsGettingAiTip(true);
-    toast({ title: "AI Coach Disabled", description: "This feature is temporarily unavailable." });
-    setIsGettingAiTip(false);
-  }
-
   const handleBankDetailsSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!partnerData || !db) return;
@@ -1100,28 +1092,9 @@ export default function DriverDashboard() {
             </div>
             
              <Tabs defaultValue="payments" className="flex-1 flex flex-col">
-                <TabsList className="grid w-full grid-cols-2">
+                <TabsList className="grid w-full grid-cols-1">
                     <TabsTrigger value="payments">Quick Payments</TabsTrigger>
-                    <TabsTrigger value="coach">AI Coach</TabsTrigger>
                 </TabsList>
-                 <TabsContent value="coach" className="mt-4 flex-1">
-                     <Card className="bg-gradient-to-r from-primary to-primary/80 text-primary-foreground border-none h-full flex flex-col justify-between">
-                        <CardContent className="p-4">
-                            <div className="flex gap-3 items-start">
-                                <Sparkles className="w-10 h-10 text-yellow-300 flex-shrink-0" />
-                                <div>
-                                    <p className="font-bold">AI Earnings Coach</p>
-                                    <p className="text-sm text-primary-foreground/90">{isGettingAiTip ? 'Generating tip...' : aiTip}</p>
-                                </div>
-                            </div>
-                        </CardContent>
-                        <CardFooter className="p-2">
-                            <Button variant="secondary" className="w-full" onClick={handleGetAiTip} disabled={isGettingAiTip}>
-                                {isGettingAiTip ? 'Getting New Tip...' : 'Get New Tip'}
-                            </Button>
-                        </CardFooter>
-                    </Card>
-                </TabsContent>
                 <TabsContent value="payments" className="mt-4 flex-1">
                    <div className="grid grid-cols-2 gap-2">
                        <Button variant="outline" className="flex-col h-20"><Send className="w-6 h-6 mb-1 text-primary" /><span className="text-xs">Pay UPI ID</span></Button>
@@ -1192,3 +1165,5 @@ export default function DriverDashboard() {
     </div>
   )
 }
+
+    
