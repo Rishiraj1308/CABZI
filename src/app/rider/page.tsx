@@ -6,14 +6,14 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Car, Wrench, Ambulance } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import dynamic from 'next/dynamic'
-import { useFirestore } from '@/firebase/client-provider'
+import { useFirebase } from '@/firebase/client-provider' // Corrected import
 import { collection, addDoc, serverTimestamp, doc, GeoPoint, query, where, getDocs, updateDoc, getDoc } from 'firebase/firestore'
-import { useRider } from './layout'
 import { MotionDiv, AnimatePresence } from '@/components/ui/motion-div'
 import EmergencyButtons from '@/components/EmergencyButtons'
 import LocationSelector from '@/components/location-selector'
 import RideStatus from '@/components/ride-status'
 import type { RideData, AmbulanceCase, GarageRequest } from '@/lib/types'
+import { useRouter } from 'next/navigation'
 
 const LiveMap = dynamic(() => import('@/components/live-map'), { 
     ssr: false,
@@ -43,9 +43,9 @@ export default function RiderPage() {
     const [isRequestingSos, setIsRequestingSos] = useState(false);
 
     const liveMapRef = useRef<any>(null);
-    const { session } = useRider();
-    const db = useFirestore();
+    const { user: session, db } = useFirebase(); // Correctly use useFirebase
     const { toast } = useToast()
+    const router = useRouter();
 
     const resetFlow = useCallback(() => {
         setView('selection');
@@ -80,7 +80,7 @@ export default function RiderPage() {
             }
 
             // Check for active ambulance case
-            const qCure = query(collection(db, "emergencyCases"), where("riderId", "==", session.userId), where("status", "in", ["pending", "accepted", "onTheWay", "arrived", "inTransit"]));
+            const qCure = query(collection(db, "emergencyCases"), where("riderId", "==", session.uid), where("status", "in", ["pending", "accepted", "onTheWay", "arrived", "inTransit"]));
             const caseSnapshot = await getDocs(qCure);
              if (!caseSnapshot.empty) {
                 const caseDoc = caseSnapshot.docs[0];
@@ -126,7 +126,7 @@ export default function RiderPage() {
                     </Card>
                 </MotionDiv>
                  <MotionDiv layoutId="resq-card">
-                    <Card className="hover:border-amber-500 hover:shadow-lg transition-all cursor-pointer text-center" onClick={() => setView('resq')}>
+                    <Card className="hover:border-amber-500 hover:shadow-lg transition-all cursor-pointer text-center" onClick={() => toast({title: "Coming Soon!", description: "ResQ services for users will be available soon."})}>
                         <CardHeader><Wrench className="w-12 h-12 text-amber-500 mx-auto"/> <CardTitle className="pt-2">ResQ Service</CardTitle></CardHeader>
                         <CardContent><p className="text-sm text-muted-foreground">Get on-spot help for vehicle trouble.</p></CardContent>
                     </Card>
