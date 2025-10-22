@@ -11,30 +11,33 @@ export default function SplashPage() {
   const [isMounted, setIsMounted] = useState(false);
   
   useEffect(() => {
-    // This effect runs only on the client-side
     setIsMounted(true);
   }, []);
 
   useEffect(() => {
-    // This effect also runs only on the client-side.
-    // By waiting for isMounted, we ensure localStorage is available.
     if (isMounted) {
       const handleRedirect = () => {
         let targetRoute = '/home'; // Default route
         
-        // Safely check all possible session keys
-        const sessionKeys = ['cabzi-session', 'cabzi-resq-session', 'cabzi-cure-session', 'cabzi-ambulance-session'];
-        for (const key of sessionKeys) {
+        const sessionKeys = [
+          { key: 'cabzi-session', role: 'admin', path: '/admin' },
+          { key: 'cabzi-driver-session', role: 'driver', path: '/driver' },
+          { key: 'cabzi-resq-session', role: 'mechanic', path: '/mechanic' },
+          { key: 'cabzi-cure-session', role: 'cure', path: '/cure' },
+          { key: 'cabzi-ambulance-session', role: 'ambulance', path: '/ambulance' },
+          { key: 'cabzi-doctor-session', role: 'doctor', path: '/doctor' },
+          { key: 'cabzi-user-session', role: 'user', path: '/user' }, // General user/rider
+        ];
+        
+        for (const { key, path } of sessionKeys) {
           const session = localStorage.getItem(key);
           if (session) {
             try {
-              const { role } = JSON.parse(session);
-              if (role) {
-                targetRoute = `/${role}`;
-                break; 
-              }
+              // Just checking for existence is enough for redirection.
+              JSON.parse(session);
+              targetRoute = path;
+              break; 
             } catch (e) {
-              // If parsing fails, the session is corrupt, remove it.
               localStorage.removeItem(key);
             }
           }
@@ -42,7 +45,6 @@ export default function SplashPage() {
         router.replace(targetRoute);
       };
 
-      // Delay the redirect to allow the splash animation to run
       const timer = setTimeout(() => {
           handleRedirect();
       }, 2500);
