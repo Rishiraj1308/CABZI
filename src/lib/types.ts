@@ -36,3 +36,11 @@ export interface GarageRequest {
     eta?: number;
     partnerLocation?: GeoPoint | null;
 }
+
+export interface ClientSession {
+    name: string;
+    phone: string;
+    gender: string;
+    userId: string;
+    [key: string]: any; 
+}

@@ -8,22 +8,22 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { Ambulance, HospitalIcon, ArrowLeft, Wrench } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { useFirestore } from '@/firebase/client-provider';
+import { useFirebase } from '@/firebase/client-provider';
 import { addDoc, collection, serverTimestamp, GeoPoint, getDocs, query, where } from 'firebase/firestore';
-import { useUser } from '@/components/client-session-provider'; 
 import SearchingIndicator from './ui/searching-indicator';
 import { Card, CardContent } from './ui/card';
-import type { AmbulanceCase, GarageRequest } from '@/lib/types';
+import type { AmbulanceCase, GarageRequest, ClientSession } from '@/lib/types';
 
 
 interface EmergencyButtonsProps {
   serviceType: 'cure' | 'resq';
   liveMapRef: React.RefObject<any>;
-  pickupCoords: { lat: number, lon: number } | null;
+  pickupCoords: { lat: number; lon: number } | null;
   setIsRequestingSos: (isRequesting: boolean) => void;
   setActiveAmbulanceCase: (caseData: AmbulanceCase) => void;
   setActiveGarageRequest: (requestData: any) => void;
   onBack: () => void;
+  session: ClientSession | null;
 }
 
 interface HospitalInfo {
@@ -56,7 +56,7 @@ const commonIssues = [
 ]
 
 
-export default function EmergencyButtons({ serviceType, liveMapRef, pickupCoords, setIsRequestingSos, setActiveAmbulanceCase, setActiveGarageRequest, onBack }: EmergencyButtonsProps) {
+export default function EmergencyButtons({ serviceType, liveMapRef, pickupCoords, setIsRequestingSos, setActiveAmbulanceCase, setActiveGarageRequest, onBack, session }: EmergencyButtonsProps) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedIssue, setSelectedIssue] = useState('');
   
@@ -68,8 +68,7 @@ export default function EmergencyButtons({ serviceType, liveMapRef, pickupCoords
   const [isFindingHospitals, setIsFindingHospitals] = useState(false);
   const [selectedHospital, setSelectedHospital] = useState<string | null>(null);
 
-  const { session } = useUser(); 
-  const db = useFirestore();
+  const { db } = useFirebase();
   const { toast } = useToast();
 
     // Reset SOS dialog on close
@@ -122,7 +121,7 @@ export default function EmergencyButtons({ serviceType, liveMapRef, pickupCoords
     try {
         const q = query(collection(db, 'ambulances'), where('isOnline', '==', true));
         const snapshot = await getDocs(q);
-        const hospitalsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as AmbulancePartner))
+        const hospitalsData = (snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as AmbulancePartner[])
             .filter(h => h.location)
             .map(h => ({
                 id: h.id,
@@ -180,7 +179,7 @@ export default function EmergencyButtons({ serviceType, liveMapRef, pickupCoords
         const docRef = await addDoc(collection(db, 'emergencyCases'), caseData);
         setIsDialogOpen(false);
         setIsRequestingSos(true);
-        setActiveAmbulanceCase({ id: docRef.id, ...caseData });
+        setActiveAmbulanceCase({ id: docRef.id, ...caseData } as AmbulanceCase);
         toast({ title: 'Ambulance Requested!', description: 'Dispatching the nearest Cure partner to your location.' });
     } catch (error) {
         console.error("Error creating emergency case:", error);

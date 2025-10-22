@@ -9,7 +9,8 @@ import { useToast } from '@/hooks/use-toast'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { useUser } from '@/components/client-session-provider';
+import useUser from '@/components/client-session-provider'
+import { ClientSession } from '@/lib/types';
 
 
 const supportTopics = [
@@ -43,14 +44,17 @@ const supportTopics = [
     }
 ]
 
-export default function UserSupportPage() {
+interface UserSupportPageProps {
+    session: ClientSession;
+}
+
+export default function UserSupportPage({ session }: UserSupportPageProps) {
     const { toast } = useToast();
     const [chatMessages, setChatMessages] = useState([
         { from: 'support', text: 'Hello! I am your Cabzi AI Assistant. How can I help you today?' }
     ]);
     const [chatInput, setChatInput] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const { session } = useUser();
 
     const handleActionClick = (action: string) => {
         toast({

@@ -7,11 +7,10 @@ import { Input } from './ui/input'
 import { ArrowLeft, Star, MapPin, HeartHandshake, IndianRupee } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useToast } from '@/hooks/use-toast'
-import { useUser } from '@/components/client-session-provider'
-import { useFirestore } from '@/firebase/client-provider'
+import { useFirebase } from '@/firebase/client-provider'
 import { collection, addDoc, serverTimestamp, GeoPoint } from 'firebase/firestore'
 import { getRoute, searchPlace } from '@/lib/tomtom'
-import { RideData } from '@/lib/types'
+import { RideData, ClientSession } from '@/lib/types'
 import { cn } from '@/lib/utils'
 import { Card, CardContent } from './ui/card'
 import { BikeIcon, AutoIcon, CabIcon } from './icons'
@@ -27,6 +26,7 @@ interface LocationSelectorProps {
     setRouteGeometry: (geometry: any) => void;
     currentUserLocation: { lat: number, lon: number } | null;
     liveMapRef: React.RefObject<any>;
+    session: ClientSession | null;
 }
 
 interface RideTypeInfo {
@@ -63,6 +63,7 @@ export default function LocationSelector({
   setRouteGeometry,
   currentUserLocation,
   liveMapRef,
+  session,
 }: LocationSelectorProps) {
 
   const [isFindingRides, setIsFindingRides] = useState(false);
@@ -72,8 +73,7 @@ export default function LocationSelector({
   const [isBooking, setIsBooking] = useState(false);
 
   const { toast } = useToast();
-  const { session } = useUser();
-  const db = useFirestore();
+  const { db } = useFirebase();
 
 
   const getCoordinates = async (address: string): Promise<{ lat: number; lon: number } | null> => {

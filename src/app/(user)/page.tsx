@@ -8,12 +8,12 @@ import { useToast } from '@/hooks/use-toast'
 import dynamic from 'next/dynamic'
 import { useFirestore } from '@/firebase/client-provider'
 import { collection, addDoc, serverTimestamp, doc, GeoPoint, query, where, getDocs, updateDoc, getDoc } from 'firebase/firestore'
-import { useUser } from '@/components/client-session-provider'
+import useUser from '@/components/client-session-provider'
 import { MotionDiv, AnimatePresence } from '@/components/ui/motion-div'
 import EmergencyButtons from '@/components/EmergencyButtons'
 import LocationSelector from '@/components/location-selector'
 import RideStatus from '@/components/ride-status'
-import type { RideData, AmbulanceCase, GarageRequest } from '@/lib/types'
+import type { RideData, AmbulanceCase, GarageRequest, ClientSession } from '@/lib/types'
 import { useRouter } from 'next/navigation'
 
 const LiveMap = dynamic(() => import('@/components/live-map'), { 
@@ -28,7 +28,11 @@ interface LocationWithCoords {
 
 type ServiceView = 'selection' | 'path' | 'cure' | 'resq';
 
-export default function UserPage() {
+interface UserPageProps {
+  session: ClientSession;
+}
+
+export default function UserPage({ session }: UserPageProps) {
     const [view, setView] = useState<ServiceView>('selection');
     
     // States for PATH service
@@ -44,7 +48,6 @@ export default function UserPage() {
     const [isRequestingSos, setIsRequestingSos] = useState(false);
 
     const liveMapRef = useRef<any>(null);
-    const { session } = useUser();
     const db = useFirestore();
     const { toast } = useToast()
     const router = useRouter();

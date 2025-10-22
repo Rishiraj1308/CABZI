@@ -6,13 +6,13 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Car, Wrench, Ambulance, Calendar } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import dynamic from 'next/dynamic'
-import { useFirebase } from '@/firebase/client-provider'
+import { useFirebase, useAuth } from '@/firebase/client-provider'
 import { collection, addDoc, serverTimestamp, doc, GeoPoint, query, where, getDocs, updateDoc, getDoc } from 'firebase/firestore'
 import { MotionDiv, AnimatePresence } from '@/components/ui/motion-div'
 import EmergencyButtons from '@/components/EmergencyButtons'
 import LocationSelector from '@/components/location-selector'
 import RideStatus from '@/components/ride-status'
-import type { RideData, AmbulanceCase, GarageRequest } from '@/lib/types'
+import type { RideData, AmbulanceCase, GarageRequest, ClientSession } from '@/lib/types'
 import { useRouter } from 'next/navigation'
 
 const LiveMap = dynamic(() => import('@/components/live-map'), { 
@@ -43,9 +43,31 @@ export default function UserPage() {
     const [isRequestingSos, setIsRequestingSos] = useState(false);
 
     const liveMapRef = useRef<any>(null);
-    const { user: session, db } = useFirebase();
+    const { user, db } = useFirebase();
     const { toast } = useToast()
     const router = useRouter();
+
+    // The session object is derived from the user object from Firebase Auth
+    // and combined with data from your Firestore 'users' collection.
+    // This is a simplified example; a real app might use a custom hook for this.
+    const [session, setSession] = useState<ClientSession | null>(null);
+
+    useEffect(() => {
+        if (user && db) {
+            const userDocRef = doc(db, 'users', user.uid);
+            getDoc(userDocRef).then(docSnap => {
+                if (docSnap.exists()) {
+                    const userData = docSnap.data();
+                    setSession({
+                        userId: user.uid,
+                        name: userData.name,
+                        phone: userData.phone,
+                        gender: userData.gender
+                    });
+                }
+            });
+        }
+    }, [user, db]);
 
     const resetFlow = useCallback(() => {
         setView('selection');
@@ -80,7 +102,7 @@ export default function UserPage() {
             }
 
             // Check for active ambulance case
-            const qCure = query(collection(db, "emergencyCases"), where("riderId", "==", session.uid), where("status", "in", ["pending", "accepted", "onTheWay", "arrived", "inTransit"]));
+            const qCure = query(collection(db, "emergencyCases"), where("riderId", "==", session.userId), where("status", "in", ["pending", "accepted", "onTheWay", "arrived", "inTransit"]));
             const caseSnapshot = await getDocs(qCure);
              if (!caseSnapshot.empty) {
                 const caseDoc = caseSnapshot.docs[0];
@@ -154,6 +176,7 @@ export default function UserPage() {
                     setRouteGeometry={setRouteGeometry}
                     currentUserLocation={currentUserLocation}
                     liveMapRef={liveMapRef}
+                    session={session}
                 />
             )}
         </MotionDiv>
@@ -174,6 +197,7 @@ export default function UserPage() {
                     setActiveAmbulanceCase={setActiveAmbulanceCase}
                     setActiveGarageRequest={() => {}} // dummy function for this view
                     onBack={() => setView('selection')}
+                    session={session}
                 />
             )}
         </MotionDiv>
@@ -194,6 +218,7 @@ export default function UserPage() {
                     setActiveAmbulanceCase={() => {}} // dummy function
                     setActiveGarageRequest={setActiveGarageRequest}
                     onBack={() => setView('selection')}
+                    session={session}
                 />
             )}
         </MotionDiv>
