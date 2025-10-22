@@ -362,7 +362,10 @@ export default function LoginPage() {
                     <form onSubmit={handlePhoneSubmit} className="space-y-4">
                         <div className="space-y-2">
                           <Label htmlFor="phone">Phone Number</Label>
-                          <Input id="phone" name="phone" type="tel" placeholder="98765 43210" maxLength={10} required value={phone} onChange={(e) => setPhone(e.target.value)} disabled={isLoading} />
+                          <div className="flex items-center gap-0 rounded-md border border-input focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2">
+                            <span className="pl-3 text-muted-foreground text-sm">+91</span>
+                            <Input id="phone" name="phone" type="tel" placeholder="12345 67890" maxLength={10} required value={phone} onChange={(e) => setPhone(e.target.value)} disabled={isLoading} className="border-0 h-9 focus-visible:ring-0 focus-visible:ring-offset-0 flex-1" />
+                          </div>
                         </div>
                         <Button type="submit" className="w-full" disabled={isLoading}>
                             {isLoading ? "Sending..." : 'Send OTP'}
@@ -501,3 +504,4 @@ export default function LoginPage() {
       </div>
   );
 }
+
