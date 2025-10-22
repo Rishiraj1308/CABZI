@@ -1,6 +1,15 @@
 
 import type { GeoPoint } from 'firebase/firestore';
 
+export interface ClientSession {
+    name: string;
+    phone: string;
+    gender: string;
+    userId: string;
+    [key: string]: any; 
+}
+
+
 export interface RideData {
     id: string;
     pickup: { address: string; location: { latitude: number; longitude: number; } };
@@ -35,12 +44,4 @@ export interface GarageRequest {
     mechanicPhone?: string;
     eta?: number;
     partnerLocation?: GeoPoint | null;
-}
-
-export interface ClientSession {
-    name: string;
-    phone: string;
-    gender: string;
-    userId: string;
-    [key: string]: any; 
 }

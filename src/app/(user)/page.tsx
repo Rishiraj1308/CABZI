@@ -2,13 +2,12 @@
 'use client'
 
 import React, { useState, useEffect, useRef, useCallback } from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Car, Wrench, Ambulance, Calendar } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import dynamic from 'next/dynamic'
-import { useFirestore } from '@/firebase/client-provider'
+import { useFirebase, useAuth } from '@/firebase/client-provider'
 import { collection, addDoc, serverTimestamp, doc, GeoPoint, query, where, getDocs, updateDoc, getDoc } from 'firebase/firestore'
-import useUser from '@/components/client-session-provider'
 import { MotionDiv, AnimatePresence } from '@/components/ui/motion-div'
 import EmergencyButtons from '@/components/EmergencyButtons'
 import LocationSelector from '@/components/location-selector'
@@ -28,11 +27,7 @@ interface LocationWithCoords {
 
 type ServiceView = 'selection' | 'path' | 'cure' | 'resq';
 
-interface UserPageProps {
-  session: ClientSession;
-}
-
-export default function UserPage({ session }: UserPageProps) {
+export default function UserPage() {
     const [view, setView] = useState<ServiceView>('selection');
     
     // States for PATH service
@@ -48,9 +43,28 @@ export default function UserPage({ session }: UserPageProps) {
     const [isRequestingSos, setIsRequestingSos] = useState(false);
 
     const liveMapRef = useRef<any>(null);
-    const db = useFirestore();
+    const { user, db } = useFirebase();
     const { toast } = useToast()
     const router = useRouter();
+
+    const [session, setSession] = useState<ClientSession | null>(null);
+
+    useEffect(() => {
+        if (user && db) {
+            const userDocRef = doc(db, 'users', user.uid);
+            getDoc(userDocRef).then(docSnap => {
+                if (docSnap.exists()) {
+                    const userData = docSnap.data();
+                    setSession({
+                        userId: user.uid,
+                        name: userData.name,
+                        phone: userData.phone,
+                        gender: userData.gender
+                    });
+                }
+            });
+        }
+    }, [user, db]);
 
     const resetFlow = useCallback(() => {
         setView('selection');
@@ -159,6 +173,7 @@ export default function UserPage({ session }: UserPageProps) {
                     setRouteGeometry={setRouteGeometry}
                     currentUserLocation={currentUserLocation}
                     liveMapRef={liveMapRef}
+                    session={session}
                 />
             )}
         </MotionDiv>
@@ -179,6 +194,7 @@ export default function UserPage({ session }: UserPageProps) {
                     setActiveAmbulanceCase={setActiveAmbulanceCase}
                     setActiveGarageRequest={() => {}} // dummy function for this view
                     onBack={() => setView('selection')}
+                    session={session}
                 />
             )}
         </MotionDiv>
@@ -199,6 +215,7 @@ export default function UserPage({ session }: UserPageProps) {
                     setActiveAmbulanceCase={() => {}} // dummy function
                     setActiveGarageRequest={setActiveGarageRequest}
                     onBack={() => setView('selection')}
+                    session={session}
                 />
             )}
         </MotionDiv>

@@ -9,7 +9,7 @@ import { useToast } from '@/hooks/use-toast'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import useUser from '@/components/client-session-provider'
+import { useFirebase } from '@/firebase/client-provider';
 import { ClientSession } from '@/lib/types';
 
 
@@ -44,17 +44,14 @@ const supportTopics = [
     }
 ]
 
-interface UserSupportPageProps {
-    session: ClientSession;
-}
-
-export default function UserSupportPage({ session }: UserSupportPageProps) {
+export default function UserSupportPage() {
     const { toast } = useToast();
     const [chatMessages, setChatMessages] = useState([
         { from: 'support', text: 'Hello! I am your Cabzi AI Assistant. How can I help you today?' }
     ]);
     const [chatInput, setChatInput] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const { user: session } = useFirebase();
 
     const handleActionClick = (action: string) => {
         toast({
@@ -81,7 +78,7 @@ export default function UserSupportPage({ session }: UserSupportPageProps) {
     
     return (
         <div className="p-4 md:p-6 space-y-6">
-            <div className="animate-fade-in">
+            <div className="animate-fade-in pl-16">
                 <h2 className="text-3xl font-bold tracking-tight flex items-center gap-2">
                     <LifeBuoy className="w-8 h-8 text-primary" /> 
                     Help & Support
