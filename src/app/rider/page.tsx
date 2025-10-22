@@ -2,7 +2,7 @@
 'use client'
 
 import React, { useState, useEffect, useRef, useCallback } from 'react'
-import { Card } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Car, Wrench, Ambulance } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import dynamic from 'next/dynamic'
