@@ -4,8 +4,8 @@
 import React, { useEffect, ReactNode } from 'react';
 import { errorEmitter, FirestorePermissionError } from '@/lib/error-handling';
 import { useToast } from '@/hooks/use-toast';
-import { CodeBlock } from './code-block';
-import { Alert, AlertDescription, AlertTitle } from './ui/alert';
+import { CodeBlock } from '@/components/code-block';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
 
 export function FirebaseErrorListener() {

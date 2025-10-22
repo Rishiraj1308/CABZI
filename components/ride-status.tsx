@@ -29,8 +29,8 @@ import {
   Siren,
   CheckCircle,
 } from 'lucide-react';
-import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
-import { Button } from './ui/button';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
 import {
   AlertDialog,
   AlertDialogTrigger,
@@ -41,17 +41,17 @@ import {
   AlertDialogCancel,
   AlertDialogAction,
   AlertDialogDescription,
-} from './ui/alert-dialog';
+} from '@/components/ui/alert-dialog';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from './ui/dialog';
+} from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
-import SearchingIndicator from './ui/searching-indicator';
+import SearchingIndicator from '@/components/ui/searching-indicator';
 import type { RideData } from '@/lib/types';
 import type { AmbulanceCase } from '@/lib/types';
 
