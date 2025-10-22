@@ -435,8 +435,49 @@ export default function HomePage() {
                 </div>
             </section>
             
-            {/* Your Journey Section */}
              <section className="py-20 md:py-24">
+                <div className="container text-center">
+                    <h2 className="text-3xl font-bold tracking-tight sm:text-4xl font-headline">The Cabzi Advantage</h2>
+                    <p className="mt-4 text-lg text-muted-foreground max-w-3xl mx-auto">
+                        We've rebuilt the system from the ground up to create a win-win ecosystem for everyone involved.
+                    </p>
+                    <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-8 text-left">
+                        <Card>
+                            <CardHeader>
+                                <CardTitle className="flex items-center gap-2"><User /> For Riders</CardTitle>
+                            </CardHeader>
+                            <CardContent className="space-y-3">
+                                <p className="flex items-start gap-2"><CheckCircle className="w-5 h-5 text-green-500 mt-0.5 shrink-0" /> <span><span className="font-semibold">Fair & Transparent Fares:</span> No random surge pricing. Ever.</span></p>
+                                <p className="flex items-start gap-2"><CheckCircle className="w-5 h-5 text-green-500 mt-0.5 shrink-0" /> <span><span className="font-semibold">Unmatched Safety:</span> An integrated CURE network for real emergencies.</span></p>
+                                <p className="flex items-start gap-2"><CheckCircle className="w-5 h-5 text-green-500 mt-0.5 shrink-0" /> <span><span className="font-semibold">Reliable Service:</span> Happy, respected partners mean fewer cancellations.</span></p>
+                            </CardContent>
+                        </Card>
+                         <Card className="ring-2 ring-primary border-primary shadow-lg">
+                            <CardHeader>
+                                <CardTitle className="flex items-center gap-2"><HeartHandshake /> For Partners</CardTitle>
+                            </CardHeader>
+                            <CardContent className="space-y-3">
+                                <p className="flex items-start gap-2"><CheckCircle className="w-5 h-5 text-green-500 mt-0.5 shrink-0" /> <span><span className="font-semibold">0% Commission:</span> Keep 100% of your fare. You earned it.</span></p>
+                                <p className="flex items-start gap-2"><CheckCircle className="w-5 h-5 text-green-500 mt-0.5 shrink-0" /> <span><span className="font-semibold">Financial Security:</span> Access instant loans and high-interest savings via Cabzi Bank.</span></p>
+                                <p className="flex items-start gap-2"><CheckCircle className="w-5 h-5 text-green-500 mt-0.5 shrink-0" /> <span><span className="font-semibold">A True Partner:</span> We provide insurance, support, and respect.</span></p>
+                            </CardContent>
+                        </Card>
+                         <Card>
+                            <CardHeader>
+                                <CardTitle className="flex items-center gap-2"><Building /> For the City</CardTitle>
+                            </CardHeader>
+                            <CardContent className="space-y-3">
+                                <p className="flex items-start gap-2"><CheckCircle className="w-5 h-5 text-green-500 mt-0.5 shrink-0" /> <span><span className="font-semibold">Smarter Emergency Response:</span> Digitizing hospital dispatch saves critical time.</span></p>
+                                <p className="flex items-start gap-2"><CheckCircle className="w-5 h-5 text-green-500 mt-0.5 shrink-0" /> <span><span className="font-semibold">Economic Empowerment:</span> More earnings for drivers means more money flowing into the local economy.</span></p>
+                                <p className="flex items-start gap-2"><CheckCircle className="w-5 h-5 text-green-500 mt-0.5 shrink-0" /> <span><span className="font-semibold">A Safer Urban Fabric:</span> A connected, reliable network for travel and emergencies.</span></p>
+                            </CardContent>
+                        </Card>
+                    </div>
+                </div>
+            </section>
+
+            {/* Your Journey Section */}
+             <section className="py-20 md:py-24 bg-muted/40">
                 <div className="container">
                     <div className="mx-auto max-w-3xl text-center">
                         <h2 className="text-3xl font-bold tracking-tight sm:text-4xl font-headline">
@@ -481,7 +522,7 @@ export default function HomePage() {
             </section>
 
              {/* Partner CTA Section */}
-            <section className="py-20 md:py-24 bg-muted/40">
+            <section className="py-20 md:py-24">
                 <div className="container text-center">
                     <h2 className="text-3xl font-bold tracking-tight sm:text-4xl font-headline">Join Our Driver-First Revolution</h2>
                     <p className="mt-4 text-lg text-muted-foreground max-w-2xl mx-auto">
