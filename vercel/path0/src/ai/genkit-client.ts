@@ -7,12 +7,12 @@
 
 import { genkit, type GenkitOptions } from 'genkit';
 import { googleAI } from '@genkit-ai/google-genai';
-import { firebase } from '@genkit-ai/firebase';
+import { firebase as firebasePlugin } from '@genkit-ai/firebase';
 
 // Initialize Genkit with the Google AI plugin.
 const genkitOptions: GenkitOptions = {
   plugins: [
-    firebase(),
+    firebasePlugin(),
     googleAI({
       apiVersion: 'v1beta',
     }),
