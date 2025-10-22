@@ -9,8 +9,8 @@ import { useToast } from '@/hooks/use-toast'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { useRider } from '@/app/rider/layout';
-import type { ClientSession } from '@/lib/types';
+import { useFirebase } from '@/firebase/client-provider';
+import { ClientSession } from '@/lib/types';
 
 
 const supportTopics = [
@@ -51,7 +51,7 @@ export default function RiderSupportPage() {
     ]);
     const [chatInput, setChatInput] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const { session } = useRider();
+    const { user: session } = useFirebase();
 
     const handleActionClick = (action: string) => {
         toast({
