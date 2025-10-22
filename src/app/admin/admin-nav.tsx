@@ -188,7 +188,7 @@ export default function AdminNav() {
       <NavigationMenu>
           <NavigationMenuList>
               <NavigationMenuItem>
-                  <Link href="/admin" legacyBehavior passHref>
+                  <Link href="/admin" passHref>
                       <NavigationMenuLink active={pathname === '/admin' || pathname === '/admin/dashboard'} className={navigationMenuTriggerStyle()}>
                           Dashboard
                       </NavigationMenuLink>
