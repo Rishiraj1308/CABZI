@@ -124,8 +124,10 @@ export default function LocationSelector({
         return;
     }
     
-    const { distance } = routeInfo.routes[0].summary;
-    setRouteGeometry(routeInfo.routes[0].geometry);
+    const route = routeInfo.routes[0];
+    const distance = route.summary.lengthInMeters;
+
+    setRouteGeometry(route.geometry);
     
     const updatedRideTypes = initialRideTypes.map(rt => {
         if (rt.name === 'Cabzi Pink' && session?.gender !== 'female') {
@@ -158,7 +160,7 @@ export default function LocationSelector({
 
     const generatedOtp = Math.floor(1000 + Math.random() * 9000).toString();
     const rideData = {
-        riderId: session.phone,
+        riderId: session.userId,
         riderName: session.name,
         riderGender: session.gender,
         pickup: { address: pickup.address, location: new GeoPoint(pickup.coords.lat, pickup.coords.lon) },
@@ -201,7 +203,7 @@ export default function LocationSelector({
              <div className="relative">
                 <Input 
                     value={destination.address}
-                    onChange={e => setDestination({ address: e.target.value, coords: null })}
+                    onChange={e => setDestination(prev => ({...prev, address: e.target.value}))}
                     placeholder="Where to?"
                     className="bg-muted border-primary focus-visible:ring-primary text-base font-semibold"
                     onKeyDown={(e) => e.key === 'Enter' && handleGetRideInfo()}

@@ -145,7 +145,10 @@ export default function EmergencyButtons({ serviceType, liveMapRef, pickupCoords
   };
   
   const handleConfirmAmbulanceRequest = async () => {
-    if (!selectedHospital || !db || !session) return;
+    if (!selectedHospital || !db || !session || !severity) { // Added check for severity
+        toast({ variant: 'destructive', title: 'Missing Information', description: 'Please select a hospital and ensure all details are filled.' });
+        return;
+    }
     
     let currentCoords = pickupCoords;
     if (!currentCoords && liveMapRef.current) {
@@ -177,7 +180,7 @@ export default function EmergencyButtons({ serviceType, liveMapRef, pickupCoords
         const docRef = await addDoc(collection(db, 'emergencyCases'), caseData);
         setIsDialogOpen(false);
         setIsRequestingSos(true);
-        setActiveAmbulanceCase({ id: docRef.id, ...caseData });
+        setActiveAmbulanceCase({ id: docRef.id, ...caseData } as AmbulanceCase);
         toast({ title: 'Ambulance Requested!', description: 'Dispatching the nearest Cure partner to your location.' });
     } catch (error) {
         console.error("Error creating emergency case:", error);
