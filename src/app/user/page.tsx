@@ -6,9 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Car, Wrench, Ambulance, Calendar, Wallet } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import dynamic from 'next/dynamic'
-import { useFirestore } from '@/firebase/client-provider'
+import { useFirebase } from '@/firebase/client-provider'
 import { collection, addDoc, serverTimestamp, doc, GeoPoint, query, where, getDocs, updateDoc, getDoc } from 'firebase/firestore'
-import { useUser } from '@/components/client-session-provider'
 import { MotionDiv, AnimatePresence } from '@/components/ui/motion-div'
 import EmergencyButtons from '@/components/EmergencyButtons'
 import LocationSelector from '@/components/location-selector'
@@ -44,8 +43,7 @@ export default function UserPage() {
     const [isRequestingSos, setIsRequestingSos] = useState(false);
 
     const liveMapRef = useRef<any>(null);
-    const { session } = useUser();
-    const db = useFirestore();
+    const { user: session, db } = useFirebase();
     const { toast } = useToast()
     const router = useRouter();
 
@@ -82,7 +80,7 @@ export default function UserPage() {
             }
 
             // Check for active ambulance case
-            const qCure = query(collection(db, "emergencyCases"), where("riderId", "==", session.userId), where("status", "in", ["pending", "accepted", "onTheWay", "arrived", "inTransit"]));
+            const qCure = query(collection(db, "emergencyCases"), where("riderId", "==", session.uid), where("status", "in", ["pending", "accepted", "onTheWay", "arrived", "inTransit"]));
             const caseSnapshot = await getDocs(qCure);
              if (!caseSnapshot.empty) {
                 const caseDoc = caseSnapshot.docs[0];
