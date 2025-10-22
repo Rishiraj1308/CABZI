@@ -105,7 +105,7 @@ export default function ResQDashboard() {
     notificationSoundRef.current = new Audio('/sounds/notification.mp3');
     setIsMounted(true);
     const session = localStorage.getItem('cabzi-resq-session');
-    if (!session || !db) {
+    if (!session) {
         setIsLoading(false);
         return;
     }
@@ -154,6 +154,7 @@ export default function ResQDashboard() {
     checkActiveJob();
 
     return () => unsubscribe();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [toast]);
 
    // Effect for the request countdown timer
@@ -253,7 +254,7 @@ export default function ResQDashboard() {
 
     // Listen for job status changes (e.g., payment completion)
   useEffect(() => {
-    if (!acceptedJob?.id || !db) return;
+    if (!acceptedJob?.id) return;
 
     const jobRef = doc(db, 'garageRequests', acceptedJob.id);
     const unsubscribe = onSnapshot(jobRef, (docSnap) => {
@@ -276,7 +277,7 @@ export default function ResQDashboard() {
     });
 
     return () => unsubscribe();
-  }, [acceptedJob, db, jobStatus, toast]);
+  }, [acceptedJob, jobStatus, toast]);
 
   const handleScanResult = (result: any, error: any) => {
       if (!!result) {
@@ -297,7 +298,7 @@ export default function ResQDashboard() {
 
 
   const handleAvailabilityChange = async (checked: boolean) => {
-    if (!mechanicData || !db) return;
+    if (!mechanicData) return;
     setIsAvailable(checked);
     const mechanicRef = doc(db, 'mechanics', mechanicData.id);
     try {
@@ -313,7 +314,7 @@ export default function ResQDashboard() {
   }
 
   const handleAcceptJob = async () => {
-    if (!jobRequest || !mechanicData || !db) return;
+    if (!jobRequest || !mechanicData) return;
      if (requestTimerRef.current) {
          clearInterval(requestTimerRef.current);
          requestTimerRef.current = null;
@@ -338,7 +339,7 @@ export default function ResQDashboard() {
   }
 
   const handleDeclineJob = async (isTimeout = false) => {
-    if (!jobRequest || !mechanicData || !db) return;
+    if (!jobRequest || !mechanicData) return;
 
     if (requestTimerRef.current) {
         clearInterval(requestTimerRef.current);
@@ -386,7 +387,7 @@ export default function ResQDashboard() {
   const totalAmount = billItems.reduce((sum, item) => sum + (parseFloat(item.amount) || 0), 0);
 
   const completeJob = async () => {
-      if (!acceptedJob || !db || !mechanicData) return;
+      if (!acceptedJob || !mechanicData) return;
       
       const filledItems = billItems.filter(item => item.description && item.amount);
       if(filledItems.length === 0) {

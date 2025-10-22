@@ -16,26 +16,13 @@ This guide provides a step-by-step process for converting your Next.js web appli
 
 Capacitor needs a static version of your web app. You need to configure your Next.js project to produce a static HTML export.
 
-1.  **Open `next.config.ts`:**
-    Add the `output: 'export'` configuration. This tells Next.js to create a static `out` folder when you run the build command.
-
-    ```ts
-    import type {NextConfig} from 'next';
-
-    const nextConfig: NextConfig = {
-      output: 'export', // <-- Add this line
-      /* ... other config ... */
-    };
-
-    export default nextConfig;
-    ```
-
-2.  **Build the Static App:**
+1.  **Build the Static App:**
     Run the build command in your terminal. This will create a new folder named `out` in your project's root directory.
 
     ```bash
     npm run build
     ```
+    This command will generate the necessary static files in the `out/` directory, which Capacitor will use.
 
 ---
 
