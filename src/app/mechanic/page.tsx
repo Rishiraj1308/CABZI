@@ -16,7 +16,7 @@ import { useToast } from '@/hooks/use-toast'
 import { Skeleton } from '@/components/ui/skeleton'
 import dynamic from 'next/dynamic'
 import { db } from '@/lib/firebase'
-import { collection, query, where, onSnapshot, doc, updateDoc, getDoc, serverTimestamp, GeoPoint, limit, runTransaction, addDoc, arrayUnion, orderBy, Timestamp } from 'firebase/firestore'
+import { collection, query, where, onSnapshot, doc, updateDoc, getDoc, serverTimestamp, GeoPoint, limit, runTransaction, addDoc, arrayUnion, orderBy, Timestamp, FieldValue } from 'firebase/firestore'
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert'
 import { cn } from '@/lib/utils'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -622,7 +622,7 @@ export default function ResQDashboard() {
                     <TabsContent value="coach" className="mt-4 flex-1">
                          <Card className="bg-gradient-to-r from-primary to-primary/80 text-primary-foreground border-none h-full flex items-center">
                             <CardContent className="p-4"><div className="flex gap-3 items-center"><Sparkles className="w-8 h-8 text-yellow-300 flex-shrink-0" />
-                                <div><p className="font-bold">AI Earnings Coach</p><p className="text-sm text-primary-foreground/90">Focus on battery jump-starts in the evening. It's a high-demand service in your area!</p></div>
+                                <div><p className="font-bold">AI Earnings Coach</p><p className="text-sm text-primary-foreground/90">Focus on battery jump-starts in the evening. It&apos;s a high-demand service in your area!</p></div>
                             </div></CardContent>
                         </Card>
                     </TabsContent>
@@ -634,7 +634,7 @@ export default function ResQDashboard() {
             <DialogContent className="max-w-xs">
                 <DialogHeader>
                     <DialogTitle>Enter PIN to View</DialogTitle>
-                    <DialogDescription>For your privacy, please enter your PIN to see today's earnings.</DialogDescription>
+                    <DialogDescription>For your privacy, please enter your PIN to see today&apos;s earnings.</DialogDescription>
                 </DialogHeader>
                  <div className="flex flex-col items-center justify-center gap-4 py-4">
                     <Label htmlFor="pin-input-earnings" className="sr-only">Enter PIN</Label>

@@ -137,7 +137,7 @@ export default function AdminVendorsPage() {
          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
                 <CardTitle>Vendor & Payouts Management</CardTitle>
-                <CardDescription>Oversee all third-party vendors (e.g., Insurance, Spare Parts) and settle their payments. ResQ partners are managed under the main "Partners" panel.</CardDescription>
+                <CardDescription>Oversee all third-party vendors (e.g., Insurance, Spare Parts) and settle their payments. ResQ partners are managed under the main &quot;Partners&quot; panel.</CardDescription>
             </div>
             <div className="flex items-center gap-4">
                 <div className="relative w-full md:w-auto">

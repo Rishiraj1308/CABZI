@@ -130,7 +130,7 @@ export default function AdminTeamPage() {
         <div>
             <CardTitle>Team & Access Control</CardTitle>
             <CardDescription>
-                Manage your organization's members, roles, and equity stakes.
+                Manage your organization&apos;s members, roles, and equity stakes.
             </CardDescription>
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>

@@ -61,7 +61,7 @@ export default function PartnerHub() {
                     </div>
                     <CardTitle className="text-3xl mt-4">Join the Cabzi <span className="text-red-600">C</span><span className="text-primary">P</span><span className="text-amber-600">R</span> Partners Network</CardTitle>
                     <CardDescription>
-                        Become a part of India's first complete mobility, safety, and life-saving ecosystem.
+                        Become a part of India&apos;s first complete mobility, safety, and life-saving ecosystem.
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-6">

@@ -1,3 +1,4 @@
+
 'use client'
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -14,14 +15,14 @@ export default function DoctorDashboardPage() {
   return (
     <div className="space-y-6">
        <div>
-        <h2 className="text-3xl font-bold tracking-tight">Doctor's Dashboard</h2>
-        <p className="text-muted-foreground">Welcome back, Doctor. Here's your schedule for today.</p>
+        <h2 className="text-3xl font-bold tracking-tight">Doctor&apos;s Dashboard</h2>
+        <p className="text-muted-foreground">Welcome back, Doctor. Here&apos;s your schedule for today.</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium">Today's Appointments</CardTitle>
+                <CardTitle className="text-sm font-medium">Today&apos;s Appointments</CardTitle>
                 <Calendar className="w-4 h-4 text-muted-foreground"/>
             </CardHeader>
             <CardContent>
@@ -53,7 +54,7 @@ export default function DoctorDashboardPage() {
 
       <Card>
         <CardHeader>
-            <CardTitle>Today's Schedule</CardTitle>
+            <CardTitle>Today&apos;s Schedule</CardTitle>
             <CardDescription>A list of your confirmed and pending appointments for today.</CardDescription>
         </CardHeader>
         <CardContent>

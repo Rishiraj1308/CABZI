@@ -56,7 +56,7 @@ const LiveMap = forwardRef<any, LiveMapProps>((props, ref) => {
                             getAddress(lat, lng).then(address => {
                                 if (address) {
                                     const result = { address, coords: { lat, lon: lng } };
-                                    props.onLocationFound?.(address, result.coords);
+                                    if(props.onLocationFound) props.onLocationFound(address, result.coords);
                                     resolve(result);
                                 } else {
                                     resolve(null);
@@ -216,7 +216,7 @@ const LiveMap = forwardRef<any, LiveMapProps>((props, ref) => {
             map.invalidateSize();
         }, 100);
 
-    }, [props.onLocationFound, getAddress, resolvedTheme]);
+    }, [getAddress, props, resolvedTheme]);
 
     // Effect to switch map theme when the app's theme changes
     useEffect(() => {
@@ -472,7 +472,7 @@ const LiveMap = forwardRef<any, LiveMapProps>((props, ref) => {
         return () => {
             map.off('mousemove', updateTooltip);
         };
-    }, [props.enableCursorTooltip, props.activePartners, props.activeRiders]);
+    }, [props.enableCursorTooltip, props.activePartners, props.activeRiders, props]);
 
 
     return (
@@ -482,5 +482,3 @@ const LiveMap = forwardRef<any, LiveMapProps>((props, ref) => {
 
 LiveMap.displayName = 'LiveMap';
 export default LiveMap;
-
-    

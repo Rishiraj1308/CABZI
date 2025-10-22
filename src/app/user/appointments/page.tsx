@@ -52,13 +52,10 @@ export default function BookAppointmentPage() {
 
   return (
     <div className="p-4 md:p-6 space-y-6">
-      <div className="animate-fade-in pl-16">
-         <Button asChild variant="outline" size="sm" className="mb-4">
-            <Link href="/user"><ArrowLeft className="mr-2 h-4 w-4" /> Back to Services</Link>
-        </Button>
+      <div className="animate-fade-in">
         <h2 className="text-3xl font-bold tracking-tight flex items-center gap-2">
             <CalendarIcon className="w-8 h-8 text-primary" />
-            Book a Doctor's Appointment
+            Book a Doctor&apos;s Appointment
         </h2>
         <p className="text-muted-foreground">Find and book appointments with top doctors seamlessly.</p>
       </div>
@@ -68,7 +65,7 @@ export default function BookAppointmentPage() {
              <>
                 <CardHeader>
                     <CardTitle>Step 1: Find Your Doctor</CardTitle>
-                    <CardDescription>Search by doctor's name or specialization.</CardDescription>
+                    <CardDescription>Search by doctor&apos;s name or specialization.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                     <div className="relative">

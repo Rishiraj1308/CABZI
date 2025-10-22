@@ -19,7 +19,7 @@ export default function TermsOfServicePage() {
                     <CardContent className="prose dark:prose-invert max-w-none">
                         <h2>1. Agreement to Terms</h2>
                         <p>
-                            By using our web application (the "App"), you agree to be bound by these Terms of Service. If you do not agree to these terms, please do not use the App.
+                            By using our web application (the &quot;App&quot;), you agree to be bound by these Terms of Service. If you do not agree to these terms, please do not use the App.
                         </p>
 
                         <h2>2. User Accounts</h2>
@@ -29,7 +29,7 @@ export default function TermsOfServicePage() {
                         
                         <h2>3. Partner (Driver/Mechanic) Obligations</h2>
                         <p>
-                           Partners agree to maintain their vehicles in a safe and clean condition. They must possess a valid driver's license and all necessary permits required by law. Partners are independent contractors and not employees of Cabzi.
+                           Partners agree to maintain their vehicles in a safe and clean condition. They must possess a valid driver&apos;s license and all necessary permits required by law. Partners are independent contractors and not employees of Cabzi.
                         </p>
 
                         <h2>4. Rider Obligations</h2>

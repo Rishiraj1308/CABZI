@@ -297,12 +297,12 @@ export default function DoctorsPage() {
                         <DialogContent className="sm:max-w-2xl">
                           <DialogHeader>
                             <DialogTitle>Add New Doctor</DialogTitle>
-                            <DialogDescription>Enter the details for the new doctor to add them to your hospital's roster.</DialogDescription>
+                            <DialogDescription>Enter the details for the new doctor to add them to your hospital&apos;s roster.</DialogDescription>
                           </DialogHeader>
                           <form onSubmit={handleAddDoctor}>
                             <div className="grid gap-4 py-4">
                               <div className="space-y-2">
-                                <Label htmlFor="doctorName">Doctor's Full Name</Label>
+                                <Label htmlFor="doctorName">Doctor&apos;s Full Name</Label>
                                 <Input id="doctorName" name="doctorName" required />
                               </div>
                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -459,5 +459,3 @@ export default function DoctorsPage() {
     </div>
   )
 }
-
-    

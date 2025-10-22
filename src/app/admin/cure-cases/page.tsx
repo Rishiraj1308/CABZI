@@ -1,7 +1,7 @@
 
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
@@ -50,7 +50,7 @@ export default function AdminCureCasesPage() {
   const { toast } = useToast();
   const db = useFirestore();
 
-  const fetchCases = async () => {
+  const fetchCases = useCallback(async () => {
     if (!db) {
       toast({ variant: 'destructive', title: 'Database Error' });
       setIsLoading(false);
@@ -72,11 +72,11 @@ export default function AdminCureCasesPage() {
     } finally {
         setIsLoading(false);
     }
-  }
+  }, [toast, db]);
 
   useEffect(() => {
     fetchCases();
-  }, [toast, db]);
+  }, [fetchCases]);
 
   const filteredCases = useMemo(() => {
     if (!searchQuery) {

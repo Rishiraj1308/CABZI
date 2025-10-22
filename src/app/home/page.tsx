@@ -337,7 +337,7 @@ export default function HomePage() {
                             variants={itemVariants}
                             className="mx-auto lg:mx-0 mt-6 max-w-xl text-lg text-muted-foreground"
                         >
-                            Cabzi is more than a ride. It's a promise of fair fares for riders, 0% commission for partners, and an integrated safety network that looks out for you on every trip.
+                            Cabzi is more than a ride. It&apos;s a promise of fair fares for riders, 0% commission for partners, and an integrated safety network that looks out for you on every trip.
                         </motion.p>
                         <motion.div 
                             variants={itemVariants}
@@ -420,7 +420,7 @@ export default function HomePage() {
                             The CPR Ecosystem: One App, Complete Peace of Mind
                         </h2>
                         <p className="mt-4 text-lg text-muted-foreground">
-                           Cabzi isn't just an app; it's a unified platform for urban safety and mobility, built on four powerful pillars.
+                           Cabzi isn&apos;t just an app; it&apos;s a unified platform for urban safety and mobility, built on four powerful pillars.
                         </p>
                     </div>
                      <div className="mt-16 grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-4">
@@ -445,7 +445,7 @@ export default function HomePage() {
                 <div className="container text-center">
                     <h2 className="text-3xl font-bold tracking-tight sm:text-4xl font-headline">The Cabzi Advantage</h2>
                     <p className="mt-4 text-lg text-muted-foreground max-w-3xl mx-auto">
-                        We've rebuilt the system from the ground up to create a win-win ecosystem for everyone involved.
+                        We&apos;ve rebuilt the system from the ground up to create a win-win ecosystem for everyone involved.
                     </p>
                     <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-8 text-left">
                         <Card>

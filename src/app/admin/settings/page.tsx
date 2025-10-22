@@ -147,7 +147,7 @@ export default function CompanySettingsPage() {
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2"><Landmark className="w-6 h-6"/> Official Bank Details</CardTitle>
                     <CardDescription>
-                        This is the official company bank account where partners will deposit subscription fees. These details will be shown on the partner subscription page.
+                        This is the official company bank account where partners will deposit subscription fees. These details will be shown on the partner&apos;s subscription page.
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -180,7 +180,7 @@ export default function CompanySettingsPage() {
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2"><IndianRupee className="w-6 h-6"/> Business &amp; Tax Information</CardTitle>
                     <CardDescription>
-                        Enter your company's official tax and identification details for compliance.
+                        Enter your company&apos;s official tax and identification details for compliance.
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">

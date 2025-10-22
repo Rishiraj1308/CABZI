@@ -227,7 +227,7 @@ export default function SupportPage() {
                       <DialogContent>
                           <DialogHeader>
                               <DialogTitle>Request Roadside Assistance</DialogTitle>
-                              <DialogDescription>Tell us what's wrong, and we'll find a nearby mechanic for you. A fixed visit charge may apply.</DialogDescription>
+                              <DialogDescription>Tell us what&apos;s wrong, and we&apos;ll find a nearby mechanic for you. A fixed visit charge may apply.</DialogDescription>
                           </DialogHeader>
                           <div className="py-4">
                             <RadioGroup onValueChange={setSelectedIssue} value={selectedIssue}>
@@ -274,7 +274,7 @@ export default function SupportPage() {
                 <CardContent>
                      <div className="p-4 bg-muted rounded-lg text-center">
                         <p className="font-semibold">Insurance Not Active</p>
-                        <p className="text-sm text-muted-foreground">Upgrade to the "Pro" plan to activate your free Accidental Insurance coverage.</p>
+                        <p className="text-sm text-muted-foreground">Upgrade to the &quot;Pro&quot; plan to activate your free Accidental Insurance coverage.</p>
                     </div>
                 </CardContent>
             </Card>

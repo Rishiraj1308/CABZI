@@ -165,7 +165,7 @@ export default function GarageOnboardingPage() {
 
     return (
         <div className="flex min-h-screen items-center justify-center p-4 bg-muted/40">
-            <Card className="w-full max-w-3xl">
+            <Card className="w-full max-w-2xl">
                 <CardHeader className="text-center">
                     <div className="mx-auto"><BrandLogo iconClassName="w-12 h-12" /></div>
                     <CardTitle className="text-3xl mt-4">Onboard Your Garage</CardTitle>
@@ -208,10 +208,10 @@ export default function GarageOnboardingPage() {
                         </div>
 
                          <div className="border-b pb-6">
-                           <h3 className="text-lg font-medium mb-4">Owner's Information</h3>
+                           <h3 className="text-lg font-medium mb-4">Owner&apos;s Information</h3>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div className="space-y-2">
-                                    <Label htmlFor="ownerName">Owner's Full Name</Label>
+                                    <Label htmlFor="ownerName">Owner&apos;s Full Name</Label>
                                     <Input id="ownerName" name="ownerName" required />
                                 </div>
                                 <div className="space-y-2">

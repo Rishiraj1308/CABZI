@@ -160,7 +160,7 @@ export default function CureSubscriptionPage() {
      <div className="grid gap-6">
         <div>
             <h2 className="text-3xl font-bold tracking-tight">Cure Partner Subscriptions</h2>
-            <p className="text-muted-foreground">Choose a plan that fits your hospital's operational needs and scale.</p>
+            <p className="text-muted-foreground">Choose a plan that fits your hospital&apos;s operational needs and scale.</p>
         </div>
         
         <Alert variant="destructive">

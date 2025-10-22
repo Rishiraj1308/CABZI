@@ -97,7 +97,7 @@ function PartnerDetails({ partnerId, initialPartnerType }: PartnerDetailsProps) 
          return (
             <div className="text-center p-4">
                 <h2 className="text-xl font-bold">Partner Not Found</h2>
-                <p className="text-muted-foreground">The partner with ID '{partnerId}' could not be found.</p>
+                <p className="text-muted-foreground">The partner with ID &apos;{partnerId}&apos; could not be found.</p>
             </div>
         )
     }
@@ -185,7 +185,7 @@ function PartnerDetails({ partnerId, initialPartnerType }: PartnerDetailsProps) 
             <Card>
                 <CardHeader>
                     <CardTitle>Financial Ledger</CardTitle>
-                    <CardDescription>All transactions related to this partner's wallet.</CardDescription>
+                    <CardDescription>All transactions related to this partner&apos;s wallet.</CardDescription>
                 </CardHeader>
                 <CardContent>
                     <Table>

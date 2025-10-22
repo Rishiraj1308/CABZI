@@ -1,3 +1,4 @@
+
 'use client'
 
 import { useState, useEffect } from 'react'
@@ -76,12 +77,12 @@ export default function UserSupportPage() {
     
     return (
         <div className="p-4 md:p-6 space-y-6">
-            <div className="animate-fade-in pl-16">
+            <div className="animate-fade-in">
                 <h2 className="text-3xl font-bold tracking-tight flex items-center gap-2">
                     <LifeBuoy className="w-8 h-8 text-primary" /> 
                     Help & Support
                 </h2>
-                <p className="text-muted-foreground">We're here to help you with any issues.</p>
+                <p className="text-muted-foreground">We&apos;re here to help you with any issues.</p>
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-fade-in">

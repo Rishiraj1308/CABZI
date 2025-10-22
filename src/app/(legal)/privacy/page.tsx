@@ -54,7 +54,7 @@ export default function PrivacyPolicyPage() {
                                 <strong>By Law or to Protect Rights:</strong> If we believe the release of information about you is necessary to respond to legal process, to investigate or remedy potential violations of our policies, or to protect the rights, property, and safety of others.
                             </li>
                             <li>
-                                <strong>To other users:</strong> When a ride is accepted, the rider and partner may see each other's name, photo (if provided), and vehicle information to facilitate the service.
+                                <strong>To other users:</strong> When a ride is accepted, the rider and partner may see each other&apos;s name, photo (if provided), and vehicle information to facilitate the service.
                             </li>
                         </ul>
 

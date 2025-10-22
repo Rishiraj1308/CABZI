@@ -174,7 +174,7 @@ export default function CureOnboardingPage() {
                     <div className="space-y-6">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="space-y-2">
-                                <Label htmlFor="contactPerson">Contact Person's Name</Label>
+                                <Label htmlFor="contactPerson">Contact Person&apos;s Name</Label>
                                 <Input id="contactPerson" value={formData.contactPerson} onChange={e => handleInputChange('contactPerson', e.target.value)} required />
                             </div>
                             <div className="space-y-2">
@@ -196,9 +196,9 @@ export default function CureOnboardingPage() {
                          <div className="space-y-2">
                            <Label>Required Documents (Upload will be enabled after verification)</Label>
                            <ul className="text-sm text-muted-foreground list-disc pl-5 space-y-1">
-                               <li>Fire & Safety Certificate</li>
-                               <li>Ambulance RC Book & Fitness Certificate for all vehicles</li>
-                               <li>Driver's License for all ambulance drivers</li>
+                               <li>Fire &amp; Safety Certificate</li>
+                               <li>Ambulance RC Book &amp; Fitness Certificate for all vehicles</li>
+                               <li>Driver&apos;s License for all ambulance drivers</li>
                            </ul>
                         </div>
                     </div>
@@ -218,7 +218,7 @@ export default function CureOnboardingPage() {
                             <p className="text-sm text-muted-foreground">Contact Person</p>
                             <p className="font-semibold">{formData.contactPerson} ({formData.phone})</p>
                         </CardContent></Card>
-                         <p className="text-xs text-muted-foreground text-center pt-4">By submitting, you agree to Cabzi's Terms of Service, Privacy Policy, and our Service Level Agreement for Cure Partners.</p>
+                         <p className="text-xs text-muted-foreground text-center pt-4">By submitting, you agree to Cabzi&apos;s Terms of Service, Privacy Policy, and our Service Level Agreement for Cure Partners.</p>
                      </div>
                 )
         }
@@ -231,7 +231,7 @@ export default function CureOnboardingPage() {
                     <div className="mx-auto"><BrandLogo className="text-5xl justify-center" /></div>
                     <CardTitle className="text-3xl mt-4">Cure Partner Onboarding</CardTitle>
                     <CardDescription>
-                       Join our life-saving network. Please provide your hospital's details.
+                       Join our life-saving network. Please provide your hospital&apos;s details.
                     </CardDescription>
                      <div className="flex items-center gap-4 pt-4 justify-center">
                         <Progress value={(currentStep / totalSteps) * 100} className="w-1/2 mx-auto" />
