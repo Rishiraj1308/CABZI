@@ -174,6 +174,7 @@ export default function HospitalMissionControl() {
                 setBedsOccupied(data.bedsOccupied || 0);
                 setIsOnline(data.isOnline || false);
             }
+            if (isLoading) setIsLoading(false);
         });
 
         const fleetRef = collection(db, `ambulances/${partnerId}/fleet`);
@@ -206,8 +207,6 @@ export default function HospitalMissionControl() {
             
             setIncomingRequests(requestsData);
         });
-        
-        setIsLoading(false);
 
         return () => {
             unsubHospital();
@@ -218,7 +217,8 @@ export default function HospitalMissionControl() {
             unsubRequests();
             if (watchIdRef.current) navigator.geolocation.clearWatch(watchIdRef.current);
         };
-    }, [toast, db]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [db]);
     
      useEffect(() => {
         if (ongoingCase?.assignedAmbulanceId && hospitalData?.id && db) {
