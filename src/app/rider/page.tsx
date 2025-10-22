@@ -2,9 +2,8 @@
 'use client'
 
 import React, { useState, useEffect, useRef, useCallback } from 'react'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card'
-import { ArrowLeft, Car, Wrench, Ambulance, MapPin } from 'lucide-react'
+import { Card } from '@/components/ui/card'
+import { Car, Wrench, Ambulance } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import dynamic from 'next/dynamic'
 import { useFirestore } from '@/firebase/client-provider'
@@ -34,7 +33,7 @@ export default function RiderPage() {
     // States for PATH service
     const [pickup, setPickup] = useState<LocationWithCoords>({ address: '', coords: null });
     const [destination, setDestination] = useState<LocationWithCoords>({ address: '', coords: null });
-    const [currentUserLocation, setCurrentUserLocation] = useState<{ lat: number; lon: number } | null>(null);
+    const [currentUserLocation, setCurrentUserLocation] = useState<{ lat: number, lon: number } | null>(null);
     const [activeRide, setActiveRide] = useState<RideData | null>(null);
     const [routeGeometry, setRouteGeometry] = useState<any>(null);
 
@@ -156,22 +155,15 @@ export default function RiderPage() {
             )
         }
         return (
-            <div className="p-4">
-                 <div className="flex items-center gap-4 mb-4">
-                     <Button onClick={() => setView('selection')} variant="outline" size="icon"><ArrowLeft/></Button>
-                    <div>
-                        <h2 className="text-xl font-bold tracking-tight">Cure Services</h2>
-                        <p className="text-muted-foreground text-sm">Emergency ambulance services.</p>
-                    </div>
-                </div>
-                 <EmergencyButtons 
-                    liveMapRef={liveMapRef}
-                    pickupCoords={pickup.coords}
-                    setIsRequestingSos={setIsRequestingSos}
-                    setActiveAmbulanceCase={setActiveAmbulanceCase}
-                    setActiveGarageRequest={() => {}} // dummy function for this view
-                />
-            </div>
+             <EmergencyButtons 
+                serviceType="cure"
+                liveMapRef={liveMapRef}
+                pickupCoords={pickup.coords}
+                setIsRequestingSos={setIsRequestingSos}
+                setActiveAmbulanceCase={setActiveAmbulanceCase}
+                setActiveGarageRequest={() => {}} // dummy function for this view
+                onBack={() => setView('selection')}
+            />
         );
     }
     
@@ -184,32 +176,25 @@ export default function RiderPage() {
             );
          }
         return (
-            <div className="p-4">
-                 <div className="flex items-center gap-4 mb-4">
-                     <Button onClick={() => setView('selection')} variant="outline" size="icon"><ArrowLeft/></Button>
-                    <div>
-                        <h2 className="text-xl font-bold tracking-tight">ResQ Services</h2>
-                        <p className="text-muted-foreground text-sm">Get on-spot help for vehicle trouble.</p>
-                    </div>
-                </div>
-                 <EmergencyButtons 
-                    liveMapRef={liveMapRef}
-                    pickupCoords={pickup.coords}
-                    setIsRequestingSos={setIsRequestingSos}
-                    setActiveAmbulanceCase={() => {}} // dummy function
-                    setActiveGarageRequest={setActiveGarageRequest}
-                 />
-            </div>
+            <EmergencyButtons 
+                serviceType="resq"
+                liveMapRef={liveMapRef}
+                pickupCoords={pickup.coords}
+                setIsRequestingSos={setIsRequestingSos}
+                setActiveAmbulanceCase={() => {}} // dummy function
+                setActiveGarageRequest={setActiveGarageRequest}
+                onBack={() => setView('selection')}
+            />
         );
      }
 
     return (
-        <div className="h-full w-full relative">
-            <div className="absolute inset-0 z-0">
+        <div className="h-full flex-1 flex flex-col">
+            <div className="flex-1 relative">
                 <LiveMap ref={liveMapRef} onLocationFound={handleLocationFound} routeGeometry={routeGeometry} />
             </div>
-            <div className="absolute bottom-0 left-0 right-0 z-10">
-                 <Card className="m-2 rounded-2xl shadow-2xl">
+            <div className="z-10">
+                 <Card className="rounded-t-2xl shadow-2xl">
                      <AnimatePresence mode="wait">
                         <MotionDiv
                             key={view}
@@ -229,4 +214,3 @@ export default function RiderPage() {
         </div>
     );
 }
-

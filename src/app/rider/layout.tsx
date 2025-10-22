@@ -256,7 +256,7 @@ export default function RiderLayout({
   
   return (
       <RiderContext.Provider value={{ session, isLoading: isAuthLoading }}>
-          <div className="relative min-h-screen bg-background flex flex-col">
+          <div className="relative h-screen bg-background flex flex-col">
           <div className="absolute top-4 left-4 z-20">
               <Sheet open={open} onOpenChange={setOpen}>
                   <SheetTrigger asChild>
@@ -268,8 +268,8 @@ export default function RiderLayout({
                   <SheetContent side="left" className="w-full max-w-sm p-0 flex flex-col">
                       <SheetHeader className="p-4 border-b">
                           <SheetTitle>
-                              <Link href="/">
-                                  <BrandLogo />
+                              <Link href="/" legacyBehavior>
+                                  <a onClick={() => setOpen(false)}><BrandLogo /></a>
                               </Link>
                           </SheetTitle>
                           <SheetDescription className="sr-only">Main menu for rider</SheetDescription>
@@ -299,8 +299,9 @@ export default function RiderLayout({
                               <Link
                                   key={item.href}
                                   href={item.href}
-                                  onClick={() => setOpen(false)}>
-                                  {linkContent}
+                                  onClick={() => setOpen(false)}
+                                  legacyBehavior>
+                                  <a>{linkContent}</a>
                               </Link>
                           );
                           })}
@@ -350,7 +351,7 @@ export default function RiderLayout({
                   </DropdownMenuContent>
               </DropdownMenu>
           </div>
-          <main className="flex-1">
+          <main className="flex-1 flex flex-col">
               {children}
           </main>
           <Toaster />

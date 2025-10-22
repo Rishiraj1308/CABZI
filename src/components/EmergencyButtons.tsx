@@ -6,21 +6,23 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
-import { Ambulance, Building, HospitalIcon, LocateFixed, Wrench } from 'lucide-react';
+import { Ambulance, Building, HospitalIcon, LocateFixed, Wrench, ArrowLeft } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useFirestore } from '@/firebase/client-provider';
 import { addDoc, collection, serverTimestamp, GeoPoint, getDocs, query, where } from 'firebase/firestore';
 import { useRider } from '@/app/rider/layout'; 
 import SearchingIndicator from './ui/searching-indicator';
-import { Card } from './ui/card';
+import { Card, CardContent } from './ui/card';
 import { useRouter } from 'next/navigation';
 
 interface EmergencyButtonsProps {
+  serviceType: 'cure' | 'resq';
   liveMapRef: React.RefObject<any>;
   pickupCoords: { lat: number, lon: number } | null;
   setIsRequestingSos: (isRequesting: boolean) => void;
   setActiveAmbulanceCase: (caseData: any) => void;
   setActiveGarageRequest: (requestData: any) => void;
+  onBack: () => void;
 }
 
 interface HospitalInfo {
@@ -41,13 +43,11 @@ const commonIssues = [
 ]
 
 
-export default function EmergencyButtons({ liveMapRef, pickupCoords, setIsRequestingSos, setActiveAmbulanceCase, setActiveGarageRequest }: EmergencyButtonsProps) {
-  const [isSosDialogOpen, setIsSosDialogOpen] = useState(false);
-  const [isResqDialogOpen, setIsResqDialogOpen] = useState(false);
+export default function EmergencyButtons({ serviceType, liveMapRef, pickupCoords, setIsRequestingSos, setActiveAmbulanceCase, setActiveGarageRequest, onBack }: EmergencyButtonsProps) {
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedIssue, setSelectedIssue] = useState('');
-  const router = useRouter();
   
-  // New state for multi-step SOS dialog
+  // State for multi-step SOS dialog
   const [sosStep, setSosStep] = useState<'triage' | 'hospitals'>('triage');
   const [severity, setSeverity] = useState<'Non-Critical' | 'Serious' | 'Critical' | ''>('');
   const [hospitalType, setHospitalType] = useState<'any' | 'Govt Hospital' | 'Private Hospital'>('any');
@@ -61,22 +61,17 @@ export default function EmergencyButtons({ liveMapRef, pickupCoords, setIsReques
 
     // Reset SOS dialog on close
   useEffect(() => {
-    if (!isSosDialogOpen) {
+    if (!isDialogOpen) {
         setTimeout(() => {
             setSosStep('triage');
             setSeverity('');
             setHospitalType('any');
             setNearbyHospitals([]);
             setSelectedHospital(null);
+            setSelectedIssue('');
         }, 300);
     }
-  }, [isSosDialogOpen]);
-
-  useEffect(() => {
-    if(!isResqDialogOpen) {
-        setSelectedIssue('');
-    }
-  }, [isResqDialogOpen]);
+  }, [isDialogOpen]);
 
 
   const getDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
@@ -167,7 +162,7 @@ export default function EmergencyButtons({ liveMapRef, pickupCoords, setIsReques
 
     try {
         const docRef = await addDoc(collection(db, 'emergencyCases'), caseData);
-        setIsSosDialogOpen(false);
+        setIsDialogOpen(false);
         setIsRequestingSos(true);
         setActiveAmbulanceCase({ id: docRef.id, ...caseData });
         toast({ title: 'Ambulance Requested!', description: 'Dispatching the nearest Cure partner to your location.' });
@@ -198,84 +193,118 @@ export default function EmergencyButtons({ liveMapRef, pickupCoords, setIsReques
     localStorage.setItem('activeGarageRequestId', requestDocRef.id);
     setActiveGarageRequest({ id: requestDocRef.id, ...requestData });
     toast({ title: "Request Sent!", description: "We are finding a nearby ResQ partner for you." });
-    setIsResqDialogOpen(false);
+    setIsDialogOpen(false);
   }
 
+  const renderContent = () => {
+    if (serviceType === 'cure') {
+        return (
+            <div className="py-4 space-y-6">
+                {sosStep === 'triage' ? (
+                    <>
+                        <div className="space-y-3">
+                            <Label className="font-semibold">1. Select Severity</Label>
+                            <RadioGroup value={severity} onValueChange={(v) => setSeverity(v as any)}>
+                                <div className="flex items-center space-x-2"><RadioGroupItem value="Non-Critical" id="s1" /><Label htmlFor="s1">Non-Critical</Label></div>
+                                <div className="flex items-center space-x-2"><RadioGroupItem value="Serious" id="s2" /><Label htmlFor="s2">Serious</Label></div>
+                                <div className="flex items-center space-x-2"><RadioGroupItem value="Critical" id="s3" /><Label htmlFor="s3">Critical</Label></div>
+                            </RadioGroup>
+                        </div>
+                        <div className="space-y-3">
+                            <Label className="font-semibold">2. Hospital Preference</Label>
+                            <RadioGroup value={hospitalType} onValueChange={(v) => setHospitalType(v as any)}>
+                                <div className="flex items-center space-x-2"><RadioGroupItem value="any" id="h1" /><Label htmlFor="h1">Any Nearby</Label></div>
+                                <div className="flex items-center space-x-2"><RadioGroupItem value="Govt Hospital" id="h2" /><Label htmlFor="h2">Government</Label></div>
+                                <div className="flex items-center space-x-2"><RadioGroupItem value="Private Hospital" id="h3" /><Label htmlFor="h3">Private</Label></div>
+                            </RadioGroup>
+                        </div>
+                    </>
+                ) : (
+                    <div className="space-y-4">
+                        <Label className="font-semibold">3. Select a Hospital</Label>
+                        {isFindingHospitals ? (
+                            <div className="text-center py-4">
+                               <SearchingIndicator partnerType="cure" />
+                               <p className="font-semibold mt-4 text-lg">Finding nearby hospitals...</p>
+                           </div>
+                        ) : (
+                            <div className="max-h-60 overflow-y-auto space-y-2 pr-2">
+                                {nearbyHospitals.map(h => (
+                                    <Card key={h.id} className={`p-3 cursor-pointer ${selectedHospital === h.id ? 'border-primary' : ''}`} onClick={() => setSelectedHospital(h.id)}>
+                                        <div className="flex items-center gap-3">
+                                            <HospitalIcon className="w-5 h-5 text-primary"/>
+                                            <div className="flex-1">
+                                                <p className="font-bold text-sm">{h.name}</p>
+                                                <p className="text-xs text-muted-foreground">{h.address}</p>
+                                            </div>
+                                            <p className="text-sm font-semibold">{h.distance.toFixed(1)} km</p>
+                                        </div>
+                                    </Card>
+                                ))}
+                                {nearbyHospitals.length === 0 && <p className="text-sm text-center text-muted-foreground py-8">No online hospitals found.</p>}
+                            </div>
+                        )}
+                    </div>
+                )}
+            </div>
+        );
+    }
+     if (serviceType === 'resq') {
+        return (
+            <div className="py-4">
+                <RadioGroup onValueChange={setSelectedIssue} value={selectedIssue}>
+                    <div className="space-y-2">
+                    {commonIssues.map(issue => (
+                        <div key={issue.id} className="flex items-center space-x-2">
+                        <RadioGroupItem value={issue.label} id={issue.id} />
+                        <Label htmlFor={issue.id} className="font-normal">{issue.label}</Label>
+                        </div>
+                    ))}
+                    </div>
+                </RadioGroup>
+            </div>
+        );
+    }
+  }
 
   return (
-    <div className="flex gap-4 p-4 justify-center">
-      <Dialog open={isSosDialogOpen} onOpenChange={setIsSosDialogOpen}>
-        <DialogTrigger asChild>
-            <Button variant="outline" size="lg" className="w-full h-24 flex-col gap-1 text-red-600 border-red-500/50 bg-red-100/50 hover:bg-red-100 dark:bg-red-900/30 dark:hover:bg-red-900/50">
-                <Ambulance className="h-8 w-8" />
-                <span className="font-semibold">Request Ambulance</span>
-            </Button>
-        </DialogTrigger>
-        <DialogContent>
-             <DialogHeader>
-                <DialogTitle>Request Emergency Ambulance</DialogTitle>
-                <DialogDescription>Please provide details about the emergency to help us serve you better.</DialogDescription>
-            </DialogHeader>
-            {sosStep === 'triage' ? (
-                <div className="py-4 space-y-6">
-                    <div className="space-y-3">
-                        <Label className="font-semibold">1. Select Severity</Label>
-                        <RadioGroup value={severity} onValueChange={(v) => setSeverity(v as any)}>
-                            <div className="flex items-center space-x-2"><RadioGroupItem value="Non-Critical" id="s1" /><Label htmlFor="s1">Non-Critical (e.g., minor injury, illness)</Label></div>
-                            <div className="flex items-center space-x-2"><RadioGroupItem value="Serious" id="s2" /><Label htmlFor="s2">Serious (e.g., requires urgent medical attention)</Label></div>
-                            <div className="flex items-center space-x-2"><RadioGroupItem value="Critical" id="s3" /><Label htmlFor="s3">Critical (e.g., life-threatening situation)</Label></div>
-                        </RadioGroup>
-                    </div>
-                     <div className="space-y-3">
-                        <Label className="font-semibold">2. Hospital Preference</Label>
-                         <RadioGroup value={hospitalType} onValueChange={(v) => setHospitalType(v as any)}>
-                            <div className="flex items-center space-x-2"><RadioGroupItem value="any" id="h1" /><Label htmlFor="h1">Any Nearby Hospital</Label></div>
-                            <div className="flex items-center space-x-2"><RadioGroupItem value="Govt Hospital" id="h2" /><Label htmlFor="h2">Government Hospital</Label></div>
-                            <div className="flex items-center space-x-2"><RadioGroupItem value="Private Hospital" id="h3" /><Label htmlFor="h3">Private Hospital</Label></div>
-                        </RadioGroup>
-                    </div>
-                </div>
-            ) : (
-                 <div className="py-4 space-y-4">
-                     <Label className="font-semibold">3. Select a Hospital</Label>
-                     {isFindingHospitals ? (
-                        <div className="text-center py-4">
-                           <SearchingIndicator partnerType="cure" />
-                           <p className="font-semibold mt-4 text-lg">Finding nearby hospitals...</p>
-                       </div>
-                     ) : (
-                        <div className="max-h-60 overflow-y-auto space-y-2 pr-2">
-                            {nearbyHospitals.map(h => (
-                                <Card key={h.id} className={`p-3 cursor-pointer ${selectedHospital === h.id ? 'border-primary' : ''}`} onClick={() => setSelectedHospital(h.id)}>
-                                    <div className="flex items-center gap-3">
-                                        <HospitalIcon className="w-5 h-5 text-primary"/>
-                                        <div className="flex-1">
-                                            <p className="font-bold text-sm">{h.name}</p>
-                                            <p className="text-xs text-muted-foreground">{h.address}</p>
-                                        </div>
-                                        <p className="text-sm font-semibold">{h.distance.toFixed(1)} km</p>
-                                    </div>
-                                </Card>
-                            ))}
-                            {nearbyHospitals.length === 0 && <p className="text-sm text-center text-muted-foreground py-8">No online hospitals found matching your criteria.</p>}
-                        </div>
-                     )}
-                 </div>
-            )}
-            <DialogFooter>
-                {sosStep === 'triage' ? (
-                     <Button className="w-full" onClick={handleFindHospitals} disabled={!severity || isFindingHospitals}>
-                        {isFindingHospitals ? 'Finding Hospitals...' : 'Find Nearest Hospitals'}
-                    </Button>
-                ) : (
-                    <>
-                    <Button variant="outline" onClick={() => setSosStep('triage')}>Back</Button>
-                    <Button className="w-full" onClick={handleConfirmAmbulanceRequest} disabled={!selectedHospital}>Confirm & Dispatch Ambulance</Button>
-                    </>
-                )}
-            </DialogFooter>
-        </DialogContent>
-      </Dialog>
+    <div className="p-4">
+         <div className="flex items-center gap-4 mb-4">
+             <Button onClick={onBack} variant="outline" size="icon"><ArrowLeft/></Button>
+            <div>
+                <h2 className="text-xl font-bold tracking-tight capitalize">{serviceType} Services</h2>
+                <p className="text-muted-foreground text-sm">Emergency {serviceType === 'cure' ? 'ambulance' : 'mechanic'} services.</p>
+            </div>
+        </div>
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogTrigger asChild>
+                <Button variant="outline" size="lg" className={`w-full h-24 flex-col gap-1 ${serviceType === 'cure' ? 'text-red-600 border-red-500/50 bg-red-100/50 hover:bg-red-100' : 'text-amber-600 border-amber-500/50 bg-amber-100/50 hover:bg-amber-100'}`}>
+                    {serviceType === 'cure' ? <Ambulance className="h-8 w-8" /> : <Wrench className="h-8 w-8" />}
+                    <span className="font-semibold capitalize">Request {serviceType}</span>
+                </Button>
+            </DialogTrigger>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Request {serviceType === 'cure' ? 'Emergency Ambulance' : 'Roadside Assistance'}</DialogTitle>
+                    <DialogDescription>Please provide details to help us serve you better.</DialogDescription>
+                </DialogHeader>
+                {renderContent()}
+                <DialogFooter>
+                    {serviceType === 'cure' && sosStep === 'triage' && (
+                        <Button className="w-full" onClick={handleFindHospitals} disabled={!severity || isFindingHospitals}>{isFindingHospitals ? 'Finding...' : 'Find Hospitals'}</Button>
+                    )}
+                    {serviceType === 'cure' && sosStep === 'hospitals' && (
+                        <>
+                            <Button variant="outline" onClick={() => setSosStep('triage')}>Back</Button>
+                            <Button className="w-full" onClick={handleConfirmAmbulanceRequest} disabled={!selectedHospital}>Confirm & Dispatch</Button>
+                        </>
+                    )}
+                    {serviceType === 'resq' && (
+                        <Button className="w-full" onClick={handleRequestMechanic} disabled={!selectedIssue}>Find Help</Button>
+                    )}
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
     </div>
   );
 }
