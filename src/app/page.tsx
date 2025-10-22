@@ -8,50 +8,14 @@ import { NewLogoIcon } from '@/components/brand-logo'
 
 export default function SplashPage() {
   const router = useRouter()
-  const [isMounted, setIsMounted] = useState(false);
-  
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
 
   useEffect(() => {
-    if (isMounted) {
-      const handleRedirect = () => {
-        let targetRoute = '/home'; // Default route
-        
-        const sessionKeys = [
-          { key: 'cabzi-session', role: 'admin', path: '/admin' },
-          { key: 'cabzi-driver-session', role: 'driver', path: '/driver' },
-          { key: 'cabzi-resq-session', role: 'mechanic', path: '/mechanic' },
-          { key: 'cabzi-cure-session', role: 'cure', path: '/cure' },
-          { key: 'cabzi-ambulance-session', role: 'ambulance', path: '/ambulance' },
-          { key: 'cabzi-doctor-session', role: 'doctor', path: '/doctor' },
-          { key: 'cabzi-user-session', role: 'user', path: '/user' }, // General user/rider
-        ];
-        
-        for (const { key, path } of sessionKeys) {
-          const session = localStorage.getItem(key);
-          if (session) {
-            try {
-              // Just checking for existence is enough for redirection.
-              JSON.parse(session);
-              targetRoute = path;
-              break; 
-            } catch (e) {
-              localStorage.removeItem(key);
-            }
-          }
-        }
-        router.replace(targetRoute);
-      };
+    const timer = setTimeout(() => {
+        router.replace('/home');
+    }, 2500);
 
-      const timer = setTimeout(() => {
-          handleRedirect();
-      }, 2500);
-
-      return () => clearTimeout(timer);
-    }
-  }, [isMounted, router]);
+    return () => clearTimeout(timer);
+  }, [router]);
 
   return (
     <motion.div
