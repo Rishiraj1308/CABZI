@@ -271,7 +271,7 @@ export default function DriverDashboard() {
                 status: "searching",
                 riderName: rideData.riderName,
                 riderId: rideData.riderId,
-                riderGender: rideData.riderGender as 'male' | 'female' | 'other',
+                riderGender: rideData.riderGender,
                 otp: rideData.otp,
             };
             
@@ -741,7 +741,7 @@ export default function DriverDashboard() {
             toast({
             variant: 'destructive',
             title: 'Camera Access Denied',
-            description: 'Please enable camera permissions in your browser settings to use this app.',
+            description: 'Please enable camera permissions in your browser settings to use the scanner.',
             });
         }
         };
@@ -874,7 +874,7 @@ export default function DriverDashboard() {
         driverPhone: partnerData.phone,
         issue: selectedIssue,
         location: new GeoPoint(partnerData.currentLocation.lat, partnerData.currentLocation.lon),
-        status: 'pending' as GarageRequest['status'],
+        status: 'pending' as const,
         otp: generatedOtp,
         createdAt: serverTimestamp(),
     };
@@ -1175,16 +1175,4 @@ export default function DriverDashboard() {
   )
 }
 
-```
-- src/firebase/errors.ts:
-```ts
-// This file is intentionally left blank to prevent client-side Firebase initialization.
-// The app will now rely on server-side actions and APIs instead of direct client-to-Firebase connections.
-export {};
-```
-- src/lib/firebase-functions.ts:
-```ts
-// This file is intentionally left blank.
-// All server-side logic has been moved to the `functions` directory.
-export {};
-```
+    
