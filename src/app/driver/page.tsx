@@ -371,7 +371,7 @@ export default function DriverDashboard() {
         });
         
         return () => unsubscribe();
-    }, [acceptedRide, db, toast]);
+    }, [acceptedRide, db, toast, resetRideState]);
   
   // Effect to fetch route when a ride has been accepted or started
   useEffect(() => {
