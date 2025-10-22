@@ -1,26 +1,24 @@
 
 'use client'
 
-import  , { useState, useEffect, useRef, useMemo, useCallback } from 'react'
+import React, { useState, useEffect, useRef, useMemo } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card'
 import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
-import { Ambulance, Siren, Waves, Settings, BedDouble, BarChart, Minus, Users, UserCheck, Phone, Navigation } from 'lucide-react'
+import { Ambulance, Siren, Waves, Settings, BedDouble, Phone, Navigation } from 'lucide-react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from '@/components/ui/dialog'
 import { useToast } from '@/hooks/use-toast'
 import { Skeleton } from '@/components/ui/skeleton'
 import dynamic from 'next/dynamic'
 import { useDb } from '@/firebase/client-provider'
-import { collection, query, where, onSnapshot, doc, updateDoc, GeoPoint, serverTimestamp, arrayUnion, addDoc, getDocs, orderBy, Timestamp } from 'firebase/firestore'
+import { collection, query, where, onSnapshot, doc, updateDoc, GeoPoint, serverTimestamp, arrayUnion, addDoc } from 'firebase/firestore'
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 import SearchingIndicator from '@/components/ui/searching-indicator'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Avatar } from '@/components/ui/avatar'
-
 
 const LiveMap = dynamic(() => import('@/components/live-map'), {
     ssr: false,
@@ -56,8 +54,11 @@ interface OngoingCase extends EmergencyRequest {
     status: 'accepted' | 'onTheWay' | 'arrived' | 'inTransit' | 'completed';
     assignedAmbulanceId?: string;
     assignedAmbulanceName?: string;
+    assignedPartner?: { id: string; name: string };
     partnerLocation?: GeoPoint;
     hospitalLocation?: GeoPoint;
+    partnerEta?: number;
+    hospitalEta?: number;
 }
 
 interface HospitalData {
@@ -70,38 +71,23 @@ interface HospitalData {
     location?: GeoPoint;
 }
 
-// Consolidated state interface
-interface DashboardState {
-    hospitalData: HospitalData | null;
-    fleet: AmbulanceVehicle[];
-    drivers: AmbulanceDriver[];
-    doctors: Doctor[];
-    appointments: Appointment[];
-    incomingRequests: EmergencyRequest[];
-    ongoingCase: OngoingCase | null;
-    isLoading: boolean;
-    isOnline: boolean;
-}
-
 const mockAppointments: Appointment[] = [
-    { id: 'APP001', patientName: 'Priya Singh', department: 'Cardiology', doctorName: 'Dr. Ramesh Sharma', status: 'Pending', isRecurring: true },
-    { id: 'APP002', patientName: 'Rajesh Verma', department: 'Orthopedics', doctorName: 'Dr. Priya Gupta', status: 'Confirmed' },
-    { id: 'APP003', patientName: 'Anita Desai', department: 'General Physician', doctorName: 'Dr. Alok Verma', status: 'Pending' },
+  { id: 'APP001', patientName: 'Priya Singh', department: 'Cardiology', doctorName: 'Dr. Ramesh Sharma', status: 'Pending', isRecurring: true },
+  { id: 'APP002', patientName: 'Rajesh Verma', department: 'Orthopedics', doctorName: 'Dr. Priya Gupta', status: 'Confirmed' },
+  { id: 'APP003', patientName: 'Anita Desai', department: 'General Physician', doctorName: 'Dr. Alok Verma', status: 'Pending' },
 ];
 
 
 export default function HospitalMissionControl() {
-    const [state, setState] = useState<DashboardState>({
-        hospitalData: null,
-        fleet: [],
-        drivers: [],
-        doctors: [],
-        appointments: mockAppointments,
-        incomingRequests: [],
-        ongoingCase: null,
-        isLoading: true,
-        isOnline: false,
-    });
+    const [hospitalData, setHospitalData] = useState<HospitalData | null>(null);
+    const [fleet, setFleet] = useState<AmbulanceVehicle[]>([]);
+    const [drivers, setDrivers] = useState<AmbulanceDriver[]>([]);
+    const [doctors, setDoctors] = useState<Doctor[]>([]);
+    const [appointments, setAppointments] = useState<Appointment[]>(mockAppointments);
+    const [incomingRequests, setIncomingRequests] = useState<EmergencyRequest[]>([]);
+    const [ongoingCase, setOngoingCase] = useState<OngoingCase | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
+    const [isOnline, setIsOnline] = useState(false);
     
     const [totalBeds, setTotalBeds] = useState(0);
     const [bedsOccupied, setBedsOccupied] = useState(0);
@@ -114,14 +100,14 @@ export default function HospitalMissionControl() {
     useEffect(() => {
         const session = localStorage.getItem('cabzi-cure-session');
         if (!session || !db) {
-            setState(s => ({ ...s, isLoading: false }));
+            setIsLoading(false);
             return;
         }
 
         const { partnerId } = JSON.parse(session);
         if (!partnerId) {
             toast({ variant: 'destructive', title: 'Session Error', description: 'Partner ID not found in session.' });
-            setState(s => ({ ...s, isLoading: false }));
+            setIsLoading(false);
             return;
         }
         
@@ -132,34 +118,29 @@ export default function HospitalMissionControl() {
         unsubscribers.push(onSnapshot(hospitalRef, (doc) => {
             if (doc.exists()) {
                 const data = doc.data();
-                setState(s => ({
-                    ...s,
-                    hospitalData: { id: doc.id, ...data } as HospitalData,
-                    isOnline: data.isOnline || false,
-                    isLoading: false // Set loading to false once we have hospital data
-                }));
+                setHospitalData({ id: doc.id, ...data } as HospitalData);
+                setIsOnline(data.isOnline || false);
                 setTotalBeds(data.totalBeds || 0);
                 setBedsOccupied(data.bedsOccupied || 0);
-            } else {
-                 setState(s => ({...s, isLoading: false}));
             }
+            setIsLoading(false);
         }));
 
         // Fleet Data
         const fleetRef = collection(db, `ambulances/${partnerId}/fleet`);
         unsubscribers.push(onSnapshot(fleetRef, (snapshot) => {
-            setState(s => ({ ...s, fleet: snapshot.docs.map(d => ({ id: d.id, ...d.data() } as AmbulanceVehicle)) }));
+            setFleet(snapshot.docs.map(d => ({ id: d.id, ...d.data() } as AmbulanceVehicle)));
         }));
 
         // Drivers and Doctors
         const driversRef = query(collection(db, `ambulances/${partnerId}/drivers`), orderBy('name', 'asc'));
         unsubscribers.push(onSnapshot(driversRef, (snapshot) => {
-             setState(s => ({ ...s, drivers: snapshot.docs.map(d => ({id: d.id, ...d.data()} as AmbulanceDriver)) }));
+             setDrivers(snapshot.docs.map(d => ({id: d.id, ...d.data()} as AmbulanceDriver)));
         }));
         
         const doctorsRef = query(collection(db, `ambulances/${partnerId}/doctors`), orderBy('name', 'asc'));
         unsubscribers.push(onSnapshot(doctorsRef, (snapshot) => {
-             setState(s => ({ ...s, doctors: snapshot.docs.map(d => ({id: d.id, ...d.data()} as Doctor)) }));
+             setDoctors(snapshot.docs.map(d => ({id: d.id, ...d.data()} as Doctor)));
         }));
 
         // Ongoing/Active Case for this hospital
@@ -168,7 +149,7 @@ export default function HospitalMissionControl() {
             const activeCase = snapshot.docs
                 .map(d => ({ id: d.id, ...d.data() } as OngoingCase))
                 .find(c => c.status !== 'completed' && c.status !== 'cancelled_by_rider' && c.status !== 'cancelled_by_partner' && c.status !== 'cancelled_by_admin');
-            setState(s => ({ ...s, ongoingCase: activeCase || null }));
+            setOngoingCase(activeCase || null);
         }));
 
         // All pending requests (for the feed)
@@ -176,7 +157,7 @@ export default function HospitalMissionControl() {
         unsubscribers.push(onSnapshot(requestsRef, (snapshot) => {
             const requestsData = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as EmergencyRequest))
                 .filter(req => !req.rejectedBy?.includes(partnerId));
-            setState(s => ({ ...s, incomingRequests: requestsData }));
+            setIncomingRequests(requestsData);
         }));
 
         return () => {
@@ -189,13 +170,13 @@ export default function HospitalMissionControl() {
 
     // Effect for live location tracking of the assigned ambulance
     useEffect(() => {
-        if (state.ongoingCase?.assignedAmbulanceId && state.hospitalData?.id && db) {
-            const ambulanceRef = doc(db, `ambulances/${state.hospitalData.id}/fleet`, state.ongoingCase.assignedAmbulanceId);
+        if (ongoingCase?.assignedAmbulanceId && hospitalData?.id && db) {
+            const ambulanceRef = doc(db, `ambulances/${hospitalData.id}/fleet`, ongoingCase.assignedAmbulanceId);
             watchIdRef.current = navigator.geolocation.watchPosition(
                 (pos) => {
                     const newGeoPoint = new GeoPoint(pos.coords.latitude, pos.coords.longitude);
                     updateDoc(ambulanceRef, { location: newGeoPoint });
-                    updateDoc(doc(db, 'emergencyCases', state.ongoingCase!.id), { partnerLocation: newGeoPoint });
+                    updateDoc(doc(db, 'emergencyCases', ongoingCase!.id), { partnerLocation: newGeoPoint });
                 },
                 (err) => console.error("Could not get ambulance location:", err),
                 { enableHighAccuracy: true }
@@ -204,65 +185,65 @@ export default function HospitalMissionControl() {
             if (watchIdRef.current) navigator.geolocation.clearWatch(watchIdRef.current);
         }
         return () => { if (watchIdRef.current) navigator.geolocation.clearWatch(watchIdRef.current) };
-    }, [state.ongoingCase, state.hospitalData?.id, db]);
+    }, [ongoingCase, hospitalData?.id, db]);
 
 
     // HANDLER FUNCTIONS
     const simulateNewCase = async () => {
-        if (!db || !state.hospitalData) return;
+        if (!db || !hospitalData) return;
         const caseId = `CASE-TEST-${Date.now()}`;
         const testCaseData = {
             caseId,
-            riderId: 'TEST_USER', riderName: "Test Patient", phone: "+919999988888", severity: 'Critical',
-            location: state.hospitalData.location ? new GeoPoint(state.hospitalData.location.latitude + 0.01, state.hospitalData.location.longitude + 0.01) : new GeoPoint(28.6139, 77.2090),
-            status: 'pending', otp: Math.floor(1000 + Math.random() * 9000).toString(), createdAt: serverTimestamp(), rejectedBy: [],
+            riderId: 'TEST_USER', riderName: "Test Patient", phone: "+919999988888", severity: 'Critical' as const,
+            location: hospitalData.location ? new GeoPoint(hospitalData.location.latitude + 0.01, hospitalData.location.longitude + 0.01) : new GeoPoint(28.6139, 77.2090),
+            status: 'pending' as const, otp: Math.floor(1000 + Math.random() * 9000).toString(), createdAt: serverTimestamp(), rejectedBy: [],
         };
         await addDoc(collection(db, 'emergencyCases'), testCaseData);
         toast({ title: 'New Test Emergency!', description: 'A test case has been added to your feed.' });
     };
 
     const handleOnlineStatusChange = async (checked: boolean) => {
-        if (!state.hospitalData?.id || !db) return;
-        setState(s => ({ ...s, isOnline: checked }));
-        const hospitalRef = doc(db, "ambulances", state.hospitalData.id);
+        if (!hospitalData?.id || !db) return;
+        setIsOnline(checked);
+        const hospitalRef = doc(db, "ambulances", hospitalData.id);
         await updateDoc(hospitalRef, { isOnline: checked });
         toast({ title: checked ? "You are Online" : "You are Offline" });
     };
 
     const handleBedStatusUpdate = async () => {
-        if (!state.hospitalData?.id || !db) return;
-        const hospitalRef = doc(db, "ambulances", state.hospitalData.id);
+        if (!hospitalData?.id || !db) return;
+        const hospitalRef = doc(db, "ambulances", hospitalData.id);
         await updateDoc(hospitalRef, { totalBeds: Number(totalBeds), bedsOccupied: Number(bedsOccupied) });
         toast({ title: "Bed Availability Updated" });
     };
     
     const handleAcceptRequest = async (request: EmergencyRequest, ambulanceId: string) => {
-        if (!state.hospitalData || !db) return;
-        const selectedAmbulance = state.fleet.find(a => a.id === ambulanceId);
+        if (!hospitalData || !db) return;
+        const selectedAmbulance = fleet.find(a => a.id === ambulanceId);
         if(!selectedAmbulance) return;
 
         const requestRef = doc(db, "emergencyCases", request.id);
-        const ambulanceRef = doc(db, `ambulances/${state.hospitalData.id}/fleet`, ambulanceId);
+        const ambulanceRef = doc(db, `ambulances/${hospitalData.id}/fleet`, ambulanceId);
         
         await updateDoc(requestRef, {
             status: 'accepted', acceptedAt: serverTimestamp(),
-            assignedPartner: { id: state.hospitalData.id, name: state.hospitalData.name },
+            assignedPartner: { id: hospitalData.id, name: hospitalData.name },
             assignedAmbulanceId: selectedAmbulance.id, assignedAmbulanceName: selectedAmbulance.name,
-            partnerLocation: selectedAmbulance.location, hospitalLocation: state.hospitalData.location,
+            partnerLocation: selectedAmbulance.location, hospitalLocation: hospitalData.location,
         });
         await updateDoc(ambulanceRef, { status: 'On-Duty' });
         toast({ title: "Case Accepted & Dispatched!", className: "bg-green-600 text-white border-green-600" });
     };
     
     const handleRejectRequest = async (requestId: string) => {
-         if (!state.hospitalData || !db) return;
+         if (!hospitalData || !db) return;
          const requestRef = doc(db, "emergencyCases", requestId);
-         await updateDoc(requestRef, { rejectedBy: arrayUnion(state.hospitalData.id) });
+         await updateDoc(requestRef, { rejectedBy: arrayUnion(hospitalData.id) });
          toast({ variant: 'destructive', title: "Request Rejected" });
     };
     
     const handleAppointmentConfirm = (id: string) => {
-        setState(s => ({...s, appointments: s.appointments.map(a => a.id === id ? {...a, status: 'Confirmed'} : a)}));
+        setAppointments(prev => prev.map(a => a.id === id ? {...a, status: 'Confirmed'} : a));
         toast({ title: 'Appointment Confirmed!'});
     };
 
@@ -275,11 +256,10 @@ export default function HospitalMissionControl() {
     };
 
     // Memoized values for rendering
-    const { hospitalData, fleet, drivers, doctors, appointments, incomingRequests, ongoingCase, isLoading, isOnline } = state;
     const onlineDrivers = useMemo(() => drivers.filter(d => d.status === 'Active').length, [drivers]);
     const onDutyDrivers = useMemo(() => fleet.filter(f => f.status === 'On-Duty').length, [fleet]);
     const availableDoctors = useMemo(() => doctors.filter(d => d.status === 'Available').length, [doctors]);
-    const availableBeds = (totalBeds || 0) - (bedsOccupied || 0);
+    const availableBeds = useMemo(() => (totalBeds || 0) - (bedsOccupied || 0), [totalBeds, bedsOccupied]);
     const patientLocation = useMemo(() => ongoingCase ? { lat: ongoingCase.location.latitude, lon: ongoingCase.location.longitude } : undefined, [ongoingCase]);
     const activeAmbulanceLocation = useMemo(() => ongoingCase?.partnerLocation ? { lat: ongoingCase.partnerLocation.latitude, lon: ongoingCase.partnerLocation.longitude } : undefined, [ongoingCase]);
     const mapFleet = useMemo(() => fleet.filter(a => a.location?.latitude && a.location?.longitude).map(a => ({ id: a.id, name: a.name, type: 'ambulance' as const, status: a.status, location: { lat: a.location.latitude, lon: a.location.longitude } })), [fleet]);
@@ -300,7 +280,9 @@ export default function HospitalMissionControl() {
         <div className="grid lg:grid-cols-3 gap-6 items-start h-full">
             <div className="lg:col-span-2 space-y-6">
                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                    <StatCard title={<><Users className="text-primary"/> Drivers</>} value={`${onlineDrivers} Online`} description={`${onDutyDrivers} On-Duty`} staffList={drivers} listTitle="Ambulance Driver Roster" listCols={['Name', 'Status']} />
+                    <StatCard title={<><Siren className="text-destructive"/> On-Duty</>} value={`${onDutyDrivers} / ${fleet.length}`} description="Ambulance Fleet" staffList={[]} listTitle="" listCols={[]} />
+                    <StatCard title={<><BedDouble className="text-primary"/> ER Beds</>} value={`${availableBeds < 0 ? 0 : availableBeds} Available`} description={`Total: ${totalBeds}`} staffList={[]} listTitle="" listCols={[]} />
+                    <StatCard title={<><Users className="text-primary"/> Drivers</>} value={`${onlineDrivers} Online`} description={`Total: ${drivers.length}`} staffList={drivers} listTitle="Ambulance Driver Roster" listCols={['Name', 'Status']} />
                     <StatCard title={<><UserCheck className="text-primary"/> Doctors</>} value={`${availableDoctors} Available`} description={`Total: ${doctors.length}`} staffList={doctors} listTitle="Doctor Roster" listCols={['Name', 'Specialization', 'Status']} />
                  </div>
                  <div className="h-[calc(100vh-14rem)] rounded-lg overflow-hidden border">
@@ -364,6 +346,7 @@ export default function HospitalMissionControl() {
                                     appointments.map(appt => (
                                         <Card key={appt.id} className="mb-2">
                                             <CardContent className="p-3 flex items-center gap-3">
+                                                <Avatar className="h-10 w-10"><AvatarFallback>{appt.patientName.substring(0,1)}</AvatarFallback></Avatar>
                                                 <div className="flex-1"><p className="font-semibold">{appt.patientName} <span className="font-normal text-muted-foreground text-xs">for {appt.doctorName}</span></p><p className="text-xs text-muted-foreground">{appt.department}</p></div>
                                                 {appt.status === 'Pending' ? ( <Button size="sm" variant="outline" onClick={() => handleAppointmentConfirm(appt.id)}>Confirm</Button>
                                                 ) : ( <Badge className="bg-green-100 text-green-800">{appt.status}</Badge> )}
@@ -375,6 +358,19 @@ export default function HospitalMissionControl() {
                         </Tabs>
                     </CardContent>
                 </Card>
+                 {ongoingCase && (
+                    <Card className="bg-primary/5 border-primary animate-fade-in">
+                        <CardHeader><CardTitle className="flex items-center gap-2"><Siren className="w-6 h-6 text-primary animate-pulse"/> Ongoing Case</CardTitle><CardDescription>Patient: {ongoingCase.riderName}</CardDescription></CardHeader>
+                        <CardContent className="space-y-4">
+                            <div className="p-4 rounded-lg bg-background">
+                                <h3 className="font-bold">{ongoingCase.riderName}</h3>
+                                <p className="text-sm text-muted-foreground flex items-center gap-2"><Phone className="w-3 h-3"/> {ongoingCase.phone}</p>
+                                <p className="text-sm font-semibold text-primary flex items-center gap-2"><Ambulance className="w-3 h-3"/> {ongoingCase.assignedAmbulanceName}</p>
+                            </div>
+                            <Button className="w-full bg-blue-600 hover:bg-blue-700" size="lg" onClick={() => window.open(`https://www.google.com/maps/dir/?api=1&destination=${ongoingCase.location.latitude},${ongoingCase.location.longitude}`, '_blank')}><Navigation className="mr-2 h-5 w-5"/> Navigate</Button>
+                        </CardContent>
+                    </Card>
+                )}
             </div>
         </div>
     )
