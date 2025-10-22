@@ -235,5 +235,3 @@ export default function CureLayout({ children }: { children: React.ReactNode }) 
     </div>
   );
 }
-
-    
