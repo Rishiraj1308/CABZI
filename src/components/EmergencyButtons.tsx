@@ -10,7 +10,7 @@ import { Ambulance, Building, HospitalIcon, LocateFixed, Wrench, ArrowLeft } fro
 import { useToast } from '@/hooks/use-toast';
 import { useFirestore } from '@/firebase/client-provider';
 import { addDoc, collection, serverTimestamp, GeoPoint, getDocs, query, where } from 'firebase/firestore';
-import { useUser } from '@/app/(user)/layout'; 
+import { useUser } from '@/components/client-session-provider'; 
 import SearchingIndicator from './ui/searching-indicator';
 import { Card, CardContent } from './ui/card';
 import { useRouter } from 'next/navigation';

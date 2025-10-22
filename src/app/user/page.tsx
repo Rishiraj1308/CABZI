@@ -8,7 +8,7 @@ import { useToast } from '@/hooks/use-toast'
 import dynamic from 'next/dynamic'
 import { useFirestore } from '@/firebase/client-provider'
 import { collection, addDoc, serverTimestamp, doc, GeoPoint, query, where, getDocs, updateDoc, getDoc } from 'firebase/firestore'
-import { useUser } from './layout'
+import { useUser } from '@/components/client-session-provider'
 import { MotionDiv, AnimatePresence } from '@/components/ui/motion-div'
 import EmergencyButtons from '@/components/EmergencyButtons'
 import LocationSelector from '@/components/location-selector'
@@ -125,9 +125,9 @@ export default function UserPage() {
                         <CardHeader><Ambulance className="w-10 h-10 text-red-500 mx-auto"/> <CardTitle className="pt-2 text-base">Cure SOS</CardTitle></CardHeader>
                     </Card>
                 </MotionDiv>
-                <MotionDiv layoutId="upi-card">
-                    <Card className="hover:border-green-500 hover:shadow-lg transition-all cursor-pointer text-center h-full" onClick={() => toast({title: "Coming Soon!", description: "The User Wallet feature will be available soon."})}>
-                        <CardHeader><Wallet className="w-10 h-10 text-green-500 mx-auto"/> <CardTitle className="pt-2 text-base">Cabzi UPI</CardTitle></CardHeader>
+                <MotionDiv layoutId="resq-card">
+                    <Card className="hover:border-amber-500 hover:shadow-lg transition-all cursor-pointer text-center h-full" onClick={() => toast({title: "Coming Soon!", description: "ResQ services for users will be available soon."})}>
+                        <CardHeader><Wrench className="w-10 h-10 text-amber-500 mx-auto"/> <CardTitle className="pt-2 text-base">ResQ Help</CardTitle></CardHeader>
                     </Card>
                 </MotionDiv>
                  <MotionDiv layoutId="appointment-card">
