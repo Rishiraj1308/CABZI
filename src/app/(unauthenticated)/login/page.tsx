@@ -143,13 +143,14 @@ export default function LoginPage() {
  const findAndSetSession = async (user: { uid: string; email?: string | null; phoneNumber?: string | null }) => {
     if (!db) return false;
 
+    // The order is important: check for partner roles BEFORE regular user role.
     const collectionsToSearch = [
-        { name: 'users', role: 'user' },
         { name: 'partners', role: 'driver' },
         { name: 'mechanics', role: 'mechanic' },
-        { name: 'ambulances', role: 'cure' },
+        { name: 'cure', role: 'cure' },
         { name: 'ambulanceDrivers', role: 'ambulance'},
         { name: 'doctors', role: 'doctor'},
+        { name: 'users', role: 'user' },
     ];
     
     let userIdentifier: string | undefined;
@@ -158,7 +159,8 @@ export default function LoginPage() {
     if (user.email) {
         userIdentifier = user.email;
     } else if (user.phoneNumber) {
-        userIdentifier = user.phoneNumber.slice(3); // Remove +91
+        // Firebase phone auth includes country code, our DB might not. Let's be safe.
+        userIdentifier = user.phoneNumber.includes('+91') ? user.phoneNumber.replace('+91', '') : user.phoneNumber;
     }
     
     if (!userIdentifier) return false;
@@ -177,8 +179,11 @@ export default function LoginPage() {
                 role: role,
                 phone: userData.phone, 
                 name: userData.name, 
+                // partnerId is the document ID for non-user roles
                 partnerId: colName !== 'users' ? userDoc.id : undefined,
+                // userId is the Firebase Auth UID
                 userId: user.uid,
+                // Special case for ambulance drivers to know their hospital
                 hospitalId: userData.hospitalId,
             };
             
