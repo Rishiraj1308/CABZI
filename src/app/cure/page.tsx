@@ -1,13 +1,13 @@
 
 'use client'
 
-import React, { useState, useEffect, useRef, useMemo } from 'react'
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card'
 import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
-import { Ambulance, Siren, Waves, Settings, BedDouble, BarChart, Minus, Users, UserCheck } from 'lucide-react'
+import { Ambulance, Siren, Waves, Settings, BedDouble, BarChart, Minus, Users, UserCheck, Phone, Navigation } from 'lucide-react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from '@/components/ui/dialog'
 import { useToast } from '@/hooks/use-toast'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -19,6 +19,7 @@ import { Badge } from '@/components/ui/badge'
 import SearchingIndicator from '@/components/ui/searching-indicator'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { Avatar } from '@/components/ui/avatar'
 
 
 const LiveMap = dynamic(() => import('@/components/live-map'), {
@@ -48,12 +49,12 @@ interface Doctor {
 }
 
 interface Appointment {
-    id: string;
-    patientName: string;
-    department: string;
-    doctorName: string;
-    isRecurring?: boolean;
-    status: 'Pending' | 'Confirmed';
+  id: string;
+  patientName: string;
+  department: string;
+  doctorName: string;
+  isRecurring?: boolean;
+  status: 'Pending' | 'Confirmed';
 }
 
 const mockAppointments: Appointment[] = [
@@ -329,17 +330,14 @@ export default function HospitalMissionControl() {
         }
     }
     
-    const patientLocation = useMemo(() => {
-        if (ongoingCase) return { lat: ongoingCase.location.latitude, lon: ongoingCase.location.longitude };
-        return undefined;
-    }, [ongoingCase]);
+    const onlineDrivers = useMemo(() => drivers.filter(d => d.status === 'Active').length, [drivers]);
+    const onDutyDrivers = useMemo(() => fleet.filter(f => f.status === 'On-Duty').length, [fleet]);
+    const availableDoctors = useMemo(() => doctors.filter(d => d.status === 'Available').length, [doctors]);
 
-    const activeAmbulanceLocation = useMemo(() => {
-        if (ongoingCase && ongoingCase.assignedAmbulanceId && ongoingCase.partnerLocation) {
-            return { lat: ongoingCase.partnerLocation.latitude, lon: ongoingCase.partnerLocation.longitude };
-        }
-        return undefined;
-    }, [ongoingCase]);
+    const availableBeds = (totalBeds || 0) - (bedsOccupied || 0);
+    
+    const patientLocation = ongoingCase ? { lat: ongoingCase.location.latitude, lon: ongoingCase.location.longitude } : undefined;
+    const activeAmbulanceLocation = ongoingCase?.partnerLocation ? { lat: ongoingCase.partnerLocation.latitude, lon: ongoingCase.partnerLocation.longitude } : undefined;
 
     const mapFleet = useMemo(() => {
         return fleet
@@ -352,26 +350,6 @@ export default function HospitalMissionControl() {
                 location: { lat: a.location.latitude, lon: a.location.longitude }
             }));
     }, [fleet]);
-
-    const onlineDrivers = useMemo(() => drivers.filter(d => d.status === 'Active').length, [drivers]);
-    const onDutyDrivers = useMemo(() => fleet.filter(f => f.status === 'On-Duty').length, [fleet]);
-    const availableDoctors = useMemo(() => doctors.filter(d => d.status === 'Available').length, [doctors]);
-
-    if (isLoading) {
-      return (
-          <div className="grid lg:grid-cols-3 gap-6 h-full">
-              <div className="lg:col-span-2 space-y-6">
-                  <Skeleton className="h-[calc(100vh-10rem)] w-full"/>
-              </div>
-              <div className="space-y-6">
-                  <Card><CardHeader><Skeleton className="h-8 w-full"/></CardHeader><CardContent><Skeleton className="h-24 w-full"/></CardContent></Card>
-                  <Card><CardHeader><Skeleton className="h-8 w-full"/></CardHeader><CardContent><Skeleton className="h-96 w-full"/></CardContent></Card>
-              </div>
-          </div>
-      )
-    }
-
-    const availableBeds = (totalBeds || 0) - (bedsOccupied || 0);
 
     const StatCard = ({ title, value, description, staffList, listTitle, listCols }: any) => (
       <Dialog>
@@ -401,6 +379,20 @@ export default function HospitalMissionControl() {
         </DialogContent>
       </Dialog>
     );
+    
+    if (isLoading) {
+        return (
+          <div className="grid lg:grid-cols-3 gap-6 h-full">
+              <div className="lg:col-span-2 space-y-6">
+                  <Skeleton className="h-[calc(100vh-10rem)] w-full"/>
+              </div>
+              <div className="space-y-6">
+                  <Card><CardHeader><Skeleton className="h-8 w-full"/></CardHeader><CardContent><Skeleton className="h-24 w-full"/></CardContent></Card>
+                  <Card><CardHeader><Skeleton className="h-8 w-full"/></CardHeader><CardContent><Skeleton className="h-96 w-full"/></CardContent></Card>
+              </div>
+          </div>
+        )
+    }
 
     return (
         <div className="grid lg:grid-cols-3 gap-6 items-start h-full">
