@@ -7,7 +7,7 @@ import { Input } from './ui/input'
 import { ArrowLeft, Star, MapPin, HeartHandshake, IndianRupee } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useToast } from '@/hooks/use-toast'
-import { useUser } from '@/app/(user)/layout'
+import { useUser } from '@/components/client-session-provider'
 import { useFirestore } from '@/firebase/client-provider'
 import { collection, addDoc, serverTimestamp, GeoPoint } from 'firebase/firestore'
 import { getRoute, searchPlace } from '@/lib/tomtom'
