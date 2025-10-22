@@ -82,7 +82,7 @@ export default function CureLayout({ children }: { children: React.ReactNode }) 
   useEffect(() => {
     if (pathname === '/cure/onboarding') return;
     if (typeof window !== 'undefined') {
-        const sessionString = localStorage.getItem('cabzi-cure-session');
+        const sessionString = localStorage.getItem('cabzi-session');
         if (sessionString) {
             try {
                 const session = JSON.parse(sessionString);
@@ -93,7 +93,7 @@ export default function CureLayout({ children }: { children: React.ReactNode }) 
                 setUserName(session.name);
             } catch (error) {
                 console.error("Failed to parse session, redirecting", error);
-                localStorage.removeItem('cabzi-cure-session');
+                localStorage.removeItem('cabzi-session');
                 router.push('/login?role=driver');
             }
         } else {
@@ -103,7 +103,7 @@ export default function CureLayout({ children }: { children: React.ReactNode }) 
   }, [router, pathname]);
 
   const handleLogout = async () => {
-    const sessionString = localStorage.getItem('cabzi-cure-session');
+    const sessionString = localStorage.getItem('cabzi-session');
     if(sessionString && db) {
         try {
             const { partnerId } = JSON.parse(sessionString);
@@ -117,7 +117,7 @@ export default function CureLayout({ children }: { children: React.ReactNode }) 
         }
     }
     if (auth) auth.signOut();
-    localStorage.removeItem('cabzi-cure-session');
+    localStorage.removeItem('cabzi-session');
     toast({
         title: 'Logged Out',
         description: 'You have been successfully logged out.'
