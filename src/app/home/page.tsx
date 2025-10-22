@@ -327,6 +327,12 @@ export default function HomePage() {
                         >
                            The Safest Ride. Fair for Everyone.
                         </motion.h1>
+                         <motion.p 
+                            variants={itemVariants}
+                            className="mt-4 text-lg font-semibold text-primary"
+                        >
+                           Tired of seeing your earnings vanish? So were we.
+                        </motion.p>
                         <motion.p 
                             variants={itemVariants}
                             className="mx-auto lg:mx-0 mt-6 max-w-xl text-lg text-muted-foreground"
@@ -457,9 +463,9 @@ export default function HomePage() {
                                 <CardTitle className="flex items-center gap-2"><HeartHandshake /> For Partners</CardTitle>
                             </CardHeader>
                             <CardContent className="space-y-3">
-                                <p className="flex items-start gap-2"><CheckCircle className="w-5 h-5 text-green-500 mt-0.5 shrink-0" /> <span><span className="font-semibold">0% Commission:</span> Keep 100% of your fare. You earned it.</span></p>
-                                <p className="flex items-start gap-2"><CheckCircle className="w-5 h-5 text-green-500 mt-0.5 shrink-0" /> <span><span className="font-semibold">Financial Security:</span> Access instant loans and high-interest savings via Cabzi Bank.</span></p>
-                                <p className="flex items-start gap-2"><CheckCircle className="w-5 h-5 text-green-500 mt-0.5 shrink-0" /> <span><span className="font-semibold">A True Partner:</span> We provide insurance, support, and respect.</span></p>
+                                <p className="flex items-start gap-2"><CheckCircle className="w-5 h-5 text-green-500 mt-0.5 shrink-0" /> <span><span className="font-semibold">Just ONE Monthly Recharge:</span> No commission, no hidden fees. Get unlimited rides for a price you can't even imagine.</span></p>
+                                <p className="flex items-start gap-2"><CheckCircle className="w-5 h-5 text-green-500 mt-0.5 shrink-0" /> <span><span className="font-semibold">Stop Losing Money:</span> Other apps take ₹200-300 from your ₹1000 earning. With Cabzi, you keep the whole ₹1000.</span></p>
+                                <p className="flex items-start gap-2"><CheckCircle className="w-5 h-5 text-green-500 mt-0.5 shrink-0" /> <span><span className="font-semibold">True Financial Security:</span> Access instant loans and high-interest savings via Cabzi Bank.</span></p>
                             </CardContent>
                         </Card>
                          <Card>
