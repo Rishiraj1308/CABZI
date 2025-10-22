@@ -100,7 +100,7 @@ export default function LoginPage() {
   useEffect(() => {
     if (identifier.includes('@')) {
       setInputType('email');
-    } else if (/^\d{10}$/.test(identifier)) {
+    } else if (/^\d{1,10}$/.test(identifier)) {
       setInputType('phone');
     } else {
       setInputType('none');
@@ -132,7 +132,7 @@ export default function LoginPage() {
   const findAndSetSession = async (user: { uid: string; email?: string | null; phoneNumber?: string | null }) => {
     if (!db) return false;
 
-    const isPartnerLogin = roleFromQuery === 'driver' || roleFromQuery === 'mechanic' || roleFromQuery === 'cure' || roleFromQuery === 'doctor' || roleFromQuery === 'ambulance';
+    const isPartnerLogin = ['driver', 'mechanic', 'cure', 'doctor', 'ambulance'].includes(roleFromQuery);
     
     const partnerCollections = [
         { name: 'partners', role: 'driver' },
@@ -390,9 +390,36 @@ export default function LoginPage() {
           <motion.div key="login" variants={formVariants}>
             <div className="space-y-4">
                 <form onSubmit={handleIdentifierSubmit} className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="identifier">Email or Phone Number</Label>
-                      <Input id="identifier" name="identifier" type="text" placeholder="name@example.com or 1234567890" required value={identifier} onChange={(e) => setIdentifier(e.target.value)} disabled={isLoading} />
+                     <div className="space-y-2">
+                        <Label htmlFor="identifier">Email or Phone Number</Label>
+                        {inputType === 'phone' ? (
+                             <div className="flex items-center gap-0 rounded-md border border-input focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2">
+                                <span className="pl-3 text-muted-foreground text-sm">+91</span>
+                                <Input 
+                                    id="identifier" 
+                                    name="identifier" 
+                                    type="tel" 
+                                    maxLength={10}
+                                    placeholder="12345 67890" 
+                                    required 
+                                    value={identifier} 
+                                    onChange={(e) => setIdentifier(e.target.value.replace(/[^0-9]/g, ''))} 
+                                    disabled={isLoading} 
+                                    className="border-0 h-9 focus-visible:ring-0 focus-visible:ring-offset-0 flex-1"
+                                />
+                             </div>
+                        ) : (
+                             <Input 
+                                id="identifier" 
+                                name="identifier" 
+                                type="text" 
+                                placeholder="name@example.com or 1234567890" 
+                                required 
+                                value={identifier} 
+                                onChange={(e) => setIdentifier(e.target.value)} 
+                                disabled={isLoading} 
+                            />
+                        )}
                     </div>
 
                     {inputType === 'email' && (
@@ -541,3 +568,4 @@ export default function LoginPage() {
   );
 }
 
+    
