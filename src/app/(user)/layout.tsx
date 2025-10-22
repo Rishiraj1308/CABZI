@@ -74,7 +74,7 @@ export default function UserLayout({
     setIsMounted(true);
     if (!isUserLoading && !user) {
       if (window.location.pathname.startsWith('/user')) {
-        router.push('/login');
+        router.push('/login?role=user');
       }
     }
   }, [user, isUserLoading, router]);
@@ -94,7 +94,7 @@ export default function UserLayout({
     }
     auth.signOut().then(() => {
       localStorage.removeItem('cabzi-session');
-      router.push('/login');
+      router.push('/login?role=user');
     });
   };
 

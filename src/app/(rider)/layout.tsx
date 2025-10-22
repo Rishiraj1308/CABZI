@@ -1,7 +1,7 @@
 
 'use client'
 
-import React, { useState, useEffect, useContext } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Toaster } from "@/components/ui/toaster";
 import { Button } from '@/components/ui/button';
 import { Home, History, Menu, LogOut, Heart, Gift, PanelLeft, Landmark, Sun, Moon, Settings, User, Calendar } from 'lucide-react';
@@ -31,11 +31,11 @@ import { doc, updateDoc } from 'firebase/firestore';
 
 
 const navItems = [
-    { href: '/rider', label: 'Book a Ride', icon: Home, comingSoon: false },
-    { href: '/rider/appointments', label: 'Book Appointment', icon: Calendar, comingSoon: false },
-    { href: '/rider/rides', label: 'My Rides', icon: History, comingSoon: false },
-    { href: '/rider/wallet', label: 'Cabzi Bank', icon: Landmark, comingSoon: true },
-    { href: '/rider/offers', label: 'Offers', icon: Gift, comingSoon: false },
+    { href: '/user', label: 'Book a Ride', icon: Home, comingSoon: false },
+    { href: '/user/appointments', label: 'Book Appointment', icon: Calendar, comingSoon: false },
+    { href: '/user/rides', label: 'My Rides', icon: History, comingSoon: false },
+    { href: '/user/wallet', label: 'Cabzi Bank', icon: Landmark, comingSoon: true },
+    { href: '/user/offers', label: 'Offers', icon: Gift, comingSoon: false },
 ]
 
 function ThemeToggle() {
@@ -74,7 +74,9 @@ export default function RiderLayout({
   useEffect(() => {
     setIsMounted(true);
     if (!isUserLoading && !user) {
-      router.push('/login?role=rider');
+      if (window.location.pathname.startsWith('/rider')) {
+        router.push('/login?role=user');
+      }
     }
   }, [user, isUserLoading, router]);
 
@@ -93,7 +95,7 @@ export default function RiderLayout({
     }
     auth.signOut().then(() => {
       localStorage.removeItem('cabzi-session');
-      router.push('/login?role=rider');
+      router.push('/login?role=user');
     });
   };
 
@@ -175,8 +177,8 @@ export default function RiderLayout({
               <DropdownMenuContent align="end">
               <DropdownMenuLabel>Hi, {session?.name}</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onSelect={() => router.push('/rider/profile')}><User className="mr-2 h-4 w-4"/> Profile</DropdownMenuItem>
-              <DropdownMenuItem onSelect={() => router.push('/rider/support')}><Heart className="mr-2 h-4 w-4"/> Support</DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => router.push('/user/profile')}><User className="mr-2 h-4 w-4"/> Profile</DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => router.push('/user/support')}><Heart className="mr-2 h-4 w-4"/> Support</DropdownMenuItem>
               <DropdownMenuItem onSelect={() => toast({title: 'Coming Soon!'})}><Settings className="mr-2 h-4 w-4"/> Settings</DropdownMenuItem>
               <DropdownMenuSeparator />
               <AlertDialog>
