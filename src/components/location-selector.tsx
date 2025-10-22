@@ -203,7 +203,7 @@ export default function LocationSelector({
              <div className="relative">
                 <Input 
                     value={destination.address}
-                    onChange={e => setDestination(prev => ({...prev, address: e.target.value}))}
+                    onChange={(e) => setDestination({ address: e.target.value, coords: null })}
                     placeholder="Where to?"
                     className="bg-muted border-primary focus-visible:ring-primary text-base font-semibold"
                     onKeyDown={(e) => e.key === 'Enter' && handleGetRideInfo()}

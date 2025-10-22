@@ -180,7 +180,7 @@ export default function EmergencyButtons({ serviceType, liveMapRef, pickupCoords
         const docRef = await addDoc(collection(db, 'emergencyCases'), caseData);
         setIsDialogOpen(false);
         setIsRequestingSos(true);
-        setActiveAmbulanceCase({ id: docRef.id, ...caseData } as AmbulanceCase);
+        setActiveAmbulanceCase({ id: docRef.id, ...caseData });
         toast({ title: 'Ambulance Requested!', description: 'Dispatching the nearest Cure partner to your location.' });
     } catch (error) {
         console.error("Error creating emergency case:", error);

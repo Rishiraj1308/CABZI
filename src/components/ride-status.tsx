@@ -303,7 +303,7 @@ export default function RideStatus({
         <CardContent className="p-4 sm:p-6 bg-muted/30">
           {renderContent()}
         </CardContent>
-        {ride.status !== 'completed' && ride.status !== 'payment_pending' && ride.status !== 'bill_sent' && !isGarageRequest && (
+        {ride.status !== 'completed' && ride.status !== 'payment_pending' && !isGarageRequest && (
              <CardFooter className="p-2">
                 <AlertDialog>
                     <AlertDialogTrigger asChild>

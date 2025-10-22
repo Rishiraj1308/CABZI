@@ -24,7 +24,7 @@ export function FirebaseErrorListener() {
                 <AlertCircle className="h-5 w-5" />
                 Firestore: Missing or Insufficient Permissions
             </div>
-        ) as unknown as ReactNode,
+        ) as React.ReactNode,
         description: (
           <div className="space-y-4 pt-2">
             <AlertDescription>
@@ -34,7 +34,7 @@ export function FirebaseErrorListener() {
               {JSON.stringify(error.context, null, 2)}
             </CodeBlock>
           </div>
-        ) as unknown as ReactNode,
+        ) as React.ReactNode,
       });
     };
 
