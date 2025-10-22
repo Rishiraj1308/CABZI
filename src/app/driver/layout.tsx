@@ -1,7 +1,7 @@
 
 'use client'
 
-import React, { useState, useEffect, createContext, useContext, useRef } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { LayoutDashboard, Landmark, Gem, User, PanelLeft, LogOut, Sun, Moon, Wrench } from 'lucide-react'
@@ -30,21 +30,8 @@ import { doc, updateDoc, onSnapshot, serverTimestamp, getDoc, GeoPoint } from 'f
 import { Badge } from '@/components/ui/badge'
 import { MotionDiv } from '@/components/ui/motion-div'
 import { errorEmitter, FirestorePermissionError } from '@/lib/error-handling';
+import { NotificationsProvider, useNotifications } from '@/context/NotificationContext';
 
-
-// Create a context for notifications
-const NotificationsContext = createContext<{
-  notifications: any[];
-  setNotifications: React.Dispatch<React.SetStateAction<any[]>>;
-} | null>(null);
-
-export const useNotifications = () => {
-  const context = useContext(NotificationsContext);
-  if (!context) {
-    throw new Error('useNotifications must be used within a NotificationsProvider');
-  }
-  return context;
-};
 
 const navItems = [
   { href: '/driver', label: 'Dashboard', icon: LayoutDashboard },
@@ -97,19 +84,13 @@ function ThemeToggle() {
     )
 }
 
-
-export default function DriverLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
+function DriverLayoutContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const { toast } = useToast();
   const [isMounted, setIsMounted] = useState(false);
   const [userName, setUserName] = useState('');
   const [isPinkPartner, setIsPinkPartner] = useState(false);
-  const [notifications, setNotifications] = useState<any[]>([]);
   const { theme, setTheme } = useTheme();
   const { db, auth } = useFirebase();
   
@@ -283,7 +264,6 @@ export default function DriverLayout({
   );
 
   return (
-    <NotificationsContext.Provider value={{ notifications, setNotifications }}>
        <div className="flex min-h-screen w-full flex-col">
          <header className="sticky top-0 z-50 flex h-16 items-center gap-4 border-b bg-background/95 px-4 backdrop-blur-sm md:px-6">
             <div className="md:hidden">
@@ -363,7 +343,14 @@ export default function DriverLayout({
             </MotionDiv>
           </main>
         </div>
-        <Toaster />
-    </NotificationsContext.Provider>
   )
+}
+
+export default function DriverLayout({ children }: { children: React.ReactNode }) {
+    return (
+        <NotificationsProvider>
+            <DriverLayoutContent>{children}</DriverLayoutContent>
+            <Toaster />
+        </NotificationsProvider>
+    );
 }

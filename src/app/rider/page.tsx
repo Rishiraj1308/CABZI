@@ -14,7 +14,6 @@ import LocationSelector from '@/components/location-selector'
 import RideStatus from '@/components/ride-status'
 import type { RideData, AmbulanceCase, GarageRequest, ClientSession } from '@/lib/types'
 import { useRouter } from 'next/navigation'
-import { useRider } from './layout'
 
 const LiveMap = dynamic(() => import('@/components/live-map'), { 
     ssr: false,
@@ -44,10 +43,28 @@ export default function RiderPage() {
     const [isRequestingSos, setIsRequestingSos] = useState(false);
 
     const liveMapRef = useRef<any>(null);
-    const { session } = useRider();
-    const { db } = useFirebase();
+    const { user, db } = useFirebase();
     const { toast } = useToast()
     const router = useRouter();
+
+    const [session, setSession] = useState<ClientSession | null>(null);
+
+    useEffect(() => {
+        if (user && db) {
+            const userDocRef = doc(db, 'users', user.uid);
+            getDoc(userDocRef).then(docSnap => {
+                if (docSnap.exists()) {
+                    const userData = docSnap.data();
+                    setSession({
+                        userId: user.uid,
+                        name: userData.name,
+                        phone: userData.phone,
+                        gender: userData.gender
+                    });
+                }
+            });
+        }
+    }, [user, db]);
 
     const resetFlow = useCallback(() => {
         setView('selection');
