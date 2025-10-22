@@ -219,5 +219,3 @@ export default function UserPage() {
         </div>
     );
 }
-
-    

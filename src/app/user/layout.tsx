@@ -359,5 +359,3 @@ export default function UserLayout({
       </UserContext.Provider>
   );
 }
-
-    

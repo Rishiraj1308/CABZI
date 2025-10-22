@@ -73,7 +73,7 @@ export default function LoginPage() {
   const { toast } = useToast()
   const { t } = useLanguage();
   const { auth, db } = useFirebase();
-  const roleFromQuery = searchParams.get('role') || 'rider'
+  const roleFromQuery = searchParams.get('role') || 'user'
 
   const [step, setStep] = useState<'login' | 'otp' | 'details'>('login');
   const [loginInput, setLoginInput] = useState(searchParams.get('email') || searchParams.get('phone') || '');
@@ -118,60 +118,6 @@ export default function LoginPage() {
         setInputType('email');
     }
   }
-  
-  const handlePartnerLogin = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setIsLoading(true);
-    if (!db) {
-        setIsLoading(false);
-        return;
-    }
-    
-    let collectionName = '';
-    let targetRole = '';
-    let sessionKey = 'cabzi-session'; // Use a unified session key
-    let redirectPath = '';
-
-    if (roleFromQuery === 'doctor') {
-      collectionName = 'doctors';
-      targetRole = 'doctor';
-      redirectPath = '/doctor';
-    }
-
-    if (!collectionName) {
-        toast({ variant: 'destructive', title: 'Invalid Role' });
-        setIsLoading(false);
-        return;
-    }
-    
-    try {
-        const q = query(collection(db, collectionName), where("partnerId", "==", partnerIdInput), where("password", "==", partnerPassword));
-        const snapshot = await getDocs(q);
-
-        if (!snapshot.empty) {
-            const partnerDoc = snapshot.docs[0];
-            const partnerData = partnerDoc.data();
-            const sessionData = { 
-                role: targetRole,
-                phone: partnerData.phone, 
-                name: partnerData.name, 
-                partnerId: partnerIdInput,
-                hospitalId: partnerData.hospitalId,
-            };
-            localStorage.setItem(sessionKey, JSON.stringify(sessionData));
-            toast({ title: "Login Successful" });
-            router.push(redirectPath);
-        } else {
-            toast({ variant: 'destructive', title: 'Invalid Credentials' });
-        }
-
-    } catch (error) {
-        console.error(`Error during ${targetRole} login:`, error);
-        toast({ variant: 'destructive', title: 'Login Failed' });
-    } finally {
-        setIsLoading(false);
-    }
-  }
 
   const handleAdminLogin = (e: React.FormEvent<HTMLFormElement>) => {
       e.preventDefault();
@@ -199,12 +145,12 @@ export default function LoginPage() {
 
     // Check all partner and user collections.
     const collectionsToSearch = [
-        { name: 'partners', role: 'driver', sessionKey: 'cabzi-session' },
-        { name: 'mechanics', role: 'mechanic', sessionKey: 'cabzi-session' },
-        { name: 'ambulances', role: 'cure', sessionKey: 'cabzi-session' },
-        { name: 'ambulanceDrivers', role: 'ambulance', sessionKey: 'cabzi-session'},
-        { name: 'doctors', role: 'doctor', sessionKey: 'cabzi-session'},
-        { name: 'users', role: 'user', sessionKey: 'cabzi-session' }, // General user last
+        { name: 'partners', role: 'driver', sessionKey: 'cabzi-driver-session' },
+        { name: 'mechanics', role: 'mechanic', sessionKey: 'cabzi-resq-session' },
+        { name: 'ambulances', role: 'cure', sessionKey: 'cabzi-cure-session' },
+        { name: 'ambulanceDrivers', role: 'ambulance', sessionKey: 'cabzi-ambulance-session'},
+        { name: 'doctors', role: 'doctor', sessionKey: 'cabzi-doctor-session'},
+        { name: 'users', role: 'user', sessionKey: 'cabzi-user-session' }, // General user last
     ];
     
     let userIdentifier: string | undefined;
@@ -226,16 +172,15 @@ export default function LoginPage() {
             const userDoc = snapshot.docs[0];
             const userData = userDoc.data();
             
-            // All non-admin roles now redirect to the main user/service hub.
-            const targetRole = role === 'user' ? 'user' : role; // Keep specific partner role if found
-            const targetRedirect = '/user'; // ALWAYS redirect to the main hub
+            const targetRedirect = role === 'user' ? '/user' : `/${role}`;
 
             const sessionData = { 
-                role: targetRole,
+                role: role,
                 phone: userData.phone, 
                 name: userData.name, 
                 partnerId: userDoc.id, 
-                userId: role === 'user' ? userDoc.id : undefined
+                userId: role === 'user' ? userDoc.id : undefined,
+                 hospitalId: userData.hospitalId,
             };
             
             localStorage.setItem(sessionKey, JSON.stringify(sessionData));
@@ -279,11 +224,8 @@ export default function LoginPage() {
     const email = loginInput;
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      const userFound = await findAndSetSession(userCredential.user);
+      await findAndSetSession(userCredential.user);
       
-      if (!userFound) {
-        setStep('details');
-      }
     } catch (error: any) {
       if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential') {
         setStep('details');
@@ -341,7 +283,7 @@ export default function LoginPage() {
               isOnline: false,
           });
   
-          localStorage.setItem('cabzi-session', JSON.stringify({ role: 'user', email: loginInput, name, gender, userId: user.uid }));
+          localStorage.setItem('cabzi-user-session', JSON.stringify({ role: 'user', email: loginInput, name, gender, userId: user.uid }));
           toast({ title: "Account Created!", description: "Welcome to Cabzi! Redirecting...", className: "bg-green-600 text-white border-green-600" });
           router.push('/user');
   
