@@ -143,50 +143,55 @@ export default function LoginPage() {
  const findAndSetSession = async (user: { uid: string; email?: string | null; phoneNumber?: string | null }) => {
     if (!db) return false;
 
-    // Unified session logic
-    const collectionsToSearch = [
-        { name: 'partners', role: 'driver' },
-        { name: 'mechanics', role: 'mechanic' },
-        { name: 'ambulances', role: 'cure' },
-        { name: 'ambulanceDrivers', role: 'ambulance'},
-        { name: 'doctors', role: 'doctor'},
-        { name: 'users', role: 'user' }, // General user last
-    ];
-    
+    const collections: Record<string, string> = {
+        driver: 'partners',
+        mechanic: 'mechanics',
+        cure: 'ambulances',
+        ambulance: 'ambulanceDrivers',
+        doctor: 'doctors',
+        user: 'users',
+    };
+
+    const targetCollection = collections[roleFromQuery] || 'users';
+
     const identifierField = user.email ? 'email' : 'phone';
     const identifierValue = user.email || user.phoneNumber?.slice(3); // Remove +91 for phone
-    
+
     if (!identifierValue) return false;
 
-    for (const { name: colName, role } of collectionsToSearch) {
-        const q = query(collection(db, colName), where(identifierField, "==", identifierValue));
-        const snapshot = await getDocs(q);
+    const q = query(collection(db, targetCollection), where(identifierField, "==", identifierValue));
+    const snapshot = await getDocs(q);
 
-        if (!snapshot.empty) {
-            const userDoc = snapshot.docs[0];
-            const userData = userDoc.data();
-            
-            const targetRedirect = role === 'user' ? '/user' : `/${role}`;
-
-            const sessionData = { 
-                role: role,
-                phone: userData.phone, 
-                name: userData.name, 
-                partnerId: userDoc.id, 
-                userId: role === 'user' ? userDoc.id : undefined,
-                hospitalId: userData.hospitalId,
-            };
-            
-            localStorage.setItem('cabzi-session', JSON.stringify(sessionData));
-            toast({ title: "Login Successful" });
-            router.push(targetRedirect);
-            return true;
-        }
+    if (!snapshot.empty) {
+        const userDoc = snapshot.docs[0];
+        const userData = userDoc.data();
+        
+        const sessionData = { 
+            role: roleFromQuery,
+            phone: userData.phone, 
+            name: userData.name, 
+            partnerId: userDoc.id,
+            userId: roleFromQuery === 'user' ? userDoc.id : undefined,
+            hospitalId: userData.hospitalId,
+        };
+        
+        localStorage.setItem('cabzi-session', JSON.stringify(sessionData));
+        toast({ title: "Login Successful" });
+        router.push(`/${roleFromQuery}`);
+        return true;
     }
     
-    // If not found anywhere, it must be a new rider/user.
-    setStep('details');
-    return true;
+    // If not found in the target collection, and they were trying to log in as a user,
+    // they must be a new user.
+    if (roleFromQuery === 'user') {
+        setStep('details');
+        return true;
+    }
+
+    // If they were trying to log in as a partner but not found, they need to onboard.
+    toast({ variant: 'destructive', title: 'Partner Not Found', description: 'Your account was not found. Please sign up through the Partner Hub.'});
+    router.push('/partner-hub');
+    return false;
   }
 
   const handleLoginSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -222,7 +227,11 @@ export default function LoginPage() {
       
     } catch (error: any) {
       if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential') {
-        setStep('details');
+        if(roleFromQuery === 'user'){
+            setStep('details');
+        } else {
+            toast({ variant: 'destructive', title: 'Partner Not Found', description: 'This account does not exist. Please onboard first.' });
+        }
       } else if (error.code === 'auth/wrong-password') {
         toast({ variant: 'destructive', title: 'Incorrect Password' });
       } else {
@@ -277,7 +286,7 @@ export default function LoginPage() {
               isOnline: false,
           });
   
-          localStorage.setItem('cabzi-session', JSON.stringify({ role: 'user', email: loginInput, name, gender, userId: user.uid }));
+          localStorage.setItem('cabzi-session', JSON.stringify({ role: 'user', phone: loginInput, name, gender, userId: user.uid }));
           toast({ title: "Account Created!", description: "Welcome to Cabzi! Redirecting...", className: "bg-green-600 text-white border-green-600" });
           router.push('/user');
   
@@ -467,3 +476,4 @@ export default function LoginPage() {
       </div>
   );
 }
+

@@ -7,7 +7,7 @@ import { useEffect, useState } from 'react';
 import { MotionDiv, AnimatePresence } from '@/components/ui/motion-div';
 import { FirebaseProviderClient } from '@/firebase/client-provider';
 
-// This layout now checks for an existing session and redirects if found.
+// This layout now checks for a single, unified session and redirects if found.
 export default function UnauthenticatedLayout({
   children,
 }: {
@@ -20,45 +20,22 @@ export default function UnauthenticatedLayout({
   useEffect(() => {
     setIsMounted(true);
     
-    // Check all possible session keys
-    const adminSession = localStorage.getItem('cabzi-session');
-    const partnerSession = localStorage.getItem('cabzi-driver-session') || localStorage.getItem('cabzi-resq-session') || localStorage.getItem('cabzi-cure-session') || localStorage.getItem('cabzi-ambulance-session') || localStorage.getItem('cabzi-doctor-session');
-    const userSession = localStorage.getItem('cabzi-user-session');
+    const session = localStorage.getItem('cabzi-session');
 
-    if (adminSession) {
+    if (session) {
         try {
-            const { adminRole } = JSON.parse(adminSession);
-            if (adminRole) {
-                router.replace('/admin');
-                return;
-            }
-        } catch (e) { localStorage.removeItem('cabzi-session'); }
-    }
-    
-    if (partnerSession) {
-        try {
-            const { role } = JSON.parse(partnerSession);
+            const { role } = JSON.parse(session);
+            
+            // Redirect based on the primary role
             if (role) {
-                router.replace(`/${role}`);
-                return;
+                 if (role === 'admin') router.replace('/admin');
+                 else router.replace(`/${role}`); // For user, driver, mechanic, cure, etc.
+                 return; // Stop further execution to prevent rendering login page
             }
-        } catch (e) { 
-            localStorage.removeItem('cabzi-driver-session');
-            localStorage.removeItem('cabzi-resq-session');
-            localStorage.removeItem('cabzi-cure-session');
-            localStorage.removeItem('cabzi-ambulance-session');
-            localStorage.removeItem('cabzi-doctor-session');
+        } catch (e) {
+            // Corrupt session, remove it and allow login page to show.
+            localStorage.removeItem('cabzi-session');
         }
-    }
-    
-    if (userSession) {
-        try {
-            const { role } = JSON.parse(userSession);
-            if (role === 'user') {
-                router.replace('/user');
-                return;
-            }
-        } catch (e) { localStorage.removeItem('cabzi-user-session'); }
     }
     
     // If no valid session is found, show the login/onboarding page.
@@ -67,7 +44,7 @@ export default function UnauthenticatedLayout({
   }, [router]);
   
   if (!isMounted || !showChildren) {
-    return null; // Render nothing until logic decides.
+    return null; // Render nothing until redirection logic completes or decides to show children.
   }
 
   return (
