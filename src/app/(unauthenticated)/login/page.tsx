@@ -12,12 +12,13 @@ import { useToast } from '@/hooks/use-toast'
 import BrandLogo from '@/components/brand-logo'
 import { useLanguage } from '@/hooks/use-language'
 import { useTheme } from 'next-themes'
-import { Sun, Moon, Globe } from 'lucide-react'
+import { Sun, Moon, Globe, Loader2 } from 'lucide-react'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { useFirebase } from '@/firebase/client-provider'
 import { collection, query, where, getDocs, setDoc, doc, serverTimestamp, limit } from 'firebase/firestore'
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signInWithPhoneNumber, RecaptchaVerifier, type ConfirmationResult, GoogleAuthProvider, signInWithPopup } from 'firebase/auth'
+import { AnimatePresence, motion } from 'framer-motion'
 
 // This now matches the team page data for consistent roles
 const MOCK_ADMIN_USERS = [
@@ -112,18 +113,20 @@ export default function LoginPage() {
 
       const user = MOCK_ADMIN_USERS.find(u => u.id === adminId && u.password === adminPassword);
 
-      if (user) {
-          localStorage.setItem('cabzi-session', JSON.stringify({ role: 'admin', phone: '', name: user.name, adminRole: user.role }));
-          toast({ title: "Login Successful", description: `Welcome, ${user.role}!`});
-          router.push('/admin');
-      } else {
-          toast({
-              variant: 'destructive',
-              title: "Authentication Failed",
-              description: "Invalid Admin ID or Password.",
-          });
-      }
-      setIsLoading(false);
+      setTimeout(() => {
+        if (user) {
+            localStorage.setItem('cabzi-session', JSON.stringify({ role: 'admin', phone: '', name: user.name, adminRole: user.role }));
+            toast({ title: "Login Successful", description: `Welcome, ${user.role}!`});
+            router.push('/admin');
+        } else {
+            toast({
+                variant: 'destructive',
+                title: "Authentication Failed",
+                description: "Invalid Admin ID or Password.",
+            });
+        }
+        setIsLoading(false);
+      }, 1000)
   }
 
   const findAndSetSession = async (user: { uid: string; email?: string | null; phoneNumber?: string | null }) => {
@@ -147,10 +150,10 @@ export default function LoginPage() {
     let searchIdentifier: string | undefined;
     let identifierField: 'email' | 'phone' = 'email';
 
-    if (inputType === 'email' && user.email) {
+    if (user.email) {
         searchIdentifier = user.email;
         identifierField = 'email';
-    } else if (inputType === 'phone' && user.phoneNumber) {
+    } else if (user.phoneNumber) {
         searchIdentifier = user.phoneNumber.replace('+91', '');
         identifierField = 'phone';
     }
@@ -286,10 +289,9 @@ export default function LoginPage() {
       
       setIsLoading(true);
       try {
-          // Determine if we need to create a new user or link details to an existing one.
           let user = auth.currentUser;
 
-          if (!user) { // This handles the case for email/password signup
+          if (!user) {
               user = (await createUserWithEmailAndPassword(auth, identifier, password)).user;
           }
 
@@ -355,26 +357,37 @@ export default function LoginPage() {
        if (isPartnerFlow) return `Enter your credentials to log in.`
       return `Sign in or create an account to get started.`
   };
+  
+  const formVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { opacity: 1, y: 0 },
+    exit: { opacity: 0, y: -20 },
+  };
 
-  const renderAdminForm = () => (
-    <form onSubmit={handleAdminLogin} className="space-y-4">
-        <div className="space-y-2">
-            <Label htmlFor="adminId">Admin ID</Label>
-            <Input id="adminId" name="adminId" type="email" placeholder="owner@cabzi.com" required value={adminId} onChange={(e) => setAdminId(e.target.value)} disabled={isLoading} />
-        </div>
-        <div className="space-y-2">
-            <Label htmlFor="adminPassword">Password</Label>
-            <Input id="adminPassword" name="adminPassword" type="password" placeholder="••••••••" required value={adminPassword} onChange={(e) => setAdminPassword(e.target.value)} disabled={isLoading}/>
-        </div>
-        <Button type="submit" className="w-full" disabled={isLoading}>
-            {isLoading ? "Verifying..." : 'Login'}
-        </Button>
-    </form>
-  );
+  const renderForms = () => {
+    if (roleFromQuery === 'admin') {
+      return (
+        <motion.div key="admin" variants={formVariants}>
+          <form onSubmit={handleAdminLogin} className="space-y-4">
+              <div className="space-y-2">
+                  <Label htmlFor="adminId">Admin ID</Label>
+                  <Input id="adminId" name="adminId" type="email" placeholder="owner@cabzi.com" required value={adminId} onChange={(e) => setAdminId(e.target.value)} disabled={isLoading} />
+              </div>
+              <div className="space-y-2">
+                  <Label htmlFor="adminPassword">Password</Label>
+                  <Input id="adminPassword" name="adminPassword" type="password" placeholder="••••••••" required value={adminPassword} onChange={(e) => setAdminPassword(e.target.value)} disabled={isLoading}/>
+              </div>
+              <Button type="submit" className="w-full" disabled={isLoading}>
+                  {isLoading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Verifying...</> : 'Login'}
+              </Button>
+          </form>
+        </motion.div>
+      )
+    }
 
-  const renderUserAndPartnerForms = () => {
     if (step === 'login') {
         return (
+          <motion.div key="login" variants={formVariants}>
             <div className="space-y-4">
                 <form onSubmit={handleIdentifierSubmit} className="space-y-4">
                     <div className="space-y-2">
@@ -390,7 +403,7 @@ export default function LoginPage() {
                     )}
                     
                     <Button type="submit" className="w-full" disabled={isLoading || inputType === 'none'}>
-                        {isLoading ? "Please wait..." : (inputType === 'phone' ? 'Send OTP' : 'Continue')}
+                         {isLoading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Please wait...</> : (inputType === 'phone' ? 'Send OTP' : 'Continue')}
                     </Button>
                 </form>
 
@@ -407,59 +420,64 @@ export default function LoginPage() {
                     </>
                 )}
             </div>
+           </motion.div>
         );
     }
     if (step === 'otp') {
         return (
-            <form onSubmit={handleOtpSubmit} className="space-y-4">
-                <div className="space-y-2 text-center">
-                    <Label htmlFor="otp">Enter OTP</Label>
-                    <Input id="otp" name="otp" type="tel" placeholder="123456" maxLength={6} required value={otp} onChange={(e) => setOtp(e.target.value)} disabled={isLoading} className="text-2xl tracking-[0.5em] text-center font-mono" />
-                </div>
-                <Button type="submit" className="w-full" disabled={isLoading}>
-                    {isLoading ? "Verifying..." : "Verify & Login"}
-                </Button>
-                <Button variant="link" size="sm" className="w-full" onClick={() => setStep('login')}>Back</Button>
-            </form>
+            <motion.div key="otp" variants={formVariants}>
+                <form onSubmit={handleOtpSubmit} className="space-y-4">
+                    <div className="space-y-2 text-center">
+                        <Label htmlFor="otp">Enter OTP</Label>
+                        <Input id="otp" name="otp" type="tel" placeholder="123456" maxLength={6} required value={otp} onChange={(e) => setOtp(e.target.value)} disabled={isLoading} className="text-2xl tracking-[0.5em] text-center font-mono" />
+                    </div>
+                    <Button type="submit" className="w-full" disabled={isLoading}>
+                         {isLoading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Verifying...</> : "Verify & Login"}
+                    </Button>
+                    <Button variant="link" size="sm" className="w-full" onClick={() => setStep('login')}>Back</Button>
+                </form>
+            </motion.div>
         )
     }
     if (step === 'details') {
          return (
-            <form onSubmit={handleDetailsSubmit} className="space-y-4">
-                 {inputType === 'email' ? (
-                     <>
+            <motion.div key="details" variants={formVariants}>
+                <form onSubmit={handleDetailsSubmit} className="space-y-4">
+                    {inputType === 'email' ? (
+                        <>
+                            <div className="space-y-2">
+                                <Label htmlFor="email">Email Address</Label>
+                                <Input id="email" value={identifier} disabled />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="password_details">Create Password</Label>
+                                <Input id="password_details" name="password" type="password" placeholder="••••••••" required value={password} onChange={(e) => setPassword(e.target.value)} />
+                            </div>
+                        </>
+                    ) : (
                         <div className="space-y-2">
-                            <Label htmlFor="email">Email Address</Label>
-                            <Input id="email" value={identifier} disabled />
+                            <Label htmlFor="phone_details">Phone Number</Label>
+                            <Input id="phone_details" value={identifier} disabled />
                         </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="password_details">Create Password</Label>
-                            <Input id="password_details" name="password" type="password" placeholder="••••••••" required value={password} onChange={(e) => setPassword(e.target.value)} />
-                        </div>
-                     </>
-                 ) : (
-                     <div className="space-y-2">
-                        <Label htmlFor="phone_details">Phone Number</Label>
-                        <Input id="phone_details" value={identifier} disabled />
+                    )}
+                    <div className="space-y-2">
+                        <Label htmlFor="name">Full Name</Label>
+                        <Input id="name" name="name" placeholder="e.g., Priya Sharma" required value={name} onChange={(e) => setName(e.target.value)} autoFocus />
                     </div>
-                 )}
-                <div className="space-y-2">
-                    <Label htmlFor="name">Full Name</Label>
-                    <Input id="name" name="name" placeholder="e.g., Priya Sharma" required value={name} onChange={(e) => setName(e.target.value)} autoFocus />
-                </div>
-                <div className="space-y-2">
-                    <Label>Gender</Label>
-                    <RadioGroup name="gender" required className="flex gap-4 pt-2" value={gender} onValueChange={setGender}>
-                        <div className="flex items-center space-x-2"><RadioGroupItem value="male" id="male" /><Label htmlFor="male">Male</Label></div>
-                        <div className="flex items-center space-x-2"><RadioGroupItem value="female" id="female" /><Label htmlFor="female">Female</Label></div>
-                        <div className="flex items-center space-x-2"><RadioGroupItem value="other" id="other" /><Label htmlFor="other">Other</Label></div>
-                    </RadioGroup>
-                </div>
-                <Button type="submit" className="w-full" disabled={isLoading}>
-                    {isLoading ? "Creating Account..." : "Create Account & Login"}
-                </Button>
-                 <Button variant="link" size="sm" className="w-full" onClick={() => setStep('login')}>Back to Login</Button>
-            </form>
+                    <div className="space-y-2">
+                        <Label>Gender</Label>
+                        <RadioGroup name="gender" required className="flex gap-4 pt-2" value={gender} onValueChange={setGender}>
+                            <div className="flex items-center space-x-2"><RadioGroupItem value="male" id="male" /><Label htmlFor="male">Male</Label></div>
+                            <div className="flex items-center space-x-2"><RadioGroupItem value="female" id="female" /><Label htmlFor="female">Female</Label></div>
+                            <div className="flex items-center space-x-2"><RadioGroupItem value="other" id="other" /><Label htmlFor="other">Other</Label></div>
+                        </RadioGroup>
+                    </div>
+                    <Button type="submit" className="w-full" disabled={isLoading}>
+                        {isLoading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Creating Account...</> : "Create Account & Login"}
+                    </Button>
+                    <Button variant="link" size="sm" className="w-full" onClick={() => setStep('login')}>Back to Login</Button>
+                </form>
+            </motion.div>
         )
     }
   }
@@ -484,11 +502,23 @@ export default function LoginPage() {
               </div>
               <CardTitle className="text-2xl mt-4">{getPageTitle()}</CardTitle>
               <CardDescription>
-                {getPageDescription()}
+                <AnimatePresence mode="wait">
+                    <motion.p
+                        key={step + roleFromQuery}
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: 10 }}
+                        transition={{ duration: 0.2 }}
+                    >
+                       {getPageDescription()}
+                    </motion.p>
+                </AnimatePresence>
               </CardDescription>
             </CardHeader>
             <CardContent>
-                {roleFromQuery === 'admin' ? renderAdminForm() : renderUserAndPartnerForms()}
+              <AnimatePresence mode="wait">
+                {renderForms()}
+              </AnimatePresence>
                 
                 <div className="mt-4 text-center text-sm text-muted-foreground space-y-2">
                     {roleFromQuery === 'user' && (
@@ -510,3 +540,4 @@ export default function LoginPage() {
       </div>
   );
 }
+
