@@ -118,60 +118,6 @@ export default function LoginPage() {
         setInputType('email');
     }
   }
-  
-  const handlePartnerLogin = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setIsLoading(true);
-    if (!db) {
-        setIsLoading(false);
-        return;
-    }
-    
-    let collectionName = '';
-    let targetRole = '';
-    let sessionKey = 'cabzi-session'; // Use a unified session key
-    let redirectPath = '';
-
-    if (roleFromQuery === 'doctor') {
-      collectionName = 'doctors';
-      targetRole = 'doctor';
-      redirectPath = '/doctor';
-    }
-
-    if (!collectionName) {
-        toast({ variant: 'destructive', title: 'Invalid Role' });
-        setIsLoading(false);
-        return;
-    }
-    
-    try {
-        const q = query(collection(db, collectionName), where("partnerId", "==", partnerIdInput), where("password", "==", partnerPassword));
-        const snapshot = await getDocs(q);
-
-        if (!snapshot.empty) {
-            const partnerDoc = snapshot.docs[0];
-            const partnerData = partnerDoc.data();
-            const sessionData = { 
-                role: targetRole,
-                phone: partnerData.phone, 
-                name: partnerData.name, 
-                partnerId: partnerIdInput,
-                hospitalId: partnerData.hospitalId,
-            };
-            localStorage.setItem(sessionKey, JSON.stringify(sessionData));
-            toast({ title: "Login Successful" });
-            router.push(redirectPath);
-        } else {
-            toast({ variant: 'destructive', title: 'Invalid Credentials' });
-        }
-
-    } catch (error) {
-        console.error(`Error during ${targetRole} login:`, error);
-        toast({ variant: 'destructive', title: 'Login Failed' });
-    } finally {
-        setIsLoading(false);
-    }
-  }
 
   const handleAdminLogin = (e: React.FormEvent<HTMLFormElement>) => {
       e.preventDefault();
@@ -197,13 +143,14 @@ export default function LoginPage() {
  const findAndSetSession = async (user: { uid: string; email?: string | null; phoneNumber?: string | null }) => {
     if (!db) return false;
 
-    // A standard user (non-admin) can have multiple roles, but they all lead to the same user-centric dashboard.
-    // We check `users` collection first as it's the primary customer identity.
+    // Check all partner and user collections.
     const collectionsToSearch = [
-        { name: 'users', role: 'rider' },
-        { name: 'partners', role: 'driver' },
-        { name: 'mechanics', role: 'mechanic' },
-        { name: 'ambulances', role: 'cure' },
+        { name: 'partners', role: 'driver', sessionKey: 'cabzi-session' },
+        { name: 'mechanics', role: 'mechanic', sessionKey: 'cabzi-session' },
+        { name: 'ambulances', role: 'cure', sessionKey: 'cabzi-session' },
+        { name: 'ambulanceDrivers', role: 'ambulance', sessionKey: 'cabzi-session'},
+        { name: 'doctors', role: 'doctor', sessionKey: 'cabzi-session'},
+        { name: 'users', role: 'user', sessionKey: 'cabzi-session' }, // General user last
     ];
     
     let userIdentifier: string | undefined;
@@ -217,7 +164,7 @@ export default function LoginPage() {
     
     if (!userIdentifier) return false;
 
-    for (const { name: colName, role } of collectionsToSearch) {
+    for (const { name: colName, role, sessionKey } of collectionsToSearch) {
         const q = query(collection(db, colName), where(identifierField, "==", userIdentifier));
         const snapshot = await getDocs(q);
 
@@ -225,26 +172,28 @@ export default function LoginPage() {
             const userDoc = snapshot.docs[0];
             const userData = userDoc.data();
             
-            // All non-admin roles now redirect to the main rider/service hub.
-            const targetRole = role; 
-            const targetRedirect = `/${targetRole}`;
+            // All non-admin roles now redirect to the main user/service hub.
+            const targetRole = role === 'user' ? 'user' : role; // Keep specific partner role if found
+            const targetRedirect = '/user'; // ALWAYS redirect to the main hub
 
             const sessionData = { 
                 role: targetRole,
                 phone: userData.phone, 
                 name: userData.name, 
                 partnerId: userDoc.id, 
-                userId: role === 'rider' ? userDoc.id : undefined // Keep userId for primary user identity
+                userId: role === 'user' ? userDoc.id : undefined
             };
             
-            // Use a single unified session key
-            localStorage.setItem('cabzi-session', JSON.stringify(sessionData));
+            localStorage.setItem(sessionKey, JSON.stringify(sessionData));
             toast({ title: "Login Successful" });
             router.push(targetRedirect);
             return true;
         }
     }
-    return false;
+    
+    // If not found anywhere, it must be a new rider/user.
+    setStep('details');
+    return true; // Indicates we are handling it, not that a session was found.
   }
 
   const handleLoginSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -276,25 +225,11 @@ export default function LoginPage() {
     const email = loginInput;
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      const userFound = await findAndSetSession(userCredential.user);
+      await findAndSetSession(userCredential.user);
       
-      if (!userFound) {
-        // If user is not found in any collection, and they are trying to sign up as a rider,
-        // take them to the details form. Otherwise, show an error.
-        if (roleFromQuery === 'rider') {
-            setStep('details');
-        } else {
-            if (auth) auth.signOut();
-            toast({ variant: 'destructive', title: 'Partner Not Found', description: 'This account does not exist. Please use the Partner Hub to onboard first.' });
-        }
-      }
     } catch (error: any) {
       if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential') {
-        if(roleFromQuery === 'rider') {
-            setStep('details');
-        } else {
-            toast({ variant: 'destructive', title: 'Partner Not Found', description: 'Please check your credentials or onboard first.' });
-        }
+        setStep('details');
       } else if (error.code === 'auth/wrong-password') {
         toast({ variant: 'destructive', title: 'Incorrect Password' });
       } else {
@@ -311,16 +246,7 @@ export default function LoginPage() {
       setIsLoading(true);
       try {
           const userCredential = await confirmationResult.confirm(otp);
-          const userFound = await findAndSetSession(userCredential.user);
-
-          if (!userFound) {
-              if (roleFromQuery === 'rider') {
-                  setStep('details');
-              } else {
-                  if(auth) auth.signOut();
-                  toast({ variant: 'destructive', title: 'Partner Not Found', description: 'Please onboard via the Partner Hub first.' });
-              }
-          }
+          await findAndSetSession(userCredential.user);
       } catch (error: any) {
           toast({ variant: 'destructive', title: 'OTP Verification Failed', description: error.message });
       } finally {
@@ -353,14 +279,14 @@ export default function LoginPage() {
               phone: inputType === 'phone' ? loginInput : '',
               email: inputType === 'email' ? loginInput : '',
               gender,
-              role: 'rider',
+              role: 'user',
               createdAt: serverTimestamp(),
               isOnline: false,
           });
   
-          localStorage.setItem('cabzi-session', JSON.stringify({ role: 'rider', email: loginInput, name, gender, userId: user.uid }));
+          localStorage.setItem('cabzi-session', JSON.stringify({ role: 'user', email: loginInput, name, gender, userId: user.uid }));
           toast({ title: "Account Created!", description: "Welcome to Cabzi! Redirecting...", className: "bg-green-600 text-white border-green-600" });
-          router.push('/rider');
+          router.push('/user');
   
       } catch (error: any) {
           console.error("Error creating new user:", error);
@@ -381,44 +307,7 @@ export default function LoginPage() {
     const provider = new GoogleAuthProvider();
     try {
         const result = await signInWithPopup(auth, provider);
-        const user = result.user;
-        const userEmail = user.email;
-
-        if (!userEmail) {
-            throw new Error("Could not get email from Google Sign-In.");
-        }
-
-        // Rider is the default user type for Google Sign-In
-        const userQuery = query(collection(db, 'users'), where('email', '==', userEmail));
-        const userSnapshot = await getDocs(userQuery);
-
-        if (!userSnapshot.empty) { // User exists
-            const userDoc = userSnapshot.docs[0];
-            const userData = userDoc.data();
-            const sessionData = { 
-                role: 'rider',
-                phone: userData.phone, 
-                name: userData.name, 
-                userId: userDoc.id 
-            };
-            localStorage.setItem('cabzi-session', JSON.stringify(sessionData));
-            toast({ title: "Login Successful" });
-            router.push('/rider');
-        } else { // New user, create a document in 'users' collection
-            const newUserRef = doc(db, "users", user.uid);
-            await setDoc(newUserRef, {
-                name: user.displayName,
-                email: user.email,
-                phone: '', // No phone from Google
-                gender: 'other', // Default gender
-                role: 'rider',
-                createdAt: serverTimestamp(),
-                isOnline: false,
-            });
-            localStorage.setItem('cabzi-session', JSON.stringify({ role: 'rider', email: user.email, name: user.displayName, userId: user.uid }));
-            toast({ title: "Welcome to Cabzi!", description: "Your account has been created." });
-            router.push('/rider');
-        }
+        await findAndSetSession(result.user);
 
     } catch (error: any) {
         toast({ variant: 'destructive', title: 'Google Sign-In Failed', description: error.message });
@@ -429,19 +318,16 @@ export default function LoginPage() {
   
   const getPageTitle = () => {
       if (roleFromQuery === 'admin') return 'Admin Panel';
-      if (roleFromQuery === 'doctor') return 'Doctor Login';
       if (step === 'details') return 'Create Your Account';
       if (step === 'otp') return 'Verify OTP';
-      if (roleFromQuery === 'rider') return 'User Login or Signup';
-      return 'Partner Login';
+      return 'User Login or Signup';
   };
   
   const getPageDescription = () => {
       if (roleFromQuery === 'admin') return 'Please enter your credentials to access the panel.';
-      if (roleFromQuery === 'doctor') return 'Enter your Doctor ID and password provided by the hospital.';
       if (step === 'details') return 'Just one more step! Please provide your details.';
       if (step === 'otp') return `Enter the OTP sent to +91 ${loginInput}`;
-      return `Enter your email or phone number to log in or sign up as a ${getRoleDescription()}.`;
+      return `Enter your email or phone number to log in or sign up.`;
   };
 
   const renderAdminForm = () => (
@@ -459,22 +345,6 @@ export default function LoginPage() {
         </Button>
     </form>
   );
-
-  const renderDoctorLoginForm = () => (
-    <form onSubmit={handlePartnerLogin} className="space-y-4">
-        <div className="space-y-2">
-            <Label htmlFor="partnerId">Doctor ID</Label>
-            <Input id="partnerId" name="partnerId" placeholder="e.g., CZD-1234" required value={partnerIdInput} onChange={(e) => setPartnerIdInput(e.target.value)} disabled={isLoading} />
-        </div>
-        <div className="space-y-2">
-            <Label htmlFor="partnerPassword">Password</Label>
-            <Input id="partnerPassword" name="partnerPassword" type="password" placeholder="••••••••" required value={partnerPassword} onChange={(e) => setPartnerPassword(e.target.value)} disabled={isLoading}/>
-        </div>
-        <Button type="submit" className="w-full" disabled={isLoading}>
-            {isLoading ? "Verifying..." : 'Login'}
-        </Button>
-    </form>
-  )
 
   const renderLoginForm = () => (
     <div className="space-y-4">
@@ -506,7 +376,7 @@ export default function LoginPage() {
               {isLoading ? "Please wait..." : 'Continue'}
           </Button>
       </form>
-      {roleFromQuery === 'rider' && (
+      
         <>
           <div className="relative">
             <div className="absolute inset-0 flex items-center"><span className="w-full border-t" /></div>
@@ -517,7 +387,6 @@ export default function LoginPage() {
               Sign in with Google
           </Button>
         </>
-      )}
     </div>
   );
 
@@ -566,63 +435,6 @@ export default function LoginPage() {
     </form>
   );
   
-  const getRoleDescription = () => {
-    if (roleFromQuery === 'driver') return t('role_partner')
-    if (roleFromQuery === 'admin') return t('role_admin')
-    if (roleFromQuery === 'doctor') return 'Doctor'
-    return 'User'; // Use a more generic term for the main user
-  }
-
-  const renderContent = () => {
-    if (roleFromQuery === 'admin') return renderAdminForm();
-    if (roleFromQuery === 'doctor') return renderDoctorLoginForm();
-    
-    switch(step) {
-        case 'login':
-            return renderLoginForm();
-        case 'otp':
-            return renderOtpForm();
-        case 'details':
-            return renderDetailsForm();
-        default:
-            return null;
-    }
-  }
-
-  const getFooterLink = () => {
-    if (roleFromQuery === 'rider') {
-      return (
-        <p>
-        Want to partner with us?{' '}
-        <Link href="/partner-hub" className="underline text-primary">
-            Become a Partner
-        </Link>
-        </p>
-      )
-    }
-    if (['driver', 'mechanic', 'cure', 'doctor'].includes(roleFromQuery)) {
-      return (
-          <div className="space-y-2">
-              <p>
-                Not a partner?{' '}
-                <Link href="/login?role=rider" className="underline text-primary" onClick={() => { setStep('login'); setLoginInput(''); setPassword(''); }}>
-                  Login as a User
-                </Link>
-              </p>
-              {roleFromQuery !== 'doctor' && (
-                <p>
-                New to Cabzi?{' '}
-                <Link href="/partner-hub" className="underline text-primary">
-                    Onboard as a Partner
-                </Link>
-                </p>
-              )}
-          </div>
-      );
-    }
-    return null
-  }
-  
   if (!isMounted) return null;
 
   return (
@@ -645,12 +457,13 @@ export default function LoginPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-                {renderContent()}
+                {roleFromQuery === 'admin' ? renderAdminForm() : (step === 'login' ? renderLoginForm() : step === 'otp' ? renderOtpForm() : renderDetailsForm())}
+                
                 {roleFromQuery !== 'admin' && step === 'login' && (
                     <div className="mt-4 text-center text-sm text-muted-foreground">
-                        {getFooterLink()}
+                        <p>Want to partner with us? <Link href="/partner-hub" className="underline text-primary">Become a Partner</Link></p>
                          <p className="mt-2">
-                            <Link href="/login?role=admin" className="text-xs underline" onClick={() => { setStep('login'); setPartnerIdInput(''); setPartnerPassword(''); }}>
+                            <Link href="/login?role=admin" className="text-xs underline" onClick={() => setStep('login')}>
                                 Admin Login
                             </Link>
                         </p>

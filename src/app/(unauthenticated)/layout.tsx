@@ -2,10 +2,9 @@
 'use client'
 
 import { Toaster } from '@/components/ui/toaster';
-import { useRouter, usePathname } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { MotionDiv } from '@/components/ui/motion-div';
-import { AnimatePresence } from 'framer-motion';
+import { MotionDiv, AnimatePresence } from '@/components/ui/motion-div';
 import { FirebaseProviderClient } from '@/firebase/client-provider';
 
 // This layout now checks for an existing session and redirects if found.
@@ -15,14 +14,12 @@ export default function UnauthenticatedLayout({
   children: React.ReactNode;
 }) {
   const router = useRouter();
-  const pathname = usePathname(); // Get the current path
   const [isMounted, setIsMounted] = useState(false);
   const [showChildren, setShowChildren] = useState(false);
 
   useEffect(() => {
     setIsMounted(true);
-    // A single, unified session for all user types (rider, driver, etc.)
-    // Only admin has a truly separate flow.
+    // A single, unified session for all user types.
     const session = localStorage.getItem('cabzi-session');
 
     if (session) {
@@ -35,9 +32,10 @@ export default function UnauthenticatedLayout({
                  return;
             }
 
-            // All other logged-in users go to the main user dashboard
+            // All other logged-in users go to the main user hub.
+            // THIS IS THE FIX.
             if (role) {
-                router.replace(`/${role}`);
+                router.replace(`/user`);
                 return;
             }
             
@@ -60,7 +58,7 @@ export default function UnauthenticatedLayout({
     <FirebaseProviderClient>
       <AnimatePresence mode="wait">
         <MotionDiv
-          key={pathname}
+          key={router.asPath}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
