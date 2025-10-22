@@ -468,6 +468,7 @@ export default function HomePage() {
                              <CardContent className="space-y-3">
                                 <p className="flex items-start gap-2"><CheckCircle className="w-5 h-5 text-green-500 mt-0.5 shrink-0" /> <span><span className="font-semibold">Just ONE Monthly Recharge:</span> No commission cuts. If you earn ₹1000, you keep ₹1000.</span></p>
                                 <p className="flex items-start gap-2"><CheckCircle className="w-5 h-5 text-green-500 mt-0.5 shrink-0" /> <span><span className="font-semibold">True Financial Security:</span> Access instant loans and high-interest savings via Cabzi Bank.</span></p>
+                                <p className="flex items-start gap-2"><CheckCircle className="w-5 h-5 text-green-500 mt-0.5 shrink-0" /> <span><span className="font-semibold">Accident & Vehicle Insurance:</span> Stay protected on and off the road with our insurance plans.</span></p>
                                 <p className="flex items-start gap-2"><CheckCircle className="w-5 h-5 text-green-500 mt-0.5 shrink-0" /> <span><span className="font-semibold">Respect & Dignity:</span> You are our partner, not a number. We are committed to your growth and well-being.</span></p>
                                 <p className="flex items-start gap-2"><CheckCircle className="w-5 h-5 text-green-500 mt-0.5 shrink-0" /> <span><span className="font-semibold">AI Earnings Coach:</span> Get smart, personalized tips in your app to maximize your daily income.</span></p>
                             </CardContent>
