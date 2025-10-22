@@ -11,6 +11,8 @@ import { Input } from '@/components/ui/input'
 import { useToast } from '@/hooks/use-toast'
 import { Badge } from '@/components/ui/badge'
 import { useRouter } from 'next/navigation'
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert'
+import { AlertCircle } from 'lucide-react'
 
 
 // Mock transaction data for the user's wallet
@@ -28,11 +30,6 @@ export default function UserWalletPage() {
     const { toast } = useToast();
     const router = useRouter();
 
-    // Redirect user as this feature is coming soon
-    useEffect(() => {
-        router.push('/user');
-    }, [router]);
-    
     // In a real app, this would be fetched from the database
     useEffect(() => {
         const kycStatus = localStorage.getItem('cabzi-user-kyc');
@@ -66,8 +63,95 @@ export default function UserWalletPage() {
     
     const walletBalance = 1250.75; // Mock balance
 
-    // Render nothing while redirecting
-    return null;
-}
+    return (
+        <div className="p-4 md:p-6 space-y-6">
+            <div className="animate-fade-in">
+                <h2 className="text-3xl font-bold tracking-tight flex items-center gap-2">
+                    <Wallet className="w-8 h-8 text-primary" /> 
+                    Cabzi Wallet
+                </h2>
+                <p className="text-muted-foreground">Your secure wallet for all rides and services on Cabzi.</p>
+            </div>
+            
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Coming Soon!</AlertTitle>
+              <AlertDescription>
+                The user wallet and UPI features are currently under development. The interface below is a preview.
+              </AlertDescription>
+            </Alert>
+            
+            {!isKycDone ? (
+                <Card>
+                    <form onSubmit={handleKycSubmit}>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2"><ShieldCheck className="w-5 h-5 text-primary"/> Complete Your KYC</CardTitle>
+                            <CardDescription>To activate your wallet and enable payments, please complete your KYC verification.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="pan-card">PAN Card Number</Label>
+                                <Input id="pan-card" name="pan-card" placeholder="e.g., ABCDE1234F" required className="uppercase" />
+                            </div>
+                             <div className="space-y-2">
+                                <Label htmlFor="aadhaar-number">Aadhaar Number</Label>
+                                <Input id="aadhaar-number" name="aadhaar-number" placeholder="e.g., 1234 5678 9012" required />
+                            </div>
+                        </CardContent>
+                        <CardFooter>
+                            <Button type="submit" disabled={isLoading}>{isLoading ? 'Verifying...' : 'Submit & Activate Wallet'}</Button>
+                        </CardFooter>
+                    </form>
+                </Card>
+            ) : (
+                <div className="grid gap-6">
+                     <Card>
+                        <CardHeader className="pb-2">
+                            <CardDescription>Available Balance</CardDescription>
+                            <CardTitle className="text-4xl">₹{walletBalance.toLocaleString(undefined, {minimumFractionDigits: 2})}</CardTitle>
+                        </CardHeader>
+                        <CardFooter className="grid grid-cols-2 gap-4">
+                            <Button size="lg"><PlusCircle className="mr-2 h-4 w-4"/> Add Money</Button>
+                            <Button size="lg" variant="outline"><Send className="mr-2 h-4 w-4"/> Send Money</Button>
+                        </CardFooter>
+                    </Card>
 
-    
+                     <Card>
+                        <CardHeader className="flex flex-row items-center justify-between">
+                            <div>
+                              <CardTitle>Transaction History</CardTitle>
+                              <CardDescription>Your recent wallet transactions.</CardDescription>
+                            </div>
+                            <Button variant="outline" size="sm" onClick={() => toast({title: 'Coming Soon!'})}><Download className="mr-2 h-4 w-4"/>Download</Button>
+                        </CardHeader>
+                        <CardContent>
+                          <Table>
+                            <TableHeader>
+                              <TableRow>
+                                <TableHead>Date</TableHead>
+                                <TableHead>Description</TableHead>
+                                <TableHead className="text-right">Amount</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                               {mockTransactions.map(t => (
+                                <TableRow key={t.id}>
+                                    <TableCell>{t.date}</TableCell>
+                                    <TableCell>
+                                        <div className="font-medium">{t.type}</div>
+                                        <div className="text-xs text-muted-foreground">{t.description}</div>
+                                    </TableCell>
+                                    <TableCell className={`text-right font-medium ${t.amount < 0 ? 'text-destructive' : 'text-green-600'}`}>
+                                        {t.amount > 0 ? '+' : ''}₹{t.amount.toFixed(2)}
+                                    </TableCell>
+                                </TableRow>
+                               ))}
+                            </TableBody>
+                          </Table>
+                        </CardContent>
+                    </Card>
+                </div>
+            )}
+        </div>
+    )
+}

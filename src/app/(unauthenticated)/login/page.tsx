@@ -143,48 +143,41 @@ export default function LoginPage() {
  const findAndSetSession = async (user: { uid: string; email?: string | null; phoneNumber?: string | null }) => {
     if (!db) return false;
 
-    // Check all partner and user collections.
+    // Unified session logic
     const collectionsToSearch = [
-        { name: 'partners', role: 'driver', sessionKey: 'cabzi-session' },
-        { name: 'mechanics', role: 'mechanic', sessionKey: 'cabzi-session' },
-        { name: 'ambulances', role: 'cure', sessionKey: 'cabzi-session' },
-        { name: 'ambulanceDrivers', role: 'ambulance', sessionKey: 'cabzi-session'},
-        { name: 'doctors', role: 'doctor', sessionKey: 'cabzi-session'},
-        { name: 'users', role: 'user', sessionKey: 'cabzi-session' }, // General user last
+        { name: 'partners', role: 'driver' },
+        { name: 'mechanics', role: 'mechanic' },
+        { name: 'ambulances', role: 'cure' },
+        { name: 'ambulanceDrivers', role: 'ambulance'},
+        { name: 'doctors', role: 'doctor'},
+        { name: 'users', role: 'user' }, // General user last
     ];
     
-    let userIdentifier: string | undefined;
-    let identifierField: 'email' | 'phone' = user.email ? 'email' : 'phone';
-
-    if (user.email) {
-        userIdentifier = user.email;
-    } else if (user.phoneNumber) {
-        userIdentifier = user.phoneNumber.slice(3); // Remove +91
-    }
+    const identifierField = user.email ? 'email' : 'phone';
+    const identifierValue = user.email || user.phoneNumber?.slice(3); // Remove +91 for phone
     
-    if (!userIdentifier) return false;
+    if (!identifierValue) return false;
 
-    for (const { name: colName, role, sessionKey } of collectionsToSearch) {
-        const q = query(collection(db, colName), where(identifierField, "==", userIdentifier));
+    for (const { name: colName, role } of collectionsToSearch) {
+        const q = query(collection(db, colName), where(identifierField, "==", identifierValue));
         const snapshot = await getDocs(q);
 
         if (!snapshot.empty) {
             const userDoc = snapshot.docs[0];
             const userData = userDoc.data();
             
-            // All non-admin roles now redirect to the main user/service hub.
-            const targetRole = role === 'user' ? 'user' : role; // Keep specific partner role if found
-            const targetRedirect = '/user'; // ALWAYS redirect to the main hub
+            const targetRedirect = role === 'user' ? '/user' : `/${role}`;
 
             const sessionData = { 
-                role: targetRole,
+                role: role,
                 phone: userData.phone, 
                 name: userData.name, 
                 partnerId: userDoc.id, 
-                userId: role === 'user' ? userDoc.id : undefined
+                userId: role === 'user' ? userDoc.id : undefined,
+                hospitalId: userData.hospitalId,
             };
             
-            localStorage.setItem(sessionKey, JSON.stringify(sessionData));
+            localStorage.setItem('cabzi-session', JSON.stringify(sessionData));
             toast({ title: "Login Successful" });
             router.push(targetRedirect);
             return true;
@@ -193,7 +186,7 @@ export default function LoginPage() {
     
     // If not found anywhere, it must be a new rider/user.
     setStep('details');
-    return true; // Indicates we are handling it, not that a session was found.
+    return true;
   }
 
   const handleLoginSubmit = async (e: React.FormEvent<HTMLFormElement>) => {

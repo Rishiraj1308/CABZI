@@ -1,3 +1,4 @@
+
 'use client'
 
 import { Toaster } from '@/components/ui/toaster';
@@ -6,7 +7,7 @@ import { useEffect, useState } from 'react';
 import { MotionDiv, AnimatePresence } from '@/components/ui/motion-div';
 import { FirebaseProviderClient } from '@/firebase/client-provider';
 
-// This layout now checks for an existing session and redirects if found.
+// This layout now checks for a single, unified session and redirects if found.
 export default function UnauthenticatedLayout({
   children,
 }: {
@@ -18,28 +19,22 @@ export default function UnauthenticatedLayout({
 
   useEffect(() => {
     setIsMounted(true);
-    // A single, unified session for all user types.
+    
     const session = localStorage.getItem('cabzi-session');
 
     if (session) {
         try {
             const { role, adminRole } = JSON.parse(session);
             
-            // Handle admin redirection separately
-            if (role === 'admin' || adminRole) {
-                 router.replace(`/admin`);
+            // Redirect based on the primary role
+            if (role) {
+                 if (role === 'admin') router.replace('/admin');
+                 else if (role === 'user') router.replace('/user');
+                 else router.replace(`/${role}`); // For driver, mechanic, cure, etc.
                  return;
             }
-
-            // All other logged-in users go to the main user hub.
-            // THIS IS THE FIX.
-            if (role) {
-                router.replace(`/user`);
-                return;
-            }
-            
         } catch (e) {
-            // Corrupt session, remove it and show login.
+            // Corrupt session, remove it and allow login page to show.
             localStorage.removeItem('cabzi-session');
         }
     }
