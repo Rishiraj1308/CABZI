@@ -264,12 +264,16 @@ export default function DriverDashboard() {
         if (type === 'new_ride_request' && rideId) {
             const newRide: RideRequest = {
                 id: rideId,
-                ...rideData,
-                pickup: { ...rideData.pickup, location: JSON.parse(rideData.pickupLocation) },
-                destination: { ...rideData.destination, location: JSON.parse(rideData.destinationLocation) },
-                createdAt: new Timestamp(parseInt(rideData.createdAt) / 1000, 0),
+                pickup: JSON.parse(rideData.pickupLocation),
+                destination: JSON.parse(rideData.destinationLocation),
                 fare: parseFloat(rideData.fare),
-            } as RideRequest;
+                rideType: rideData.rideType,
+                status: "searching",
+                riderName: rideData.riderName,
+                riderId: rideData.riderId,
+                riderGender: rideData.riderGender,
+                otp: rideData.otp,
+            };
             
             if (!activeRideRequest && !acceptedRide) {
                 setActiveRideRequest(newRide);

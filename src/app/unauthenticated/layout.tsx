@@ -2,7 +2,7 @@
 'use client'
 
 import { Toaster } from '@/components/ui/toaster';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { MotionDiv, AnimatePresence } from '@/components/ui/motion-div';
 import { FirebaseProviderClient } from '@/firebase/client-provider';
@@ -14,6 +14,7 @@ export default function UnauthenticatedLayout({
   children: React.ReactNode;
 }) {
   const router = useRouter();
+  const pathname = usePathname();
   const [isMounted, setIsMounted] = useState(false);
   const [showChildren, setShowChildren] = useState(false);
 
@@ -51,7 +52,7 @@ export default function UnauthenticatedLayout({
     <FirebaseProviderClient>
       <AnimatePresence mode="wait">
         <MotionDiv
-          key={router.asPath}
+          key={pathname}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
