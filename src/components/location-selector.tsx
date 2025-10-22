@@ -7,7 +7,7 @@ import { Input } from './ui/input'
 import { ArrowLeft, Star, MapPin, HeartHandshake, IndianRupee } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useToast } from '@/hooks/use-toast'
-import { useRider } from '@/app/rider/layout'
+import { useUser } from '@/app/(user)/layout'
 import { useFirestore } from '@/firebase/client-provider'
 import { collection, addDoc, serverTimestamp, GeoPoint } from 'firebase/firestore'
 import { getRoute, searchPlace } from '@/lib/tomtom'
@@ -72,7 +72,7 @@ export default function LocationSelector({
   const [isBooking, setIsBooking] = useState(false);
 
   const { toast } = useToast();
-  const { session } = useRider();
+  const { session } = useUser();
   const db = useFirestore();
 
 

@@ -53,9 +53,6 @@ export default function BookAppointmentPage() {
   return (
     <div className="p-4 md:p-6 space-y-6">
       <div className="animate-fade-in">
-         <Button asChild variant="outline" size="sm" className="mb-4">
-            <Link href="/user"><ArrowLeft className="mr-2 h-4 w-4" /> Back to Services</Link>
-        </Button>
         <h2 className="text-3xl font-bold tracking-tight flex items-center gap-2">
             <CalendarIcon className="w-8 h-8 text-primary" />
             Book a Doctor's Appointment
