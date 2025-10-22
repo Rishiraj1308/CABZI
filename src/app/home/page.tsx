@@ -62,26 +62,26 @@ const cprData = [
 ];
 
 
-const whyCabziFeatures = [
+const journeySteps = [
     {
-        icon: IndianRupee,
-        title: "0% Commission",
-        description: "Our partners keep 100% of the fare. This means happier drivers and more affordable rides for you."
+        icon: MapPin,
+        title: "1. Instant Booking",
+        description: "Enter your destination and get a fair, transparent fare instantly. No hidden costs, no surprise surge pricing."
+    },
+    {
+        icon: User,
+        title: "2. Partner on the Way",
+        description: "A professional, verified partner accepts your ride. Track their arrival in real-time on the map."
     },
     {
         icon: Shield,
-        title: "Safety First",
-        description: "With our integrated CURE network, every ride is protected by a life-saving emergency response system."
+        title: "3. Safety During Ride",
+        description: "Feel secure with our in-app SOS, ride-sharing feature, and the backing of our CURE emergency network."
     },
     {
-        icon: CheckCircle,
-        title: "Fair & Transparent Fares",
-        description: "No hidden charges, no unpredictable surge pricing. Know your fare before you book, every time."
-    },
-    {
-        icon: Calendar,
-        title: "Doctor Appointments",
-        description: "Your health is a priority. Book appointments with specialists at our partner hospitals directly through the app."
+        icon: IndianRupee,
+        title: "4. Seamless Payment",
+        description: "Pay with ease using UPI, cash, or the integrated Cabzi Wallet at the end of your trip."
     }
 ]
 
@@ -435,46 +435,50 @@ export default function HomePage() {
                 </div>
             </section>
             
-            {/* Why Choose Us Section */}
+            {/* Your Journey Section */}
              <section className="py-20 md:py-24">
                 <div className="container">
                     <div className="mx-auto max-w-3xl text-center">
                         <h2 className="text-3xl font-bold tracking-tight sm:text-4xl font-headline">
-                            A Ride You Can Trust
+                           Your Journey with Cabzi
                         </h2>
                         <p className="mt-4 text-lg text-muted-foreground">
-                           We're rebuilding ride-hailing from the ground up, focusing on what truly matters: fairness and safety.
+                           A simple, safe, and transparent experience from start to finish.
                         </p>
                     </div>
-                    <motion.div 
-                        className="mt-16 grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-4"
-                        variants={containerVariants}
-                        initial="hidden"
-                        whileInView="visible"
-                        viewport={{ once: true, amount: 0.2 }}
-                    >
-                        {whyCabziFeatures.map((feature) => (
-                            <motion.div 
-                              key={feature.title}
-                              variants={itemVariants}
-                            >
-                                <Card className="h-full text-center hover:shadow-xl transition-shadow">
-                                    <CardHeader>
-                                        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
-                                            <feature.icon className="h-8 w-8 text-primary" />
-                                        </div>
-                                        <CardTitle className="pt-4">{feature.title}</CardTitle>
-                                    </CardHeader>
-                                    <CardContent>
-                                        <p className="text-sm text-muted-foreground">{feature.description}</p>
-                                    </CardContent>
-                                </Card>
-                            </motion.div>
-                        ))}
-                    </motion.div>
+                    <div className="relative mt-16">
+                        {/* The connecting line */}
+                        <div className="absolute left-1/2 top-8 hidden h-[calc(100%-4rem)] w-0.5 bg-border md:block" aria-hidden="true" />
+
+                        <motion.div 
+                            className="grid grid-cols-1 md:grid-cols-2 gap-y-16 gap-x-12"
+                            variants={containerVariants}
+                            initial="hidden"
+                            whileInView="visible"
+                            viewport={{ once: true, amount: 0.2 }}
+                        >
+                            {journeySteps.map((step, index) => (
+                                <motion.div 
+                                    key={step.title}
+                                    variants={itemVariants}
+                                    className={cn(
+                                        "relative flex items-start gap-6",
+                                        index % 2 === 1 && "md:flex-row-reverse"
+                                    )}
+                                >
+                                    <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 ring-8 ring-background">
+                                        <step.icon className="h-8 w-8 text-primary" />
+                                    </div>
+                                    <div className={cn("text-left", index % 2 === 1 && "md:text-right")}>
+                                        <h3 className="text-xl font-bold">{step.title}</h3>
+                                        <p className="mt-2 text-muted-foreground">{step.description}</p>
+                                    </div>
+                                </motion.div>
+                            ))}
+                        </motion.div>
+                    </div>
                 </div>
             </section>
-            
 
              {/* Partner CTA Section */}
             <section className="py-20 md:py-24 bg-muted/40">
@@ -508,4 +512,3 @@ export default function HomePage() {
       </div>
   );
 }
-
