@@ -256,7 +256,7 @@ export default function RiderLayout({
   
   return (
       <RiderContext.Provider value={{ session, isLoading: isAuthLoading }}>
-          <div className="relative h-screen bg-background flex flex-col">
+          <div className="relative min-h-screen bg-background flex flex-col">
           <div className="absolute top-4 left-4 z-20">
               <Sheet open={open} onOpenChange={setOpen}>
                   <SheetTrigger asChild>
