@@ -312,7 +312,7 @@ export default function RideStatus({
                         <AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle><AlertDialogDescription>This will cancel the current {isGarageRequest ? 'service request' : 'ride'}. This action cannot be undone.</AlertDialogDescription></AlertDialogHeader>
                         <AlertDialogFooter>
                             <AlertDialogCancel>Go Back</AlertDialogCancel>
-                            <AlertDialogAction className="bg-destructive hover:bg-destructive/80" onClick={onCancel}>Yes, Cancel</AlertDialogAction>
+                            <AlertDialogAction onClick={onCancel} className="bg-destructive hover:bg-destructive/80">Yes, Cancel</AlertDialogAction>
                         </AlertDialogFooter>
                     </AlertDialogContent>
                 </AlertDialog>
@@ -321,3 +321,5 @@ export default function RideStatus({
     </Card>
   );
 }
+
+    

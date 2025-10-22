@@ -29,7 +29,7 @@ const LiveMap = forwardRef<any, LiveMapProps>((props, ref) => {
     const riderMarkerRef = useRef<L.Marker | null>(null);
     const driverMarkerRef = useRef<L.Marker | null>(null);
     const cursorTooltipRef = useRef<L.Tooltip | null>(null);
-    const locateControlRef = useRef<L.Control.Locate | null>(null);
+    const locateControlRef = useRef<any | null>(null);
     const animationFrameRef = useRef<number | null>(null);
     const tileLayerRef = useRef<L.TileLayer | null>(null);
     const trafficLayerRef = useRef<L.TileLayer | null>(null); // New ref for traffic layer
@@ -88,7 +88,7 @@ const LiveMap = forwardRef<any, LiveMapProps>((props, ref) => {
     }));
     
     // Icon creation utility
-    const createIcon = (type: ActiveEntity['type'] | EntityStatus | 'location') => {
+    const createIcon = (type: ActiveEntity['type'] | EntityStatus | 'location' | string) => {
         const L = require('leaflet');
         let iconHtml;
         let iconSize: [number, number] = [24, 24];
@@ -179,7 +179,7 @@ const LiveMap = forwardRef<any, LiveMapProps>((props, ref) => {
 
         L.control.zoom({ position: 'bottomright' }).addTo(map);
         
-        locateControlRef.current = new locateControl({
+        locateControlRef.current = new (L.Control as any).Locate({
             position: 'bottomright',
             strings: { title: "Show my location" },
             flyTo: false, // We will handle flyTo manually for better control
@@ -483,3 +483,4 @@ const LiveMap = forwardRef<any, LiveMapProps>((props, ref) => {
 LiveMap.displayName = 'LiveMap';
 export default LiveMap;
 
+    

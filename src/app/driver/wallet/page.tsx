@@ -15,7 +15,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import Image from 'next/image'
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog'
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle, AlertDialogFooter } from '@/components/ui/alert-dialog'
 
 
 interface BankDetails {
@@ -94,13 +94,13 @@ export default function WalletPage() {
         const unsubscribePartner = onSnapshot(q, async (querySnapshot) => {
             if (!querySnapshot.empty) {
                 const partnerDoc = querySnapshot.docs[0];
-                const partnerData = { 
+                 const mechanicData = { 
                     id: partnerDoc.id, 
                     ...partnerDoc.data(),
                     upiId: partnerDoc.data().upiId || `${partnerDoc.data().phone}@cabzi`,
                     qrCodeUrl: partnerDoc.data().qrCodeUrl || `https://placehold.co/300x300/FBBF24/1E293B?text=CabziUPI`
                 } as Partner
-                setPartner(partnerData);
+                setPartner(mechanicData);
                 
                 const transactionsQuery = query(collection(db, `partners/${partnerDoc.id}/transactions`), orderBy('date', 'desc'));
                 const unsubscribeTransactions = onSnapshot(transactionsQuery, (transSnap) => {
@@ -571,3 +571,5 @@ export default function WalletPage() {
     </div>
   )
 }
+
+    

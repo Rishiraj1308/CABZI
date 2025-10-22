@@ -124,8 +124,8 @@ export default function LocationSelector({
         return;
     }
     
-    const { distance, geometry } = routeInfo.routes[0].summary;
-    setRouteGeometry(geometry);
+    const { distance } = routeInfo.routes[0].summary;
+    setRouteGeometry(routeInfo.routes[0].geometry);
     
     const updatedRideTypes = initialRideTypes.map(rt => {
         if (rt.name === 'Cabzi Pink' && session?.gender !== 'female') {
@@ -201,7 +201,7 @@ export default function LocationSelector({
              <div className="relative">
                 <Input 
                     value={destination.address}
-                    onChange={e => setDestination({ ...destination, address: e.target.value })}
+                    onChange={e => setDestination(prev => ({ ...prev, address: e.target.value }))}
                     placeholder="Where to?"
                     className="bg-muted border-primary focus-visible:ring-primary text-base font-semibold"
                     onKeyDown={(e) => e.key === 'Enter' && handleGetRideInfo()}
@@ -242,3 +242,5 @@ export default function LocationSelector({
     </div>
   )
 }
+
+    
