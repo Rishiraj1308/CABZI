@@ -1,3 +1,4 @@
+
 'use client'
 
 import React, { useState, useEffect, useRef } from 'react'
@@ -27,7 +28,7 @@ interface OngoingCase {
     phone: string;
     location: GeoPoint;
     hospitalLocation: GeoPoint;
-    status: 'onTheWay' | 'arrived' | 'inTransit' | 'completed';
+    status: 'accepted' | 'onTheWay' | 'arrived' | 'inTransit' | 'completed';
     otp: string;
 }
 
