@@ -271,7 +271,7 @@ export default function DriverDashboard() {
                 status: "searching",
                 riderName: rideData.riderName,
                 riderId: rideData.riderId,
-                riderGender: rideData.riderGender,
+                riderGender: rideData.riderGender as 'male' | 'female' | 'other',
                 otp: rideData.otp,
             };
             
@@ -534,8 +534,8 @@ export default function DriverDashboard() {
      if (!activeRideRequest || !db || !partnerData?.id) return;
 
      if (requestTimerRef.current) {
-        clearInterval(requestTimerRef.current);
-        requestTimerRef.current = null;
+         clearInterval(requestTimerRef.current);
+         requestTimerRef.current = null;
      }
 
      const rideRef = doc(db, 'rides', activeRideRequest.id);
@@ -868,7 +868,7 @@ export default function DriverDashboard() {
         return;
     }
     const generatedOtp = Math.floor(1000 + Math.random() * 9000).toString();
-    const requestDocRef = await addDoc(collection(db, 'garageRequests'), {
+    const requestData = {
         driverId: partnerData.id,
         driverName: partnerData.name,
         driverPhone: partnerData.phone,
@@ -877,9 +877,11 @@ export default function DriverDashboard() {
         status: 'pending',
         otp: generatedOtp,
         createdAt: serverTimestamp(),
-    });
+    };
+    const requestDocRef = await addDoc(collection(db, 'garageRequests'), requestData);
 
     localStorage.setItem('activeGarageRequestId', requestDocRef.id);
+    setActiveGarageRequest({ id: requestDocRef.id, ...requestData });
     toast({ title: "Request Sent!", description: "We are finding a nearby ResQ partner for you." });
     setIsIssueDialogOpen(false);
   }
