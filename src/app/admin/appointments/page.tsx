@@ -9,14 +9,6 @@ import { Input } from '@/components/ui/input'
 import { Search, CalendarCheck } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
 
-// Mock data until Firestore collection is implemented
-const mockAppointments = [
-    { id: 'APT001', patientName: 'Priya Singh', hospitalName: 'Max Healthcare, Saket', department: 'Cardiology', doctorName: 'Dr. Sharma', appointmentDate: '2024-09-10', appointmentTime: '11:00 AM', status: 'Confirmed' },
-    { id: 'APT002', patientName: 'Rajesh Verma', hospitalName: 'Apollo Hospital, Sarita Vihar', department: 'Orthopedics', doctorName: 'Dr. Gupta', appointmentDate: '2024-09-10', appointmentTime: '02:00 PM', status: 'Confirmed' },
-    { id: 'APT003', patientName: 'Anita Desai', hospitalName: 'Fortis Escorts, Okhla', department: 'General Physician', doctorName: 'Dr. Verma', appointmentDate: '2024-09-11', appointmentTime: '10:00 AM', status: 'Pending' },
-    { id: 'APT004', patientName: 'Suresh Kumar', hospitalName: 'Max Healthcare, Saket', department: 'Neurology', doctorName: 'Dr. Reddy', appointmentDate: '2024-09-11', appointmentTime: '04:00 PM', status: 'Cancelled' },
-];
-
 interface Appointment {
     id: string;
     patientName: string;
@@ -27,6 +19,15 @@ interface Appointment {
     appointmentTime: string;
     status: 'Confirmed' | 'Pending' | 'Cancelled';
 }
+
+// Mock data until Firestore collection is implemented
+const mockAppointments: Appointment[] = [
+    { id: 'APT001', patientName: 'Priya Singh', hospitalName: 'Max Healthcare, Saket', department: 'Cardiology', doctorName: 'Dr. Sharma', appointmentDate: '2024-09-10', appointmentTime: '11:00 AM', status: 'Confirmed' },
+    { id: 'APT002', patientName: 'Rajesh Verma', hospitalName: 'Apollo Hospital, Sarita Vihar', department: 'Orthopedics', doctorName: 'Dr. Gupta', appointmentDate: '2024-09-10', appointmentTime: '02:00 PM', status: 'Confirmed' },
+    { id: 'APT003', patientName: 'Anita Desai', hospitalName: 'Fortis Escorts, Okhla', department: 'General Physician', doctorName: 'Dr. Verma', appointmentDate: '2024-09-11', appointmentTime: '10:00 AM', status: 'Pending' },
+    { id: 'APT004', patientName: 'Suresh Kumar', hospitalName: 'Max Healthcare, Saket', department: 'Neurology', doctorName: 'Dr. Reddy', appointmentDate: '2024-09-11', appointmentTime: '04:00 PM', status: 'Cancelled' },
+];
+
 
 export default function AdminAppointmentsPage() {
     const [appointments, setAppointments] = useState<Appointment[]>([]);
