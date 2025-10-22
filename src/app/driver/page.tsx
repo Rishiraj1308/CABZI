@@ -44,6 +44,9 @@ const QrScanner = dynamic(() => import('@/components/ui/qr-scanner'), {
   loading: () => <div className="flex items-center justify-center w-full h-full bg-muted"><p>Loading Scanner...</p></div>
 })
 
+const Lottie = dynamic(() => import('lottie-react'), { ssr: false });
+import lottieFindingDriver from '@/components/ui/lottie-finding-driver.json';
+
 
 interface RideRequest {
     id: string;
@@ -1165,5 +1168,3 @@ export default function DriverDashboard() {
     </div>
   )
 }
-
-    

@@ -40,8 +40,8 @@ function LanguageToggle() {
                 </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => setLanguage('en')}>{t('lang_english')}</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setLanguage('hi')}>{t('lang_hindi')}</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setLanguage('en')}>English</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setLanguage('hi')}>हिन्दी</DropdownMenuItem>
             </DropdownMenuContent>
         </DropdownMenu>
     )
@@ -143,55 +143,56 @@ export default function LoginPage() {
  const findAndSetSession = async (user: { uid: string; email?: string | null; phoneNumber?: string | null }) => {
     if (!db) return false;
 
-    const collections: Record<string, string> = {
-        driver: 'partners',
-        mechanic: 'mechanics',
-        cure: 'ambulances',
-        ambulance: 'ambulanceDrivers',
-        doctor: 'doctors',
-        user: 'users',
-    };
+    // Check all partner and user collections.
+    const collectionsToSearch = [
+        { name: 'partners', role: 'driver', sessionKey: 'cabzi-driver-session' },
+        { name: 'mechanics', role: 'mechanic', sessionKey: 'cabzi-resq-session' },
+        { name: 'ambulances', role: 'cure', sessionKey: 'cabzi-cure-session' },
+        { name: 'ambulanceDrivers', role: 'ambulance', sessionKey: 'cabzi-ambulance-session'},
+        { name: 'doctors', role: 'doctor', sessionKey: 'cabzi-doctor-session'},
+        { name: 'users', role: 'user', sessionKey: 'cabzi-user-session' }, // General user last
+    ];
+    
+    let userIdentifier: string | undefined;
+    let identifierField: 'email' | 'phone' = user.email ? 'email' : 'phone';
 
-    const targetCollection = collections[roleFromQuery] || 'users';
-
-    const identifierField = user.email ? 'email' : 'phone';
-    const identifierValue = user.email || user.phoneNumber?.slice(3); // Remove +91 for phone
-
-    if (!identifierValue) return false;
-
-    const q = query(collection(db, targetCollection), where(identifierField, "==", identifierValue));
-    const snapshot = await getDocs(q);
-
-    if (!snapshot.empty) {
-        const userDoc = snapshot.docs[0];
-        const userData = userDoc.data();
-        
-        const sessionData = { 
-            role: roleFromQuery,
-            phone: userData.phone, 
-            name: userData.name, 
-            partnerId: userDoc.id,
-            userId: roleFromQuery === 'user' ? userDoc.id : undefined,
-            hospitalId: userData.hospitalId,
-        };
-        
-        localStorage.setItem('cabzi-session', JSON.stringify(sessionData));
-        toast({ title: "Login Successful" });
-        router.push(`/${roleFromQuery}`);
-        return true;
+    if (user.email) {
+        userIdentifier = user.email;
+    } else if (user.phoneNumber) {
+        userIdentifier = user.phoneNumber.slice(3); // Remove +91
     }
     
-    // If not found in the target collection, and they were trying to log in as a user,
-    // they must be a new user.
-    if (roleFromQuery === 'user') {
-        setStep('details');
-        return true;
-    }
+    if (!userIdentifier) return false;
 
-    // If they were trying to log in as a partner but not found, they need to onboard.
-    toast({ variant: 'destructive', title: 'Partner Not Found', description: 'Your account was not found. Please sign up through the Partner Hub.'});
-    router.push('/partner-hub');
-    return false;
+    for (const { name: colName, role, sessionKey } of collectionsToSearch) {
+        const q = query(collection(db, colName), where(identifierField, "==", userIdentifier));
+        const snapshot = await getDocs(q);
+
+        if (!snapshot.empty) {
+            const userDoc = snapshot.docs[0];
+            const userData = userDoc.data();
+            
+            const targetRedirect = role === 'user' ? '/user' : `/${role}`;
+
+            const sessionData = { 
+                role: role,
+                phone: userData.phone, 
+                name: userData.name, 
+                partnerId: userDoc.id, 
+                userId: role === 'user' ? userDoc.id : undefined,
+                 hospitalId: userData.hospitalId,
+            };
+            
+            localStorage.setItem(sessionKey, JSON.stringify(sessionData));
+            toast({ title: "Login Successful" });
+            router.push(targetRedirect);
+            return true;
+        }
+    }
+    
+    // If not found anywhere, it must be a new rider/user.
+    setStep('details');
+    return true; // Indicates we are handling it, not that a session was found.
   }
 
   const handleLoginSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -227,11 +228,7 @@ export default function LoginPage() {
       
     } catch (error: any) {
       if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential') {
-        if(roleFromQuery === 'user'){
-            setStep('details');
-        } else {
-            toast({ variant: 'destructive', title: 'Partner Not Found', description: 'This account does not exist. Please onboard first.' });
-        }
+        setStep('details');
       } else if (error.code === 'auth/wrong-password') {
         toast({ variant: 'destructive', title: 'Incorrect Password' });
       } else {
@@ -286,7 +283,7 @@ export default function LoginPage() {
               isOnline: false,
           });
   
-          localStorage.setItem('cabzi-session', JSON.stringify({ role: 'user', phone: loginInput, name, gender, userId: user.uid }));
+          localStorage.setItem('cabzi-user-session', JSON.stringify({ role: 'user', email: loginInput, name, gender, userId: user.uid }));
           toast({ title: "Account Created!", description: "Welcome to Cabzi! Redirecting...", className: "bg-green-600 text-white border-green-600" });
           router.push('/user');
   
@@ -477,3 +474,4 @@ export default function LoginPage() {
   );
 }
 
+    

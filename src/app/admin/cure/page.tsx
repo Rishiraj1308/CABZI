@@ -80,10 +80,10 @@ interface EmergencyRequest {
     rejectedBy?: string[];
     createdAt: any;
     otp?: string;
+    status: 'pending' | 'accepted' | 'onTheWay' | 'arrived' | 'inTransit' | 'completed' | 'cancelled_by_rider' | 'cancelled_by_partner' | 'cancelled_by_admin';
 }
 
 interface OngoingCase extends EmergencyRequest {
-    status: 'accepted' | 'onTheWay' | 'arrived' | 'inTransit' | 'completed';
     assignedAmbulanceId?: string;
     assignedAmbulanceName?: string;
     partnerLocation?: GeoPoint;
@@ -900,3 +900,5 @@ export default function HospitalMissionControl() {
         </div>
     )
 }
+
+    
