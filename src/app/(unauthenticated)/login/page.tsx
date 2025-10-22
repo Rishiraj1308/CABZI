@@ -73,7 +73,7 @@ export default function LoginPage() {
   const { toast } = useToast()
   const { t } = useLanguage();
   const { auth, db } = useFirebase();
-  const roleFromQuery = searchParams.get('role') || 'rider'
+  const roleFromQuery = searchParams.get('role') || 'user'
 
   const [step, setStep] = useState<'login' | 'otp' | 'details'>('login');
   const [loginInput, setLoginInput] = useState(searchParams.get('email') || searchParams.get('phone') || '');
