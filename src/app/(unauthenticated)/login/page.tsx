@@ -112,24 +112,29 @@ export default function LoginPage() {
   const findAndSetSession = async (user: { uid: string; email?: string | null; phoneNumber?: string | null }) => {
     if (!db) return false;
 
-    // The order is important: check for partner roles BEFORE regular user role.
-    const collectionsToSearch = [
+    const isPartnerLogin = roleFromQuery === 'driver' || roleFromQuery === 'mechanic' || roleFromQuery === 'cure' || roleFromQuery === 'doctor' || roleFromQuery === 'ambulance';
+    
+    // Define the collections to search. The order is now critical.
+    const partnerCollections = [
         { name: 'partners', role: 'driver' },
         { name: 'mechanics', role: 'mechanic' },
         { name: 'ambulances', role: 'cure' },
         { name: 'ambulanceDrivers', role: 'ambulance'},
         { name: 'doctors', role: 'doctor'},
-        { name: 'users', role: 'user' },
     ];
+    const userCollections = [{ name: 'users', role: 'user' }];
+
+    const collectionsToSearch = isPartnerLogin 
+        ? [...partnerCollections, ...userCollections] 
+        : [...userCollections, ...partnerCollections];
     
     let userIdentifier: string | undefined;
-    let identifierField: 'email' | 'phone' | 'partnerId' = 'email';
+    let identifierField: 'email' | 'phone' = user.email ? 'email' : 'phone';
 
     if (user.email) {
         userIdentifier = user.email;
     } else if (user.phoneNumber) {
         userIdentifier = user.phoneNumber.includes('+91') ? user.phoneNumber.replace('+91', '') : user.phoneNumber;
-        identifierField = 'phone';
     }
     
     if (!userIdentifier) return false;
@@ -142,9 +147,15 @@ export default function LoginPage() {
             const userDoc = snapshot.docs[0];
             const userData = userDoc.data();
             
+            // This is the key logic: If we are trying to log in as a partner, but find a user role first, we skip it.
+            if (isPartnerLogin && role === 'user') {
+                continue; // Found a user record, but we're looking for a partner one first.
+            }
+            
             const sessionData: any = { 
                 role: role,
                 phone: userData.phone, 
+                email: userData.email,
                 name: userData.name,
                 userId: user.uid,
             };
@@ -154,21 +165,34 @@ export default function LoginPage() {
                  if(userData.hospitalId) sessionData.hospitalId = userData.hospitalId;
             }
             
-            localStorage.setItem('cabzi-session', JSON.stringify(sessionData));
+            let localStorageKey = 'cabzi-session';
+            let redirectPath = `/${role}`;
             
-            let targetRedirect = `/${role}`;
-            if (role === 'rider') targetRedirect = '/rider' // rider goes to /rider
-            if (role === 'user') targetRedirect = '/rider' // user is a rider
+            // Specific session keys for different partner types
+            if (role === 'mechanic') localStorageKey = 'cabzi-resq-session';
+            if (role === 'cure') localStorageKey = 'cabzi-cure-session';
+            if (role === 'ambulance') localStorageKey = 'cabzi-ambulance-session';
+            if (role === 'doctor') localStorageKey = 'cabzi-doctor-session';
+            if (role === 'user') redirectPath = '/rider'; // a 'user' is a 'rider'
 
+            localStorage.setItem(localStorageKey, JSON.stringify(sessionData));
+            
             toast({ title: "Login Successful" });
-            router.push(targetRedirect);
+            router.push(redirectPath);
             return true;
         }
     }
     
     // If not found anywhere, it must be a new rider/user.
-    setStep('details');
-    return true; // Indicates we are handling it, not that a session was found.
+    // We only allow new user creation through the rider/user flow.
+    if (roleFromQuery === 'rider' || roleFromQuery === 'user') {
+        setStep('details');
+        return true; 
+    } else {
+        // If it's a partner login attempt and no record was found.
+        toast({ variant: 'destructive', title: 'Partner Not Found', description: 'This account does not exist. Please onboard first from the Partner Hub.' });
+        return false;
+    }
   }
 
   const handleEmailSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -186,7 +210,7 @@ export default function LoginPage() {
       
     } catch (error: any) {
       if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential') {
-        if(roleFromQuery === 'rider') {
+        if(roleFromQuery === 'rider' || roleFromQuery === 'user') {
             setStep('details');
         } else {
             toast({ variant: 'destructive', title: 'Partner Not Found', description: 'This account does not exist. Please onboard first from the Partner Hub.' });
@@ -224,7 +248,7 @@ export default function LoginPage() {
               email,
               phone: '', // Phone is optional
               gender,
-              role: 'user',
+              role: 'user', // Always create new users with 'user' role
               createdAt: serverTimestamp(),
               isOnline: false,
           });
@@ -252,6 +276,7 @@ export default function LoginPage() {
     const provider = new GoogleAuthProvider();
     try {
         const result = await signInWithPopup(auth, provider);
+        setEmail(result.user.email || ''); // Pre-fill email for details form if needed
         await findAndSetSession(result.user);
 
     } catch (error: any) {
@@ -262,17 +287,19 @@ export default function LoginPage() {
   }
   
   const getPageTitle = () => {
+      const isPartnerFlow = ['driver', 'mechanic', 'cure', 'doctor', 'ambulance'].includes(roleFromQuery);
       if (roleFromQuery === 'admin') return 'Admin Panel'
       if (step === 'details') return 'Create Your Account'
-      if (roleFromQuery === 'rider') return 'Rider Login or Signup'
-      return 'Partner Login'
+      if (isPartnerFlow) return 'Partner Login'
+      return 'Rider Login or Signup'
   };
   
   const getPageDescription = () => {
+       const isPartnerFlow = ['driver', 'mechanic', 'cure', 'doctor', 'ambulance'].includes(roleFromQuery);
       if (roleFromQuery === 'admin') return 'Please enter your credentials to access the panel.'
       if (step === 'details') return 'Just one more step! Please provide your details.'
-      if (roleFromQuery === 'rider') return `Enter your email and password to log in or sign up.`
-      return `Enter your partner credentials to log in.`
+       if (isPartnerFlow) return `Enter your partner credentials to log in.`
+      return `Enter your email and password to log in or sign up.`
   };
 
   const renderAdminForm = () => (
@@ -351,7 +378,6 @@ export default function LoginPage() {
     }
   }
 
-  // Same partner form as before
    const renderPartnerForm = () => {
      return (
         <form onSubmit={handleEmailSubmit} className="space-y-4">
@@ -371,6 +397,9 @@ export default function LoginPage() {
   };
   
   if (!isMounted) return null;
+
+  const isUserFlow = roleFromQuery === 'rider' || roleFromQuery === 'user';
+  const isPartnerFlow = ['driver', 'mechanic', 'cure', 'doctor', 'ambulance'].includes(roleFromQuery);
 
   return (
       <div className="flex min-h-screen items-center justify-center p-4 bg-muted/40">
@@ -392,14 +421,14 @@ export default function LoginPage() {
             </CardHeader>
             <CardContent>
                 {roleFromQuery === 'admin' && renderAdminForm()}
-                {roleFromQuery === 'rider' && renderRiderForm()}
-                {(roleFromQuery === 'driver' || roleFromQuery === 'mechanic' || roleFromQuery === 'cure') && renderPartnerForm()}
+                {isUserFlow && renderRiderForm()}
+                {isPartnerFlow && renderPartnerForm()}
                 
                 <div className="mt-4 text-center text-sm text-muted-foreground space-y-2">
-                    {roleFromQuery === 'rider' && (
+                    {isUserFlow && (
                         <p>Want to partner with us? <Link href="/partner-hub" className="underline text-primary">Become a Partner</Link></p>
                     )}
-                    {roleFromQuery !== 'rider' && roleFromQuery !== 'admin' && (
+                    {isPartnerFlow && (
                         <p>Looking for a ride? <Link href="/login?role=rider" className="underline text-primary" onClick={() => setStep('login')}>Login as a Rider</Link></p>
                     )}
                     {roleFromQuery !== 'admin' && (
