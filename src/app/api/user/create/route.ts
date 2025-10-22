@@ -1,12 +1,12 @@
 
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
-import { initializeApp, getApps, getApp } from 'firebase-admin/app';
-import { getFirestore, FieldValue } from 'firebase-admin/firestore';
-import { firebaseConfig } from '@/firebase/config'; // Assuming you might have a shared config
+import { initializeApp, getApps, getApp } from 'firebase/app';
+import { getFirestore, collection, query, where, getDocs, doc, setDoc, serverTimestamp, FieldValue } from 'firebase/firestore';
+import { firebaseConfig } from '@/firebase/config';
 
-// Initialize Firebase Admin SDK
-const app = !getApps().length ? initializeApp() : getApp();
+// Initialize Firebase Client SDK
+const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 const db = getFirestore(app);
 
 const userSchema = z.object({
@@ -28,23 +28,25 @@ export async function POST(req: Request) {
     const { name, phone, gender, role } = validation.data;
 
     // Check if user already exists
-    const usersRef = db.collection('users');
-    const existingUserQuery = await usersRef.where('phone', '==', phone).limit(1).get();
+    const usersRef = collection(db, 'users');
+    const existingUserQuery = await getDocs(query(usersRef, where('phone', '==', phone), limit(1)));
 
     if (!existingUserQuery.empty) {
       return NextResponse.json({ error: 'User with this phone number already exists.' }, { status: 409 });
     }
 
-    const newUserRef = usersRef.doc();
-    await newUserRef.set({
+    const newUserRef = doc(usersRef);
+    await setDoc(newUserRef, {
       name,
       phone,
       gender,
       role: role.toLowerCase(), // Storing role in lowercase as per convention in other parts of the app
-      createdAt: FieldValue.serverTimestamp(),
+      createdAt: serverTimestamp(),
     });
 
-    const newUser = (await newUserRef.get()).data();
+    const newUserSnapshot = await getDoc(newUserRef);
+    const newUser = newUserSnapshot.data();
+
 
     return NextResponse.json({ user: { id: newUserRef.id, ...newUser } }, { status: 201 })
   } catch (error) {
