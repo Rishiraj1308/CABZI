@@ -325,7 +325,7 @@ export default function HomePage() {
                             variants={itemVariants}
                             className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold tracking-tighter bg-clip-text text-transparent bg-gradient-to-b from-foreground to-foreground/70 font-headline"
                         >
-                           The Safest Ride. Fair for Everyone.
+                           Your Partner On The Road. Fair for Everyone.
                         </motion.h1>
                         <motion.p 
                            variants={itemVariants}
