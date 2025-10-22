@@ -29,7 +29,7 @@ export function FirebaseErrorListener() {
               {JSON.stringify(error.context, null, 2)}
             </CodeBlock>
           </div>
-        ) as unknown as ReactNode,
+        ) as ReactNode,
       });
     };
 
