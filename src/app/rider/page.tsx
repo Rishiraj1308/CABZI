@@ -101,92 +101,101 @@ export default function RiderPage() {
 
     
     const renderSelectionScreen = () => (
-        <MotionDiv initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-4 md:p-6 space-y-6">
+        <MotionDiv 
+            layoutId="service-container" 
+            key="selection" 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="p-4 md:p-6 space-y-6"
+        >
             <div className="text-center">
                 <h2 className="text-3xl font-bold tracking-tight">How can we help you?</h2>
                 <p className="text-muted-foreground">Choose a service to get started.</p>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <Card className="hover:border-primary hover:shadow-lg transition-all cursor-pointer text-center" onClick={() => setView('path')}>
-                    <CardHeader><Car className="w-12 h-12 text-primary mx-auto"/> <CardTitle className="pt-2">Book a Ride</CardTitle></CardHeader>
-                    <CardContent><p className="text-sm text-muted-foreground">Book a Bike, Auto, or Cab instantly.</p></CardContent>
-                </Card>
-                 <Card className="hover:border-red-500 hover:shadow-lg transition-all cursor-pointer text-center" onClick={() => setView('cure')}>
-                    <CardHeader><Ambulance className="w-12 h-12 text-red-500 mx-auto"/> <CardTitle className="pt-2">Cure Service</CardTitle></CardHeader>
-                    <CardContent><p className="text-sm text-muted-foreground">Request an ambulance for emergencies.</p></CardContent>
-                </Card>
-                 <Card className="hover:border-amber-500 hover:shadow-lg transition-all cursor-pointer text-center" onClick={() => setView('resq')}>
-                    <CardHeader><Wrench className="w-12 h-12 text-amber-500 mx-auto"/> <CardTitle className="pt-2">ResQ Service</CardTitle></CardHeader>
-                    <CardContent><p className="text-sm text-muted-foreground">Get on-spot help for vehicle trouble.</p></CardContent>
-                </Card>
+                <MotionDiv layoutId="path-card">
+                    <Card className="hover:border-primary hover:shadow-lg transition-all cursor-pointer text-center" onClick={() => setView('path')}>
+                        <CardHeader><Car className="w-12 h-12 text-primary mx-auto"/> <CardTitle className="pt-2">Book a Ride</CardTitle></CardHeader>
+                        <CardContent><p className="text-sm text-muted-foreground">Book a Bike, Auto, or Cab instantly.</p></CardContent>
+                    </Card>
+                </MotionDiv>
+                 <MotionDiv layoutId="cure-card">
+                    <Card className="hover:border-red-500 hover:shadow-lg transition-all cursor-pointer text-center" onClick={() => setView('cure')}>
+                        <CardHeader><Ambulance className="w-12 h-12 text-red-500 mx-auto"/> <CardTitle className="pt-2">Cure Service</CardTitle></CardHeader>
+                        <CardContent><p className="text-sm text-muted-foreground">Request an ambulance for emergencies.</p></CardContent>
+                    </Card>
+                </MotionDiv>
+                 <MotionDiv layoutId="resq-card">
+                    <Card className="hover:border-amber-500 hover:shadow-lg transition-all cursor-pointer text-center" onClick={() => setView('resq')}>
+                        <CardHeader><Wrench className="w-12 h-12 text-amber-500 mx-auto"/> <CardTitle className="pt-2">ResQ Service</CardTitle></CardHeader>
+                        <CardContent><p className="text-sm text-muted-foreground">Get on-spot help for vehicle trouble.</p></CardContent>
+                    </Card>
+                </MotionDiv>
             </div>
         </MotionDiv>
     );
 
-    const renderPathScreen = () => {
-        if (activeRide) {
-            return (
+    const renderPathScreen = () => (
+        <MotionDiv layoutId="path-card" key="path">
+            {activeRide ? (
                 <div className="p-1">
                     <RideStatus ride={activeRide} onCancel={resetFlow} onDone={resetFlow} />
                 </div>
-            )
-        }
-        return (
-            <LocationSelector
-                pickup={pickup}
-                setPickup={setPickup}
-                destination={destination}
-                setDestination={setDestination}
-                onBack={() => { setView('selection'); setRouteGeometry(null); }}
-                setActiveRide={setActiveRide}
-                setRouteGeometry={setRouteGeometry}
-                currentUserLocation={currentUserLocation}
-                liveMapRef={liveMapRef}
-            />
-        );
-    }
+            ) : (
+                <LocationSelector
+                    pickup={pickup}
+                    setPickup={setPickup}
+                    destination={destination}
+                    setDestination={setDestination}
+                    onBack={() => { setView('selection'); setRouteGeometry(null); }}
+                    setActiveRide={setActiveRide}
+                    setRouteGeometry={setRouteGeometry}
+                    currentUserLocation={currentUserLocation}
+                    liveMapRef={liveMapRef}
+                />
+            )}
+        </MotionDiv>
+    );
     
-    const renderCureScreen = () => {
-         if (activeAmbulanceCase) {
-             return (
-                 <div className="p-1">
+    const renderCureScreen = () => (
+        <MotionDiv layoutId="cure-card" key="cure">
+            {activeAmbulanceCase ? (
+                <div className="p-1">
                     <RideStatus ride={activeAmbulanceCase} onCancel={resetFlow} onDone={resetFlow} />
                 </div>
-            )
-        }
-        return (
-             <EmergencyButtons 
-                serviceType="cure"
-                liveMapRef={liveMapRef}
-                pickupCoords={pickup.coords}
-                setIsRequestingSos={setIsRequestingSos}
-                setActiveAmbulanceCase={setActiveAmbulanceCase}
-                setActiveGarageRequest={() => {}} // dummy function for this view
-                onBack={() => setView('selection')}
-            />
-        );
-    }
+            ) : (
+                <EmergencyButtons 
+                    serviceType="cure"
+                    liveMapRef={liveMapRef}
+                    pickupCoords={pickup.coords}
+                    setIsRequestingSos={setIsRequestingSos}
+                    setActiveAmbulanceCase={setActiveAmbulanceCase}
+                    setActiveGarageRequest={() => {}} // dummy function for this view
+                    onBack={() => setView('selection')}
+                />
+            )}
+        </MotionDiv>
+    );
     
-     const renderResqScreen = () => {
-         if(activeGarageRequest) {
-            return (
-                 <div className="p-1">
+     const renderResqScreen = () => (
+         <MotionDiv layoutId="resq-card" key="resq">
+            {activeGarageRequest ? (
+                <div className="p-1">
                     <RideStatus ride={activeGarageRequest as any} isGarageRequest onCancel={resetFlow} onDone={resetFlow} />
                 </div>
-            );
-         }
-        return (
-            <EmergencyButtons 
-                serviceType="resq"
-                liveMapRef={liveMapRef}
-                pickupCoords={pickup.coords}
-                setIsRequestingSos={setIsRequestingSos}
-                setActiveAmbulanceCase={() => {}} // dummy function
-                setActiveGarageRequest={setActiveGarageRequest}
-                onBack={() => setView('selection')}
-            />
-        );
-     }
+            ) : (
+                <EmergencyButtons 
+                    serviceType="resq"
+                    liveMapRef={liveMapRef}
+                    pickupCoords={pickup.coords}
+                    setIsRequestingSos={setIsRequestingSos}
+                    setActiveAmbulanceCase={() => {}} // dummy function
+                    setActiveGarageRequest={setActiveGarageRequest}
+                    onBack={() => setView('selection')}
+                />
+            )}
+        </MotionDiv>
+     );
 
     return (
         <div className="h-full flex-1 flex flex-col">
@@ -196,18 +205,10 @@ export default function RiderPage() {
             <div className="z-10">
                  <Card className="rounded-t-2xl shadow-2xl">
                      <AnimatePresence mode="wait">
-                        <MotionDiv
-                            key={view}
-                            initial={{ opacity: 0, y: 50 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -50 }}
-                            transition={{ duration: 0.3 }}
-                        >
-                            {view === 'selection' && renderSelectionScreen()}
-                            {view === 'path' && renderPathScreen()}
-                            {view === 'cure' && renderCureScreen()}
-                            {view === 'resq' && renderResqScreen()}
-                        </MotionDiv>
+                        {view === 'selection' && renderSelectionScreen()}
+                        {view === 'path' && renderPathScreen()}
+                        {view === 'cure' && renderCureScreen()}
+                        {view === 'resq' && renderResqScreen()}
                     </AnimatePresence>
                  </Card>
             </div>
