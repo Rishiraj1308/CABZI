@@ -57,7 +57,7 @@ export function useUser() {
 
 
 const navItems = [
-    { href: '/user', label: 'Book a Ride', icon: Home, comingSoon: false },
+    { href: '/user', label: 'Services', icon: Home, comingSoon: false },
     { href: '/user/appointments', label: 'Book Appointment', icon: Calendar, comingSoon: false },
     { href: '/user/rides', label: 'My Rides', icon: History, comingSoon: false },
     { href: '/user/wallet', label: 'Cabzi Bank', icon: Landmark, comingSoon: true },
@@ -109,7 +109,7 @@ export default function UserLayout({
       setSession(null);
       localStorage.removeItem('cabzi-session');
       if (window.location.pathname.startsWith('/user')) {
-        router.push('/login?role=rider');
+        router.push('/login');
       }
       return;
     }

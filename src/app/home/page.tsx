@@ -5,7 +5,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import BrandLogo, { NewLogoIcon } from '@/components/brand-logo'
-import { ArrowRight, Car, Wrench, Ambulance, Landmark, CheckCircle, Shield, IndianRupee, Signal, Wifi, Battery, Sun, Moon, Globe, User, LogIn, Star, MapPin, Clock, Bike, Phone, Share2, Siren, Send, ScanLine, NotebookText, Banknote, Sparkles, PiggyBank, HeartHandshake, CircleHelp, Hand, Briefcase, Home, MessageSquare } from 'lucide-react'
+import { ArrowRight, Car, Wrench, Ambulance, Landmark, CheckCircle, Shield, IndianRupee, Signal, Wifi, Battery, Sun, Moon, Globe, User, LogIn, Star, MapPin, Clock, Bike, Phone, Share2, Siren, Send, ScanLine, NotebookText, Banknote, Sparkles, PiggyBank, HeartHandshake, CircleHelp, Hand, Briefcase, Home, MessageSquare, Calendar } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
@@ -47,7 +47,7 @@ const cprData = [
     value: 'cure',
     icon: Ambulance,
     title: 'Safety with CURE',
-    description: "In an emergency, every second counts. Our integrated ambulance dispatch system connects you to the nearest partner hospital for life-saving support.",
+    description: "In an emergency, every second counts. Our integrated ambulance dispatch and doctor appointment system connects you to the nearest partner hospital.",
     color: 'bg-red-500/10',
     textColor: 'text-red-600'
   },
@@ -79,9 +79,9 @@ const whyCabziFeatures = [
         description: "No hidden charges, no unpredictable surge pricing. Know your fare before you book, every time."
     },
     {
-        icon: MessageSquare,
-        title: "24/7 Support",
-        description: "Our support team and AI assistants are always available to help you with any issue, any time."
+        icon: Calendar,
+        title: "Doctor Appointments",
+        description: "Your health is a priority. Book appointments with specialists at our partner hospitals directly through the app."
     }
 ]
 

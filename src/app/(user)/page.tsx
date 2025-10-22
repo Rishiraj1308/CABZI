@@ -3,7 +3,7 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
-import { Car, Wrench, Ambulance } from 'lucide-react'
+import { Car, Wrench, Ambulance, Calendar } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import dynamic from 'next/dynamic'
 import { useFirestore } from '@/firebase/client-provider'
@@ -14,6 +14,7 @@ import EmergencyButtons from '@/components/EmergencyButtons'
 import LocationSelector from '@/components/location-selector'
 import RideStatus from '@/components/ride-status'
 import type { RideData, AmbulanceCase, GarageRequest } from '@/lib/types'
+import { useRouter } from 'next/navigation'
 
 const LiveMap = dynamic(() => import('@/components/live-map'), { 
     ssr: false,
@@ -46,6 +47,7 @@ export default function UserPage() {
     const { session } = useUser();
     const db = useFirestore();
     const { toast } = useToast()
+    const router = useRouter();
 
     const resetFlow = useCallback(() => {
         setView('selection');
@@ -112,23 +114,25 @@ export default function UserPage() {
                 <h2 className="text-3xl font-bold tracking-tight">How can we help you?</h2>
                 <p className="text-muted-foreground">Choose a service to get started.</p>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <MotionDiv layoutId="path-card">
-                    <Card className="hover:border-primary hover:shadow-lg transition-all cursor-pointer text-center" onClick={() => setView('path')}>
-                        <CardHeader><Car className="w-12 h-12 text-primary mx-auto"/> <CardTitle className="pt-2">Book a Ride</CardTitle></CardHeader>
-                        <CardContent><p className="text-sm text-muted-foreground">Book a Bike, Auto, or Cab instantly.</p></CardContent>
+                    <Card className="hover:border-primary hover:shadow-lg transition-all cursor-pointer text-center h-full" onClick={() => setView('path')}>
+                        <CardHeader><Car className="w-10 h-10 text-primary mx-auto"/> <CardTitle className="pt-2 text-base">Book a Ride</CardTitle></CardHeader>
                     </Card>
                 </MotionDiv>
                  <MotionDiv layoutId="cure-card">
-                    <Card className="hover:border-red-500 hover:shadow-lg transition-all cursor-pointer text-center" onClick={() => setView('cure')}>
-                        <CardHeader><Ambulance className="w-12 h-12 text-red-500 mx-auto"/> <CardTitle className="pt-2">Cure Service</CardTitle></CardHeader>
-                        <CardContent><p className="text-sm text-muted-foreground">Request an ambulance for emergencies.</p></CardContent>
+                    <Card className="hover:border-red-500 hover:shadow-lg transition-all cursor-pointer text-center h-full" onClick={() => setView('cure')}>
+                        <CardHeader><Ambulance className="w-10 h-10 text-red-500 mx-auto"/> <CardTitle className="pt-2 text-base">Cure SOS</CardTitle></CardHeader>
+                    </Card>
+                </MotionDiv>
+                 <MotionDiv layoutId="appointment-card">
+                    <Card className="hover:border-blue-500 hover:shadow-lg transition-all cursor-pointer text-center h-full" onClick={() => router.push('/user/appointments')}>
+                        <CardHeader><Calendar className="w-10 h-10 text-blue-500 mx-auto"/> <CardTitle className="pt-2 text-base">Doctor</CardTitle></CardHeader>
                     </Card>
                 </MotionDiv>
                  <MotionDiv layoutId="resq-card">
-                    <Card className="hover:border-amber-500 hover:shadow-lg transition-all cursor-pointer text-center" onClick={() => setView('resq')}>
-                        <CardHeader><Wrench className="w-12 h-12 text-amber-500 mx-auto"/> <CardTitle className="pt-2">ResQ Service</CardTitle></CardHeader>
-                        <CardContent><p className="text-sm text-muted-foreground">Get on-spot help for vehicle trouble.</p></CardContent>
+                    <Card className="hover:border-amber-500 hover:shadow-lg transition-all cursor-pointer text-center h-full" onClick={() => setView('resq')}>
+                        <CardHeader><Wrench className="w-10 h-10 text-amber-500 mx-auto"/> <CardTitle className="pt-2 text-base">ResQ Help</CardTitle></CardHeader>
                     </Card>
                 </MotionDiv>
             </div>
