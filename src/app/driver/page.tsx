@@ -1099,10 +1099,10 @@ export default function DriverDashboard() {
                 </Card>
             </div>
             
-             <Tabs defaultValue="coach" className="flex-1 flex flex-col">
+             <Tabs defaultValue="payments" className="flex-1 flex flex-col">
                 <TabsList className="grid w-full grid-cols-2">
-                    <TabsTrigger value="coach">AI Coach</TabsTrigger>
                     <TabsTrigger value="payments">Quick Payments</TabsTrigger>
+                    <TabsTrigger value="coach" disabled>AI Coach</TabsTrigger>
                 </TabsList>
                 <TabsContent value="coach" className="mt-4 flex-1">
                      <Card className="bg-gradient-to-r from-primary to-primary/80 text-primary-foreground border-none h-full flex flex-col justify-between">
@@ -1192,5 +1192,3 @@ export default function DriverDashboard() {
     </div>
   )
 }
-
-    
