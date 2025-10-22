@@ -1,11 +1,11 @@
 
 'use client'
 
-import { useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { IndianRupee, TrendingUp, PiggyBank, CircleHelp, Landmark, KeyRound, Download, Banknote, Building, Sparkles, Send, ScanLine } from 'lucide-react'
+import { IndianRupee, TrendingUp, PiggyBank, CircleHelp, Landmark, KeyRound, Download, Banknote, Building, Sparkles, Send, ScanLine, QrCode } from 'lucide-react'
 import { Progress } from '@/components/ui/progress'
 import { db } from '@/lib/firebase'
 import { collection, query, where, onSnapshot, doc, getDoc, runTransaction, addDoc, Timestamp, orderBy, updateDoc, serverTimestamp } from 'firebase/firestore'
@@ -53,6 +53,7 @@ export default function WalletPage() {
 
     // PIN Management State
     const [isPinSet, setIsPinSet] = useState(false);
+    const [isPinDialogOpen, setIsPinDialogOpen] = useState(false);
     const [pinStep, setPinStep] = useState(1); // 1: Enter new, 2: Confirm new
     const [newPin, setNewPin] = useState('');
     const [confirmPin, setConfirmPin] = useState('');

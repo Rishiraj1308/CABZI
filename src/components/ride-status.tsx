@@ -103,7 +103,6 @@ export default function RideStatus({
     if (isAmbulanceCase) {
       const caseData = ride as AmbulanceCase;
        switch(caseData.status) {
-            case 'searching':
             case 'pending':
                 return (
                     <div className="text-center py-10">
@@ -313,7 +312,7 @@ export default function RideStatus({
                         <AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle><AlertDialogDescription>This will cancel the current {isGarageRequest ? 'service request' : 'ride'}. This action cannot be undone.</AlertDialogDescription></AlertDialogHeader>
                         <AlertDialogFooter>
                             <AlertDialogCancel>Go Back</AlertDialogCancel>
-                            <AlertDialogAction variant="destructive" onClick={onCancel}>Yes, Cancel</AlertDialogAction>
+                            <AlertDialogAction className="bg-destructive hover:bg-destructive/80" onClick={onCancel}>Yes, Cancel</AlertDialogAction>
                         </AlertDialogFooter>
                     </AlertDialogContent>
                 </AlertDialog>

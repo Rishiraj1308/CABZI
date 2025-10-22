@@ -1,21 +1,21 @@
 
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { CheckCircle, BadgeCheck, Wrench, KeyRound } from 'lucide-react'
-import { useDb, useAuth } from '@/firebase/client-provider'
+import { useDb, useFirebase } from '@/firebase/client-provider'
 import { collection, query, where, getDocs } from 'firebase/firestore'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useToast } from '@/hooks/use-toast'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger, } from "@/components/ui/alert-dialog"
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog"
 import { signInWithPhoneNumber, RecaptchaVerifier, type ConfirmationResult } from 'firebase/auth'
 
 interface ResQPartnerData {
@@ -31,7 +31,7 @@ export default function ResQProfilePage() {
     const [isLoading, setIsLoading] = useState(true);
     const { toast } = useToast();
     const db = useDb();
-    const auth = useAuth();
+    const { auth } = useFirebase();
 
     // PIN Management State
     const [isPinSet, setIsPinSet] = useState(false);

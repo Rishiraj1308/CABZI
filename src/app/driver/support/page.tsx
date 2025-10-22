@@ -4,7 +4,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { LifeBuoy, Phone, Shield, Wrench, Siren, User } from 'lucide-react'
+import { LifeBuoy, Phone, Shield, Wrench, Siren } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import dynamic from 'next/dynamic'
 import { db } from '@/lib/firebase'

@@ -4,7 +4,7 @@
 import { Toaster } from '@/components/ui/toaster';
 import { useRouter, usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { MotionDiv, AnimatePresence } from '@/components/ui/motion-div';
+import { motion, AnimatePresence } from 'framer-motion';
 import { FirebaseProviderClient } from '@/firebase/client-provider';
 
 // This layout now checks for a single, unified session and redirects if found.
@@ -51,7 +51,7 @@ export default function UnauthenticatedLayout({
   return (
     <FirebaseProviderClient>
       <AnimatePresence mode="wait">
-        <MotionDiv
+        <motion.div
           key={pathname}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -59,7 +59,7 @@ export default function UnauthenticatedLayout({
           transition={{ duration: 0.5 }}
         >
           {children}
-        </MotionDiv>
+        </motion.div>
       </AnimatePresence>
       <Toaster />
     </FirebaseProviderClient>

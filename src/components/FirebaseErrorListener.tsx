@@ -1,8 +1,8 @@
+
 'use client';
 
-import React, { useEffect } from 'react';
-import { errorEmitter } from '@/lib/error-handling';
-import { type FirestorePermissionError } from '@/lib/error-handling';
+import React, { useEffect, ReactNode } from 'react';
+import { errorEmitter, FirestorePermissionError } from '@/lib/error-handling';
 import { useToast } from '@/hooks/use-toast';
 import { CodeBlock } from './code-block';
 import { Alert, AlertDescription, AlertTitle } from './ui/alert';
@@ -24,7 +24,7 @@ export function FirebaseErrorListener() {
                 <AlertCircle className="h-5 w-5" />
                 Firestore: Missing or Insufficient Permissions
             </div>
-        ),
+        ) as unknown as string,
         description: (
           <div className="space-y-4 pt-2">
             <AlertDescription>
@@ -34,7 +34,7 @@ export function FirebaseErrorListener() {
               {JSON.stringify(error.context, null, 2)}
             </CodeBlock>
           </div>
-        ),
+        ) as unknown as ReactNode,
       });
     };
 

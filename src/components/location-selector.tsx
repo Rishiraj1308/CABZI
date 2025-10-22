@@ -79,7 +79,7 @@ export default function LocationSelector({
   const getCoordinates = async (address: string): Promise<{ lat: number; lon: number } | null> => {
       if (!address || address.trim() === "") return null;
       try {
-          const result = await searchPlace(address);
+          const result: any = await searchPlace(address);
           if (result && result.results && result.results.length > 0) return result.results[0].position;
           return null;
       } catch (error) { return null; }
@@ -116,9 +116,9 @@ export default function LocationSelector({
         return;
     }
     
-    setDestination(prev => ({ ...prev, address: destination.address, coords: endCoords }));
+    setDestination(prev => ({ ...prev, coords: endCoords }));
 
-    const routeInfo = await getRoute(startCoords, endCoords);
+    const routeInfo: any = await getRoute(startCoords, endCoords);
     if (!routeInfo || !routeInfo.routes || routeInfo.routes.length === 0) {
         setIsFindingRides(false);
         return;
