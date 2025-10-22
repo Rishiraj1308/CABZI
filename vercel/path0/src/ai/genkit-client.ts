@@ -7,7 +7,7 @@
 
 import { genkit, type GenkitOptions } from 'genkit';
 import { googleAI } from '@genkit-ai/google-genai';
-import { firebase } from '@genkit-ai/firebase/server';
+import { firebase } from '@genkit-ai/firebase';
 
 // Initialize Genkit with the Google AI plugin.
 const genkitOptions: GenkitOptions = {
@@ -19,7 +19,7 @@ const genkitOptions: GenkitOptions = {
   ],
   // Log all traces to the console for debugging.
   // In production, you would want to use a persistent trace store.
-  flowStateStore: 'firebase',
+  // flowStateStore and traceStore are configured within the firebase() plugin now.
 };
 
 export const ai = genkit(genkitOptions);
