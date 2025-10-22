@@ -44,7 +44,7 @@ export default function DoctorAppointmentsPage() {
         
         // This is a mock query for now. In a real app, you'd have an appointments collection
         // For demonstration, we'll keep the mock data filtered by the logged-in doctor's name
-        const mockAppointments = [
+        const mockAppointments: (Appointment & { doctorName: string })[] = [
             { id: 'APT001', patientName: 'Priya Singh', doctorName: 'Dr. Ramesh Sharma', appointmentDate: '2024-09-10', appointmentTime: '11:00 AM', status: 'Confirmed', isRecurring: true },
             { id: 'APT002', patientName: 'Rajesh Verma', doctorName: name, appointmentDate: '2024-09-10', appointmentTime: '02:00 PM', status: 'Completed', isRecurring: false },
             { id: 'APT003', patientName: 'Anita Desai', doctorName: name, appointmentDate: '2024-09-11', appointmentTime: '10:00 AM', status: 'Confirmed', isRecurring: false },
