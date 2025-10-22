@@ -245,6 +245,43 @@ export default function HomePage() {
         </div>
       ),
     },
+    // Slide 4: Doctor Appointment
+    {
+      type: 'doctor',
+      content: (
+        <div className="p-4 h-full flex flex-col">
+            <h3 className="font-bold text-xl mb-3 flex items-center gap-2">
+                <Calendar className="w-5 h-5 text-blue-500" /> Book an Appointment
+            </h3>
+            <div className="space-y-2">
+                <Card className="flex items-center p-2 gap-3 bg-muted">
+                    <Avatar className="w-10 h-10"><AvatarImage src="https://i.pravatar.cc/40?u=doc1" /><AvatarFallback>RS</AvatarFallback></Avatar>
+                    <div className="flex-1">
+                        <p className="font-semibold text-sm">Dr. Ramesh Sharma</p>
+                        <p className="text-xs text-muted-foreground">Cardiology</p>
+                    </div>
+                    <p className="font-bold text-sm">₹1200</p>
+                </Card>
+                <Card className="flex items-center p-2 gap-3 bg-muted ring-2 ring-primary">
+                    <Avatar className="w-10 h-10"><AvatarImage src="https://i.pravatar.cc/40?u=doc2" /><AvatarFallback>PG</AvatarFallback></Avatar>
+                    <div className="flex-1">
+                        <p className="font-semibold text-sm">Dr. Priya Gupta</p>
+                        <p className="text-xs text-muted-foreground">Orthopedics</p>
+                    </div>
+                    <p className="font-bold text-sm">₹1000</p>
+                </Card>
+                <Card className="flex items-center p-2 gap-3 bg-muted">
+                    <Avatar className="w-10 h-10"><AvatarImage src="https://i.pravatar.cc/40?u=doc3" /><AvatarFallback>AV</AvatarFallback></Avatar>
+                    <div className="flex-1">
+                        <p className="font-semibold text-sm">Dr. Alok Verma</p>
+                        <p className="text-xs text-muted-foreground">General Physician</p>
+                    </div>
+                    <p className="font-bold text-sm">₹800</p>
+                </Card>
+            </div>
+        </div>
+      ),
+    },
   ];
 
   return (
@@ -471,3 +508,4 @@ export default function HomePage() {
       </div>
   );
 }
+
