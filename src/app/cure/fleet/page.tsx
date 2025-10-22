@@ -12,7 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { useToast } from '@/hooks/use-toast'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useDb } from '@/firebase/client-provider'
-import { collection, query, onSnapshot, doc, updateDoc, GeoPoint, serverTimestamp, addDoc, getDocs, orderBy, Timestamp, writeBatch, deleteDoc } from 'firebase/firestore'
+import { collection, query, where, onSnapshot, doc, updateDoc, GeoPoint, serverTimestamp, addDoc, getDocs, orderBy, Timestamp, writeBatch, deleteDoc } from 'firebase/firestore'
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
