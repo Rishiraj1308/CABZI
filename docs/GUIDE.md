@@ -14,14 +14,19 @@ The rider's experience is designed to be simple, safe, and reliable.
 - Once confirmed, the nearest **Path Partner (Driver)** is assigned.
 - To start the trip, the rider shares a **4-digit OTP** with the driver.
 
-### Step 2: Requesting Emergency Help (The "Cure" Partner)
-This is the core of the Cabzi safety net.
+### Step 2: Accessing Healthcare (The "Cure" Partner)
+This is the core of the Cabzi safety net, offering a complete healthcare solution.
 
-- **Smart Triage:** In an emergency, the rider opens the app and selects the **severity** of the situation (e.g., "Critical," "Serious," "Non-Critical").
-- **Find Nearest Hospital:** The app automatically detects the rider's location and shows a list of the **nearest verified Cabzi Cure Partners (Hospitals)**, sorted by distance.
-- **One-Click Request:** The rider selects a hospital and confirms the request.
-- **Mission Control Activated:** The request is instantly sent to the selected hospital's **Mission Control Dashboard**.
-- **Ambulance Dispatched:** The hospital accepts the case and dispatches a specific ambulance from their fleet. The rider's app immediately updates to show the **live location of the incoming ambulance**, its ETA, and the paramedic's details, just like a cab ride.
+**A. Emergency SOS:**
+- **Smart Triage:** In an emergency, the rider selects the **severity** of the situation (e.g., "Critical," "Serious," "Non-Critical").
+- **Find Nearest Hospital:** The app automatically finds the nearest verified **Cabzi Cure Partners (Hospitals)**.
+- **One-Click Request:** The rider selects a hospital and confirms the request, which is instantly sent to the hospital's **Mission Control Dashboard**.
+- **Ambulance Dispatched:** The hospital accepts the case and dispatches an ambulance. The rider's app shows the **live location of the incoming ambulance**, its ETA, and the paramedic's details.
+
+**B. Doctor Appointments:**
+- **Find a Doctor:** For non-emergency needs, the rider can browse and search for specialists at partner hospitals.
+- **Book a Slot:** They can view doctor profiles, check their availability, and book a convenient appointment time directly through the app.
+- **Get Confirmation:** The request is sent to the hospital's dashboard, and once confirmed, the appointment is added to the rider's schedule.
 
 ---
 
@@ -48,7 +53,7 @@ The Path Partner's experience is focused on maximizing earnings and providing a 
 
 ## 3. The Cure Partner's Journey (The Hospital)
 
-This is a B2B relationship. The hospital is our partner, using our software to manage their emergency response.
+This is a B2B relationship. The hospital is our partner, using our software to manage their emergency response and patient appointments.
 
 ### Step 1: Professional Onboarding
 - A hospital administrator completes a **multi-step onboarding process**, providing hospital registration details, department information, and uploading necessary compliance documents.
@@ -56,14 +61,13 @@ This is a B2B relationship. The hospital is our partner, using our software to m
 ### Step 2: The Mission Control Dashboard
 - Once verified, the hospital gains access to their **Cabzi Cure Mission Control Dashboard**.
 - **Fleet Management:** They can add, manage, and track their entire ambulance fleet in real-time on a live map.
-- **Bed Availability:** A master toggle allows them to set their "ER Full" or "Beds Available" status, which affects the emergency requests they receive.
+- **Bed Availability:** A master toggle allows them to set their "ER Full" or "Beds Available" status.
+- **Manage Doctors:** They can add doctors to their roster, who then get their own portal to manage schedules.
 
-### Step 3: Handling a Case
-- A new `emergencyCase` appears on their dashboard with the patient's location and severity level.
-- The system may auto-suggest the best ambulance for the job.
-- The hospital staff clicks **"Accept & Dispatch"**.
-- The assigned ambulance's live location is now shared with the patient.
-- Upon reaching the hospital, the case is marked as "Completed".
+### Step 3: Handling a Case or Appointment
+- A new `emergencyCase` or `appointmentRequest` appears on their dashboard.
+- The hospital staff can **"Accept & Dispatch"** an ambulance for emergencies or **"Confirm"** a doctor's appointment.
+- All status updates are reflected in the patient's app in real-time.
 
 ---
 
