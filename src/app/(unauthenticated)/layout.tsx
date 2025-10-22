@@ -1,8 +1,7 @@
-
 'use client'
 
 import { Toaster } from '@/components/ui/toaster';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { MotionDiv, AnimatePresence } from '@/components/ui/motion-div';
 import { FirebaseProviderClient } from '@/firebase/client-provider';
@@ -14,6 +13,7 @@ export default function UnauthenticatedLayout({
   children: React.ReactNode;
 }) {
   const router = useRouter();
+  const pathname = usePathname();
   const [isMounted, setIsMounted] = useState(false);
   const [showChildren, setShowChildren] = useState(false);
 
@@ -29,8 +29,7 @@ export default function UnauthenticatedLayout({
             // Redirect based on the primary role
             if (role) {
                  if (role === 'admin') router.replace('/admin');
-                 else if (role === 'user') router.replace('/user');
-                 else router.replace(`/${role}`); // For driver, mechanic, cure, etc.
+                 else router.replace(`/${role}`); // For user, driver, mechanic, cure, etc.
                  return; // Stop further execution to prevent rendering login page
             }
         } catch (e) {
@@ -52,7 +51,7 @@ export default function UnauthenticatedLayout({
     <FirebaseProviderClient>
       <AnimatePresence mode="wait">
         <MotionDiv
-          key={router.asPath}
+          key={pathname}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
