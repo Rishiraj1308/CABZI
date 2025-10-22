@@ -10,7 +10,7 @@ import { Ambulance, Building, HospitalIcon, LocateFixed, Wrench, ArrowLeft } fro
 import { useToast } from '@/hooks/use-toast';
 import { useFirestore } from '@/firebase/client-provider';
 import { addDoc, collection, serverTimestamp, GeoPoint, getDocs, query, where } from 'firebase/firestore';
-import { useRider } from '@/app/rider/layout'; 
+import { useUser } from '@/app/(user)/layout'; 
 import SearchingIndicator from './ui/searching-indicator';
 import { Card, CardContent } from './ui/card';
 import { useRouter } from 'next/navigation';
@@ -55,7 +55,7 @@ export default function EmergencyButtons({ serviceType, liveMapRef, pickupCoords
   const [isFindingHospitals, setIsFindingHospitals] = useState(false);
   const [selectedHospital, setSelectedHospital] = useState<string | null>(null);
 
-  const { session } = useRider(); 
+  const { session } = useUser(); 
   const db = useFirestore();
   const { toast } = useToast();
 
@@ -179,7 +179,7 @@ export default function EmergencyButtons({ serviceType, liveMapRef, pickupCoords
     }
     const generatedOtp = Math.floor(1000 + Math.random() * 9000).toString();
     const requestData = {
-        driverId: session.userId, // Use rider's ID as the requester
+        driverId: session.userId, // Use user's ID as the requester
         driverName: session.name,
         driverPhone: session.phone,
         issue: selectedIssue,

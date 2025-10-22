@@ -21,40 +21,32 @@ export default function UnauthenticatedLayout({
     setIsMounted(true);
     // A single, unified session for all user types (rider, driver, etc.)
     // Only admin has a truly separate flow.
-    const sessionKeys = ['cabzi-session', 'cabzi-resq-session', 'cabzi-cure-session', 'cabzi-ambulance-session'];
-    let loggedIn = false;
+    const session = localStorage.getItem('cabzi-session');
 
-    for (const key of sessionKeys) {
-        const session = localStorage.getItem(key);
-        if (session) {
-            try {
-                const { role, adminRole } = JSON.parse(session);
-                
-                // Handle admin redirection separately
-                if (role === 'admin' || adminRole) {
-                     router.replace(`/admin`);
-                     loggedIn = true;
-                     break;
-                }
-
-                // All other logged-in users go to the main user dashboard
-                if (role) {
-                    router.replace(`/${role}`);
-                    loggedIn = true;
-                    break;
-                }
-                
-            } catch (e) {
-                // Corrupt session, remove it and continue checking.
-                localStorage.removeItem(key);
+    if (session) {
+        try {
+            const { role, adminRole } = JSON.parse(session);
+            
+            // Handle admin redirection separately
+            if (role === 'admin' || adminRole) {
+                 router.replace(`/admin`);
+                 return;
             }
+
+            // All other logged-in users go to the main user dashboard
+            if (role) {
+                router.replace(`/user`);
+                return;
+            }
+            
+        } catch (e) {
+            // Corrupt session, remove it and show login.
+            localStorage.removeItem('cabzi-session');
         }
     }
     
     // If no valid session is found, show the login/onboarding page.
-    if (!loggedIn) {
-        setShowChildren(true);
-    }
+    setShowChildren(true);
 
   }, [router]);
   
