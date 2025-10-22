@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
-import { Star, CheckCircle, Car, Route, Shield, LifeBuoy, Phone, Sparkles, KeyRound, Clock, Pin, User as UserIcon, QrCode, Send, ScanLine, Wallet, BarChart, Settings, Power, CircleDot, CreditCard, Bot, ChevronsUpDown, AlertCircle, Hand, History, IndianRupee, Eye, Navigation, LocateFixed, HeartHandshake, MessageSquare, Wrench, Ambulance, FileText, PlusCircle, Trash2, Building, Siren } from 'lucide-react'
+import { Star, CheckCircle, Car, Route, Shield, LifeBuoy, Phone, Sparkles, KeyRound, Clock, Pin, User as UserIcon, Send, ScanLine, Wallet, BarChart, Settings, Power, CircleDot, CreditCard, Bot, ChevronsUpDown, AlertCircle, Hand, History, IndianRupee, Eye, Navigation, LocateFixed, HeartHandshake, MessageSquare, Wrench, Ambulance, FileText, PlusCircle, Trash2, Building, Siren, QrCode } from 'lucide-react'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger, } from "@/components/ui/alert-dialog"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription, DialogFooter } from '@/components/ui/dialog'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -16,7 +16,7 @@ import { useToast } from '@/hooks/use-toast'
 import { Skeleton } from '@/components/ui/skeleton'
 import dynamic from 'next/dynamic'
 import { useFirestore, useMessaging } from '@/firebase/client-provider'
-import { collection, query, where, onSnapshot, doc, updateDoc, getDoc, serverTimestamp, GeoPoint, limit, runTransaction, addDoc, arrayUnion, orderBy, Timestamp } from 'firebase/firestore'
+import { collection, query, where, onSnapshot, doc, updateDoc, getDoc, serverTimestamp, GeoPoint, limit, runTransaction, addDoc, arrayUnion, orderBy, Timestamp, FieldValue } from 'firebase/firestore'
 import { useNotifications } from './layout'
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert'
 import { cn } from '@/lib/utils'
@@ -264,8 +264,8 @@ export default function DriverDashboard() {
         if (type === 'new_ride_request' && rideId) {
             const newRide: RideRequest = {
                 id: rideId,
-                pickup: JSON.parse(rideData.pickupLocation),
-                destination: JSON.parse(rideData.destinationLocation),
+                pickup: { address: rideData.pickupAddress, location: JSON.parse(rideData.pickupLocation) },
+                destination: { address: rideData.destinationAddress, location: JSON.parse(rideData.destinationLocation) },
                 fare: parseFloat(rideData.fare),
                 rideType: rideData.rideType,
                 status: "searching",
@@ -874,7 +874,7 @@ export default function DriverDashboard() {
         driverPhone: partnerData.phone,
         issue: selectedIssue,
         location: new GeoPoint(partnerData.currentLocation.lat, partnerData.currentLocation.lon),
-        status: 'pending',
+        status: 'pending' as GarageRequest['status'],
         otp: generatedOtp,
         createdAt: serverTimestamp(),
     };
@@ -1174,3 +1174,17 @@ export default function DriverDashboard() {
     </div>
   )
 }
+
+```
+- src/firebase/errors.ts:
+```ts
+// This file is intentionally left blank to prevent client-side Firebase initialization.
+// The app will now rely on server-side actions and APIs instead of direct client-to-Firebase connections.
+export {};
+```
+- src/lib/firebase-functions.ts:
+```ts
+// This file is intentionally left blank.
+// All server-side logic has been moved to the `functions` directory.
+export {};
+```
