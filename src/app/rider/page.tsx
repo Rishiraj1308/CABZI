@@ -4,92 +4,26 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card'
-import { HeartHandIcon } from '@/components/icons'
-import { Star, Phone, LocateFixed, Shield, LifeBuoy, Share2, MapPin, ArrowRight, ArrowLeft, Wrench, Ambulance, Car } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { ArrowLeft, Car, Wrench, Ambulance, MapPin } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import dynamic from 'next/dynamic'
-import { Input } from '@/components/ui/input'
 import { useFirestore } from '@/firebase/client-provider'
 import { collection, addDoc, serverTimestamp, doc, GeoPoint, query, where, getDocs, updateDoc, getDoc } from 'firebase/firestore'
-import { Skeleton } from '@/components/ui/skeleton'
 import { useRider } from './layout'
 import { MotionDiv, AnimatePresence } from '@/components/ui/motion-div'
-import SearchingIndicator from '@/components/ui/searching-indicator'
-import { getRoute, searchPlace } from '@/lib/tomtom'
 import EmergencyButtons from '@/components/EmergencyButtons'
 import LocationSelector from '@/components/location-selector'
-
+import RideStatus from '@/components/ride-status'
+import type { RideData, AmbulanceCase, GarageRequest } from '@/lib/types'
 
 const LiveMap = dynamic(() => import('@/components/live-map'), { 
     ssr: false,
     loading: () => <div className="w-full h-full bg-muted flex items-center justify-center"><p>Loading Map...</p></div>
 });
-const RideStatus = dynamic(() => import('@/components/ride-status'), { ssr: false });
-
-// Interfaces remain largely the same, but we add more for new services
-interface RideTypeInfo {
-    name: string;
-    description: string;
-    icon: React.ElementType;
-    eta: string;
-    fare: string;
-    fareDetails?: { base: number; perKm: number; serviceFee: number; total: number; }
-}
 
 interface LocationWithCoords {
     address: string;
     coords: { lat: number; lon: number; } | null;
-}
-
-export interface RideData {
-    id: string;
-    pickup: { address: string; location: { latitude: number; longitude: number; } };
-    destination: { address: string; location: { latitude: number; longitude: number; } };
-    status: "searching" | "accepted" | "in-progress" | "completed" | "cancelled_by_driver" | "cancelled_by_rider" | "payment_pending";
-    otp?: string;
-    driverDetails?: { name: string; vehicle: string; rating: number; photoUrl: string; phone: string; };
-    driverEta?: number | null;
-    fare?: number;
-}
-
-export interface AmbulanceCase {
-    id: string;
-    caseId: string;
-    riderId: string;
-    riderName: string;
-    phone: string;
-    location: GeoPoint;
-    status: 'pending' | 'accepted' | 'onTheWay' | 'arrived' | 'inTransit' | 'completed' | 'cancelled_by_rider' | 'cancelled_by_partner';
-    otp?: string;
-    assignedPartner?: { id: string; name: string; phone: string; ambulanceName?: string; photoUrl?: string; } | null;
-    partnerEta?: number | null;
-    partnerLocation?: GeoPoint | null;
-    hospitalEta?: number | null;
-    severity?: 'Non-Critical' | 'Serious' | 'Critical';
-}
-
-interface GarageRequest {
-    id: string;
-    status: 'pending' | 'accepted' | 'in_progress' | 'completed' | 'cancelled_by_driver' | 'cancelled_by_mechanic';
-    mechanicName?: string;
-    mechanicPhone?: string;
-    eta?: number;
-    partnerLocation?: GeoPoint | null;
-}
-
-const initialRideTypes: RideTypeInfo[] = [
-    { name: 'Bike', description: 'Quick and affordable for solo trips', icon: 'bike', eta: '...', fare: '...' },
-    { name: 'Auto', description: 'The classic three-wheeler for city travel', icon: 'auto', eta: '...', fare: '...' },
-    { name: 'Cab (Lite)', description: 'Affordable sedans for everyday rides', icon: 'cab', eta: '...', fare: '...' },
-    { name: 'Cabzi Pink', description: 'A safe ride option exclusively for women, with women partners.', icon: HeartHandIcon, eta: '...', fare: '...' },
-]
-
-const fareConfig: {[key: string]: { base: number, perKm: number, serviceFee: number }} = {
-    'Bike': { base: 20, perKm: 5, serviceFee: 0 },
-    'Auto': { base: 30, perKm: 8, serviceFee: 0 }, 
-    'Cab (Lite)': { base: 40, perKm: 10, serviceFee: 20 },
-    'Cabzi Pink': { base: 50, perKm: 12, serviceFee: 30 },
 }
 
 type ServiceView = 'selection' | 'path' | 'cure' | 'resq';
@@ -98,12 +32,9 @@ export default function RiderPage() {
     const [view, setView] = useState<ServiceView>('selection');
     
     // States for PATH service
-    const [selectedRide, setSelectedRide] = useState('Cab (Lite)')
-    const [rideTypes, setRideTypes] = useState<RideTypeInfo[]>(initialRideTypes)
     const [pickup, setPickup] = useState<LocationWithCoords>({ address: '', coords: null });
     const [destination, setDestination] = useState<LocationWithCoords>({ address: '', coords: null });
-    const [currentUserLocation, setCurrentUserLocation] = useState<{ lat: number, lon: number } | null>(null);
-    const [isFindingRides, setIsFindingRides] = useState(false);
+    const [currentUserLocation, setCurrentUserLocation] = useState<{ lat: number; lon: number } | null>(null);
     const [activeRide, setActiveRide] = useState<RideData | null>(null);
     const [routeGeometry, setRouteGeometry] = useState<any>(null);
 
@@ -112,11 +43,24 @@ export default function RiderPage() {
     const [activeGarageRequest, setActiveGarageRequest] = useState<GarageRequest | null>(null);
     const [isRequestingSos, setIsRequestingSos] = useState(false);
 
-
     const liveMapRef = useRef<any>(null);
     const { session } = useRider();
     const db = useFirestore();
     const { toast } = useToast()
+
+    const resetFlow = useCallback(() => {
+        setView('selection');
+        setActiveRide(null);
+        setActiveAmbulanceCase(null);
+        setActiveGarageRequest(null);
+        setRouteGeometry(null);
+        setPickup({ address: '', coords: null });
+        setDestination({ address: '', coords: null });
+        setIsRequestingSos(false);
+        localStorage.removeItem('activeRideId');
+        localStorage.removeItem('activeGarageRequestId');
+    }, []);
+
 
     useEffect(() => {
         const checkActiveServices = async () => {
@@ -130,142 +74,33 @@ export default function RiderPage() {
                 if (docSnap.exists() && !['completed', 'cancelled_by_driver', 'cancelled_by_rider'].includes(docSnap.data().status)) {
                     setActiveRide({ id: docSnap.id, ...docSnap.data() } as RideData);
                     setView('path'); // Switch view to path if active ride found
+                    return; // Prioritize active ride
                 } else {
                     localStorage.removeItem('activeRideId');
                 }
             }
 
             // Check for active ambulance case
-            const q = query(collection(db, "emergencyCases"), where("riderId", "==", session.userId), where("status", "in", ["pending", "accepted", "onTheWay", "arrived", "inTransit"]));
-            const caseSnapshot = await getDocs(q);
+            const qCure = query(collection(db, "emergencyCases"), where("riderId", "==", session.userId), where("status", "in", ["pending", "accepted", "onTheWay", "arrived", "inTransit"]));
+            const caseSnapshot = await getDocs(qCure);
              if (!caseSnapshot.empty) {
                 const caseDoc = caseSnapshot.docs[0];
                 setActiveAmbulanceCase({ id: caseDoc.id, ...caseDoc.data() } as AmbulanceCase);
-                setView('cure'); // Switch view to cure if active case found
+                setView('cure');
+                return;
              }
         };
         checkActiveServices();
     }, [db, session]);
 
-    const handleGetRideInfo = async () => {
-        if (!destination.address) {
-            toast({ variant: 'destructive', title: 'Error', description: 'Please enter a destination.' });
-            return;
-        }
-        
-        setIsFindingRides(true);
-        setRideTypes(initialRideTypes);
-        setRouteGeometry(null);
-        
-        let startCoords = pickup.coords;
-        if (!startCoords) {
-            if (currentUserLocation) {
-                startCoords = currentUserLocation;
-                if (liveMapRef.current) {
-                    const address = await liveMapRef.current.getAddress(startCoords.lat, startCoords.lon);
-                    setPickup({ address: address || 'Current Location', coords: startCoords });
-                }
-            } else {
-                 toast({ variant: 'destructive', title: 'Location Error', description: 'Could not determine your location.' });
-                 setIsFindingRides(false);
-                 return;
-            }
-        }
-
-        const endCoords = destination.coords || (await getCoordinates(destination.address));
-        if (!startCoords || !endCoords) {
-            setIsFindingRides(false);
-            return;
-        }
-        
-        setDestination(prev => ({ ...prev, address: destination.address, coords: endCoords }));
-
-        const routeInfo = await getRoute(startCoords, endCoords);
-        if (!routeInfo || !routeInfo.routes || routeInfo.routes.length === 0) {
-            setIsFindingRides(false);
-            return;
-        }
-        
-        const { distance, geometry } = routeInfo;
-        setRouteGeometry(geometry);
-        
-        const updatedRideTypes = initialRideTypes.map(rt => {
-            if (rt.name === 'Cabzi Pink' && session?.gender !== 'female') {
-                return { ...rt, fare: 'N/A', eta: 'N/A' };
-            }
-            const config = fareConfig[rt.name];
-            if (!config) return { ...rt };
-            
-            const calculatedFare = config.base + (config.perKm * distance) + config.serviceFee;
-            const totalFare = Math.round(calculatedFare / 5) * 5;
-            
-            return { ...rt, fare: `₹${totalFare}`, fareDetails: { ...config, total: totalFare } };
-        });
-        
-        setRideTypes(updatedRideTypes);
-        setIsFindingRides(false);
-    }
-    
-    const getCoordinates = async (address: string): Promise<{ lat: number; lon: number } | null> => {
-        if (!address || address.trim() === "") return null;
-        try {
-            const result = await searchPlace(address);
-            if (result && result.results && result.results.length > 0) return result.results[0].position;
-            return null;
-        } catch (error) { return null; }
-    };
-
     const handleLocationFound = useCallback((address: string, coords: { lat: number, lon: number }) => {
-        setPickup({ address, coords });
         setCurrentUserLocation(coords);
-    }, []);
+        if (!pickup.address) { // Only set pickup if it's not already set by the user
+           setPickup({ address, coords });
+        }
+    }, [pickup.address]);
 
-    const resetFlow = () => {
-        setView('selection');
-        setActiveRide(null);
-        setActiveAmbulanceCase(null);
-        setActiveGarageRequest(null);
-        setRouteGeometry(null);
-        setPickup({ address: '', coords: null });
-        setDestination({ address: '', coords: null });
-        setIsRequestingSos(false);
-        localStorage.removeItem('activeRideId');
-        localStorage.removeItem('activeGarageRequestId');
-    };
     
-    const handleConfirmRide = async () => {
-        if (!pickup.coords || !destination.coords || !session || !db) return;
-        
-        const selectedRideInfo = rideTypes.find(rt => rt.name === selectedRide);
-        if (!selectedRideInfo?.fareDetails) {
-            toast({ variant: 'destructive', title: 'Error', description: 'Could not get ride fare details.' });
-            return;
-        }
-
-        const generatedOtp = Math.floor(1000 + Math.random() * 9000).toString();
-        const rideData = {
-            riderId: session.phone,
-            riderName: session.name,
-            riderGender: session.gender,
-            pickup: { address: pickup.address, location: new GeoPoint(pickup.coords.lat, pickup.coords.lon) },
-            destination: { address: destination.address, location: new GeoPoint(destination.coords.lat, destination.coords.lon) },
-            rideType: selectedRide,
-            status: 'searching' as const,
-            fare: selectedRideInfo.fareDetails.total,
-            otp: generatedOtp,
-            createdAt: serverTimestamp(),
-        };
-
-        try {
-            const docRef = await addDoc(collection(db, 'rides'), rideData);
-            setActiveRide({ id: docRef.id, ...rideData } as RideData);
-            localStorage.setItem('activeRideId', docRef.id);
-        } catch (error) {
-            console.error("Error creating ride:", error);
-            toast({ variant: 'destructive', title: 'Booking Failed' });
-        }
-    };
-
     const renderSelectionScreen = () => (
         <MotionDiv initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-4 md:p-6 space-y-6">
             <div className="text-center">
@@ -290,7 +125,7 @@ export default function RiderPage() {
     );
 
     const renderPathScreen = () => {
-         if (activeRide) {
+        if (activeRide) {
             return (
                 <div className="p-1">
                     <RideStatus ride={activeRide} onCancel={resetFlow} onDone={resetFlow} />
@@ -304,6 +139,10 @@ export default function RiderPage() {
                 destination={destination}
                 setDestination={setDestination}
                 onBack={() => { setView('selection'); setRouteGeometry(null); }}
+                setActiveRide={setActiveRide}
+                setRouteGeometry={setRouteGeometry}
+                currentUserLocation={currentUserLocation}
+                liveMapRef={liveMapRef}
             />
         );
     }

@@ -58,7 +58,7 @@ const handleRideDispatch = async (rideData: any, rideId: string) => {
     const partnersSnapshot = await partnersQuery.get();
     
     if (partnersSnapshot.empty) {
-        console.log('No online partners found for the ride criteria.');
+        console.log(`No online partners found for ride type: ${rideData.rideType}.`);
         await db.doc(`rides/${rideId}`).update({ status: 'no_drivers_available' });
         return;
     }
