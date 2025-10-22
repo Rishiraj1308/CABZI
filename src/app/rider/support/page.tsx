@@ -82,7 +82,7 @@ export default function RiderSupportPage() {
                     <LifeBuoy className="w-8 h-8 text-primary" /> 
                     Help & Support
                 </h2>
-                <p className="text-muted-foreground">We're here to help you with any issues.</p>
+                <p className="text-muted-foreground">We&apos;re here to help you with any issues.</p>
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-fade-in">

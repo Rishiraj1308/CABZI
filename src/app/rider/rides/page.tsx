@@ -42,7 +42,7 @@ export default function MyRidesPage() {
 
         {recentTrips.length === 0 && (
             <Card className="h-48 flex items-center justify-center">
-                <p className="text-muted-foreground">You haven't taken any rides yet.</p>
+                <p className="text-muted-foreground">You haven&apos;t taken any rides yet.</p>
             </Card>
         )}
     </div>

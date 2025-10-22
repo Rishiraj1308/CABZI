@@ -154,8 +154,7 @@ export default function ResQDashboard() {
     checkActiveJob();
 
     return () => unsubscribe();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [toast]);
 
    // Effect for the request countdown timer
    useEffect(() => {

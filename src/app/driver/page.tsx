@@ -1150,7 +1150,7 @@ export default function DriverDashboard() {
             <DialogContent className="max-w-xs">
                 <DialogHeader>
                     <DialogTitle>Enter PIN to View</DialogTitle>
-                    <DialogDescription>For your privacy, please enter your PIN to see today's earnings.</DialogDescription>
+                    <DialogDescription>For your privacy, please enter your PIN to see today&apos;s earnings.</DialogDescription>
                 </DialogHeader>
                 <div className="flex flex-col items-center justify-center gap-4 py-4">
                     <Label htmlFor="pin-input-earnings" className="sr-only">Enter PIN</Label>
@@ -1174,5 +1174,3 @@ export default function DriverDashboard() {
     </div>
   )
 }
-
-    
