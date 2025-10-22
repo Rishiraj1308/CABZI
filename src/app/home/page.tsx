@@ -5,7 +5,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import BrandLogo, { NewLogoIcon } from '@/components/brand-logo'
-import { ArrowRight, Car, Wrench, Ambulance, Landmark, CheckCircle, Shield, IndianRupee, Signal, Wifi, Battery, Sun, Moon, Globe, User, LogIn, Star, MapPin, Clock, Bike, Phone, Share2, Siren, Send, ScanLine, NotebookText, Banknote, Sparkles, PiggyBank, HeartHandshake, CircleHelp, Hand, Briefcase, Home, MessageSquare, Calendar, Building } from 'lucide-react'
+import { ArrowRight, Car, Wrench, Ambulance, Landmark, CheckCircle, Shield, IndianRupee, Signal, Wifi, Battery, Sun, Moon, Globe, User, LogIn, Star, MapPin, Clock, Bike, Phone, Share2, Siren, Send, ScanLine, NotebookText, Banknote, Sparkles, PiggyBank, HeartHandshake, CircleHelp, Hand, Briefcase, Home, MessageSquare, Calendar, Building, BrainCircuit } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
@@ -455,7 +455,8 @@ export default function HomePage() {
                             <CardContent className="space-y-3">
                                 <p className="flex items-start gap-2"><CheckCircle className="w-5 h-5 text-green-500 mt-0.5 shrink-0" /> <span><span className="font-semibold">Fair & Transparent Fares:</span> No random surge pricing. Ever.</span></p>
                                 <p className="flex items-start gap-2"><CheckCircle className="w-5 h-5 text-green-500 mt-0.5 shrink-0" /> <span><span className="font-semibold">Unmatched Safety:</span> An integrated CURE network for real emergencies.</span></p>
-                                <p className="flex items-start gap-2"><CheckCircle className="w-5 h-5 text-green-500 mt-0.5 shrink-0" /> <span><span className="font-semibold">Reliable Service:</span> Happy, respected partners mean fewer cancellations.</span></p>
+                                <p className="flex items-start gap-2"><CheckCircle className="w-5 h-5 text-green-500 mt-0.5 shrink-0" /> <span><span className="font-semibold">Professional Service:</span> Happy, respected partners provide better service and well-maintained vehicles.</span></p>
+                                <p className="flex items-start gap-2"><CheckCircle className="w-5 h-5 text-green-500 mt-0.5 shrink-0" /> <span><span className="font-semibold">Reliable Rides:</span> Our driver-first model means fewer cancellations and more reliability.</span></p>
                             </CardContent>
                         </Card>
                          <Card className="ring-2 ring-primary border-primary shadow-lg">
@@ -466,6 +467,7 @@ export default function HomePage() {
                                 <p className="flex items-start gap-2"><CheckCircle className="w-5 h-5 text-green-500 mt-0.5 shrink-0" /> <span><span className="font-semibold">Just ONE Monthly Recharge:</span> No commission, no hidden fees. Get unlimited rides for a price you can't even imagine.</span></p>
                                 <p className="flex items-start gap-2"><CheckCircle className="w-5 h-5 text-green-500 mt-0.5 shrink-0" /> <span><span className="font-semibold">Stop Losing Money:</span> Other apps take ₹200-300 from your ₹1000 earning. With Cabzi, you keep the whole ₹1000.</span></p>
                                 <p className="flex items-start gap-2"><CheckCircle className="w-5 h-5 text-green-500 mt-0.5 shrink-0" /> <span><span className="font-semibold">True Financial Security:</span> Access instant loans and high-interest savings via Cabzi Bank.</span></p>
+                                <p className="flex items-start gap-2"><CheckCircle className="w-5 h-5 text-green-500 mt-0.5 shrink-0" /> <span><span className="font-semibold">Respect & Dignity:</span> You are our partner, not just a number on a screen. We are committed to your growth and well-being.</span></p>
                             </CardContent>
                         </Card>
                          <Card>
@@ -473,8 +475,9 @@ export default function HomePage() {
                                 <CardTitle className="flex items-center gap-2"><Building /> For the City</CardTitle>
                             </CardHeader>
                             <CardContent className="space-y-3">
-                                <p className="flex items-start gap-2"><CheckCircle className="w-5 h-5 text-green-500 mt-0.5 shrink-0" /> <span><span className="font-semibold">Smarter Emergency Response:</span> Digitizing hospital dispatch saves critical time.</span></p>
+                                <p className="flex items-start gap-2"><CheckCircle className="w-5 h-5 text-green-500 mt-0.5 shrink-0" /> <span><span className="font-semibold">Smarter Emergency Response:</span> Digitizing hospital dispatch saves critical "Golden Hour" time.</span></p>
                                 <p className="flex items-start gap-2"><CheckCircle className="w-5 h-5 text-green-500 mt-0.5 shrink-0" /> <span><span className="font-semibold">Economic Empowerment:</span> More earnings for drivers means more money flowing into the local economy.</span></p>
+                                <p className="flex items-start gap-2"><CheckCircle className="w-5 h-5 text-green-500 mt-0.5 shrink-0" /> <span><span className="font-semibold">Data-Driven Urban Planning:</span> Our integrated data can help city planners identify and solve mobility and safety challenges.</span></p>
                                 <p className="flex items-start gap-2"><CheckCircle className="w-5 h-5 text-green-500 mt-0.5 shrink-0" /> <span><span className="font-semibold">A Safer Urban Fabric:</span> A connected, reliable network for travel and emergencies.</span></p>
                             </CardContent>
                         </Card>
@@ -559,3 +562,4 @@ export default function HomePage() {
       </div>
   );
 }
+
