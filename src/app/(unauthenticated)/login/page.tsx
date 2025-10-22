@@ -173,7 +173,7 @@ export default function LoginPage() {
             if (role === 'cure') localStorageKey = 'cabzi-cure-session';
             if (role === 'ambulance') localStorageKey = 'cabzi-ambulance-session';
             if (role === 'doctor') localStorageKey = 'cabzi-doctor-session';
-            if (role === 'user') redirectPath = '/rider'; // a 'user' is a 'rider'
+            if (role === 'user') redirectPath = '/user'; // a 'user' is a 'user'
 
             localStorage.setItem(localStorageKey, JSON.stringify(sessionData));
             
@@ -183,8 +183,8 @@ export default function LoginPage() {
         }
     }
     
-    // If not found anywhere, it must be a new rider/user.
-    // We only allow new user creation through the rider/user flow.
+    // If not found anywhere, it must be a new user/user.
+    // We only allow new user creation through the user/user flow.
     if (roleFromQuery === 'rider' || roleFromQuery === 'user') {
         setStep('details');
         return true; 
@@ -255,7 +255,7 @@ export default function LoginPage() {
   
           localStorage.setItem('cabzi-session', JSON.stringify({ role: 'user', email, name, gender, userId: user.uid }));
           toast({ title: "Account Created!", description: "Welcome to Cabzi! Redirecting...", className: "bg-green-600 text-white border-green-600" });
-          router.push('/rider');
+          router.push('/user');
   
       } catch (error: any) {
           console.error("Error creating new user:", error);
@@ -291,7 +291,7 @@ export default function LoginPage() {
       if (roleFromQuery === 'admin') return 'Admin Panel'
       if (step === 'details') return 'Create Your Account'
       if (isPartnerFlow) return 'Partner Login'
-      return 'Rider Login or Signup'
+      return 'User Login or Signup'
   };
   
   const getPageDescription = () => {
@@ -429,7 +429,7 @@ export default function LoginPage() {
                         <p>Want to partner with us? <Link href="/partner-hub" className="underline text-primary">Become a Partner</Link></p>
                     )}
                     {isPartnerFlow && (
-                        <p>Looking for a ride? <Link href="/login?role=rider" className="underline text-primary" onClick={() => setStep('login')}>Login as a Rider</Link></p>
+                        <p>Looking for a ride? <Link href="/login?role=rider" className="underline text-primary" onClick={() => setStep('login')}>Login as a User</Link></p>
                     )}
                     {roleFromQuery !== 'admin' && (
                          <p>
@@ -444,3 +444,5 @@ export default function LoginPage() {
       </div>
   );
 }
+
+    
