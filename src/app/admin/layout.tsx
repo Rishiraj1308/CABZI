@@ -67,16 +67,16 @@ export default function AdminLayout({
             try {
                 const parsedSession = JSON.parse(session);
                 if(parsedSession.role !== 'admin') {
-                    router.push('/');
+                    router.push('/login?role=admin');
                     return;
                 }
                 setAdminName(parsedSession.name);
                 setAdminRole(parsedSession.adminRole);
             } catch(e) {
-                router.push('/');
+                router.push('/login?role=admin');
             }
         } else {
-            router.push('/');
+            router.push('/login?role=admin');
         }
     }
   }, [router]);
