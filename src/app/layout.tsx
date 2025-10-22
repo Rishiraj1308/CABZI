@@ -6,7 +6,6 @@ import { cn } from '@/lib/utils'
 import { ThemeProvider } from '@/components/theme-provider'
 import { LanguageProvider } from '@/hooks/use-language'
 import { FirebaseProviderClient } from '@/firebase/client-provider'
-import { ClientSessionProvider } from '@/components/client-session-provider'
 
 const fontSans = Inter({
   subsets: ["latin"],
@@ -45,9 +44,7 @@ export default function RootLayout({
         >
             <LanguageProvider>
               <FirebaseProviderClient>
-                <ClientSessionProvider>
                   {children}
-                </ClientSessionProvider>
               </FirebaseProviderClient>
             </LanguageProvider>
         </ThemeProvider>

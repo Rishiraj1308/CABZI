@@ -28,8 +28,6 @@ import {
 } from "@/components/ui/alert-dialog"
 import { useFirebase } from '@/firebase/client-provider';
 import { doc, updateDoc } from 'firebase/firestore';
-import { useUser } from '@/components/client-session-provider';
-
 
 const navItems = [
     { href: '/user', label: 'Services', icon: Home, comingSoon: false },
@@ -69,17 +67,24 @@ export default function UserLayout({
   const router = useRouter();
   const { toast } = useToast();
   
-  const { session, isLoading: isAuthLoading } = useUser();
-  const { auth, db } = useFirebase();
+  const [session, setSession] = useState<any | null>(null);
+  const { user, isUserLoading, db, auth } = useFirebase();
 
   useEffect(() => {
     setIsMounted(true);
-    if (!isAuthLoading && !session) {
+    if (!isUserLoading && !user) {
       if (window.location.pathname.startsWith('/user')) {
         router.push('/login');
       }
     }
-  }, [session, isAuthLoading, router]);
+  }, [user, isUserLoading, router]);
+
+  useEffect(() => {
+    const sessionData = localStorage.getItem('cabzi-session');
+    if (sessionData) {
+      setSession(JSON.parse(sessionData));
+    }
+  }, []);
 
   const handleLogout = () => {
     if (!auth) return;
@@ -99,7 +104,7 @@ export default function UserLayout({
     return names.length > 1 ? names[0][0] + names[1][0] : name.substring(0, 2);
   }
 
-  if (!isMounted || isAuthLoading || !session) {
+  if (!isMounted || isUserLoading || !session) {
     return null; // Or a loading spinner
   }
   

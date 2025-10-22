@@ -1,7 +1,7 @@
 
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useContext } from 'react'
 import { Toaster } from "@/components/ui/toaster";
 import { Button } from '@/components/ui/button';
 import { Home, History, Menu, LogOut, Heart, Gift, PanelLeft, Landmark, Sun, Moon, Settings, User, Calendar } from 'lucide-react';
@@ -28,7 +28,6 @@ import {
 } from "@/components/ui/alert-dialog"
 import { useFirebase } from '@/firebase/client-provider';
 import { doc, updateDoc } from 'firebase/firestore';
-import { useUser } from '@/components/client-session-provider';
 
 
 const navItems = [
@@ -69,17 +68,22 @@ export default function RiderLayout({
   const router = useRouter();
   const { toast } = useToast();
   
-  const { session, isLoading: isAuthLoading } = useUser();
-  const { auth, db } = useFirebase();
+  const [session, setSession] = useState<any | null>(null);
+  const { user, isUserLoading, db, auth } = useFirebase();
 
   useEffect(() => {
     setIsMounted(true);
-    if (!isAuthLoading && !session) {
-      if (window.location.pathname.startsWith('/rider')) {
-        router.push('/login?role=rider');
-      }
+    if (!isUserLoading && !user) {
+      router.push('/login?role=rider');
     }
-  }, [session, isAuthLoading, router]);
+  }, [user, isUserLoading, router]);
+
+  useEffect(() => {
+    const sessionData = localStorage.getItem('cabzi-session');
+    if (sessionData) {
+      setSession(JSON.parse(sessionData));
+    }
+  }, []);
 
   const handleLogout = () => {
     if (!auth) return;
@@ -99,7 +103,7 @@ export default function RiderLayout({
     return names.length > 1 ? names[0][0] + names[1][0] : name.substring(0, 2);
   }
 
-  if (!isMounted || isAuthLoading || !session) {
+  if (!isMounted || isUserLoading || !session) {
     return null; // Or a loading spinner
   }
   
