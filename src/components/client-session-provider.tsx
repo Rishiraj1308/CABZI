@@ -15,7 +15,8 @@ export interface UserSession {
   phone: string;
   gender: string;
   userId: string;
-  role: string; // Add role to session
+  role: string;
+  partnerId?: string;
 }
 
 export interface UserContextType {
@@ -28,7 +29,7 @@ export const UserContext = createContext<UserContextType | null>(null);
 export function useUser() {
   const context = useContext(UserContext);
   if (!context) {
-    throw new Error('useUser must be used within a UserLayout or ClientSessionProvider');
+    throw new Error('useUser must be used within a ClientSessionProvider');
   }
   return context;
 }
@@ -62,59 +63,131 @@ export function ClientSessionProvider({
       return;
     }
     
-    const identifierField = phone ? 'phone' : 'email';
-    const identifierValue = phone || email;
-
+    const identifierField = email ? 'email' : 'phone';
+    const identifierValue = email || phone;
+    
     if (!identifierValue) {
         return;
     }
     
-    // Check all relevant collections
-    const collectionsToSearch = ['users', 'partners', 'mechanics', 'ambulances'];
-    let unsubscribe: () => void = () => {};
+    const collectionsToSearch = ['users', 'partners', 'mechanics', 'ambulances', 'ambulanceDrivers', 'doctors'];
+    let unsubscribe: (() => void) | null = null;
 
-    const findUser = async () => {
+    const findUserAndListen = async () => {
         for (const collectionName of collectionsToSearch) {
-            const q = query(collection(db, collectionName), where(identifierField, '==', identifierValue));
+            const q = query(collection(db, collectionName), where(identifierField, "==", identifierValue), limit(1));
             const snapshot = await getDocs(q);
             if (!snapshot.empty) {
                 const userDoc = snapshot.docs[0];
-                const userData = userDoc.data();
-                const userRole = collectionName === 'users' ? 'user' : userData.type || collectionName.slice(0,-1);
+                
+                unsubscribe = onSnapshot(userDoc.ref, (docSnap) => {
+                    if (docSnap.exists()) {
+                        const userData = docSnap.data();
+                        const userRole = collectionName === 'users' ? 'user' : userData.type || collectionName.replace(/s$/, '');
 
-                const sessionData: UserSession = {
-                    phone: userData.phone,
-                    name: userData.name,
-                    gender: userData.gender,
-                    userId: userDoc.id,
-                    role: userRole,
-                };
-                setSession(sessionData);
-                localStorage.setItem('cabzi-session', JSON.stringify(sessionData));
-                userDocRef.current = doc(db, collectionName, userDoc.id);
-                return; // Exit after finding the user
+                        const sessionData: UserSession = {
+                            phone: userData.phone,
+                            name: userData.name,
+                            gender: userData.gender,
+                            userId: userDoc.id,
+                            role: userRole,
+                            partnerId: collectionName !== 'users' ? userDoc.id : undefined,
+                        };
+                        setSession(sessionData);
+                        localStorage.setItem('cabzi-session', JSON.stringify(sessionData));
+                        userDocRef.current = docSnap.ref;
+                    }
+                });
+                return; // Exit after finding the user and setting up listener
             }
         }
-        // If user not found in any collection, they might be new
+        
+        // If user not found in any collection after checking all
         const path = window.location.pathname;
-        if (!path.startsWith('/login') && !path.startsWith('/home') && path !== '/') {
-            auth?.signOut();
-            router.push('/login');
+        if (!path.startsWith('/login') && !path.startsWith('/home') && path !== '/' && !path.startsWith('/partner-hub')) {
+            auth?.signOut().then(() => {
+                localStorage.removeItem('cabzi-session');
+                router.push('/login');
+            });
         }
     };
 
-    findUser();
+    findUserAndListen();
 
-    // Setup snapshot listener if a user is found
-    if(userDocRef.current) {
-        unsubscribe = onSnapshot(userDocRef.current, (doc) => {
-            // Can update session with real-time data if needed
-        });
-    }
-
-    return () => unsubscribe();
+    return () => {
+        if (unsubscribe) {
+            unsubscribe();
+        }
+    };
 
   }, [user, isAuthLoading, db, auth, router]);
+
+   // Effect for location tracking
+  useEffect(() => {
+    if (!session || !db || !userDocRef.current) return;
+    
+    let watchId: number | undefined;
+    let lastSentLocation: { lat: number; lon: number } | null = null;
+    const MIN_DISTANCE_THRESHOLD = 50; // meters
+    const MIN_TIME_THRESHOLD = 30000; // 30 seconds
+    let lastSentTime = 0;
+
+    const getDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
+        const R = 6371e3; // metres
+        const φ1 = lat1 * Math.PI/180;
+        const φ2 = lat2 * Math.PI/180;
+        const Δφ = (lat2-lat1) * Math.PI/180;
+        const Δλ = (lon2-lon1) * Math.PI/180;
+        const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) + Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ/2) * Math.sin(Δλ/2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        return R * c; // in metres
+    }
+
+    if(navigator.geolocation) {
+        watchId = navigator.geolocation.watchPosition(
+            (pos) => {
+                const newLocation = { lat: pos.coords.latitude, lon: pos.coords.longitude };
+                const now = Date.now();
+                if (userDocRef.current) {
+                    const distanceMoved = lastSentLocation ? getDistance(lastSentLocation.lat, lastSentLocation.lon, newLocation.lat, newLocation.lon) : Infinity;
+
+                    if (distanceMoved > MIN_DISTANCE_THRESHOLD || now - lastSentTime > MIN_TIME_THRESHOLD) {
+                        const updateData = {
+                          currentLocation: new GeoPoint(newLocation.lat, newLocation.lon),
+                          lastSeen: serverTimestamp()
+                        };
+                        updateDoc(userDocRef.current, updateData).catch(e => {
+                            const fpe = new FirestorePermissionError({
+                                path: userDocRef.current.path,
+                                operation: 'update',
+                                requestResourceData: updateData
+                            });
+                            errorEmitter.emit('permission-error', fpe);
+                        });
+                        lastSentLocation = newLocation;
+                        lastSentTime = now;
+                    }
+                }
+            },
+            () => {},
+            { enableHighAccuracy: true }
+        );
+    }
+    
+    const handleBeforeUnload = () => {
+        if (userDocRef.current) {
+             const statusField = session.role === 'mechanic' ? 'isAvailable' : 'isOnline';
+             updateDoc(userDocRef.current, { [statusField]: false, currentLocation: null });
+        }
+    };
+    
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    return () => {
+        if (watchId) navigator.geolocation.clearWatch(watchId);
+        window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [session, db]);
 
   return (
       <UserContext.Provider value={{ session, isLoading: isAuthLoading }}>

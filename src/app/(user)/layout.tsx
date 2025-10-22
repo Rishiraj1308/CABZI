@@ -1,7 +1,7 @@
 
 'use client'
 
-import React, { useState, useEffect, useContext } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Toaster } from "@/components/ui/toaster";
 import { Button } from '@/components/ui/button';
 import { Home, History, Menu, LogOut, Heart, Gift, PanelLeft, Landmark, Sun, Moon, Settings, User, Calendar } from 'lucide-react';

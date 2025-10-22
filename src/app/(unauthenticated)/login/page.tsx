@@ -16,7 +16,7 @@ import { Sun, Moon, Globe } from 'lucide-react'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { useFirebase } from '@/firebase/client-provider'
-import { collection, query, where, getDocs, setDoc, doc, serverTimestamp } from 'firebase/firestore'
+import { collection, query, where, getDocs, setDoc, doc, serverTimestamp, limit } from 'firebase/firestore'
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signInWithPhoneNumber, RecaptchaVerifier, type ConfirmationResult, GoogleAuthProvider, signInWithPopup } from 'firebase/auth'
 
 // This now matches the team page data for consistent roles
@@ -143,18 +143,17 @@ export default function LoginPage() {
  const findAndSetSession = async (user: { uid: string; email?: string | null; phoneNumber?: string | null }) => {
     if (!db) return false;
 
-    // Check all partner and user collections.
     const collectionsToSearch = [
-        { name: 'partners', role: 'driver', sessionKey: 'cabzi-driver-session' },
-        { name: 'mechanics', role: 'mechanic', sessionKey: 'cabzi-resq-session' },
-        { name: 'ambulances', role: 'cure', sessionKey: 'cabzi-cure-session' },
-        { name: 'ambulanceDrivers', role: 'ambulance', sessionKey: 'cabzi-ambulance-session'},
-        { name: 'doctors', role: 'doctor', sessionKey: 'cabzi-doctor-session'},
-        { name: 'users', role: 'user', sessionKey: 'cabzi-user-session' }, // General user last
+        { name: 'users', role: 'user' },
+        { name: 'partners', role: 'driver' },
+        { name: 'mechanics', role: 'mechanic' },
+        { name: 'ambulances', role: 'cure' },
+        { name: 'ambulanceDrivers', role: 'ambulance'},
+        { name: 'doctors', role: 'doctor'},
     ];
     
     let userIdentifier: string | undefined;
-    let identifierField: 'email' | 'phone' = user.email ? 'email' : 'phone';
+    let identifierField: 'email' | 'phone' | 'partnerId' = user.email ? 'email' : 'phone';
 
     if (user.email) {
         userIdentifier = user.email;
@@ -164,8 +163,8 @@ export default function LoginPage() {
     
     if (!userIdentifier) return false;
 
-    for (const { name: colName, role, sessionKey } of collectionsToSearch) {
-        const q = query(collection(db, colName), where(identifierField, "==", userIdentifier));
+    for (const { name: colName, role } of collectionsToSearch) {
+        const q = query(collection(db, colName), where(identifierField, "==", userIdentifier), limit(1));
         const snapshot = await getDocs(q);
 
         if (!snapshot.empty) {
@@ -178,12 +177,12 @@ export default function LoginPage() {
                 role: role,
                 phone: userData.phone, 
                 name: userData.name, 
-                partnerId: userDoc.id, 
-                userId: role === 'user' ? userDoc.id : undefined,
-                 hospitalId: userData.hospitalId,
+                partnerId: colName !== 'users' ? userDoc.id : undefined,
+                userId: user.uid,
+                hospitalId: userData.hospitalId,
             };
             
-            localStorage.setItem(sessionKey, JSON.stringify(sessionData));
+            localStorage.setItem('cabzi-session', JSON.stringify(sessionData));
             toast({ title: "Login Successful" });
             router.push(targetRedirect);
             return true;
@@ -283,7 +282,7 @@ export default function LoginPage() {
               isOnline: false,
           });
   
-          localStorage.setItem('cabzi-user-session', JSON.stringify({ role: 'user', email: loginInput, name, gender, userId: user.uid }));
+          localStorage.setItem('cabzi-session', JSON.stringify({ role: 'user', email: loginInput, name, gender, userId: user.uid }));
           toast({ title: "Account Created!", description: "Welcome to Cabzi! Redirecting...", className: "bg-green-600 text-white border-green-600" });
           router.push('/user');
   
@@ -473,5 +472,3 @@ export default function LoginPage() {
       </div>
   );
 }
-
-    
