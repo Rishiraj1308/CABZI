@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState } from 'react';
@@ -51,14 +52,16 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import SearchingIndicator from './ui/searching-indicator';
-import type { RideData, AmbulanceCase } from '@/app/rider/page';
+import type { RideData } from '@/lib/types';
+import type { AmbulanceCase } from '@/lib/types';
+
 
 interface Props {
   ride: RideData | AmbulanceCase | null;
   isGarageRequest?: boolean;
   onCancel: () => void;
   onDone?: () => void;
-  onPayment?: () => void;
+  onPayment?: (paymentMode: 'cash' | 'wallet') => void;
   onEndRide?: () => void;
   rating?: number;
   setRating?: (rating: number) => void;
@@ -81,10 +84,17 @@ export default function RideStatus({
 
   const isAmbulanceCase = 'caseId' in ride;
 
-  const handlePaymentClick = async () => {
+  const handleShareRide = () => {
+    toast({
+        title: "Share Ride Details",
+        description: "This feature will be available soon!",
+    });
+  };
+
+  const handlePaymentClick = async (paymentMode: 'cash' | 'wallet') => {
     setIsPaying(true);
     if (onPayment) {
-      await onPayment();
+      await onPayment(paymentMode);
     }
     setIsPaying(false);
   };
@@ -210,7 +220,7 @@ export default function RideStatus({
             </Card>
             <p className="text-muted-foreground text-sm">Please choose a payment method.</p>
             <div className="grid grid-cols-2 gap-2">
-                <Button size="lg" className="w-full" onClick={handlePaymentClick} disabled={isPaying}>{isPaying ? 'Processing...' : 'Pay from Wallet'}</Button>
+                <Button size="lg" className="w-full" onClick={() => handlePaymentClick('wallet')} disabled={isPaying}>{isPaying ? 'Processing...' : 'Pay from Wallet'}</Button>
                 <Button size="lg" variant="outline" className="w-full" onClick={() => toast({title: "Please pay the driver in cash."})}>Pay with Cash</Button>
             </div>
           </div>
