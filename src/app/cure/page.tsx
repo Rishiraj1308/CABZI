@@ -178,16 +178,15 @@ export default function HospitalMissionControl() {
 
         const fleetRef = collection(db, `ambulances/${partnerId}/fleet`);
         const unsubFleet = onSnapshot(fleetRef, (snapshot) => {
-            const fleetData = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as AmbulanceVehicle));
-            setFleet(fleetData);
+            setFleet(snapshot.docs.map(d => ({ id: d.id, ...d.data() } as AmbulanceVehicle)));
         });
-
-        const driversRef = collection(db, `ambulances/${partnerId}/drivers`);
+        
+        const driversRef = query(collection(db, `ambulances/${partnerId}/drivers`), orderBy('name', 'asc'));
         const unsubDrivers = onSnapshot(driversRef, (snapshot) => {
             setDrivers(snapshot.docs.map(d => ({id: d.id, ...d.data()} as AmbulanceDriver)));
         });
-
-        const doctorsRef = collection(db, `ambulances/${partnerId}/doctors`);
+        
+        const doctorsRef = query(collection(db, `ambulances/${partnerId}/doctors`), orderBy('name', 'asc'));
         const unsubDoctors = onSnapshot(doctorsRef, (snapshot) => {
             setDoctors(snapshot.docs.map(d => ({id: d.id, ...d.data()} as Doctor)));
         });
