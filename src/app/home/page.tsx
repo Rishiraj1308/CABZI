@@ -144,14 +144,19 @@ export default function HomePage() {
     visible: {
       opacity: 1,
       transition: {
-        staggerChildren: 0.2,
+        staggerChildren: 0.1,
+        delayChildren: 0.2,
       },
     },
   };
 
   const itemVariants = {
     hidden: { y: 20, opacity: 0 },
-    visible: { y: 0, opacity: 1 },
+    visible: { 
+        y: 0, 
+        opacity: 1,
+        transition: { type: 'spring', stiffness: 100 }
+    },
   };
   
   const carouselSlides = [
@@ -305,13 +310,14 @@ export default function HomePage() {
 
                     {/* Phone Mockup with Carousel */}
                      <motion.div 
-                        variants={itemVariants} 
+                        initial={{ opacity: 0, y: 50, rotateY: -30, rotateX: 10 }}
+                        animate={{ opacity: 1, y: 0, rotateY: 15, rotateX: 5 }}
+                        transition={{ duration: 0.8, ease: [0.25, 1, 0.5, 1] }}
                         className="relative w-72 h-[620px] lg:w-80 lg:h-[680px] mx-auto mt-16 lg:mt-0"
                         style={{ perspective: '1000px' }}
                     >
                         <div 
                             className="relative w-full h-full bg-background/50 backdrop-blur-md rounded-[3rem] border-[6px] border-neutral-800 dark:border-neutral-700 shadow-2xl ring-1 ring-black/10"
-                            style={{ transform: 'rotateY(15deg) rotateX(5deg)' }}
                         >
                             {/* Inner screen */}
                             <div className="absolute inset-2 bg-background rounded-[2.5rem] overflow-hidden flex flex-col">
@@ -375,14 +381,17 @@ export default function HomePage() {
                            We're rebuilding ride-hailing from the ground up, focusing on what truly matters: fairness and safety.
                         </p>
                     </div>
-                    <div className="mt-16 grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-4">
-                        {whyCabziFeatures.map((feature, i) => (
+                    <motion.div 
+                        className="mt-16 grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-4"
+                        variants={containerVariants}
+                        initial="hidden"
+                        whileInView="visible"
+                        viewport={{ once: true, amount: 0.2 }}
+                    >
+                        {whyCabziFeatures.map((feature) => (
                             <motion.div 
                               key={feature.title}
-                              initial={{ opacity: 0, y: 20 }}
-                              whileInView={{ opacity: 1, y: 0 }}
-                              transition={{ duration: 0.5, delay: i * 0.1 }}
-                              viewport={{ once: true, amount: 0.5 }}
+                              variants={itemVariants}
                             >
                                 <Card className="h-full text-center hover:shadow-xl transition-shadow">
                                     <CardHeader>
@@ -397,7 +406,7 @@ export default function HomePage() {
                                 </Card>
                             </motion.div>
                         ))}
-                    </div>
+                    </motion.div>
                 </div>
             </section>
 
