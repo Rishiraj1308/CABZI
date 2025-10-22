@@ -1,18 +1,13 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  experimental: {
-    appDir: true,
-  },
+  reactStrictMode: true, // optional, but recommended
+  swcMinify: true,       // recommended
   typescript: {
-    // !! WARN !!
-    // Dangerously allow production builds to successfully complete even if
-    // your project has type errors.
-    // !! WARN !!
+    // Optional: Ignore TS errors in production builds
     ignoreBuildErrors: true,
   },
   eslint: {
-    // Warning: This allows production builds to successfully complete even if
-    // your project has ESLint errors.
+    // Optional: Ignore ESLint errors in production builds
     ignoreDuringBuilds: true,
   },
 };
