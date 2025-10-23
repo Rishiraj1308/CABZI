@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button'
 import { useToast } from '@/hooks/use-toast'
 import { Stethoscope, UserPlus, MoreHorizontal, Trash2, BadgeCheck, Clock, Briefcase, Calendar, IndianRupee, Phone, Check, Settings, X, User as UserIcon, FileText as FileTextIcon, Download, GraduationCap, Building, Shield, CircleUser, PhoneCall, Mail, Cake, VenetianSofa, AlertTriangle, UploadCloud } from 'lucide-react'
 import { useDb } from '@/firebase/client-provider'
-import { collection, query, onSnapshot, addDoc, doc, deleteDoc, serverTimestamp, Timestamp, orderBy, writeBatch, getDocs, where, updateDoc, setDoc, limit, collectionGroup } from 'firebase/firestore'
+import { collection, query, onSnapshot, addDoc, doc, deleteDoc, serverTimestamp, Timestamp, orderBy, writeBatch, getDocs, where, updateDoc, setDoc, limit } from 'firebase/firestore'
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
@@ -224,7 +224,10 @@ export default function DoctorsPage() {
 
  const handleAddDoctor = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!db || !hospitalId) return;
+    if (!db || !hospitalId) {
+        toast({ variant: 'destructive', title: 'Error', description: 'Database or hospital information is missing.' });
+        return;
+    }
     setIsSubmitting(true);
 
     const {
@@ -240,10 +243,12 @@ export default function DoctorsPage() {
     }
     
     try {
-        const q = query(collectionGroup(db, 'doctors'), where("phone", "==", phone), limit(1));
+        const globalDoctorsRef = collection(db, 'doctors');
+        const q = query(globalDoctorsRef, where("phone", "==", phone), limit(1));
         const phoneCheck = await getDocs(q);
+
         if (!phoneCheck.empty) {
-            toast({ variant: 'destructive', title: 'Phone Number Exists', description: 'A doctor with this phone number is already registered.' });
+            toast({ variant: 'destructive', title: 'Phone Number Exists', description: 'A doctor with this phone number is already registered across the network.' });
             setIsSubmitting(false);
             return;
         }
@@ -251,10 +256,11 @@ export default function DoctorsPage() {
         const partnerId = `CZD-${phone.slice(-4)}${name.split(' ')[0].slice(0, 2).toUpperCase()}`;
         const password = `cAbZ@${Math.floor(1000 + Math.random() * 9000)}`;
 
-        const doctorDocRef = doc(collection(db, `ambulances/${hospitalId}/doctors`));
+        const batch = writeBatch(db);
         
-        // 1. Create doc with placeholders
-        await setDoc(doctorDocRef, {
+        // Doc in hospital's subcollection
+        const hospitalDoctorDocRef = doc(collection(db, `ambulances/${hospitalId}/doctors`));
+        batch.set(hospitalDoctorDocRef, {
             name, phone, email, gender, dob,
             specialization, qualifications, experience, department, designation,
             medicalRegNo, regCouncil, regYear,
@@ -262,28 +268,38 @@ export default function DoctorsPage() {
             docStatus: 'Pending',
             partnerId, password,
             createdAt: serverTimestamp(),
-            photoUrl: '',
+            photoUrl: '', // Placeholder
         });
+
+        // Doc in global doctors collection for unique checks and future global logins
+        const globalDoctorDocRef = doc(globalDoctorsRef, hospitalDoctorDocRef.id);
+        batch.set(globalDoctorDocRef, {
+            phone: phone,
+            email: email,
+            hospitalId: hospitalId,
+            partnerId: partnerId,
+        });
+
+        await batch.commit();
 
         let photoUrl = '';
         if (photoFile) {
             const storage = getStorage();
-            const photoPath = `doctors/${hospitalId}/${doctorDocRef.id}/photo.jpg`;
+            const photoPath = `doctors/${hospitalId}/${hospitalDoctorDocRef.id}/photo.jpg`;
             const photoRef = ref(storage, photoPath);
             await uploadBytes(photoRef, photoFile);
             photoUrl = await getDownloadURL(photoRef);
+            
+            // Update the photoUrl after upload
+            await updateDoc(hospitalDoctorDocRef, { photoUrl: photoUrl });
         }
-        
-        // 2. Update doc with final URL
-        await updateDoc(doctorDocRef, {
-            photoUrl: photoUrl
-        });
         
         toast({ title: 'Doctor Added', description: `Dr. ${name} has been added. Their credentials are now available.` });
         setIsAddDoctorDialogOpen(false);
         setGeneratedCreds({ id: partnerId, pass: password, role: 'Doctor' });
         setIsCredsDialogOpen(true);
         setNewDoctorData(initialDoctorState);
+        if(photoPreviewUrl) URL.revokeObjectURL(photoPreviewUrl);
         setPhotoPreviewUrl(null);
 
     } catch (error) {
@@ -299,6 +315,9 @@ export default function DoctorsPage() {
     const doctorRef = doc(db, `ambulances/${hospitalId}/doctors`, doctorId);
     try {
       await deleteDoc(doctorRef);
+      // Also delete from the global collection
+      const globalDoctorRef = doc(db, 'doctors', doctorId);
+      await deleteDoc(globalDoctorRef);
       toast({ variant: 'destructive', title: 'Doctor Removed', description: `Dr. ${doctorName} has been removed from the roster.` });
     } catch (error) {
        toast({ variant: 'destructive', title: 'Error', description: 'Could not remove the doctor.' });
@@ -727,3 +746,5 @@ export default function DoctorsPage() {
     </div>
   )
 }
+
+    
