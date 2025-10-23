@@ -449,7 +449,7 @@ export default function DoctorsPage() {
               </div>
               <AlertDialogFooter>
                   <Button variant="outline" onClick={() => {
-                      navigator.clipboard.writeText(`ID: ${generatedCreds?.id}\nPass: ${generatedCreds?.pass}`);
+                      navigator.clipboard.writeText(`ID: ${generatedCreds?.id}\\nPass: ${generatedCreds?.pass}`);
                       toast({ title: 'Copied!' });
                   }}>Copy</Button>
                   <AlertDialogAction onClick={() => { setGeneratedCreds(null); setIsCredsDialogOpen(false); }}>Close</AlertDialogAction>

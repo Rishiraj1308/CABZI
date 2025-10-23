@@ -27,8 +27,6 @@ const navItems = [
   { href: '/cure/billing', label: 'Billing & Payouts', icon: Landmark },
   { href: '/cure/analytics', label: 'Analytics', icon: BarChart },
   { href: '/cure/subscription', label: 'Subscription', icon: Gem },
-  { href: '/cure/cases', label: 'Case History', icon: History },
-  { href: '/cure/profile', label: 'Hospital Profile', icon: User },
 ]
 
 function CureNav() {
