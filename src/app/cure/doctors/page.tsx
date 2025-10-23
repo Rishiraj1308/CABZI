@@ -57,8 +57,6 @@ interface Doctor {
   phone: string;
   createdAt: Timestamp;
   photoUrl?: string;
-  degreeUrl?: string;
-  licenseUrl?: string;
   docStatus?: 'Verified' | 'Pending' | 'Awaiting Final Approval' | 'Rejected';
   partnerId?: string; 
   password?: string; 
@@ -83,7 +81,7 @@ interface Appointment {
 const mockAppointments: Appointment[] = [
   { id: 'APP001', patientName: 'Priya Singh', patientPhone: '9876543210', department: 'Cardiology', doctorName: 'Dr. Ramesh Sharma', appointmentDate: '2024-09-10T11:00:00', status: 'Pending', isRecurring: true },
   { id: 'APP002', patientName: 'Rajesh Verma', patientPhone: '9988776655', department: 'Orthopedics', doctorName: 'Dr. Priya Gupta', appointmentDate: '2024-09-10T14:00:00', status: 'Confirmed' },
-  { id: 'APP003', patientName: 'Anita Desai', patientPhone: '9123456789', department: 'General Physician', doctorName: 'Dr. Alok Verma', appointmentDate: '2024-09-11T10:00:00', status: 'Completed' },
+  { id: 'APP003', patientName: 'Anita Desai', patientPhone: '9123456789', department: 'General Physician', doctorName: 'Dr. Alok Verma', appointmentDate: '2024-08-25T10:00:00', status: 'Completed' },
 ];
 
 const mockSchedule = {
@@ -126,6 +124,7 @@ const initialDoctorState = {
     regCouncil: '',
     regYear: '',
     consultationFee: '',
+    photoFile: null as File | null,
 };
 
 export default function DoctorsPage() {
@@ -144,11 +143,16 @@ export default function DoctorsPage() {
   const db = useDb();
   const [hospitalId, setHospitalId] = useState<string | null>(null);
   const [selectedDoctorForVerification, setSelectedDoctorForVerification] = useState<Doctor | null>(null);
-
   const [newDoctorData, setNewDoctorData] = useState(initialDoctorState);
 
   const handleFormChange = (field: keyof typeof newDoctorData, value: any) => {
     setNewDoctorData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleFileChange = (field: 'photoFile', e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      handleFormChange(field, e.target.files[0]);
+    }
   };
 
   useEffect(() => {
@@ -198,14 +202,13 @@ export default function DoctorsPage() {
 
     setAppointments(prev => prev.map(appt => 
       appt.id === selectedAppointment.id 
-      ? { ...appt, appointmentDate: newDateTime.toISOString(), appointmentTime: newTime, status: 'Confirmed' } 
+      ? { ...appt, appointmentDate: newDateTime.toISOString(), status: 'Confirmed' } 
       : appt
     ));
     
     toast({ title: 'Appointment Rescheduled', description: `Appointment for ${selectedAppointment.patientName} is now on ${format(newDateTime, 'PPP')} at ${newTime}.` });
     setIsManageAppointmentOpen(false);
   }
-
 
  const handleAddDoctor = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -215,7 +218,7 @@ export default function DoctorsPage() {
     const {
         fullName: name, contactNumber: phone, emailAddress: email, gender, dob,
         specialization, qualifications, experience, department, designation,
-        medicalRegNo, regCouncil, regYear, consultationFee
+        medicalRegNo, regCouncil, regYear, consultationFee, photoFile
     } = newDoctorData;
 
     if (!name || !phone || !email || !specialization || !qualifications || !experience || !medicalRegNo || !regCouncil || !regYear || !consultationFee) {
@@ -228,7 +231,7 @@ export default function DoctorsPage() {
         const q = query(collectionGroup(db, 'doctors'), where("phone", "==", phone), limit(1));
         const phoneCheck = await getDocs(q);
         if (!phoneCheck.empty) {
-            toast({ variant: 'destructive', title: 'Phone Number Exists', description: 'A doctor with this phone number is already registered across the platform.' });
+            toast({ variant: 'destructive', title: 'Phone Number Exists', description: 'A doctor with this phone number is already registered.' });
             setIsSubmitting(false);
             return;
         }
@@ -236,7 +239,8 @@ export default function DoctorsPage() {
         const partnerId = `CZD-${phone.slice(-4)}${name.split(' ')[0].slice(0, 2).toUpperCase()}`;
         const password = `cAbZ@${Math.floor(1000 + Math.random() * 9000)}`;
 
-        await addDoc(collection(db, `ambulances/${hospitalId}/doctors`), {
+        // 1. Create document with placeholder URL
+        const doctorDocRef = await addDoc(collection(db, `ambulances/${hospitalId}/doctors`), {
             name, phone, email, gender, dob,
             specialization, qualifications, experience, department, designation,
             medicalRegNo, regCouncil, regYear,
@@ -244,7 +248,21 @@ export default function DoctorsPage() {
             docStatus: 'Pending',
             partnerId, password,
             createdAt: serverTimestamp(),
-            // File URLs are no longer added
+            photoUrl: '', // Placeholder
+        });
+
+        let photoUrl = '';
+        if (photoFile) {
+            const storage = getStorage();
+            const photoPath = `doctors/${hospitalId}/${doctorDocRef.id}/photo.jpg`;
+            const photoRef = ref(storage, photoPath);
+            await uploadBytes(photoRef, photoFile);
+            photoUrl = await getDownloadURL(photoRef);
+        }
+        
+        // 3. Update document with final URLs
+        await updateDoc(doctorDocRef, {
+            photoUrl: photoUrl
         });
         
         toast({ title: 'Doctor Added', description: `Dr. ${name} has been added. Their credentials are now available.` });
@@ -497,18 +515,23 @@ export default function DoctorsPage() {
                                 </TabsList>
                                 <div className="py-6 min-h-[350px]">
                                     <TabsContent value="basic">
-                                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div className="space-y-2"><Label htmlFor="fullName">Full Name</Label><Input name="fullName" required value={newDoctorData.fullName} onChange={e => handleFormChange('fullName', e.target.value)} /></div>
-                                        <div className="space-y-2"><Label>Gender</Label><Select name="gender" required onValueChange={v => handleFormChange('gender', v)} value={newDoctorData.gender}><SelectTrigger><SelectValue placeholder="Select Gender"/></SelectTrigger><SelectContent><SelectItem value="male">Male</SelectItem><SelectItem value="female">Female</SelectItem><SelectItem value="other">Other</SelectItem></SelectContent></Select></div>
-                                        <div className="space-y-2"><Label htmlFor="dob">Date of Birth</Label><Input name="dob" type="date" required value={newDoctorData.dob} onChange={e => handleFormChange('dob', e.target.value)} /></div>
-                                        <div className="space-y-2">
-                                            <Label htmlFor="contactNumber">Contact Number</Label>
-                                             <div className="flex items-center gap-0 rounded-md border border-input focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2">
-                                                  <span className="pl-3 text-muted-foreground text-sm">+91</span>
-                                                  <Input id="contactNumber" name="contactNumber" type="tel" maxLength={10} placeholder="12345 67890" required value={newDoctorData.contactNumber} onChange={e => handleFormChange('contactNumber', e.target.value)} className="border-0 h-9 focus-visible:ring-0 focus-visible:ring-offset-0 flex-1"/>
-                                             </div>
+                                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
+                                        <div className="col-span-1 md:col-span-2 space-y-2">
+                                          <Label htmlFor="photoUpload">Profile Photo</Label>
+                                          <Input id="photoUpload" type="file" accept="image/*" onChange={(e) => handleFileChange('photoFile', e)} className="h-auto" />
+                                           {newDoctorData.photoFile && (
+                                            <div className="text-xs text-muted-foreground flex items-center gap-2">
+                                              <BadgeCheck className="w-3 h-3 text-green-500"/>
+                                              <span>{newDoctorData.photoFile.name}</span>
+                                              <Button variant="ghost" size="icon" className="h-5 w-5" onClick={() => handleFormChange('photoFile', null)}><X className="w-3 h-3"/></Button>
+                                            </div>
+                                          )}
                                         </div>
-                                        <div className="md:col-span-2 space-y-2"><Label htmlFor="emailAddress">Email Address</Label><Input name="emailAddress" type="email" required value={newDoctorData.emailAddress} onChange={e => handleFormChange('emailAddress', e.target.value)} /></div>
+                                        <div className="space-y-2"><Label>Full Name</Label><Input name="fullName" required value={newDoctorData.fullName} onChange={e => handleFormChange('fullName', e.target.value)} /></div>
+                                        <div className="space-y-2"><Label>Gender</Label><Select name="gender" required onValueChange={v => handleFormChange('gender', v)} value={newDoctorData.gender}><SelectTrigger><SelectValue placeholder="Select Gender"/></SelectTrigger><SelectContent><SelectItem value="male">Male</SelectItem><SelectItem value="female">Female</SelectItem><SelectItem value="other">Other</SelectItem></SelectContent></Select></div>
+                                        <div className="space-y-2"><Label>Date of Birth</Label><Input name="dob" type="date" required value={newDoctorData.dob} onChange={e => handleFormChange('dob', e.target.value)} /></div>
+                                        <div className="space-y-2"><Label>Contact Number</Label><div className="flex items-center gap-0 rounded-md border border-input focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2"><span className="pl-3 text-muted-foreground text-sm">+91</span><Input id="contactNumber" name="contactNumber" type="tel" maxLength={10} placeholder="12345 67890" required value={newDoctorData.contactNumber} onChange={e => handleFormChange('contactNumber', e.target.value)} className="border-0 h-9 focus-visible:ring-0 focus-visible:ring-offset-0 flex-1"/></div></div>
+                                        <div className="md:col-span-2 space-y-2"><Label>Email Address</Label><Input name="emailAddress" type="email" required value={newDoctorData.emailAddress} onChange={e => handleFormChange('emailAddress', e.target.value)} /></div>
                                       </div>
                                     </TabsContent>
                                     <TabsContent value="professional">
@@ -566,8 +589,16 @@ export default function DoctorsPage() {
                             doctors.map((doctor) => (
                               <TableRow key={doctor.id}>
                                 <TableCell>
-                                    <div className="font-medium">Dr. {doctor.name}</div>
-                                    <div className="text-xs text-muted-foreground">{doctor.qualifications || 'N/A'}</div>
+                                    <div className="flex items-center gap-3">
+                                        <Avatar className="w-9 h-9">
+                                            <AvatarImage src={doctor.photoUrl} />
+                                            <AvatarFallback>{doctor.name.substring(0,2)}</AvatarFallback>
+                                        </Avatar>
+                                        <div>
+                                            <div className="font-medium">Dr. {doctor.name}</div>
+                                            <div className="text-xs text-muted-foreground">{doctor.qualifications || 'N/A'}</div>
+                                        </div>
+                                    </div>
                                 </TableCell>
                                 <TableCell><Badge variant="secondary">{doctor.specialization}</Badge></TableCell>
                                 <TableCell className="font-semibold">₹{doctor.consultationFee?.toLocaleString() || 'N/A'}</TableCell>
@@ -583,7 +614,7 @@ export default function DoctorsPage() {
                                          {doctor.docStatus === 'Pending' && (
                                             <DialogTrigger asChild>
                                                 <DropdownMenuItem onSelect={() => setSelectedDoctorForVerification(doctor)}>
-                                                    <Check className="mr-2 h-4 w-4 text-green-500" /> Verify Documents
+                                                    <Check className="mr-2 h-4 w-4 text-green-500" /> Verify Details
                                                 </DropdownMenuItem>
                                             </DialogTrigger>
                                          )}
@@ -667,3 +698,5 @@ export default function DoctorsPage() {
     </div>
   )
 }
+
+    
