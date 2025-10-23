@@ -110,7 +110,7 @@ export default function UserLayout({
   }
   
   return (
-    <div className="relative min-h-screen bg-background flex flex-col">
+    <div className="relative h-screen flex flex-col">
     <div className="absolute top-4 left-4 z-20">
         <Sheet open={open} onOpenChange={setOpen}>
             <SheetTrigger asChild>
