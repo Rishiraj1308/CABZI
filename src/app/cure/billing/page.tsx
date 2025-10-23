@@ -24,6 +24,7 @@ export default function CureBillingPage() {
     const [isLoading, setIsLoading] = useState(true);
     const { toast } = useToast();
     const db = useDb();
+    const [hospitalName, setHospitalName] = useState('');
 
     useEffect(() => {
         if (!db) {
@@ -38,7 +39,8 @@ export default function CureBillingPage() {
             return;
         }
 
-        const { partnerId } = JSON.parse(session);
+        const { partnerId, name } = JSON.parse(session);
+        setHospitalName(name);
 
         // In a real app, this would query a dedicated 'transactions' subcollection.
         // For now, we derive transactions from completed cases.
@@ -90,6 +92,45 @@ export default function CureBillingPage() {
             totalPayouts,
         };
     }, [transactions]);
+    
+    const handleDownloadStatement = () => {
+        if (transactions.length === 0) {
+            toast({ variant: 'destructive', title: 'No Data', description: 'No transactions to download.' });
+            return;
+        }
+
+        let statementContent = `Cabzi CURE Statement for ${hospitalName}\n`;
+        statementContent += `Date Generated: ${new Date().toLocaleDateString()}\n\n`;
+        statementContent += '-------------------------------------------------\n';
+        statementContent += 'Date\t\tDescription\t\tAmount (INR)\n';
+        statementContent += '-------------------------------------------------\n';
+
+        transactions.forEach(tx => {
+            const date = tx.date.toDate().toLocaleDateString();
+            const description = tx.description.padEnd(30, ' ');
+            const amount = `${tx.type === 'debit' ? '-' : '+'}${Math.abs(tx.amount).toFixed(2)}`.padStart(10, ' ');
+            statementContent += `${date}\t${description}\t${amount}\n`;
+        });
+        
+        statementContent += '-------------------------------------------------\n';
+        statementContent += `Current Due Amount: ₹${financialStats.walletBalance.toFixed(2)}\n`;
+
+
+        const blob = new Blob([statementContent], { type: 'text/plain;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `Cabzi_CURE_Statement_${new Date().toISOString().split('T')[0]}.txt`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        toast({
+            title: 'Download Started',
+            description: 'Your billing statement has been downloaded.',
+        });
+    }
 
     return (
         <div className="grid gap-6">
@@ -135,7 +176,7 @@ export default function CureBillingPage() {
                         <CardTitle className="flex items-center gap-2"><History className="w-5 h-5"/> Transaction Ledger</CardTitle>
                         <CardDescription>A complete log of all credits and debits.</CardDescription>
                     </div>
-                     <Button variant="outline" size="sm">
+                     <Button variant="outline" size="sm" onClick={handleDownloadStatement}>
                         <Download className="mr-2 h-4 w-4"/>
                         Download Statement
                     </Button>

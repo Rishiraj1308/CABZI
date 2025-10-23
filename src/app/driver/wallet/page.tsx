@@ -239,10 +239,43 @@ export default function WalletPage() {
 
 
     const handleDownloadStatement = () => {
+        if (!partner || transactions.length === 0) {
+            toast({ variant: 'destructive', title: 'No Data', description: 'No transactions to download.' });
+            return;
+        }
+
+        let statementContent = `Cabzi Bank Statement for ${partner.name}\n`;
+        statementContent += `Partner ID: ${partner.id}\n`;
+        statementContent += `Date Generated: ${new Date().toLocaleDateString()}\n\n`;
+        statementContent += '-------------------------------------------------\n';
+        statementContent += 'Date\t\tType\t\t\tAmount (INR)\n';
+        statementContent += '-------------------------------------------------\n';
+
+        transactions.forEach(tx => {
+            const date = tx.date.toDate().toLocaleDateString();
+            const type = tx.type.padEnd(20, ' ');
+            const amount = `${tx.status === 'Debit' ? '-' : '+'}${Math.abs(tx.amount).toFixed(2)}`.padStart(10, ' ');
+            statementContent += `${date}\t${type}\t${amount}\n`;
+        });
+        
+        statementContent += '-------------------------------------------------\n';
+        statementContent += `Closing Balance: ₹${partner.walletBalance.toFixed(2)}\n`;
+
+
+        const blob = new Blob([statementContent], { type: 'text/plain;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `Cabzi_Statement_${partner.phone}_${new Date().toISOString().split('T')[0]}.txt`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
         toast({
             title: 'Download Started',
-            description: 'A PDF of your transaction history will be downloaded shortly.'
-        })
+            description: 'Your wallet statement has been downloaded.',
+        });
     }
 
     if (!isPinSet) {
