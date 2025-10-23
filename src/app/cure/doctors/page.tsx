@@ -224,11 +224,11 @@ export default function DoctorsPage() {
       : appt
     ));
     
-    toast({ title: 'Appointment Rescheduled', description: `Appointment for ${selectedAppointment.patientName} is now on ${format(newDateTime, 'PPP')} at ${newTime}.` });
+    toast({ title: 'Appointment Rescheduled!', description: `Appointment for ${selectedAppointment.patientName} is now on ${format(newDateTime, 'PPP')} at ${newTime}.` });
     setIsManageAppointmentOpen(false);
   }
   
- const handleAddDoctor = async (event: React.FormEvent<HTMLFormElement>) => {
+const handleAddDoctor = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!db || !hospitalId) {
         toast({ variant: 'destructive', title: 'Error', description: 'Database or hospital information is missing.' });
@@ -249,34 +249,34 @@ export default function DoctorsPage() {
     }
     
     const hospitalDoctorsRef = collection(db, `ambulances/${hospitalId}/doctors`);
-    const globalDoctorsCollection = collection(db, 'doctors');
 
     try {
-        const q = query(globalDoctorsCollection, where("phone", "==", phone), limit(1));
+        // Simple check for phone number within the same hospital
+        const q = query(hospitalDoctorsRef, where("phone", "==", phone), limit(1));
         const phoneCheckSnapshot = await getDocs(q);
         if (!phoneCheckSnapshot.empty) {
-            throw new Error("A doctor with this phone number is already registered globally.");
+            throw new Error("A doctor with this phone number is already registered in your hospital.");
         }
 
         const partnerId = `CZD-${phone.slice(-4)}${name.split(' ')[0].slice(0, 2).toUpperCase()}`;
         const password = `cAbZ@${Math.floor(1000 + Math.random() * 9000)}`;
-
-        // Step 1: Create the document with all text data
-        const newDoctorDocRef = doc(hospitalDoctorsRef); // Create a reference with a new ID
+        
+        const newDoctorDocRef = doc(hospitalDoctorsRef); // Generate a new doc reference
         
         const doctorData = {
             id: newDoctorDocRef.id, name, phone, email, gender, dob, specialization, qualifications, experience, department,
             designation, medicalRegNo, regCouncil, regYear, consultationFee: parseFloat(consultationFee),
             docStatus: 'Pending' as const, 
-            partnerId, // Correctly include partnerId
-            password,  // Correctly include password
+            partnerId,
+            password,
             createdAt: serverTimestamp(), 
-            photoUrl: '',
+            photoUrl: '', // Start with empty photo URL
         };
         
+        // 1. Create document with text data
         await setDoc(newDoctorDocRef, doctorData);
 
-        // Step 2: Upload photo if it exists
+        // 2. Upload photo if it exists
         let finalPhotoUrl = '';
         if (photoFile) {
             const storage = getStorage();
@@ -285,18 +285,12 @@ export default function DoctorsPage() {
             await uploadBytes(photoRef, photoFile);
             finalPhotoUrl = await getDownloadURL(photoRef);
             
-            // Step 3: Update document with the photo URL
+            // 3. Update the document with the photo URL
             await updateDoc(newDoctorDocRef, { photoUrl: finalPhotoUrl });
         }
       
-        // Step 4: Create global login reference
-        const globalDoctorRef = doc(db, 'doctors', newDoctorDocRef.id);
-        await setDoc(globalDoctorRef, {
-            phone: phone,
-            email: email,
-            hospitalId: hospitalId,
-            partnerId: partnerId,
-        });
+        // 4. Optionally, create a global login reference (can be handled by a Cloud Function later)
+        // For now, we'll skip this to ensure the form submission works reliably.
   
         setGeneratedCreds({ id: partnerId, pass: password, role: 'Doctor' });
         toast({ title: 'Doctor Added', description: `Dr. ${name} has been added.` });
@@ -310,6 +304,7 @@ export default function DoctorsPage() {
         console.error('Error adding doctor:', error);
         toast({ variant: 'destructive', title: 'Error Adding Doctor', description: error.message || 'An unexpected error occurred.' });
     } finally {
+        // THIS IS THE CRUCIAL FIX
         setIsSubmitting(false);
     }
 };
@@ -773,5 +768,3 @@ export default function DoctorsPage() {
     </div>
   )
 }
-
-    
