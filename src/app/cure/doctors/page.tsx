@@ -151,7 +151,7 @@ export default function DoctorsPage() {
   const handleFormChange = (field: keyof typeof newDoctorData, value: any) => {
     setNewDoctorData(prev => ({ ...prev, [field]: value }));
   };
-
+  
   const handleFileChange = (field: 'photoUpload' | 'degreeUpload' | 'licenseUpload', file: File | null) => {
     if (file) {
       handleFormChange(field, file);
@@ -253,7 +253,6 @@ export default function DoctorsPage() {
         const storage = getStorage();
         const doctorDocRef = doc(collection(db, `ambulances/${hospitalId}/doctors`));
         
-        // Create the document first with textual data
         await setDoc(doctorDocRef, {
             name, phone, email, gender, dob,
             specialization, qualifications, experience, department, designation,
@@ -262,13 +261,11 @@ export default function DoctorsPage() {
             docStatus: 'Pending',
             partnerId, password,
             createdAt: serverTimestamp(),
-            // Set placeholder URLs, will be updated after upload
             photoUrl: 'pending_upload',
             degreeUrl: 'pending_upload',
             licenseUrl: 'pending_upload',
         });
 
-        // Now, upload files and update the document with the real URLs
         let photoUrl = '';
         if (photoUpload) {
             const photoStorageRef = ref(storage, `doctors/${hospitalId}/${doctorDocRef.id}/photo.jpg`);
@@ -288,7 +285,6 @@ export default function DoctorsPage() {
             licenseUrl = await getDownloadURL(licenseStorageRef);
         }
 
-        // Update doc with actual file URLs
         await updateDoc(doctorDocRef, { 
             photoUrl: photoUrl || '',
             degreeUrl: degreeUrl || '',
@@ -299,7 +295,7 @@ export default function DoctorsPage() {
         setIsAddDoctorDialogOpen(false);
         setGeneratedCreds({ id: partnerId, pass: password, role: 'Doctor' });
         setIsCredsDialogOpen(true);
-        setNewDoctorData(initialDoctorState); // Reset form state
+        setNewDoctorData(initialDoctorState);
 
     } catch (error) {
         console.error('Error adding doctor:', error);
@@ -556,7 +552,7 @@ export default function DoctorsPage() {
                                             </div>
                                         </div>
                                         <div className="md:col-span-2 space-y-2"><Label htmlFor="emailAddress">Email Address</Label><Input name="emailAddress" type="email" required value={newDoctorData.emailAddress} onChange={e => handleFormChange('emailAddress', e.target.value)} /></div>
-                                        <div className="space-y-2 md:col-span-2"><Label htmlFor="photoUpload">Passport-size Photo</Label><Input name="photoUpload" type="file" onChange={e => handleFileChange('photoUpload', e.target.files ? e.target.files[0] : null)} /></div>
+                                        <div className="space-y-2 md:col-span-2"><Label htmlFor="photoUpload">Passport-size Photo</Label><Input name="photoUpload" type="file" accept="image/*" onChange={e => handleFileChange('photoUpload', e.target.files ? e.target.files[0] : null)} /></div>
                                       </div>
                                     </TabsContent>
                                     <TabsContent value="professional">
@@ -572,8 +568,8 @@ export default function DoctorsPage() {
                                           <div className="space-y-2"><Label>Medical Registration No.</Label><Input name="medicalRegNo" required value={newDoctorData.medicalRegNo} onChange={e => handleFormChange('medicalRegNo', e.target.value)} /></div>
                                           <div className="space-y-2"><Label>Registration Council</Label><Input name="regCouncil" placeholder="e.g., Delhi Medical Council" required value={newDoctorData.regCouncil} onChange={e => handleFormChange('regCouncil', e.target.value)} /></div>
                                           <div className="space-y-2"><Label>Registration Year</Label><Input name="regYear" type="number" required value={newDoctorData.regYear} onChange={e => handleFormChange('regYear', e.target.value)} /></div>
-                                          <div className="space-y-2"><Label>Medical License Upload</Label><Input name="licenseUpload" type="file" onChange={e => handleFileChange('licenseUpload', e.target.files ? e.target.files[0] : null)} /></div>
-                                          <div className="md:col-span-2 space-y-2"><Label>Degree Certificate Upload</Label><Input name="degreeUpload" type="file" onChange={e => handleFileChange('degreeUpload', e.target.files ? e.target.files[0] : null)} /></div>
+                                          <div className="space-y-2"><Label>Medical License Upload</Label><Input name="licenseUpload" type="file" accept=".pdf" onChange={e => handleFileChange('licenseUpload', e.target.files ? e.target.files[0] : null)} /></div>
+                                          <div className="md:col-span-2 space-y-2"><Label>Degree Certificate Upload</Label><Input name="degreeUpload" type="file" accept=".pdf" onChange={e => handleFileChange('degreeUpload', e.target.files ? e.target.files[0] : null)} /></div>
                                        </div>
                                     </TabsContent>
                                      <TabsContent value="consultation">
@@ -756,3 +752,5 @@ export default function DoctorsPage() {
     </div>
   )
 }
+
+    
