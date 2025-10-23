@@ -508,9 +508,9 @@ export default function WalletPage() {
            <Card>
              <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                    <PiggyBank className="text-primary"/> AI Goal Planner
+                    <PiggyBank className="text-primary"/> Goal Planner
                 </CardTitle>
-                 <CardDescription>Save for your goals and get smart tips from our AI planner.</CardDescription>
+                 <CardDescription>Save for your goals and get smart tips from our system.</CardDescription>
              </CardHeader>
              <CardContent>
                 <div className="space-y-4">
@@ -571,5 +571,3 @@ export default function WalletPage() {
     </div>
   )
 }
-
-    

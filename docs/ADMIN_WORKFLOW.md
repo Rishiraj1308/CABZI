@@ -26,7 +26,7 @@ This document provides a clear, step-by-step guide on the daily workflows, respo
 
 **Step 2: Review & Validation**
 - **Partner Ledger / Details View:** shows all personal, vehicle/business, and document info.
-- **AI-assisted verification:**
+- **Automated Verification:**
     - OCR auto-check for PAN, Aadhaar, RC.
     - Risk scoring for suspicious entries.
 
@@ -53,7 +53,7 @@ This document provides a clear, step-by-step guide on the daily workflows, respo
 - **Auto alerts:**
     - High-demand low-supply areas → push driver incentives.
     - SOS / accidents → highlight on top of map.
-- **Predictive AI:** forecast demand spikes based on historical data.
+- **Predictive Analytics:** forecast demand spikes based on historical data.
 
 ## 4. Support Ticket Management
 
@@ -70,7 +70,7 @@ This document provides a clear, step-by-step guide on the daily workflows, respo
 
 **Improvements:**
 - **SLA Timer** → auto-escalation for unresolved tickets.
-- **AI-assisted suggested replies** to save time.
+- **Automated suggested replies** to save time.
 - Historical ticket analytics (common issues, average resolution time).
 
 ## 5. Financial Audit & Partner Wallets
@@ -86,7 +86,7 @@ This document provides a clear, step-by-step guide on the daily workflows, respo
 - Auto-reconciliation with payment gateways.
 - **Fraud detection alerts** (unusual refund or withdrawal patterns).
 - **Subscription revenue dashboard** (drivers’ subscription model).
-- **Loan risk scoring** → AI predicts default probability.
+- **Proprietary Loan Risk Scoring** to predict default probability.
 
 ## 6. Operations Efficiency & Automation
 
@@ -107,7 +107,7 @@ This document provides a clear, step-by-step guide on the daily workflows, respo
 
 ## ✅ Summary:
 
-- Admin Panel is now **proactive, AI-assisted, and audit-ready**.
+- Admin Panel is now **proactive, automated, and audit-ready**.
 - Manual workflows are automated wherever possible.
 - Real-time operations monitoring + predictive analytics increase efficiency.
 - Security, compliance, and auditability ensure enterprise-grade operations.

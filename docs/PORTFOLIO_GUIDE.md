@@ -1,4 +1,3 @@
-
 # How to Showcase "Cabzi" in Your Portfolio
 
 This guide provides a template for writing about the Cabzi project on your resume, portfolio website, or LinkedIn profile. The goal is to highlight the complexity, scale, and technical depth of what you have built.
@@ -54,7 +53,7 @@ The platform's core is a "FinTech for Mobility" engine, featuring the "Cabzi Ban
 *   **Backend & Real-time:** Firebase (Firestore, Firebase Authentication, Firebase Cloud Functions)
 *   **Mapping:** Leaflet.js with OpenStreetMap for interactive maps
 *   **Routing & Geocoding:** OSRM & Nominatim APIs for route calculation and address search
-*   **AI (Generative):** Genkit for AI-powered features like the "Earnings Coach".
+*   **Advanced Features:** Custom logic for features like the "Earnings Coach".
 
 ---
 

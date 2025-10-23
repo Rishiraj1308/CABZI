@@ -100,10 +100,10 @@ Our launch strategy is phased and designed for creating a dense, reliable networ
 
 ## 8. The Team (The "Who")
 
-We are a lean, passionate team with the right mix of expertise. Our key advantage is our **capital efficiency** and **speed**, achieved by leveraging cutting-edge AI for development.
+We are a lean, passionate team with the right mix of expertise. Our key advantage is our **capital efficiency** and **speed**, achieved by leveraging modern development tools and rapid iteration.
 
 *   **The Founder (Vision & Strategy):** Cabzi is led by its solo founder, **Rishiraj Mishra**, who possesses a deep understanding of the market's problems and a clear vision for the solution.
-*   **AI-Powered Development (Execution & Speed):** We operate on a lean, AI-powered model. This allows us to build, iterate, and deploy features at a fraction of the time and cost of our competitors. This is our strategic advantage.
+*   **Tech-Driven Development (Execution & Speed):** We operate on a lean, tech-forward model. This allows us to build, iterate, and deploy features at a fraction of the time and cost of our competitors. This is our strategic advantage.
 
 ---
 

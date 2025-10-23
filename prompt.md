@@ -31,6 +31,7 @@ The application's identity is a **"FinTech company disguised as a mobility platf
 *   **Serverless Logic:** Firebase Cloud Functions for the "No Cost" dispatch architecture (using FCM Push Notifications).
 *   **Mapping:** Leaflet.js with OpenStreetMap tiles.
 *   **Routing & Geocoding:** OSRM & Nominatim APIs.
+*   **Advanced Features:** Built using custom logic and modern frameworks.
 
 ## 4. UI/UX Design & Style Guide
 
@@ -49,9 +50,9 @@ The application's identity is a **"FinTech company disguised as a mobility platf
 The app's nervous system relies on a **server-centric push model**, not a client-pull model, to save costs and scale efficiently.
 
 1.  **User Creates Request:** A user (Rider or Partner) creates a new document in a collection (`rides`, `garageRequests`, `emergencyCases`) with a `pending` status.
-2.  **Cloud Function Triggers:** A dedicated Cloud Function (in `src/ai/dev.ts`) listens for new documents in that collection.
+2.  **Cloud Function Triggers:** A dedicated Cloud Function (in `functions/src/index.ts`) listens for new documents in that collection.
 3.  **Function Finds Partners:** The function performs an efficient geo-query to find the 5-10 closest, most suitable partners.
-4.  **Targeted Push Notifications (FCM):** The function sends a private data message via FCM directly to *only* those selected partners. This is free and battery-efficient. Partner apps **DO NOT** listen to the entire collection.
+4.  **Targeted Push Notifications (FCM):** The function sends a private data message via FCM directly to *only* those selected partners. Partner apps **DO NOT** listen to the entire collection.
 5.  **Partner Accepts & Updates Document:** The partner who accepts writes back to the *specific* request document, changing its status.
 6.  **User Gets Instant Update:** The original user's app, listening only to that single document, gets the update instantly.
 

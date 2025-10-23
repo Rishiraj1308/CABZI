@@ -33,17 +33,17 @@ The architecture is built on a "Firebase-first" principle, leveraging its powerf
 - **Firebase Authentication (Auth):** Manages secure user login via Phone OTP.
 - **Firestore Security Rules (`firestore.rules`):** A critical security layer that defines read/write permissions for every collection, ensuring users can only access their own data.
 
-### 🌐 Pillar 3: External & AI Services (The Specialists)
+### 🌐 Pillar 3: External & Automation Services (The Specialists)
 
 #### A. Mapping Intelligence
 - **Nominatim API** → An open-source API for converting text addresses into geo-coordinates (geocoding).
 - **OSRM API** → An open-source routing engine for calculating route geometry, ETA, and distance for fare calculation.
 
-#### B. Generative AI Brain (Genkit)
-- **Genkit:** Google's open-source AI framework used for building AI-powered features.
+#### B. Advanced Features & Automation
+- **Proprietary Logic:** We use modern frameworks and tools to build advanced, data-driven features.
 - **Use Cases:**
-    -   **AI Earnings Coach (`/driver`):** Provides personalized tips to partners on how to improve their earnings.
-    -   **AI Support Bot (`/rider/support`):** Handles initial customer queries, provides instant answers, and automatically logs support tickets.
+    -   **Earnings Coach (`/driver`):** Provides personalized tips to partners on how to improve their earnings.
+    -   **Support Bot (`/rider/support`):** Handles initial customer queries, provides instant answers, and automatically logs support tickets.
 
 ## 3. Production-Ready Data Flow (Example: Ride Booking)
 
