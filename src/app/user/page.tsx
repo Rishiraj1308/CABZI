@@ -1,4 +1,3 @@
-
 'use client'
 
 import React from 'react';
@@ -71,7 +70,8 @@ export default function UserDashboard() {
             opacity: 1,
             transition: {
                 type: "spring",
-                stiffness: 100
+                stiffness: 100,
+                damping: 10,
             }
         }
     };
@@ -97,6 +97,8 @@ export default function UserDashboard() {
                                 <MotionDiv
                                     key={service.title}
                                     variants={itemVariants}
+                                    whileHover={{ y: -5, scale: 1.05 }}
+                                    transition={{ type: "spring", stiffness: 300 }}
                                 >
                                     <Link href={service.href} legacyBehavior>
                                         <a onClick={(e) => {
@@ -105,7 +107,7 @@ export default function UserDashboard() {
                                                 toast({ title: 'Coming Soon!', description: 'This feature is under development.' });
                                             }
                                         }}>
-                                            <Card className="h-full transition-all hover:border-primary hover:shadow-lg text-center hover:-translate-y-1">
+                                            <Card className="h-full transition-all text-center bg-background/80 backdrop-blur-sm hover:shadow-2xl hover:border-primary/50">
                                                  <CardContent className="p-6 flex flex-col items-center justify-center gap-3">
                                                     <div className="p-4 bg-muted rounded-full">
                                                       <service.icon className={`w-10 h-10 ${service.color}`} />

@@ -1,4 +1,3 @@
-
 'use client'
 
 import React, { useState, useEffect } from 'react'
@@ -108,8 +107,8 @@ export default function UserLayout({
   }
   
   return (
-    <div className="flex h-screen w-full flex-col">
-       <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background px-4 md:px-6">
+    <div className="flex h-screen w-full flex-col aurora-background">
+       <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background/80 backdrop-blur-sm px-4 md:px-6">
         <Link href="/user">
           <BrandLogo />
         </Link>
@@ -155,7 +154,7 @@ export default function UserLayout({
       <main className="flex-1 overflow-y-auto pb-16 md:pb-0">
           {children}
       </main>
-       <nav className="fixed bottom-0 left-0 right-0 z-10 border-t bg-background/95 backdrop-blur-sm md:hidden">
+       <nav className="fixed bottom-0 left-0 right-0 z-10 border-t bg-background/80 backdrop-blur-sm md:hidden">
         <div className="mx-auto grid h-16 max-w-lg grid-cols-3 items-center px-4">
           {navItems.map((item) => (
             <Link key={item.href} href={item.href} legacyBehavior>
