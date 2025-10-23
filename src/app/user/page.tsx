@@ -4,17 +4,18 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { useToast } from '@/hooks/use-toast'
 import dynamic from 'next/dynamic'
-import { useFirebase, useAuth } from '@/firebase/client-provider'
-import { collection, addDoc, serverTimestamp, doc, GeoPoint, query, where, getDocs, updateDoc, getDoc } from 'firebase/firestore'
-import { MotionDiv, AnimatePresence } from '@/components/ui/motion-div'
+import { useFirebase } from '@/firebase/client-provider'
+import { collection, doc, GeoPoint, query, where, getDocs, getDoc } from 'firebase/firestore'
+import { motion, AnimatePresence } from 'framer-motion'
 import EmergencyButtons from '@/components/EmergencyButtons'
 import LocationSelector from '@/components/location-selector'
 import RideStatus from '@/components/ride-status'
 import type { RideData, AmbulanceCase, GarageRequest, ClientSession } from '@/lib/types'
-import { getRoute, searchPlace } from '@/lib/routing' // Updated import
-import { Card, CardHeader, CardTitle } from '@/components/ui/card'
-import { Car, Wrench, Ambulance, Calendar } from 'lucide-react'
+import { Card } from '@/components/ui/card'
+import { Car, Wrench, Ambulance, Siren, ArrowLeft } from 'lucide-react'
 import { useRouter } from 'next/navigation'
+import { cn } from '@/lib/utils'
+import { Button } from '@/components/ui/button'
 
 const LiveMap = dynamic(() => import('@/components/live-map'), { 
     ssr: false,
@@ -28,17 +29,21 @@ interface LocationWithCoords {
 
 type ServiceView = 'selection' | 'path' | 'cure' | 'resq';
 
+const serviceConfig = {
+    path: { icon: Car, label: 'Ride', color: 'text-primary', hoverColor: 'hover:bg-primary/10' },
+    cure: { icon: Ambulance, label: 'Cure', color: 'text-red-500', hoverColor: 'hover:bg-red-500/10' },
+    resq: { icon: Wrench, label: 'ResQ', color: 'text-amber-500', hoverColor: 'hover:bg-amber-500/10' },
+}
+
 export default function UserPage() {
     const [view, setView] = useState<ServiceView>('selection');
     
-    // States for PATH service
     const [pickup, setPickup] = useState<LocationWithCoords>({ address: '', coords: null });
     const [destination, setDestination] = useState<LocationWithCoords>({ address: '', coords: null });
     const [currentUserLocation, setCurrentUserLocation] = useState<{ lat: number, lon: number } | null>(null);
     const [activeRide, setActiveRide] = useState<RideData | null>(null);
     const [routeGeometry, setRouteGeometry] = useState<any>(null);
 
-    // States for CURE and ResQ services
     const [activeAmbulanceCase, setActiveAmbulanceCase] = useState<AmbulanceCase | null>(null);
     const [activeGarageRequest, setActiveGarageRequest] = useState<GarageRequest | null>(null);
     const [isRequestingSos, setIsRequestingSos] = useState(false);
@@ -80,33 +85,27 @@ export default function UserPage() {
         localStorage.removeItem('activeGarageRequestId');
     }, []);
 
-
     useEffect(() => {
         const checkActiveServices = async () => {
             if (!db || !session) return;
-
-            // Check for active ride
             const rideId = localStorage.getItem('activeRideId');
             if (rideId) {
                 const rideRef = doc(db, 'rides', rideId);
                 const docSnap = await getDoc(rideRef);
                 if (docSnap.exists() && !['completed', 'cancelled_by_driver', 'cancelled_by_rider'].includes(docSnap.data().status)) {
                     setActiveRide({ id: docSnap.id, ...docSnap.data() } as RideData);
-                    setView('path'); // Switch view to path if active ride found
-                    return; // Prioritize active ride
+                    setView('path');
+                    return;
                 } else {
                     localStorage.removeItem('activeRideId');
                 }
             }
-
-            // Check for active ambulance case
             const qCure = query(collection(db, "emergencyCases"), where("riderId", "==", session.userId), where("status", "in", ["pending", "accepted", "onTheWay", "arrived", "inTransit"]));
             const caseSnapshot = await getDocs(qCure);
              if (!caseSnapshot.empty) {
                 const caseDoc = caseSnapshot.docs[0];
                 setActiveAmbulanceCase({ id: caseDoc.id, ...caseDoc.data() } as AmbulanceCase);
                 setView('cure');
-                return;
              }
         };
         checkActiveServices();
@@ -114,128 +113,132 @@ export default function UserPage() {
 
     const handleLocationFound = useCallback((address: string, coords: { lat: number, lon: number }) => {
         setCurrentUserLocation(coords);
-        if (!pickup.address) { // Only set pickup if it's not already set by the user
+        if (!pickup.address) {
            setPickup({ address, coords });
         }
     }, [pickup.address]);
 
-    
-    const renderSelectionScreen = () => (
-        <MotionDiv 
-            layoutId="service-container" 
-            key="selection" 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="p-4 md:p-6 space-y-6"
-        >
-            <div className="text-center">
-                <h2 className="text-3xl font-bold tracking-tight">How can we help you?</h2>
-                <p className="text-muted-foreground">Choose a service to get started.</p>
-            </div>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <MotionDiv layoutId="path-card">
-                    <Card className="hover:border-primary hover:shadow-lg transition-all cursor-pointer text-center h-full" onClick={() => setView('path')}>
-                        <CardHeader><Car className="w-10 h-10 text-primary mx-auto"/> <CardTitle className="pt-2 text-base">Book a Ride</CardTitle></CardHeader>
-                    </Card>
-                </MotionDiv>
-                 <MotionDiv layoutId="cure-card">
-                    <Card className="hover:border-red-500 hover:shadow-lg transition-all cursor-pointer text-center h-full" onClick={() => setView('cure')}>
-                        <CardHeader><Ambulance className="w-10 h-10 text-red-500 mx-auto"/> <CardTitle className="pt-2 text-base">Cure SOS</CardTitle></CardHeader>
-                    </Card>
-                </MotionDiv>
-                 <MotionDiv layoutId="resq-card">
-                    <Card className="hover:border-amber-500 hover:shadow-lg transition-all cursor-pointer text-center h-full" onClick={() => toast({title: "Coming Soon!", description: "ResQ services for users will be available soon."})}>
-                        <CardHeader><Wrench className="w-10 h-10 text-amber-500 mx-auto"/> <CardTitle className="pt-2 text-base">ResQ Help</CardTitle></CardHeader>
-                    </Card>
-                </MotionDiv>
-                 <MotionDiv layoutId="appointment-card">
-                    <Card className="hover:border-blue-500 hover:shadow-lg transition-all cursor-pointer text-center h-full" onClick={() => router.push('/user/appointments')}>
-                        <CardHeader><Calendar className="w-10 h-10 text-blue-500 mx-auto"/> <CardTitle className="pt-2 text-base">Doctor</CardTitle></CardHeader>
-                    </Card>
-                </MotionDiv>
-            </div>
-        </MotionDiv>
-    );
+    const renderContent = () => {
+        if (activeRide || activeAmbulanceCase || activeGarageRequest) {
+            const activeService = activeRide || activeAmbulanceCase || activeGarageRequest;
+            const isGarage = !!activeGarageRequest;
+            return (
+                <div className="p-1">
+                    <RideStatus 
+                        ride={activeService} 
+                        isGarageRequest={isGarage}
+                        onCancel={resetFlow} 
+                        onDone={resetFlow} 
+                    />
+                </div>
+            );
+        }
 
-    const renderPathScreen = () => (
-        <MotionDiv layoutId="path-card" key="path">
-            {activeRide ? (
-                <div className="p-1">
-                    <RideStatus ride={activeRide} onCancel={resetFlow} onDone={resetFlow} />
-                </div>
-            ) : (
-                <LocationSelector
-                    pickup={pickup}
-                    setPickup={setPickup}
-                    destination={destination}
-                    setDestination={setDestination}
-                    onBack={() => { setView('selection'); setRouteGeometry(null); }}
-                    setActiveRide={setActiveRide}
-                    setRouteGeometry={setRouteGeometry}
-                    currentUserLocation={currentUserLocation}
-                    liveMapRef={liveMapRef}
-                    session={session}
-                />
-            )}
-        </MotionDiv>
-    );
-    
-    const renderCureScreen = () => (
-        <MotionDiv layoutId="cure-card" key="cure">
-            {activeAmbulanceCase ? (
-                <div className="p-1">
-                    <RideStatus ride={activeAmbulanceCase} onCancel={resetFlow} onDone={resetFlow} />
-                </div>
-            ) : (
-                <EmergencyButtons 
-                    serviceType="cure"
-                    liveMapRef={liveMapRef}
-                    pickupCoords={pickup.coords}
-                    setIsRequestingSos={setIsRequestingSos}
-                    setActiveAmbulanceCase={setActiveAmbulanceCase}
-                    setActiveGarageRequest={() => {}} // dummy function for this view
-                    onBack={() => setView('selection')}
-                    session={session}
-                />
-            )}
-        </MotionDiv>
-    );
-    
-     const renderResqScreen = () => (
-         <MotionDiv layoutId="resq-card" key="resq">
-            {activeGarageRequest ? (
-                <div className="p-1">
-                    <RideStatus ride={activeGarageRequest as any} isGarageRequest onCancel={resetFlow} onDone={resetFlow} />
-                </div>
-            ) : (
-                <EmergencyButtons 
-                    serviceType="resq"
-                    liveMapRef={liveMapRef}
-                    pickupCoords={pickup.coords}
-                    setIsRequestingSos={setIsRequestingSos}
-                    setActiveAmbulanceCase={() => {}} // dummy function
-                    setActiveGarageRequest={setActiveGarageRequest}
-                    onBack={() => setView('selection')}
-                    session={session}
-                />
-            )}
-        </MotionDiv>
-     );
+        switch(view) {
+            case 'path':
+                return <LocationSelector
+                            pickup={pickup}
+                            setPickup={setPickup}
+                            destination={destination}
+                            setDestination={setDestination}
+                            onBack={() => { setView('selection'); setRouteGeometry(null); }}
+                            setActiveRide={setActiveRide}
+                            setRouteGeometry={setRouteGeometry}
+                            currentUserLocation={currentUserLocation}
+                            liveMapRef={liveMapRef}
+                            session={session}
+                        />
+            case 'cure':
+                return <EmergencyButtons 
+                            serviceType="cure"
+                            liveMapRef={liveMapRef}
+                            pickupCoords={pickup.coords}
+                            setIsRequestingSos={setIsRequestingSos}
+                            setActiveAmbulanceCase={setActiveAmbulanceCase}
+                            setActiveGarageRequest={() => {}} // dummy
+                            onBack={() => setView('selection')}
+                            session={session}
+                        />
+             case 'resq':
+                return <EmergencyButtons 
+                            serviceType="resq"
+                            liveMapRef={liveMapRef}
+                            pickupCoords={pickup.coords}
+                            setIsRequestingSos={setIsRequestingSos}
+                            setActiveAmbulanceCase={() => {}} // dummy
+                            setActiveGarageRequest={setActiveGarageRequest}
+                            onBack={() => setView('selection')}
+                            session={session}
+                        />
+            case 'selection':
+            default:
+                 return (
+                    <motion.div 
+                        key="selection" 
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -20 }}
+                        className="p-2"
+                    >
+                         <h3 className="text-center font-semibold mb-3">How can we help you?</h3>
+                         <div className="grid grid-cols-3 gap-2">
+                             {Object.entries(serviceConfig).map(([key, config]) => (
+                                 <Card 
+                                    key={key} 
+                                    className={cn("p-2 text-center transition-all cursor-pointer", config.hoverColor)}
+                                    onClick={() => setView(key as ServiceView)}
+                                 >
+                                    <config.icon className={cn("w-8 h-8 mx-auto", config.color)} />
+                                    <p className="text-xs font-semibold mt-1">{config.label}</p>
+                                </Card>
+                             ))}
+                         </div>
+                    </motion.div>
+                );
+        }
+    }
 
     return (
         <div className="h-full flex-1 flex flex-col">
+            <div className="absolute top-20 left-4 z-10">
+                {view !== 'selection' && !activeRide && !activeAmbulanceCase && (
+                    <Button onClick={() => setView('selection')} variant="outline" size="icon" className="shadow-md">
+                        <ArrowLeft className="w-5 h-5"/>
+                    </Button>
+                )}
+            </div>
+
+            <div className="absolute top-20 right-4 z-10">
+                <Button onClick={() => setView('cure')} variant="destructive" size="lg" className="rounded-full shadow-lg h-14 w-14 p-0 animate-pulse-intense">
+                    <Siren className="w-8 h-8" />
+                    <span className="sr-only">Emergency SOS</span>
+                </Button>
+            </div>
+
             <div className="flex-1 relative">
                 <LiveMap ref={liveMapRef} onLocationFound={handleLocationFound} routeGeometry={routeGeometry} />
             </div>
-            <div className="z-10">
-                 <Card className="rounded-t-2xl shadow-2xl">
-                     <AnimatePresence mode="wait">
-                        {view === 'selection' && renderSelectionScreen()}
-                        {view === 'path' && renderPathScreen()}
-                        {view === 'cure' && renderCureScreen()}
-                        {view === 'resq' && renderResqScreen()}
-                    </AnimatePresence>
-                 </Card>
+            <div className="z-10 absolute bottom-4 left-4 right-4">
+                 <motion.div 
+                    layout
+                    transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                    className="mx-auto"
+                    style={{ maxWidth: view === 'selection' ? '20rem' : '32rem' }}
+                 >
+                    <Card className="rounded-2xl shadow-2xl bg-background/80 backdrop-blur-sm border-border/20">
+                         <AnimatePresence mode="wait">
+                           <motion.div
+                             key={view}
+                             initial={{ opacity: 0, scale: 0.95 }}
+                             animate={{ opacity: 1, scale: 1 }}
+                             exit={{ opacity: 0, scale: 0.95 }}
+                             transition={{ duration: 0.2 }}
+                           >
+                              {renderContent()}
+                           </motion.div>
+                        </AnimatePresence>
+                     </Card>
+                </motion.div>
             </div>
         </div>
     );

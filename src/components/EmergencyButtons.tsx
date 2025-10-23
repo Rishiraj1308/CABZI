@@ -11,7 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useFirebase } from '@/firebase/client-provider';
 import { addDoc, collection, serverTimestamp, GeoPoint, getDocs, query, where } from 'firebase/firestore';
 import SearchingIndicator from './ui/searching-indicator';
-import { Card, CardContent } from './ui/card';
+import { Card } from './ui/card';
 import type { AmbulanceCase, GarageRequest, ClientSession } from '@/lib/types';
 
 
@@ -245,7 +245,7 @@ export default function EmergencyButtons({ serviceType, liveMapRef, pickupCoords
                         ) : (
                             <div className="max-h-60 overflow-y-auto space-y-2 pr-2">
                                 {nearbyHospitals.map(h => (
-                                    <Card key={h.id} className={`p-3 cursor-pointer ${selectedHospital === h.id ? 'border-primary' : ''}`} onClick={() => setSelectedHospital(h.id)}>
+                                    <Card key={h.id} className={`p-3 cursor-pointer ${selectedHospital === h.id ? 'ring-2 ring-primary' : ''}`} onClick={() => setSelectedHospital(h.id)}>
                                         <div className="flex items-center gap-3">
                                             <HospitalIcon className="w-5 h-5 text-primary"/>
                                             <div className="flex-1">
@@ -284,18 +284,11 @@ export default function EmergencyButtons({ serviceType, liveMapRef, pickupCoords
 
   return (
     <div className="p-4">
-         <div className="flex items-center gap-4 mb-4">
-             <Button onClick={onBack} variant="outline" size="icon"><ArrowLeft/></Button>
-            <div>
-                <h2 className="text-xl font-bold tracking-tight capitalize">{serviceType} Services</h2>
-                <p className="text-muted-foreground text-sm">Emergency {serviceType === 'cure' ? 'ambulance' : 'mechanic'} services.</p>
-            </div>
-        </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
-                <Button variant="outline" size="lg" className={`w-full h-24 flex-col gap-1 ${serviceType === 'cure' ? 'text-red-600 border-red-500/50 bg-red-100/50 hover:bg-red-100' : 'text-amber-600 border-amber-500/50 bg-amber-100/50 hover:bg-amber-100'}`}>
+                <Button variant="ghost" className={`w-full h-24 flex-col gap-1 text-lg font-bold ${serviceType === 'cure' ? 'text-red-600' : 'text-amber-600'}`}>
                     {serviceType === 'cure' ? <Ambulance className="h-8 w-8" /> : <Wrench className="h-8 w-8" />}
-                    <span className="font-semibold capitalize">Request {serviceType}</span>
+                    <span className="capitalize">{serviceType} SOS</span>
                 </Button>
             </DialogTrigger>
             <DialogContent>

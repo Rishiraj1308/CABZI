@@ -4,8 +4,7 @@
 import React, { useState } from 'react'
 import { Button } from './ui/button'
 import { Input } from './ui/input'
-import { ArrowLeft, Star, MapPin, HeartHandshake, IndianRupee } from 'lucide-react'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { ArrowLeft, Star, MapPin, HeartHandshake, IndianRupee, Clock } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { useFirebase } from '@/firebase/client-provider'
 import { collection, addDoc, serverTimestamp, GeoPoint } from 'firebase/firestore'
@@ -189,26 +188,30 @@ export default function LocationSelector({
 
   return (
     <div className="p-4">
+        {showRideOptions && (
+             <Button onClick={() => { setShowRideOptions(false); setRouteGeometry(null); }} variant="ghost" size="icon" className="absolute top-2 left-2 h-8 w-8 bg-background/50 backdrop-blur-sm">
+                <ArrowLeft className="w-5 h-5" />
+             </Button>
+        )}
       <div className="relative mb-4">
-        <Button onClick={() => { onBack(); setShowRideOptions(false); }} variant="ghost" size="icon" className="absolute top-1/2 -translate-y-1/2 left-0 h-8 w-8">
-          <ArrowLeft className="w-5 h-5" />
-        </Button>
-        <div className="pl-10 pr-6">
+        <div className="pl-6 pr-6">
             <div className="relative">
+                <MapPin className="absolute top-1/2 -translate-y-1/2 left-3 w-5 h-5 text-green-500" />
                 <Input 
                     value={pickup.address}
                     onChange={e => setPickup({ ...pickup, address: e.target.value })}
                     placeholder="Current Location"
-                    className="bg-muted border-0 focus-visible:ring-0 text-base font-semibold"
+                    className="bg-muted border-0 focus-visible:ring-0 text-base font-semibold pl-10"
                 />
             </div>
              <div className="border-l-2 border-dotted border-border h-4 ml-[13px] my-1"></div>
              <div className="relative">
+                <MapPin className="absolute top-1/2 -translate-y-1/2 left-3 w-5 h-5 text-red-500" />
                 <Input 
                     value={destination.address}
                     onChange={(e) => setDestination({ address: e.target.value, coords: null })}
                     placeholder="Where to?"
-                    className="bg-muted border-primary focus-visible:ring-primary text-base font-semibold"
+                    className="bg-muted border-primary focus-visible:ring-primary text-base font-semibold pl-10"
                     onKeyDown={(e) => e.key === 'Enter' && handleGetRideInfo()}
                 />
              </div>
@@ -216,23 +219,25 @@ export default function LocationSelector({
       </div>
       
         {!showRideOptions ? (
-             <Tabs defaultValue="suggested" className="w-full">
-                <TabsList className="grid w-full grid-cols-3">
-                    <TabsTrigger value="recent">Recent</TabsTrigger>
-                    <TabsTrigger value="suggested">Suggested</TabsTrigger>
-                    <TabsTrigger value="saved">Saved</TabsTrigger>
-                </TabsList>
-            </Tabs>
+             <div className="px-6 pb-2">
+                <Button className="w-full" size="lg" onClick={handleGetRideInfo}>Find Rides</Button>
+            </div>
         ) : (
-            <div className="space-y-2">
+            <div className="space-y-3 pt-2">
                  <div className="grid grid-cols-4 gap-2">
                     {rideTypes.map(rt => (
                         <Card 
                           key={rt.name} 
                           onClick={() => rt.fare !== 'N/A' && setSelectedRide(rt.name)}
-                          className={cn("p-2 text-center cursor-pointer", selectedRide === rt.name && 'ring-2 ring-primary', rt.fare === 'N/A' && 'opacity-50 cursor-not-allowed')}
+                          className={cn(
+                              "p-2 text-center cursor-pointer transition-all", 
+                              selectedRide === rt.name && 'ring-2 ring-primary shadow-lg', 
+                              rt.fare === 'N/A' && 'opacity-40 cursor-not-allowed',
+                              rt.name === 'Cabzi Pink' && selectedRide === rt.name && 'ring-pink-500',
+                              rt.name === 'Cabzi Pink' && 'bg-pink-500/5'
+                            )}
                         >
-                            <rt.icon className="w-8 h-8 mx-auto mb-1 text-foreground" />
+                            <rt.icon className={cn("w-8 h-8 mx-auto mb-1", rt.name === 'Cabzi Pink' ? 'text-pink-500' : 'text-foreground')} />
                             <p className="text-xs font-semibold">{rt.name}</p>
                             {isFindingRides ? <Skeleton className="h-4 w-10 mx-auto mt-1"/> : <p className="text-xs font-bold">{rt.fare}</p>}
                         </Card>
