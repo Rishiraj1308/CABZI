@@ -1105,8 +1105,8 @@ export default function DriverDashboard() {
                 </TabsList>
                 <TabsContent value="payments" className="mt-4 flex-1">
                    <div className="grid grid-cols-2 gap-2">
-                       <Button variant="outline" className="flex-col h-20"><Send className="w-6 h-6 mb-1 text-primary" /><span className="text-xs">Pay UPI ID</span></Button>
-                       <Button variant="outline" className="flex-col h-20"><Phone className="w-6 h-6 mb-1 text-primary"/><span className="text-xs">Pay Number</span></Button>
+                       <Button variant="outline" className="flex-col h-20"><Send className="w-4 h-4 mb-2 text-primary" /><span className="text-xs">Pay UPI ID</span></Button>
+                       <Button variant="outline" className="flex-col h-20"><Phone className="w-4 h-4 mb-2 text-primary"/><span className="text-xs">Pay Number</span></Button>
                    </div>
                 </TabsContent>
             </Tabs>

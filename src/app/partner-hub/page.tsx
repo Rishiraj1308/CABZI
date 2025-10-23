@@ -70,7 +70,7 @@ export default function PartnerHub() {
                             <Card className={cn("transition-all h-full flex flex-col w-full", partner.className)}>
                                <CardHeader>
                                     <div className={cn("mx-auto p-3 rounded-full", partner.iconContainerClassName)}>
-                                        <partner.icon className={cn("w-8 h-8", partner.iconClassName)} />
+                                        <partner.icon className={cn("w-4 h-4", partner.iconClassName)} />
                                     </div>
                                    <CardTitle className="pt-4">{partner.title}</CardTitle>
                                </CardHeader>
