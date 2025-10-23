@@ -32,7 +32,7 @@ import { doc, updateDoc } from 'firebase/firestore';
 
 const navItems = [
     { href: '/user', label: 'Book a Ride', icon: Home, comingSoon: false },
-    { href: '/user/appointments', label: 'Book Appointment', icon: Calendar, comingSoon: false },
+    { href: '/user/appointments', label: 'My Appointments', icon: Calendar, comingSoon: false },
     { href: '/user/rides', label: 'My Rides', icon: History, comingSoon: false },
     { href: '/user/wallet', label: 'Cabzi Bank', icon: Landmark, comingSoon: true },
     { href: '/user/offers', label: 'Offers', icon: Gift, comingSoon: false },
@@ -209,6 +209,6 @@ export default function RiderLayout({
           {children}
       </main>
       <Toaster />
-      </div>
+    </div>
   );
 }
