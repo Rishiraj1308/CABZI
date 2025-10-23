@@ -1,71 +1,251 @@
+
 'use client'
 
-import React from 'react'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
-import { Car, Calendar, History, Gift, ArrowRight } from 'lucide-react'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
+import { useToast } from '@/hooks/use-toast'
+import dynamic from 'next/dynamic'
+import { useFirebase, useAuth } from '@/firebase/client-provider'
+import { collection, addDoc, serverTimestamp, doc, GeoPoint, query, where, getDocs, updateDoc, getDoc } from 'firebase/firestore'
+import { motion, AnimatePresence } from 'framer-motion'
+import EmergencyButtons from '@/components/EmergencyButtons'
+import LocationSelector from '@/components/location-selector'
+import RideStatus from '@/components/ride-status'
+import type { RideData, AmbulanceCase, GarageRequest, ClientSession } from '@/lib/types'
+import { getRoute, searchPlace } from '@/lib/routing' // Updated import
+import { Card, CardHeader, CardTitle } from '@/components/ui/card'
+import { Car, Wrench, Ambulance, Calendar } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-import { MotionDiv } from '@/components/ui/motion-div'
 
-const serviceCards = [
-    { type: 'path', title: 'Book a Ride', description: 'Fair fares for your daily commute.', icon: Car, color: 'text-primary', href: '/user/book' },
-    { type: 'appointment', title: 'Book an Appointment', description: 'Consult with doctors from our partner hospitals.', icon: Calendar, color: 'text-blue-500', href: '/user/appointments' },
-    { type: 'rides', title: 'My Rides', description: 'View your past trips and invoices.', icon: History, color: 'text-green-500', href: '/user/rides' },
-    { type: 'offers', title: 'Offers & Promos', description: 'Exclusive deals to save on every ride.', icon: Gift, color: 'text-amber-500', href: '/user/offers' },
-]
+const LiveMap = dynamic(() => import('@/components/live-map'), { 
+    ssr: false,
+    loading: () => <div className="w-full h-full bg-muted flex items-center justify-center"><p>Loading Map...</p></div>
+});
 
-export default function UserDashboardPage() {
+interface LocationWithCoords {
+    address: string;
+    coords: { lat: number; lon: number; } | null;
+}
+
+type ServiceView = 'selection' | 'path' | 'cure' | 'resq';
+
+export default function UserPage() {
+    const [view, setView] = useState<ServiceView>('selection');
+    
+    // States for PATH service
+    const [pickup, setPickup] = useState<LocationWithCoords>({ address: '', coords: null });
+    const [destination, setDestination] = useState<LocationWithCoords>({ address: '', coords: null });
+    const [currentUserLocation, setCurrentUserLocation] = useState<{ lat: number, lon: number } | null>(null);
+    const [activeRide, setActiveRide] = useState<RideData | null>(null);
+    const [routeGeometry, setRouteGeometry] = useState<any>(null);
+
+    // States for CURE and ResQ services
+    const [activeAmbulanceCase, setActiveAmbulanceCase] = useState<AmbulanceCase | null>(null);
+    const [activeGarageRequest, setActiveGarageRequest] = useState<GarageRequest | null>(null);
+    const [isRequestingSos, setIsRequestingSos] = useState(false);
+
+    const liveMapRef = useRef<any>(null);
+    const { user, db } = useFirebase();
+    const { toast } = useToast()
     const router = useRouter();
 
-    const containerVariants = {
-        hidden: { opacity: 0 },
-        visible: {
-        opacity: 1,
-        transition: {
-            staggerChildren: 0.1,
-        },
-        },
-    };
+    const [session, setSession] = useState<ClientSession | null>(null);
 
-    const itemVariants = {
-        hidden: { y: 20, opacity: 0 },
-        visible: {
-            y: 0,
-            opacity: 1,
-        },
-    };
+    useEffect(() => {
+        if (user && db) {
+            const userDocRef = doc(db, 'users', user.uid);
+            getDoc(userDocRef).then(docSnap => {
+                if (docSnap.exists()) {
+                    const userData = docSnap.data();
+                    setSession({
+                        userId: user.uid,
+                        name: userData.name,
+                        phone: userData.phone,
+                        gender: userData.gender
+                    });
+                }
+            });
+        }
+    }, [user, db]);
+
+    const resetFlow = useCallback(() => {
+        setView('selection');
+        setActiveRide(null);
+        setActiveAmbulanceCase(null);
+        setActiveGarageRequest(null);
+        setRouteGeometry(null);
+        setPickup({ address: '', coords: null });
+        setDestination({ address: '', coords: null });
+        setIsRequestingSos(false);
+        localStorage.removeItem('activeRideId');
+        localStorage.removeItem('activeGarageRequestId');
+    }, []);
+
+
+    useEffect(() => {
+        const checkActiveServices = async () => {
+            if (!db || !session) return;
+
+            // Check for active ride
+            const rideId = localStorage.getItem('activeRideId');
+            if (rideId) {
+                const rideRef = doc(db, 'rides', rideId);
+                const docSnap = await getDoc(rideRef);
+                if (docSnap.exists() && !['completed', 'cancelled_by_driver', 'cancelled_by_rider'].includes(docSnap.data().status)) {
+                    setActiveRide({ id: docSnap.id, ...docSnap.data() } as RideData);
+                    setView('path'); // Switch view to path if active ride found
+                    return; // Prioritize active ride
+                } else {
+                    localStorage.removeItem('activeRideId');
+                }
+            }
+
+            // Check for active ambulance case
+            const qCure = query(collection(db, "emergencyCases"), where("riderId", "==", session.userId), where("status", "in", ["pending", "accepted", "onTheWay", "arrived", "inTransit"]));
+            const caseSnapshot = await getDocs(qCure);
+             if (!caseSnapshot.empty) {
+                const caseDoc = caseSnapshot.docs[0];
+                setActiveAmbulanceCase({ id: caseDoc.id, ...caseDoc.data() } as AmbulanceCase);
+                setView('cure');
+                return;
+             }
+        };
+        checkActiveServices();
+    }, [db, session]);
+
+    const handleLocationFound = useCallback((address: string, coords: { lat: number, lon: number }) => {
+        setCurrentUserLocation(coords);
+        if (!pickup.address) { // Only set pickup if it's not already set by the user
+           setPickup({ address, coords });
+        }
+    }, [pickup.address]);
+
+    
+    const renderSelectionScreen = () => (
+        <MotionDiv 
+            layoutId="service-container" 
+            key="selection" 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="p-4 md:p-6 space-y-6"
+        >
+            <div className="text-center">
+                <h2 className="text-3xl font-bold tracking-tight">How can we help you?</h2>
+                <p className="text-muted-foreground">Choose a service to get started.</p>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <MotionDiv layoutId="path-card">
+                    <Card className="hover:border-primary hover:shadow-lg transition-all cursor-pointer text-center h-full" onClick={() => setView('path')}>
+                        <CardHeader><Car className="w-10 h-10 text-primary mx-auto"/> <CardTitle className="pt-2 text-base">Book a Ride</CardTitle></CardHeader>
+                    </Card>
+                </MotionDiv>
+                 <MotionDiv layoutId="cure-card">
+                    <Card className="hover:border-red-500 hover:shadow-lg transition-all cursor-pointer text-center h-full" onClick={() => setView('cure')}>
+                        <CardHeader><Ambulance className="w-10 h-10 text-red-500 mx-auto"/> <CardTitle className="pt-2 text-base">Cure SOS</CardTitle></CardHeader>
+                    </Card>
+                </MotionDiv>
+                 <MotionDiv layoutId="resq-card">
+                    <Card className="hover:border-amber-500 hover:shadow-lg transition-all cursor-pointer text-center h-full" onClick={() => toast({title: "Coming Soon!", description: "ResQ services for users will be available soon."})}>
+                        <CardHeader><Wrench className="w-10 h-10 text-amber-500 mx-auto"/> <CardTitle className="pt-2 text-base">ResQ Help</CardTitle></CardHeader>
+                    </Card>
+                </MotionDiv>
+                 <MotionDiv layoutId="appointment-card">
+                    <Card className="hover:border-blue-500 hover:shadow-lg transition-all cursor-pointer text-center h-full" onClick={() => router.push('/user/appointments')}>
+                        <CardHeader><Calendar className="w-10 h-10 text-blue-500 mx-auto"/> <CardTitle className="pt-2 text-base">Doctor</CardTitle></CardHeader>
+                    </Card>
+                </MotionDiv>
+            </div>
+        </MotionDiv>
+    );
+
+    const renderPathScreen = () => (
+        <MotionDiv layoutId="path-card" key="path">
+            {activeRide ? (
+                <div className="p-1">
+                    <RideStatus ride={activeRide} onCancel={resetFlow} onDone={resetFlow} />
+                </div>
+            ) : (
+                <LocationSelector
+                    pickup={pickup}
+                    setPickup={setPickup}
+                    destination={destination}
+                    setDestination={setDestination}
+                    onBack={() => { setView('selection'); setRouteGeometry(null); }}
+                    setActiveRide={setActiveRide}
+                    setRouteGeometry={setRouteGeometry}
+                    currentUserLocation={currentUserLocation}
+                    liveMapRef={liveMapRef}
+                    session={session}
+                />
+            )}
+        </MotionDiv>
+    );
+    
+    const renderCureScreen = () => (
+        <MotionDiv layoutId="cure-card" key="cure">
+            {activeAmbulanceCase ? (
+                <div className="p-1">
+                    <RideStatus ride={activeAmbulanceCase} onCancel={resetFlow} onDone={resetFlow} />
+                </div>
+            ) : (
+                <EmergencyButtons 
+                    serviceType="cure"
+                    liveMapRef={liveMapRef}
+                    pickupCoords={pickup.coords}
+                    setIsRequestingSos={setIsRequestingSos}
+                    setActiveAmbulanceCase={setActiveAmbulanceCase}
+                    setActiveGarageRequest={() => {}} // dummy function for this view
+                    onBack={() => setView('selection')}
+                    session={session}
+                />
+            )}
+        </MotionDiv>
+    );
+    
+     const renderResqScreen = () => (
+         <MotionDiv layoutId="resq-card" key="resq">
+            {activeGarageRequest ? (
+                <div className="p-1">
+                    <RideStatus ride={activeGarageRequest as any} isGarageRequest onCancel={resetFlow} onDone={resetFlow} />
+                </div>
+            ) : (
+                <EmergencyButtons 
+                    serviceType="resq"
+                    liveMapRef={liveMapRef}
+                    pickupCoords={pickup.coords}
+                    setIsRequestingSos={setIsRequestingSos}
+                    setActiveAmbulanceCase={() => {}} // dummy function
+                    setActiveGarageRequest={setActiveGarageRequest}
+                    onBack={() => setView('selection')}
+                    session={session}
+                />
+            )}
+        </MotionDiv>
+     );
 
     return (
-        <div className="p-4 md:p-6 space-y-6">
-             <div className="animate-fade-in pl-16">
-                <h2 className="text-3xl font-bold tracking-tight">Services</h2>
-                <p className="text-muted-foreground">How can we help you today?</p>
+        <div className="h-full w-full relative flex flex-col">
+            <div className="flex-1 relative">
+                 <LiveMap ref={liveMapRef} onLocationFound={handleLocationFound} routeGeometry={routeGeometry} />
             </div>
-            <MotionDiv 
-                className="grid grid-cols-1 md:grid-cols-2 gap-4"
-                variants={containerVariants}
-                initial="hidden"
-                animate="visible"
-            >
-                {serviceCards.map(service => (
-                    <MotionDiv key={service.type} variants={itemVariants}>
-                        <Card 
-                            className="hover:shadow-lg hover:border-primary/50 transition-all cursor-pointer h-full flex flex-col" 
-                            onClick={() => router.push(service.href)}
-                        >
-                            <CardHeader className="flex-row items-start gap-4 space-y-0">
-                                <div className={`p-3 rounded-lg bg-muted`}>
-                                    <service.icon className={`w-6 h-6 ${service.color}`}/>
-                                </div>
-                                <div className="flex-1">
-                                    <CardTitle>{service.title}</CardTitle>
-                                    <CardDescription>{service.description}</CardDescription>
-                                </div>
-                                <ArrowRight className="w-5 h-5 text-muted-foreground self-center"/>
-                            </CardHeader>
-                        </Card>
-                    </MotionDiv>
-                ))}
-            </MotionDiv>
+
+            <div className="absolute bottom-0 left-0 right-0 z-10">
+                <motion.div
+                    initial={{ y: "100%", opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    exit={{ y: "100%", opacity: 0 }}
+                    transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+                    className="mx-auto max-w-lg w-full"
+                >
+                     <Card className="rounded-t-2xl shadow-2xl bg-background/80 backdrop-blur-sm border-t border-border/20">
+                         <AnimatePresence mode="wait">
+                            {view === 'selection' && renderSelectionScreen()}
+                            {view === 'path' && renderPathScreen()}
+                            {view === 'cure' && renderCureScreen()}
+                            {view === 'resq' && renderResqScreen()}
+                        </AnimatePresence>
+                     </Card>
+                </motion.div>
+            </div>
         </div>
-    )
+    );
 }

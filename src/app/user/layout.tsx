@@ -153,7 +153,7 @@ export default function UserLayout({
             </DropdownMenu>
         </div>
       </header>
-      <main className="flex-1 overflow-y-auto pb-16 md:pb-0">
+      <main className="flex-1 overflow-y-auto pb-16 md:pb-0 h-full">
           {children}
       </main>
        <nav className="fixed bottom-0 left-0 right-0 z-10 border-t bg-background/95 backdrop-blur-sm md:hidden">

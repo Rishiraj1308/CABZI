@@ -29,8 +29,8 @@ import {
   Siren,
   CheckCircle,
 } from 'lucide-react';
-import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
-import { Button } from './ui/button';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
 import {
   AlertDialog,
   AlertDialogTrigger,
@@ -41,23 +41,23 @@ import {
   AlertDialogCancel,
   AlertDialogAction,
   AlertDialogDescription,
-} from './ui/alert-dialog';
+} from '@/components/ui/alert-dialog';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from './ui/dialog';
+} from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
-import SearchingIndicator from './ui/searching-indicator';
+import SearchingIndicator from '@/components/ui/searching-indicator';
 import type { RideData } from '@/lib/types';
 import type { AmbulanceCase } from '@/lib/types';
 
 
 interface Props {
-  ride: RideData | AmbulanceCase | null;
+  ride: RideData | AmbulanceCase | any;
   isGarageRequest?: boolean;
   onCancel: () => void;
   onDone?: () => void;
@@ -168,7 +168,76 @@ export default function RideStatus({
     }
 
     const rideData = ride as RideData;
-    // ... rest of the component from the original file ...
+    
+    if (isGarageRequest) {
+        switch(rideData.status) {
+            case 'pending':
+                return (
+                    <div className="text-center py-10">
+                        <SearchingIndicator partnerType="resq" />
+                        <h3 className="text-2xl font-bold mt-4">Finding a Mechanic...</h3>
+                        <p className="text-muted-foreground">Contacting nearby ResQ partners.</p>
+                    </div>
+                );
+            case 'accepted':
+                return (
+                     <div className="space-y-4 animate-fade-in">
+                        <CardHeader className="p-0 text-center">
+                            <CardTitle>Mechanic is on the way</CardTitle>
+                            <CardDescription>{ride.mechanicName}</CardDescription>
+                        </CardHeader>
+                         <div className="p-4 rounded-lg bg-muted text-center">
+                            <p className="text-sm text-muted-foreground">Estimated Arrival Time</p>
+                            <p className="text-4xl font-bold text-primary">{ride.eta ? `${Math.ceil(ride.eta)} min` : '...'}</p>
+                        </div>
+                         <Button className="w-full" asChild><a href={`tel:${ride.mechanicPhone}`}><Phone className="mr-2 h-4 w-4"/> Call Mechanic</a></Button>
+                     </div>
+                );
+            case 'bill_sent':
+                return (
+                    <div className="text-center space-y-4 animate-fade-in">
+                        <Card className="bg-primary text-primary-foreground text-center">
+                            <CardContent className="p-4">
+                            <p className="text-primary-foreground/80 text-sm">Total Bill Amount</p>
+                            <p className="text-5xl font-bold">₹{ride.totalAmount}</p>
+                            </CardContent>
+                        </Card>
+                        <p className="text-muted-foreground text-sm">Please choose a payment method to complete the service.</p>
+                        <div className="grid grid-cols-2 gap-2">
+                            <Button size="lg" className="w-full" onClick={() => onPayment && onPayment('wallet')} disabled={isPaying}>{isPaying ? 'Processing...' : 'Pay from Wallet'}</Button>
+                            <Button size="lg" variant="outline" className="w-full" onClick={() => toast({title: "Please pay the mechanic in cash."})}>Pay with Cash</Button>
+                        </div>
+                    </div>
+                );
+             case 'completed':
+                 return (
+                    <div className="text-center space-y-4 animate-fade-in p-6">
+                        <div className="mx-auto w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mb-4">
+                            <CheckCircle className="w-8 h-8 text-green-600" />
+                        </div>
+                        <CardTitle>Service Completed</CardTitle>
+                        <CardDescription>Please rate your experience with {ride.mechanicName || 'the mechanic'}.</CardDescription>
+                        <div className="flex justify-center gap-2 py-2">
+                            {[1, 2, 3, 4, 5].map((star) => (
+                                <Star
+                                    key={star}
+                                    className={cn(
+                                        'w-8 h-8 text-muted-foreground cursor-pointer',
+                                        (rating || 0) >= star && 'text-yellow-400 fill-yellow-400'
+                                    )}
+                                    onClick={() => setRating && setRating(star)}
+                                />
+                            ))}
+                        </div>
+                        <Button onClick={onDone} className="w-full">Done</Button>
+                    </div>
+                 );
+            default:
+                return <p>Unknown garage status: {ride.status}</p>;
+        }
+    }
+
+
     switch (rideData.status) {
         case "searching":
             return (
@@ -303,14 +372,14 @@ export default function RideStatus({
         <CardContent className="p-4 sm:p-6 bg-muted/30">
           {renderContent()}
         </CardContent>
-        {ride.status !== 'completed' && ride.status !== 'payment_pending' && !isGarageRequest && (
+        {ride.status !== 'completed' && ride.status !== 'payment_pending' && (ride as any).status !== 'bill_sent' && (
              <CardFooter className="p-2">
                 <AlertDialog>
                     <AlertDialogTrigger asChild>
-                        <Button variant="link" size="sm" className="w-full text-muted-foreground">Cancel {isGarageRequest ? 'Request' : 'Ride'}</Button>
+                        <Button variant="link" size="sm" className="w-full text-muted-foreground">Cancel {isGarageRequest ? 'Request' : isAmbulanceCase ? 'Case' : 'Ride'}</Button>
                     </AlertDialogTrigger>
                     <AlertDialogContent>
-                        <AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle><AlertDialogDescription>This will cancel the current {isGarageRequest ? 'service request' : 'ride'}. This action cannot be undone.</AlertDialogDescription></AlertDialogHeader>
+                        <AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle><AlertDialogDescription>This will cancel the current {isGarageRequest ? 'service request' : isAmbulanceCase ? 'emergency case' : 'ride'}. This action cannot be undone.</AlertDialogDescription></AlertDialogHeader>
                         <AlertDialogFooter>
                             <AlertDialogCancel>Go Back</AlertDialogCancel>
                             <AlertDialogAction onClick={onCancel} className="bg-destructive hover:bg-destructive/80">Yes, Cancel</AlertDialogAction>

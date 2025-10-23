@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useToast } from '@/hooks/use-toast'
 import { useFirebase } from '@/firebase/client-provider'
 import { collection, addDoc, serverTimestamp, GeoPoint } from 'firebase/firestore'
-import { getRoute, searchPlace } from '@/lib/tomtom'
+import { getRoute, searchPlace } from '@/lib/routing'
 import { RideData, ClientSession } from '@/lib/types'
 import { cn } from '@/lib/utils'
 import { Card, CardContent } from './ui/card'
@@ -79,8 +79,11 @@ export default function LocationSelector({
   const getCoordinates = async (address: string): Promise<{ lat: number; lon: number } | null> => {
       if (!address || address.trim() === "") return null;
       try {
-          const result: any = await searchPlace(address);
-          if (result && result.results && result.results.length > 0) return result.results[0].position;
+          const results: any[] = await searchPlace(address);
+          if (results && results.length > 0) {
+            const { lat, lon } = results[0];
+            return { lat: parseFloat(lat), lon: parseFloat(lon) };
+          }
           return null;
       } catch (error) { return null; }
   };
@@ -125,7 +128,7 @@ export default function LocationSelector({
     }
     
     const route = routeInfo.routes[0];
-    const distance = route.summary.lengthInMeters;
+    const distance = route.distance;
 
     setRouteGeometry(route.geometry);
     
