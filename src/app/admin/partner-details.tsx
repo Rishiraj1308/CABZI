@@ -122,7 +122,7 @@ export default function PartnerDetails({ partnerId, initialPartnerType, hospital
                 <CardHeader>
                     <div className="flex items-start gap-6">
                         <Avatar className="w-16 h-16 border">
-                            <AvatarImage src={partner.photoUrl || `https://placehold.co/100x100.png`} alt={partner.name} data-ai-hint="driver portrait" />
+                            <AvatarImage src={partner.photoUrl || undefined} alt={partner.name} data-ai-hint="driver portrait" />
                             <AvatarFallback>{getInitials(partner.name).toUpperCase()}</AvatarFallback>
                         </Avatar>
                         <div className="flex-1">
