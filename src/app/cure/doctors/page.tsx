@@ -211,7 +211,7 @@ export default function DoctorsPage() {
     }
     const newDateTime = new Date(newDate);
     const [hours, minutes] = newTime.split(/[: ]/);
-    newDateTime.setHours(newTime.includes('PM') ? parseInt(hours, 10) + 12 : parseInt(hours, 10), 0);
+    newDateTime.setHours(newTime.includes('PM') ? parseInt(hours, 10) + 12 : parseInt(hours, 10), parseInt(minutes, 10), 0);
 
     setAppointments(prev => prev.map(appt => 
       appt.id === selectedAppointment.id 
@@ -541,65 +541,46 @@ export default function DoctorsPage() {
                             <DialogTitle>Add New Doctor</DialogTitle>
                             <DialogDescription>Enter the details for the new doctor to add them to your hospital's roster.</DialogDescription>
                           </DialogHeader>
-                          <form onSubmit={handleAddDoctor}>
-                              <Tabs defaultValue="basic" className="pt-4">
-                                <TabsList className="grid w-full grid-cols-4">
-                                  <TabsTrigger value="basic">Basic Info</TabsTrigger>
-                                  <TabsTrigger value="professional">Professional</TabsTrigger>
-                                  <TabsTrigger value="verification">Verification</TabsTrigger>
-                                  <TabsTrigger value="consultation">Consultation</TabsTrigger>
-                                </TabsList>
-                                <div className="py-6 min-h-[350px]">
-                                    <TabsContent value="basic">
-                                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
-                                        <div className="col-span-1 md:col-span-2 space-y-2">
-                                          <Label>Profile Photo</Label>
-                                          <div className="flex items-center gap-4">
-                                            <Avatar className="w-20 h-20">
-                                              <AvatarImage src={photoPreviewUrl ?? undefined} />
-                                              <AvatarFallback><UserIcon className="w-8 h-8 text-muted-foreground" /></AvatarFallback>
-                                            </Avatar>
-                                             <div className="w-full">
-                                                <Input id="photoUpload" type="file" accept="image/*" onChange={(e) => handleFileChange('photoFile', e)} className="h-auto" />
-                                                {newDoctorData.photoFile && (
-                                                    <div className="mt-2 text-xs text-muted-foreground flex items-center justify-between">
-                                                        <span>{newDoctorData.photoFile.name}</span>
-                                                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => { handleFormChange('photoFile', null); if(photoPreviewUrl) URL.revokeObjectURL(photoPreviewUrl); setPhotoPreviewUrl(null); }}><X className="w-3 h-3"/></Button>
-                                                    </div>
-                                                )}
-                                            </div>
-                                          </div>
-                                        </div>
-                                        <div className="space-y-2"><Label>Full Name</Label><Input name="fullName" required value={newDoctorData.fullName} onChange={e => handleFormChange('fullName', e.target.value)} /></div>
-                                        <div className="space-y-2"><Label>Gender</Label><Select name="gender" required onValueChange={v => handleFormChange('gender', v)} value={newDoctorData.gender}><SelectTrigger><SelectValue placeholder="Select Gender"/></SelectTrigger><SelectContent><SelectItem value="male">Male</SelectItem><SelectItem value="female">Female</SelectItem><SelectItem value="other">Other</SelectItem></SelectContent></Select></div>
-                                        <div className="space-y-2"><Label>Date of Birth</Label><Input name="dob" type="date" required value={newDoctorData.dob} onChange={e => handleFormChange('dob', e.target.value)} /></div>
-                                        <div className="space-y-2"><Label>Contact Number</Label><div className="flex items-center gap-0 rounded-md border border-input focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2"><span className="pl-3 text-muted-foreground text-sm">+91</span><Input id="contactNumber" name="contactNumber" type="tel" maxLength={10} placeholder="12345 67890" required value={newDoctorData.contactNumber} onChange={e => handleFormChange('contactNumber', e.target.value)} className="border-0 h-9 focus-visible:ring-0 focus-visible:ring-offset-0 flex-1"/></div></div>
-                                        <div className="md:col-span-2 space-y-2"><Label>Email Address</Label><Input name="emailAddress" type="email" required value={newDoctorData.emailAddress} onChange={e => handleFormChange('emailAddress', e.target.value)} /></div>
-                                      </div>
-                                    </TabsContent>
-                                    <TabsContent value="professional">
-                                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                          <div className="space-y-2"><Label>Specialization</Label><Select name="specialization" required onValueChange={v => handleFormChange('specialization', v)} value={newDoctorData.specialization}><SelectTrigger><SelectValue placeholder="Select Specialization"/></SelectTrigger><SelectContent>{doctorSpecializations.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent></Select></div>
-                                          <div className="space-y-2"><Label>Qualifications</Label><Input name="qualifications" placeholder="MBBS, MD" required value={newDoctorData.qualifications} onChange={e => handleFormChange('qualifications', e.target.value)} /></div>
-                                          <div className="space-y-2"><Label>Experience (years)</Label><Input name="experience" type="number" required value={newDoctorData.experience} onChange={e => handleFormChange('experience', e.target.value)} /></div>
-                                          <div className="space-y-2"><Label>Department</Label><Input name="department" placeholder="e.g., Pediatrics" value={newDoctorData.department} onChange={e => handleFormChange('department', e.target.value)} /></div>
-                                      </div>
-                                    </TabsContent>
-                                    <TabsContent value="verification">
-                                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                          <div className="space-y-2"><Label>Medical Registration No.</Label><Input name="medicalRegNo" required value={newDoctorData.medicalRegNo} onChange={e => handleFormChange('medicalRegNo', e.target.value)} /></div>
-                                          <div className="space-y-2"><Label>Registration Council</Label><Input name="regCouncil" placeholder="e.g., Delhi Medical Council" required value={newDoctorData.regCouncil} onChange={e => handleFormChange('regCouncil', e.target.value)} /></div>
-                                          <div className="space-y-2"><Label>Registration Year</Label><Input name="regYear" type="number" required value={newDoctorData.regYear} onChange={e => handleFormChange('regYear', e.target.value)} /></div>
-                                       </div>
-                                    </TabsContent>
-                                     <TabsContent value="consultation">
-                                        <div className="space-y-4">
-                                            <div className="space-y-2"><Label>Consultation Fee (INR)</Label><Input name="consultationFee" type="number" placeholder="e.g., 800" required value={newDoctorData.consultationFee} onChange={e => handleFormChange('consultationFee', e.target.value)} /></div>
-                                        </div>
-                                    </TabsContent>
+                          <form onSubmit={handleAddDoctor} className="max-h-[80vh] overflow-y-auto pr-6">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4 py-4">
+
+                              <div className="md:col-span-2">
+                                <h3 className="text-lg font-semibold border-b pb-2 mb-4">Basic Information</h3>
+                              </div>
+                              
+                              <div className="space-y-2 md:col-span-2">
+                                <Label>Profile Photo</Label>
+                                <div className="flex items-center gap-4">
+                                  <Avatar className="w-20 h-20"><AvatarImage src={photoPreviewUrl ?? undefined} /><AvatarFallback><UserIcon className="w-8 h-8 text-muted-foreground" /></AvatarFallback></Avatar>
+                                  <div className="w-full">
+                                    <Input id="photoUpload" type="file" accept="image/*" onChange={(e) => handleFileChange('photoFile', e)} className="h-auto" />
+                                    {newDoctorData.photoFile && (<div className="mt-2 text-xs text-muted-foreground flex items-center justify-between"><span>{newDoctorData.photoFile.name}</span><Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => { handleFormChange('photoFile', null); if(photoPreviewUrl) URL.revokeObjectURL(photoPreviewUrl); setPhotoPreviewUrl(null); }}><X className="w-3 h-3"/></Button></div>)}
+                                  </div>
                                 </div>
-                              </Tabs>
-                            <DialogFooter>
+                              </div>
+                              <div className="space-y-2"><Label>Full Name</Label><Input name="fullName" required value={newDoctorData.fullName} onChange={e => handleFormChange('fullName', e.target.value)} /></div>
+                              <div className="space-y-2"><Label>Gender</Label><Select name="gender" required onValueChange={v => handleFormChange('gender', v)} value={newDoctorData.gender}><SelectTrigger><SelectValue placeholder="Select Gender"/></SelectTrigger><SelectContent><SelectItem value="male">Male</SelectItem><SelectItem value="female">Female</SelectItem><SelectItem value="other">Other</SelectItem></SelectContent></Select></div>
+                              <div className="space-y-2"><Label>Date of Birth</Label><Input name="dob" type="date" required value={newDoctorData.dob} onChange={e => handleFormChange('dob', e.target.value)} /></div>
+                              <div className="space-y-2"><Label>Contact Number</Label><div className="flex items-center gap-0 rounded-md border border-input focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2"><span className="pl-3 text-muted-foreground text-sm">+91</span><Input id="contactNumber" name="contactNumber" type="tel" maxLength={10} placeholder="12345 67890" required value={newDoctorData.contactNumber} onChange={e => handleFormChange('contactNumber', e.target.value)} className="border-0 h-9 focus-visible:ring-0 focus-visible:ring-offset-0 flex-1"/></div></div>
+                              <div className="md:col-span-2 space-y-2"><Label>Email Address</Label><Input name="emailAddress" type="email" required value={newDoctorData.emailAddress} onChange={e => handleFormChange('emailAddress', e.target.value)} /></div>
+
+                              <div className="md:col-span-2 pt-4">
+                                <h3 className="text-lg font-semibold border-b pb-2 mb-4">Professional Details</h3>
+                              </div>
+                              <div className="space-y-2"><Label>Specialization</Label><Select name="specialization" required onValueChange={v => handleFormChange('specialization', v)} value={newDoctorData.specialization}><SelectTrigger><SelectValue placeholder="Select Specialization"/></SelectTrigger><SelectContent>{doctorSpecializations.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent></Select></div>
+                              <div className="space-y-2"><Label>Qualifications</Label><Input name="qualifications" placeholder="MBBS, MD" required value={newDoctorData.qualifications} onChange={e => handleFormChange('qualifications', e.target.value)} /></div>
+                              <div className="space-y-2"><Label>Experience (years)</Label><Input name="experience" type="number" required value={newDoctorData.experience} onChange={e => handleFormChange('experience', e.target.value)} /></div>
+                              <div className="space-y-2"><Label>Department</Label><Input name="department" placeholder="e.g., Pediatrics" value={newDoctorData.department} onChange={e => handleFormChange('department', e.target.value)} /></div>
+
+                              <div className="md:col-span-2 pt-4">
+                                <h3 className="text-lg font-semibold border-b pb-2 mb-4">Verification & Consultation</h3>
+                              </div>
+                              <div className="space-y-2"><Label>Medical Registration No.</Label><Input name="medicalRegNo" required value={newDoctorData.medicalRegNo} onChange={e => handleFormChange('medicalRegNo', e.target.value)} /></div>
+                              <div className="space-y-2"><Label>Registration Council</Label><Input name="regCouncil" placeholder="e.g., Delhi Medical Council" required value={newDoctorData.regCouncil} onChange={e => handleFormChange('regCouncil', e.target.value)} /></div>
+                              <div className="space-y-2"><Label>Registration Year</Label><Input name="regYear" type="number" required value={newDoctorData.regYear} onChange={e => handleFormChange('regYear', e.target.value)} /></div>
+                              <div className="space-y-2"><Label>Consultation Fee (INR)</Label><Input name="consultationFee" type="number" placeholder="e.g., 800" required value={newDoctorData.consultationFee} onChange={e => handleFormChange('consultationFee', e.target.value)} /></div>
+                            </div>
+                            <DialogFooter className="pt-6">
                               <Button type="submit" disabled={isSubmitting}>{isSubmitting ? "Adding..." : "Add Doctor to Roster"}</Button>
                             </DialogFooter>
                           </form>
@@ -741,3 +722,5 @@ export default function DoctorsPage() {
     </div>
   )
 }
+
+    
