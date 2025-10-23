@@ -530,15 +530,16 @@ export default function LoginPage() {
               <CardTitle className="text-2xl mt-4">{getPageTitle()}</CardTitle>
               <CardDescription>
                 <AnimatePresence mode="wait">
-                    <motion.p
+                    <motion.span
                         key={step + roleFromQuery}
                         initial={{ opacity: 0, y: -10 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: 10 }}
                         transition={{ duration: 0.2 }}
+                        className="block"
                     >
                        {getPageDescription()}
-                    </motion.p>
+                    </motion.span>
                 </AnimatePresence>
               </CardDescription>
             </CardHeader>
@@ -567,5 +568,3 @@ export default function LoginPage() {
       </div>
   );
 }
-
-    
