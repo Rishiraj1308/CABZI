@@ -110,7 +110,7 @@ export default function UserDashboard() {
                                         }}>
                                             <Card className="h-full transition-all text-center bg-background/80 backdrop-blur-sm hover:shadow-2xl hover:border-primary/50">
                                                  <CardContent className="p-6 flex flex-col items-center justify-center gap-2">
-                                                    <div className="p-3 bg-muted rounded-full">
+                                                    <div className="p-2 bg-muted rounded-full">
                                                       <service.icon className={`w-4 h-4 ${service.color}`} />
                                                     </div>
                                                     <p className="font-semibold text-sm">{service.title}</p>
