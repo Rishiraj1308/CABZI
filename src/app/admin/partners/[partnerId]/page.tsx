@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Suspense } from 'react';
@@ -13,7 +12,8 @@ function PartnerDetailsPageContent() {
   const params = useParams();
   const searchParams = useSearchParams();
   const partnerId = params.partnerId as string;
-  const partnerType = searchParams.get('type') as 'driver' | 'mechanic' | 'cure' | null;
+  const partnerType = searchParams.get('type') as 'driver' | 'mechanic' | 'cure' | 'doctor' | null;
+  const hospitalId = searchParams.get('hospitalId') as string | null;
 
   if (!partnerId || !partnerType) {
     return (
@@ -26,13 +26,25 @@ function PartnerDetailsPageContent() {
         </div>
     );
   }
+  
+  if (partnerType === 'doctor' && !hospitalId) {
+    return (
+        <div className="text-center">
+            <h2 className="text-2xl font-bold">Missing Hospital Information</h2>
+            <p className="text-muted-foreground">The hospital ID is required to view doctor details.</p>
+             <Button asChild variant="outline" className="mt-4">
+               <Link href="/admin/partners"><ArrowLeft className="mr-2 h-4 w-4"/> Back to All Partners</Link>
+           </Button>
+        </div>
+    );
+  }
 
   return (
       <div>
           <Button asChild variant="outline" size="sm" className="mb-4">
               <Link href="/admin/partners"><ArrowLeft className="mr-2 h-4 w-4"/> Back to All Partners</Link>
           </Button>
-          <PartnerDetails partnerId={partnerId} initialPartnerType={partnerType} />
+          <PartnerDetails partnerId={partnerId} initialPartnerType={partnerType} hospitalId={hospitalId}/>
       </div>
   );
 }

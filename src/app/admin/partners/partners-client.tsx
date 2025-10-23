@@ -156,19 +156,19 @@ export default function PartnersClient() {
     );
   }, [allPartners, searchQuery]);
   
-  const getCollectionName = (type: string, id: string) => {
+  const getCollectionName = (type: string, hospitalId?: string) => {
     switch (type) {
       case 'driver': return 'partners';
       case 'mechanic': return 'mechanics';
       case 'cure': return 'ambulances';
-      case 'doctor': return `ambulances/${id}/doctors`;
+      case 'doctor': return `ambulances/${hospitalId}/doctors`;
       default: return null;
     }
   };
 
   const handleUpdateStatus = async (partner: PartnerData, status: string) => {
     const { id, type, hospitalId } = partner;
-    let collectionName = getCollectionName(type, hospitalId || '');
+    let collectionName = getCollectionName(type, hospitalId);
     if (!collectionName || !db) return;
     
     // For doctors, the document ID is what we need, not the partnerId
@@ -192,7 +192,7 @@ export default function PartnersClient() {
   
   const handleDeletePartner = async (partner: PartnerData) => {
     const { id, type, hospitalId, name } = partner;
-    const collectionName = getCollectionName(type, hospitalId || '');
+    const collectionName = getCollectionName(type, hospitalId);
     if (!collectionName || !db) return;
 
     const docId = id;
@@ -273,7 +273,7 @@ export default function PartnersClient() {
                 <TableRow key={partner.id}>
                   <TableCell className="font-medium">
                      <Link
-                        href={`/admin/partners/${partner.id}?type=${partner.type.toLowerCase()}`}
+                        href={`/admin/partners/${partner.id}?type=${partner.type.toLowerCase()}${partner.hospitalId ? `&hospitalId=${partner.hospitalId}` : ''}`}
                         className="hover:underline text-primary">
                         {partner.name}
                     </Link>
@@ -295,7 +295,7 @@ export default function PartnersClient() {
                           <DropdownMenuContent align="end">
                               <DropdownMenuLabel>Actions</DropdownMenuLabel>
                                <DropdownMenuItem asChild>
-                                 <Link href={`/admin/partners/${partner.id}?type=${partner.type.toLowerCase()}`}>View Details</Link>
+                                 <Link href={`/admin/partners/${partner.id}?type=${partner.type.toLowerCase()}${partner.hospitalId ? `&hospitalId=${partner.hospitalId}` : ''}`}>View Details</Link>
                               </DropdownMenuItem>
                               {(partner.status === 'pending_verification' || partner.status === 'Awaiting Final Approval' || partner.status === 'Rejected') && (
                                   <>

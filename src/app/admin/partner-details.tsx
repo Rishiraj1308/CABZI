@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -7,14 +6,15 @@ import { useFirestore } from '@/firebase/client-provider';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Car, Wrench, Ambulance } from 'lucide-react';
+import { Car, Wrench, Ambulance, Stethoscope } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Label } from '@/components/ui/label';
 
 interface PartnerDetailsProps {
     partnerId: string;
-    initialPartnerType: 'driver' | 'mechanic' | 'cure' | null;
+    initialPartnerType: 'driver' | 'mechanic' | 'cure' | 'doctor' | null;
+    hospitalId?: string | null;
 }
 
 const getInitials = (name: string) => {
@@ -23,7 +23,7 @@ const getInitials = (name: string) => {
     return names.length > 1 ? names[0][0] + names[1][0] : name.substring(0, 2);
 }
 
-export default function PartnerDetails({ partnerId, initialPartnerType }: PartnerDetailsProps) {
+export default function PartnerDetails({ partnerId, initialPartnerType, hospitalId }: PartnerDetailsProps) {
     const [partner, setPartner] = useState<DocumentData | null>(null);
     const [transactions, setTransactions] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -36,23 +36,29 @@ export default function PartnerDetails({ partnerId, initialPartnerType }: Partne
                  return;
             }
 
-            const getCollectionName = () => {
+            const getCollectionPath = () => {
                 switch(initialPartnerType) {
-                    case 'driver': return 'partners';
-                    case 'mechanic': return 'mechanics';
-                    case 'cure': return 'ambulances';
-                    default: return '';
+                    case 'driver': return `partners/${partnerId}`;
+                    case 'mechanic': return `mechanics/${partnerId}`;
+                    case 'cure': return `ambulances/${partnerId}`;
+                    case 'doctor':
+                        if (!hospitalId) {
+                            console.error("Hospital ID is required for doctor details.");
+                            return null;
+                        }
+                        return `ambulances/${hospitalId}/doctors/${partnerId}`;
+                    default: return null;
                 }
             }
 
-            const collectionName = getCollectionName();
-            if (!collectionName) {
+            const docPath = getCollectionPath();
+            if (!docPath) {
                 setIsLoading(false);
                 return;
             }
 
             try {
-                const docRef = doc(db, collectionName, partnerId);
+                const docRef = doc(db, docPath);
                 const docSnap = await getDoc(docRef);
 
                 if (docSnap.exists()) {
@@ -62,8 +68,9 @@ export default function PartnerDetails({ partnerId, initialPartnerType }: Partne
                         ...docSnap.data()
                     });
 
-                    // Fetch transactions if applicable
+                    // Fetch transactions if applicable (for non-Cure partners)
                     if (initialPartnerType === 'driver' || initialPartnerType === 'mechanic') {
+                        const collectionName = initialPartnerType === 'driver' ? 'partners' : 'mechanics';
                         const transQuery = query(collection(db, `${collectionName}/${partnerId}/transactions`), orderBy('date', 'desc'));
                         const transSnap = await getDocs(transQuery);
                         setTransactions(transSnap.docs.map(d => ({ id: d.id, ...d.data() })));
@@ -79,7 +86,7 @@ export default function PartnerDetails({ partnerId, initialPartnerType }: Partne
         };
 
         fetchPartnerData();
-    }, [partnerId, initialPartnerType, db]);
+    }, [partnerId, initialPartnerType, hospitalId, db]);
 
     if (isLoading) {
         return (
@@ -104,6 +111,7 @@ export default function PartnerDetails({ partnerId, initialPartnerType }: Partne
             case 'driver': return <Car className="w-4 h-4 mr-2"/>;
             case 'mechanic': return <Wrench className="w-4 h-4 mr-2"/>;
             case 'cure': return <Ambulance className="w-4 h-4 mr-2"/>;
+            case 'doctor': return <Stethoscope className="w-4 h-4 mr-2"/>;
             default: return null;
         }
     }
