@@ -2,17 +2,19 @@ rules_version = '2';
 
 service firebase.storage {
   match /b/{bucket}/o {
-    
-    // Allow users to read and write to their own folder.
-    // The {userId} wildcard is the user's UID from Firebase Authentication.
-    match /users/{userId}/{allPaths=**} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+    // By default, allow public read access but deny writes.
+    // This is useful for public assets but should be tightened for user-specific data.
+    match /{allPaths=**} {
+      allow read;
+      allow write: if false; // Deny writes by default
     }
 
-    // Allow public read for general assets like profile pictures if needed.
-    // Be careful with this rule in production.
-    match /public/{allPaths=**} {
-        allow read;
+    // Specific rule for doctor documents.
+    // This allows any authenticated user to write to the designated path.
+    // In a production app, you would add more specific checks,
+    // e.g., `if request.auth.uid == hospitalId;`
+    match /doctors/{hospitalId}/{doctorId}/{fileName} {
+      allow write: if request.auth != null;
     }
   }
 }
