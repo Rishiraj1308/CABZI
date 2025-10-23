@@ -1,7 +1,7 @@
 
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef, useMemo } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button'
 import { useToast } from '@/hooks/use-toast'
 import { Stethoscope, UserPlus, MoreHorizontal, Trash2, BadgeCheck, Clock, Briefcase, Calendar, IndianRupee, Phone, Check, Settings, X, User as UserIcon, FileText as FileTextIcon, Download, GraduationCap, Building, Shield, CircleUser, PhoneCall, Mail, Cake, VenetianSofa, AlertTriangle, UploadCloud } from 'lucide-react'
 import { useDb } from '@/firebase/client-provider'
-import { collection, query, onSnapshot, addDoc, doc, deleteDoc, serverTimestamp, Timestamp, orderBy, writeBatch, getDocs, where, updateDoc, setDoc, limit, collectionGroup } from 'firebase/firestore'
+import { collection, query, onSnapshot, addDoc, doc, deleteDoc, serverTimestamp, Timestamp, orderBy, writeBatch, getDocs, where, updateDoc, setDoc, limit, collectionGroup, runTransaction } from 'firebase/firestore'
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
@@ -154,7 +154,6 @@ export default function DoctorsPage() {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
       handleFormChange(field, file);
-      // Create a URL for preview
       const previewUrl = URL.createObjectURL(file);
       setPhotoPreviewUrl(previewUrl);
     } else {
@@ -167,6 +166,7 @@ export default function DoctorsPage() {
   };
 
   useEffect(() => {
+    setIsLoading(true);
     if (!db) {
       setIsLoading(false);
       return;
@@ -178,11 +178,11 @@ export default function DoctorsPage() {
       const doctorsRef = query(collection(db, `ambulances/${partnerId}/doctors`), orderBy('name', 'asc'));
       const unsubscribe = onSnapshot(doctorsRef, (snapshot) => {
         setDoctors(snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Doctor)));
-        setIsLoading(false); // Set loading to false after data is fetched
+        setIsLoading(false);
       }, (error) => {
         console.error("Error fetching doctors:", error);
         toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch doctor list.' });
-        setIsLoading(false); // Also set loading to false on error
+        setIsLoading(false);
       });
       return () => unsubscribe();
     } else {
@@ -238,72 +238,69 @@ export default function DoctorsPage() {
     } = newDoctorData;
 
     if (!name || !phone || !email || !specialization || !qualifications || !experience || !medicalRegNo || !regCouncil || !regYear || !consultationFee) {
-        toast({ variant: 'destructive', title: 'Missing Required Fields', description: 'Please fill out all required fields in the form.' });
+        toast({ variant: 'destructive', title: 'Missing Required Fields', description: 'Please fill out all required fields.' });
         setIsSubmitting(false);
         return;
     }
 
     try {
-        const globalDoctorsRef = collection(db, 'doctors');
-        const q = query(globalDoctorsRef, where("phone", "==", phone), limit(1));
-        const phoneCheck = await getDocs(q);
+        await runTransaction(db, async (transaction) => {
+            const hospitalDoctorsRef = collection(db, `ambulances/${hospitalId}/doctors`);
+            const q = query(hospitalDoctorsRef, where("phone", "==", phone), limit(1));
+            const phoneCheck = await getDocs(q);
 
-        if (!phoneCheck.empty) {
-            toast({ variant: 'destructive', title: 'Phone Number Exists', description: 'A doctor with this phone number is already registered.' });
-            setIsSubmitting(false);
-            return;
-        }
-        
-        const partnerId = `CZD-${phone.slice(-4)}${name.split(' ')[0].slice(0, 2).toUpperCase()}`;
-        const password = `cAbZ@${Math.floor(1000 + Math.random() * 9000)}`;
+            if (!phoneCheck.empty) {
+                throw new Error("Phone Number Exists: A doctor with this phone number is already registered in your hospital.");
+            }
 
-        const hospitalDoctorDocRef = doc(collection(db, `ambulances/${hospitalId}/doctors`));
-        
-        let finalPhotoUrl = '';
-        if (photoFile) {
-            const storage = getStorage();
-            const photoPath = `doctors/${hospitalId}/${hospitalDoctorDocRef.id}/photo.jpg`;
-            const photoRef = ref(storage, photoPath);
-            await uploadBytes(photoRef, photoFile);
-            finalPhotoUrl = await getDownloadURL(photoRef);
-        }
+            const partnerId = `CZD-${phone.slice(-4)}${name.split(' ')[0].slice(0, 2).toUpperCase()}`;
+            const password = `cAbZ@${Math.floor(1000 + Math.random() * 9000)}`;
+            const newDoctorDocRef = doc(hospitalDoctorsRef);
 
-        const newDoctorPayload = {
-            name, phone, email, gender, dob,
-            specialization, qualifications, experience, department, designation,
-            medicalRegNo, regCouncil, regYear,
-            consultationFee: parseFloat(consultationFee),
-            docStatus: 'Pending',
-            partnerId, password,
-            createdAt: serverTimestamp(),
-            photoUrl: finalPhotoUrl,
-        };
+            let finalPhotoUrl = '';
+            if (photoFile) {
+                const storage = getStorage();
+                const photoPath = `doctors/${hospitalId}/${newDoctorDocRef.id}/photo.jpg`;
+                const photoRef = ref(storage, photoPath);
+                await uploadBytes(photoRef, photoFile);
+                finalPhotoUrl = await getDownloadURL(photoRef);
+            }
 
-        // Write to both locations in a batch for atomicity
-        const batch = writeBatch(db);
-        batch.set(hospitalDoctorDocRef, newDoctorPayload);
-        const globalDoctorDocRef = doc(globalDoctorsRef, hospitalDoctorDocRef.id);
-        batch.set(globalDoctorDocRef, {
-            phone: phone,
-            email: email,
-            hospitalId: hospitalId,
-            partnerId: partnerId,
+            const newDoctorPayload = {
+                name, phone, email, gender, dob,
+                specialization, qualifications, experience, department, designation,
+                medicalRegNo, regCouncil, regYear,
+                consultationFee: parseFloat(consultationFee),
+                docStatus: 'Pending',
+                partnerId, password,
+                createdAt: serverTimestamp(),
+                photoUrl: finalPhotoUrl,
+            };
+
+            transaction.set(newDoctorDocRef, newDoctorPayload);
+            
+             // Create a reference in the global 'doctors' collection for login checks
+            const globalDoctorDocRef = doc(db, 'doctors', newDoctorDocRef.id);
+            transaction.set(globalDoctorDocRef, {
+                phone: phone,
+                email: email,
+                hospitalId: hospitalId,
+                partnerId: partnerId,
+            });
+
+            setGeneratedCreds({ id: partnerId, pass: password, role: 'Doctor' });
         });
-        
-        await batch.commit();
 
         toast({ title: 'Doctor Added', description: `Dr. ${name} has been added.` });
-        
         setIsAddDoctorDialogOpen(false);
-        setGeneratedCreds({ id: partnerId, pass: password, role: 'Doctor' });
         setIsCredsDialogOpen(true);
         setNewDoctorData(initialDoctorState);
         if (photoPreviewUrl) URL.revokeObjectURL(photoPreviewUrl);
         setPhotoPreviewUrl(null);
 
-    } catch (error) {
+    } catch (error: any) {
         console.error('Error adding doctor:', error);
-        toast({ variant: 'destructive', title: 'Error', description: 'Could not add doctor. Check console for details.' });
+        toast({ variant: 'destructive', title: error.message.startsWith('Phone Number Exists') ? 'Duplicate Entry' : 'Error', description: error.message || 'Could not add doctor.' });
     } finally {
         setIsSubmitting(false);
     }
