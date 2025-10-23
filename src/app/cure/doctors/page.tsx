@@ -206,32 +206,43 @@ export default function DoctorsPage() {
     const password = `cAbZ@${Math.floor(1000 + Math.random() * 9000)}`;
 
     try {
-        const storage = getStorage();
-        let photoUrl = '';
-        let degreeUrl = '';
-        const doctorDocRef = doc(collection(db, `ambulances/${hospitalId}/doctors`));
-
-        if (photoFile && photoFile.size > 0) {
-            const photoStorageRef = ref(storage, `doctors/${hospitalId}/${doctorDocRef.id}/photo.jpg`);
-            await uploadBytes(photoStorageRef, photoFile);
-            photoUrl = await getDownloadURL(photoStorageRef);
-        }
-
-        if (degreeFile && degreeFile.size > 0) {
-            const degreeStorageRef = ref(storage, `doctors/${hospitalId}/${doctorDocRef.id}/degree.pdf`);
-            await uploadBytes(degreeStorageRef, degreeFile);
-            degreeUrl = await getDownloadURL(degreeStorageRef);
-        }
-
+      const storage = getStorage();
+      const doctorDocRef = doc(collection(db, `ambulances/${hospitalId}/doctors`));
+      
+      // Step 1: Create the document with initial data
       await setDoc(doctorDocRef, {
         name, phone, specialization, qualifications, experience,
         consultationFee: parseFloat(consultationFee),
-        photoUrl: photoUrl || 'pending_upload',
-        degreeUrl: degreeUrl || 'pending_upload',
+        photoUrl: 'pending_upload',
+        degreeUrl: 'pending_upload',
         docStatus: 'Pending',
         partnerId, password,
         createdAt: serverTimestamp(),
       });
+
+      let photoUrl = '';
+      let degreeUrl = '';
+
+      // Step 2: Upload files if they exist
+      if (photoFile && photoFile.size > 0) {
+          const photoStorageRef = ref(storage, `doctors/${hospitalId}/${doctorDocRef.id}/photo.jpg`);
+          await uploadBytes(photoStorageRef, photoFile);
+          photoUrl = await getDownloadURL(photoStorageRef);
+      }
+      if (degreeFile && degreeFile.size > 0) {
+          const degreeStorageRef = ref(storage, `doctors/${hospitalId}/${doctorDocRef.id}/degree.pdf`);
+          await uploadBytes(degreeStorageRef, degreeFile);
+          degreeUrl = await getDownloadURL(degreeStorageRef);
+      }
+      
+      // Step 3: Update the document with file URLs
+      if (photoUrl || degreeUrl) {
+          await updateDoc(doctorDocRef, {
+              photoUrl: photoUrl || 'pending_upload',
+              degreeUrl: degreeUrl || 'pending_upload',
+          });
+      }
+
       toast({ title: 'Doctor Added', description: `Dr. ${name} has been added. Their credentials are now available.` });
       setIsAddDoctorDialogOpen(false);
       setGeneratedCreds({ id: partnerId, pass: password, role: 'Doctor' });
@@ -665,3 +676,5 @@ export default function DoctorsPage() {
     </div>
   )
 }
+
+    
