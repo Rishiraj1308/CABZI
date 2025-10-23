@@ -177,10 +177,10 @@ const LiveMap = forwardRef<any, LiveMapProps>((props, ref) => {
         locateControlRef.current = new (L.Control as any).Locate({
             position: 'bottomright',
             strings: { title: "Show my location" },
-            flyTo: false, // We will handle flyTo manually for better control
+            flyTo: true, // Auto-zoom to user location on find
             keepCurrentZoomLevel: false,
             locateOptions: {
-                maxZoom: 18,
+                maxZoom: 16, // Zoom in closer
                 watch: true,
                 enableHighAccuracy: true,
             },
@@ -290,8 +290,7 @@ const LiveMap = forwardRef<any, LiveMapProps>((props, ref) => {
                 riderMarkerRef.current.setLatLng([lat, lon]);
             } else {
                 riderMarkerRef.current = L.marker([lat, lon], { icon: createIcon('rider') }).addTo(map);
-                // Zoom in to the user's location when it's first added
-                map.flyTo([lat, lon], 16);
+                // Do not fly here, let the locate control handle initial view
             }
         } else if (riderMarkerRef.current) {
             map.removeLayer(riderMarkerRef.current);
@@ -322,8 +321,8 @@ const LiveMap = forwardRef<any, LiveMapProps>((props, ref) => {
                     markerAnimationRef.current.delete(id);
                 } else {
                     hasActiveAnimations = true;
-                    const newLat = anim.startPos.lat + (anim.targetPos.lat - anim.targetPos.lat) * progress;
-                    const newLng = anim.startPos.lng + (anim.targetPos.lng - anim.targetPos.lng) * progress;
+                    const newLat = anim.startPos.lat + (anim.targetPos.lat - anim.startPos.lat) * progress;
+                    const newLng = anim.startPos.lng + (anim.targetPos.lng - anim.startPos.lng) * progress;
                     marker.setLatLng(new L.LatLng(newLat, newLng));
                 }
             });
@@ -477,3 +476,4 @@ const LiveMap = forwardRef<any, LiveMapProps>((props, ref) => {
 
 LiveMap.displayName = 'LiveMap';
 export default LiveMap;
+
