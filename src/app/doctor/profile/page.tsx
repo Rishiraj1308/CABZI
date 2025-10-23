@@ -82,7 +82,7 @@ export default function DoctorProfilePage() {
              <div className="flex items-center justify-center h-full">
                 <Card className="max-w-md text-center p-8">
                      <CardTitle>Profile Not Found</CardTitle>
-                     <CardDescription>We couldn&apos;t load your profile details. Please try logging in again.</CardDescription>
+                     <CardDescription>We couldn't load your profile details. Please try logging in again.</CardDescription>
                 </Card>
              </div>
         )

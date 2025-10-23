@@ -102,7 +102,7 @@ export default function DoctorLayout({ children }: { children: React.ReactNode }
     if (!name) return 'Dr';
     const names = name.split(' ');
     if (names.length > 1) {
-      return `Dr. ${names[names.length-1][0]}`;
+      return `Dr. ${names[names.length - 1][0]}`;
     }
     return `Dr. ${name.substring(0, 1)}`;
   }
