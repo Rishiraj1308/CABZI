@@ -1,3 +1,4 @@
+
 'use client'
 
 import React, { useState, useEffect } from 'react'
@@ -8,7 +9,7 @@ import { Button } from '@/components/ui/button'
 import { useToast } from '@/hooks/use-toast'
 import { Stethoscope, UserPlus, MoreHorizontal, Trash2, BadgeCheck, Clock, Briefcase, Calendar, IndianRupee, Phone, Check, Settings, X, User as UserIcon, FileText as FileTextIcon, Download, GraduationCap, Building, Shield, CircleUser, PhoneCall, Mail, Cake, VenetianSofa, AlertTriangle, UploadCloud } from 'lucide-react'
 import { useDb } from '@/firebase/client-provider'
-import { collection, query, onSnapshot, addDoc, doc, deleteDoc, serverTimestamp, Timestamp, orderBy, writeBatch, getDocs, where, updateDoc, setDoc, limit } from 'firebase/firestore'
+import { collection, query, onSnapshot, addDoc, doc, deleteDoc, serverTimestamp, Timestamp, orderBy, writeBatch, getDocs, where, updateDoc, setDoc, limit, collectionGroup } from 'firebase/firestore'
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
@@ -222,92 +223,84 @@ export default function DoctorsPage() {
   }
 
   const handleAddDoctor = async (event: React.FormEvent<HTMLFormElement>) => {
-      event.preventDefault();
-      if (!db || !hospitalId) {
-          toast({ variant: 'destructive', title: 'Error', description: 'Database or hospital information is missing.' });
-          return;
-      }
-      setIsSubmitting(true);
+    event.preventDefault();
+    if (!db || !hospitalId) {
+        toast({ variant: 'destructive', title: 'Error', description: 'Database or hospital information is missing.' });
+        return;
+    }
+    setIsSubmitting(true);
 
-      const {
-          fullName: name, contactNumber: phone, emailAddress: email, gender, dob,
-          specialization, qualifications, experience, department, designation,
-          medicalRegNo, regCouncil, regYear, consultationFee, photoFile
-      } = newDoctorData;
+    const {
+        fullName: name, contactNumber: phone, emailAddress: email, gender, dob,
+        specialization, qualifications, experience, department, designation,
+        medicalRegNo, regCouncil, regYear, consultationFee, photoFile
+    } = newDoctorData;
 
-      if (!name || !phone || !email || !specialization || !qualifications || !experience || !medicalRegNo || !regCouncil || !regYear || !consultationFee) {
-          toast({ variant: 'destructive', title: 'Missing Required Fields', description: 'Please fill out all required fields in the form.' });
-          setIsSubmitting(false);
-          return;
-      }
+    if (!name || !phone || !email || !specialization || !qualifications || !experience || !medicalRegNo || !regCouncil || !regYear || !consultationFee) {
+        toast({ variant: 'destructive', title: 'Missing Required Fields', description: 'Please fill out all required fields in the form.' });
+        setIsSubmitting(false);
+        return;
+    }
 
-      try {
-          // Use a separate top-level collection for ensuring global uniqueness of phone numbers
-          const globalDoctorsRef = collection(db, 'doctors');
-          const q = query(globalDoctorsRef, where("phone", "==", phone), limit(1));
-          const phoneCheck = await getDocs(q);
+    try {
+        const globalDoctorsRef = collection(db, 'doctors');
+        const q = query(globalDoctorsRef, where("phone", "==", phone), limit(1));
+        const phoneCheck = await getDocs(q);
 
-          if (!phoneCheck.empty) {
-              toast({ variant: 'destructive', title: 'Phone Number Exists', description: 'A doctor with this phone number is already registered across the network.' });
-              setIsSubmitting(false);
-              return;
-          }
+        if (!phoneCheck.empty) {
+            toast({ variant: 'destructive', title: 'Phone Number Exists', description: 'A doctor with this phone number is already registered.' });
+            setIsSubmitting(false);
+            return;
+        }
+        
+        const partnerId = `CZD-${phone.slice(-4)}${name.split(' ')[0].slice(0, 2).toUpperCase()}`;
+        const password = `cAbZ@${Math.floor(1000 + Math.random() * 9000)}`;
 
-          const partnerId = `CZD-${phone.slice(-4)}${name.split(' ')[0].slice(0, 2).toUpperCase()}`;
-          const password = `cAbZ@${Math.floor(1000 + Math.random() * 9000)}`;
+        const hospitalDoctorDocRef = doc(collection(db, `ambulances/${hospitalId}/doctors`));
+        
+        let finalPhotoUrl = '';
+        if (photoFile) {
+            const storage = getStorage();
+            const photoPath = `doctors/${hospitalId}/${hospitalDoctorDocRef.id}/photo.jpg`;
+            const photoRef = ref(storage, photoPath);
+            await uploadBytes(photoRef, photoFile);
+            finalPhotoUrl = await getDownloadURL(photoRef);
+        }
 
-          // Create the doctor document first to get an ID
-          const hospitalDoctorDocRef = doc(collection(db, `ambulances/${hospitalId}/doctors`));
-          
-          await setDoc(hospitalDoctorDocRef, {
-              name, phone, email, gender, dob,
-              specialization, qualifications, experience, department, designation,
-              medicalRegNo, regCouncil, regYear,
-              consultationFee: parseFloat(consultationFee),
-              docStatus: 'Pending',
-              partnerId, password,
-              createdAt: serverTimestamp(),
-              photoUrl: '', // Initial placeholder
-          });
+        await setDoc(hospitalDoctorDocRef, {
+            name, phone, email, gender, dob,
+            specialization, qualifications, experience, department, designation,
+            medicalRegNo, regCouncil, regYear,
+            consultationFee: parseFloat(consultationFee),
+            docStatus: 'Pending',
+            partnerId, password,
+            createdAt: serverTimestamp(),
+            photoUrl: finalPhotoUrl,
+        });
 
-          // Now, upload the photo if it exists
-          let finalPhotoUrl = '';
-          if (photoFile) {
-              const storage = getStorage();
-              const photoPath = `doctors/${hospitalId}/${hospitalDoctorDocRef.id}/photo.jpg`;
-              const photoRef = ref(storage, photoPath);
-              await uploadBytes(photoRef, photoFile);
-              finalPhotoUrl = await getDownloadURL(photoRef);
-              
-              // Update the document with the photo URL
-              await updateDoc(hospitalDoctorDocRef, { photoUrl: finalPhotoUrl });
-          }
-          
-          // Finally, create the global lookup document
-          const globalDoctorDocRef = doc(globalDoctorsRef, hospitalDoctorDocRef.id);
-          await setDoc(globalDoctorDocRef, {
-              phone: phone,
-              email: email,
-              hospitalId: hospitalId,
-              partnerId: partnerId,
-          });
+        const globalDoctorDocRef = doc(globalDoctorsRef, hospitalDoctorDocRef.id);
+        await setDoc(globalDoctorDocRef, {
+            phone: phone,
+            email: email,
+            hospitalId: hospitalId,
+            partnerId: partnerId,
+        });
 
-          toast({ title: 'Doctor Added', description: `Dr. ${name} has been added. Their credentials are now available.` });
-          
-          // Reset state and close dialog
-          setIsAddDoctorDialogOpen(false);
-          setGeneratedCreds({ id: partnerId, pass: password, role: 'Doctor' });
-          setIsCredsDialogOpen(true);
-          setNewDoctorData(initialDoctorState);
-          if (photoPreviewUrl) URL.revokeObjectURL(photoPreviewUrl);
-          setPhotoPreviewUrl(null);
+        toast({ title: 'Doctor Added', description: `Dr. ${name} has been added.` });
+        
+        setIsAddDoctorDialogOpen(false);
+        setGeneratedCreds({ id: partnerId, pass: password, role: 'Doctor' });
+        setIsCredsDialogOpen(true);
+        setNewDoctorData(initialDoctorState);
+        if (photoPreviewUrl) URL.revokeObjectURL(photoPreviewUrl);
+        setPhotoPreviewUrl(null);
 
-      } catch (error) {
-          console.error('Error adding doctor:', error);
-          toast({ variant: 'destructive', title: 'Error', description: 'Could not add doctor. Check console for details.' });
-      } finally {
-          setIsSubmitting(false);
-      }
+    } catch (error) {
+        console.error('Error adding doctor:', error);
+        toast({ variant: 'destructive', title: 'Error', description: 'Could not add doctor. Check console for details.' });
+    } finally {
+        setIsSubmitting(false);
+    }
   };
 
   const handleDeleteDoctor = async (doctorId: string, doctorName: string) => {
@@ -315,7 +308,6 @@ export default function DoctorsPage() {
     const doctorRef = doc(db, `ambulances/${hospitalId}/doctors`, doctorId);
     try {
       await deleteDoc(doctorRef);
-      // Also delete from the global collection
       const globalDoctorRef = doc(db, 'doctors', doctorId);
       await deleteDoc(globalDoctorRef);
       toast({ variant: 'destructive', title: 'Doctor Removed', description: `Dr. ${doctorName} has been removed from the roster.` });
