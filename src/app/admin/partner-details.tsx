@@ -6,7 +6,7 @@ import { useFirestore } from '@/firebase/client-provider';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Car, Wrench, Ambulance, Stethoscope } from 'lucide-react';
+import { Car, Wrench, Ambulance, Stethoscope, Briefcase, GraduationCap, FileText, IndianRupee } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Label } from '@/components/ui/label';
@@ -115,6 +115,82 @@ export default function PartnerDetails({ partnerId, initialPartnerType, hospital
             default: return null;
         }
     }
+    
+    const renderDoctorDetails = () => (
+        <>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                <div className="p-4 bg-muted rounded-lg">
+                    <p className="text-muted-foreground flex items-center gap-1"><Briefcase className="w-4 h-4"/> Specialization</p>
+                    <p className="font-semibold">{partner.specialization || 'N/A'}</p>
+                </div>
+                <div className="p-4 bg-muted rounded-lg">
+                    <p className="text-muted-foreground flex items-center gap-1"><GraduationCap className="w-4 h-4"/> Qualifications</p>
+                    <p className="font-semibold">{partner.qualifications || 'N/A'}</p>
+                </div>
+            </div>
+             <Card>
+                <CardHeader>
+                    <CardTitle>Documents & Verification</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                    <div className="p-3 rounded-lg border flex justify-between items-center">
+                        <Label>Medical Registration No.</Label>
+                        <span className="font-mono text-sm">{partner.medicalRegNo || 'Not Provided'}</span>
+                    </div>
+                     <div className="p-3 rounded-lg border flex justify-between items-center">
+                        <Label>Registration Council</Label>
+                        <span className="font-semibold text-sm">{partner.regCouncil || 'Not Provided'}</span>
+                    </div>
+                </CardContent>
+            </Card>
+        </>
+    );
+
+    const renderDefaultPartnerDetails = () => (
+        <>
+             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                <div className="p-4 bg-muted rounded-lg">
+                    <p className="text-muted-foreground">Vehicle/Firm</p>
+                    <p className="font-semibold">{partner.vehicleName || partner.firmName || partner.name}</p>
+                </div>
+                <div className="p-4 bg-muted rounded-lg">
+                    <p className="text-muted-foreground">Registration No.</p>
+                    <p className="font-semibold">{partner.vehicleNumber || partner.registrationNumber || 'N/A'}</p>
+                </div>
+                 <div className="p-4 bg-muted rounded-lg">
+                    <p className="text-muted-foreground">Wallet Balance</p>
+                    <p className="font-semibold text-lg text-primary">₹{(partner.walletBalance || 0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
+                </div>
+                 {(partner.type === 'mechanic' || partner.type === 'cure') && partner.services && (
+                    <div className="p-4 bg-muted rounded-lg md:col-span-3">
+                        <p className="text-muted-foreground mb-2">Services Offered</p>
+                        <div className="flex flex-wrap gap-2">
+                            {partner.services.map((s: string) => <Badge key={s} variant="secondary">{s}</Badge>)}
+                        </div>
+                    </div>
+                )}
+            </div>
+             <Card>
+                <CardHeader>
+                    <CardTitle>Documents for Verification</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                    <div className="p-3 rounded-lg border flex justify-between items-center">
+                        <Label>Driving Licence</Label>
+                        <span className="font-mono text-sm">{partner.drivingLicence || 'Not Provided'}</span>
+                    </div>
+                     <div className="p-3 rounded-lg border flex justify-between items-center">
+                        <Label>Aadhaar Number</Label>
+                        <span className="font-mono text-sm">{partner.aadhaarNumber || 'Not Provided'}</span>
+                    </div>
+                     <div className="p-3 rounded-lg border flex justify-between items-center">
+                        <Label>PAN Card</Label>
+                        <span className="font-mono text-sm">{partner.panCard || 'Not Provided'}</span>
+                    </div>
+                </CardContent>
+            </Card>
+        </>
+    );
 
     return (
         <div className="space-y-6 max-h-[70vh] overflow-y-auto p-1 pr-4">
@@ -141,88 +217,49 @@ export default function PartnerDetails({ partnerId, initialPartnerType, hospital
                         </div>
                     </div>
                 </CardHeader>
-                <CardContent>
-                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                        <div className="p-4 bg-muted rounded-lg">
-                            <p className="text-muted-foreground">Vehicle/Firm</p>
-                            <p className="font-semibold">{partner.vehicleName || partner.firmName || partner.name}</p>
-                        </div>
-                        <div className="p-4 bg-muted rounded-lg">
-                            <p className="text-muted-foreground">Registration No.</p>
-                            <p className="font-semibold">{partner.vehicleNumber || partner.registrationNumber || 'N/A'}</p>
-                        </div>
-                         <div className="p-4 bg-muted rounded-lg">
-                            <p className="text-muted-foreground">Wallet Balance</p>
-                            <p className="font-semibold text-lg text-primary">₹{(partner.walletBalance || 0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
-                        </div>
-                         {(partner.type === 'mechanic' || partner.type === 'cure') && partner.services && (
-                            <div className="p-4 bg-muted rounded-lg md:col-span-3">
-                                <p className="text-muted-foreground mb-2">Services Offered</p>
-                                <div className="flex flex-wrap gap-2">
-                                    {partner.services.map((s: string) => <Badge key={s} variant="secondary">{s}</Badge>)}
-                                </div>
-                            </div>
-                        )}
-                    </div>
+                <CardContent className="space-y-4">
+                   {partner.type === 'doctor' ? renderDoctorDetails() : renderDefaultPartnerDetails()}
                 </CardContent>
             </Card>
 
-             <Card>
-                <CardHeader>
-                    <CardTitle>Documents for Verification</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                    <div className="p-3 rounded-lg border flex justify-between items-center">
-                        <Label>Driving Licence</Label>
-                        <span className="font-mono text-sm">{partner.drivingLicence || 'Not Provided'}</span>
-                    </div>
-                     <div className="p-3 rounded-lg border flex justify-between items-center">
-                        <Label>Aadhaar Number</Label>
-                        <span className="font-mono text-sm">{partner.aadhaarNumber || 'Not Provided'}</span>
-                    </div>
-                     <div className="p-3 rounded-lg border flex justify-between items-center">
-                        <Label>PAN Card</Label>
-                        <span className="font-mono text-sm">{partner.panCard || 'Not Provided'}</span>
-                    </div>
-                </CardContent>
-            </Card>
-
-            <Card>
-                <CardHeader>
-                    <CardTitle>Financial Ledger</CardTitle>
-                    <CardDescription>All transactions related to this partner&apos;s wallet.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Date</TableHead>
-                                <TableHead>Description</TableHead>
-                                <TableHead className="text-right">Amount</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {transactions.length > 0 ? (
-                                transactions.map(tx => (
-                                    <TableRow key={tx.id}>
-                                        <TableCell>{tx.date.toDate().toLocaleDateString()}</TableCell>
-                                        <TableCell className="font-medium">{tx.type}</TableCell>
-                                        <TableCell className={`text-right font-medium ${tx.amount < 0 ? 'text-destructive' : 'text-green-600'}`}>
-                                           {tx.amount > 0 ? '+' : ''}₹{tx.amount.toFixed(2)}
+           {partner.type !== 'doctor' && (
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Financial Ledger</CardTitle>
+                        <CardDescription>All transactions related to this partner&apos;s wallet.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Date</TableHead>
+                                    <TableHead>Description</TableHead>
+                                    <TableHead className="text-right">Amount</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {transactions.length > 0 ? (
+                                    transactions.map(tx => (
+                                        <TableRow key={tx.id}>
+                                            <TableCell>{tx.date.toDate().toLocaleDateString()}</TableCell>
+                                            <TableCell className="font-medium">{tx.type}</TableCell>
+                                            <TableCell className={`text-right font-medium ${tx.amount < 0 ? 'text-destructive' : 'text-green-600'}`}>
+                                            {tx.amount > 0 ? '+' : ''}₹{tx.amount.toFixed(2)}
+                                            </TableCell>
+                                        </TableRow>
+                                    ))
+                                ) : (
+                                    <TableRow>
+                                        <TableCell colSpan={3} className="h-24 text-center text-muted-foreground">
+                                            No transactions found for this partner.
                                         </TableCell>
                                     </TableRow>
-                                ))
-                            ) : (
-                                <TableRow>
-                                    <TableCell colSpan={3} className="h-24 text-center text-muted-foreground">
-                                        No transactions found for this partner.
-                                    </TableCell>
-                                </TableRow>
-                            )}
-                        </TableBody>
-                    </Table>
-                </CardContent>
-            </Card>
+                                )}
+                            </TableBody>
+                        </Table>
+                    </CardContent>
+                </Card>
+           )}
         </div>
     );
 }
