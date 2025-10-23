@@ -152,9 +152,7 @@ export default function DoctorsPage() {
   };
   
   const handleFileChange = (field: 'photoUpload' | 'degreeUpload' | 'licenseUpload', file: File | null) => {
-    if (file) {
-      handleFormChange(field, file);
-    }
+    setNewDoctorData(prev => ({...prev, [field]: file}));
   };
 
 
@@ -358,7 +356,7 @@ export default function DoctorsPage() {
                                      <div className="flex-1">
                                          <p className="font-semibold">{appt.patientName}</p>
                                          <p className="text-xs text-muted-foreground flex items-center gap-1.5"><Phone className="w-3 h-3"/> {appt.patientPhone}</p>
-                                         <p className="text-xs">{new Date(appt.date).toLocaleDateString()} at {format(new Date(appt.date), 'p')}</p>
+                                         <p className="text-xs">{new Date(appt.appointmentDate).toLocaleDateString()} at {appt.appointmentTime}</p>
                                      </div>
                                      <div className="flex flex-col items-end gap-1">
                                        {appt.status === 'Pending' && <Button size="sm" onClick={() => handleAppointmentAction(appt, 'confirm')}>Confirm</Button>}
@@ -418,7 +416,7 @@ export default function DoctorsPage() {
                                                         {timeSlots.map(slot => (<Button key={slot} variant={newTime === slot ? 'default' : 'outline'} onClick={() => setNewTime(slot)}>{slot}</Button>))}
                                                     </div>
                                                 </div>
-                                                <Button className="w-full mt-4" onClick={handleRescheduleAppointment}>Confirm Reschedule</Button>
+                                                <Button className="w-full mt-4" onClick={handleRescheduleSubmit}>Confirm Reschedule</Button>
                                             </div>
                                             <DialogFooter className="border-t pt-4">
                                                  <AlertDialog>
@@ -756,3 +754,5 @@ export default function DoctorsPage() {
     </div>
   )
 }
+
+    
