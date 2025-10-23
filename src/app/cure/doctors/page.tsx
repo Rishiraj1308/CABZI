@@ -108,6 +108,26 @@ const doctorSpecializations = [
   'Gastroenterology', 'General Physician', 'Dermatology', 'ENT Specialist'
 ];
 
+const initialDoctorState = {
+    fullName: '',
+    gender: '',
+    dob: '',
+    contactNumber: '',
+    emailAddress: '',
+    specialization: '',
+    qualifications: '',
+    experience: '',
+    department: '',
+    designation: '',
+    medicalRegNo: '',
+    regCouncil: '',
+    regYear: '',
+    consultationFee: '',
+    photoUpload: null as File | null,
+    degreeUpload: null as File | null,
+    licenseUpload: null as File | null,
+};
+
 export default function DoctorsPage() {
   const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [appointments, setAppointments] = useState<Appointment[]>(mockAppointments);
@@ -124,6 +144,20 @@ export default function DoctorsPage() {
   const db = useDb();
   const [hospitalId, setHospitalId] = useState<string | null>(null);
   const [selectedDoctorForVerification, setSelectedDoctorForVerification] = useState<Doctor | null>(null);
+
+  // Unified state for the new doctor form
+  const [newDoctorData, setNewDoctorData] = useState(initialDoctorState);
+
+  const handleFormChange = (field: keyof typeof newDoctorData, value: any) => {
+    setNewDoctorData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleFileChange = (field: 'photoUpload' | 'degreeUpload' | 'licenseUpload', file: File | null) => {
+    if (file) {
+      handleFormChange(field, file);
+    }
+  };
+
 
   useEffect(() => {
     if (db) {
@@ -163,12 +197,12 @@ export default function DoctorsPage() {
 
   const handleRescheduleSubmit = () => {
     if (!selectedAppointment || !newDate || !newTime) {
-      toast({ variant: 'destructive', title: 'Error', description: 'Please select a new date and time.' });
+      toast({ variant: 'destructive', title: 'Incomplete', description: 'Please select a new date and time.'});
       return;
     }
     const newDateTime = new Date(newDate);
     const [hours, minutes] = newTime.split(/[: ]/);
-    newDateTime.setHours(newTime.includes('PM') ? parseInt(hours, 10) + 12 : parseInt(minutes, 10), 0);
+    newDateTime.setHours(newTime.includes('PM') ? parseInt(hours, 10) + 12 : parseInt(minutes, 10), parseInt(minutes, 10), 0);
 
     setAppointments(prev => prev.map(a => 
       a.id === selectedAppointment.id 
@@ -176,95 +210,104 @@ export default function DoctorsPage() {
       : a
     ));
     
-    toast({ title: 'Appointment Rescheduled', description: `Appointment for ${selectedAppointment.patientName} has been updated.` });
+    toast({ title: 'Appointment Rescheduled', description: `Appointment for ${selectedAppointment.patientName} is now on ${format(newDateTime, 'PPP')} at ${newTime}.` });
     setIsManageAppointmentOpen(false);
   }
 
 
-  const handleAddDoctor = async (event: React.FormEvent<HTMLFormElement>) => {
+ const handleAddDoctor = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!db || !hospitalId) return;
     setIsSubmitting(true);
 
-    const formData = new FormData(event.currentTarget);
-    const name = formData.get('fullName') as string;
-    const phone = formData.get('contactNumber') as string;
-    const email = formData.get('emailAddress') as string;
-    const gender = formData.get('gender') as string;
-    const dob = formData.get('dob') as string;
-    
-    const specialization = formData.get('specialization') as string;
-    const qualifications = formData.get('qualifications') as string;
-    const experience = formData.get('experience') as string;
-    const department = formData.get('department') as string;
-
-    const medicalRegNo = formData.get('medicalRegNo') as string;
-    const regCouncil = formData.get('regCouncil') as string;
-    const regYear = formData.get('regYear') as string;
-
-    const consultationFee = formData.get('consultationFee') as string;
-
-    const photoFile = formData.get('photoUpload') as File;
-    const degreeFile = formData.get('degreeUpload') as File;
-    const licenseFile = formData.get('licenseUpload') as File;
+    const {
+        fullName: name,
+        contactNumber: phone,
+        emailAddress: email,
+        gender,
+        dob,
+        specialization,
+        qualifications,
+        experience,
+        department,
+        designation,
+        medicalRegNo,
+        regCouncil,
+        regYear,
+        consultationFee,
+        photoUpload,
+        degreeUpload,
+        licenseUpload
+    } = newDoctorData;
 
     if (!name || !phone || !email || !specialization || !qualifications || !experience || !medicalRegNo || !regCouncil || !regYear || !consultationFee) {
-      toast({ variant: 'destructive', title: 'Missing Required Fields', description: 'Please fill out all required fields in the form.' });
-      setIsSubmitting(false);
-      return;
+        toast({ variant: 'destructive', title: 'Missing Required Fields', description: 'Please fill out all required fields in the form.' });
+        setIsSubmitting(false);
+        return;
     }
-    
+
     const partnerId = `CZD-${phone.slice(-4)}${name.split(' ')[0].slice(0, 2).toUpperCase()}`;
     const password = `cAbZ@${Math.floor(1000 + Math.random() * 9000)}`;
 
     try {
-      const storage = getStorage();
-      const doctorDocRef = doc(collection(db, `ambulances/${hospitalId}/doctors`));
-      
-      // First, create the document with all textual data.
-      await setDoc(doctorDocRef, {
-        name, phone, email, gender, dob,
-        specialization, qualifications, experience, department,
-        medicalRegNo, regCouncil, regYear,
-        consultationFee: parseFloat(consultationFee),
-        docStatus: 'Pending',
-        partnerId, password,
-        createdAt: serverTimestamp(),
-      });
-      
-      // Then, upload files and update the document with URLs
-      let photoUrl = '';
-      if (photoFile && photoFile.size > 0) {
-          const photoStorageRef = ref(storage, `doctors/${hospitalId}/${doctorDocRef.id}/photo.jpg`);
-          await uploadBytes(photoStorageRef, photoFile);
-          photoUrl = await getDownloadURL(photoStorageRef);
-      }
-      let degreeUrl = '';
-      if (degreeFile && degreeFile.size > 0) {
-          const degreeStorageRef = ref(storage, `doctors/${hospitalId}/${doctorDocRef.id}/degree.pdf`);
-          await uploadBytes(degreeStorageRef, degreeFile);
-          degreeUrl = await getDownloadURL(degreeStorageRef);
-      }
-       let licenseUrl = '';
-      if (licenseFile && licenseFile.size > 0) {
-          const licenseStorageRef = ref(storage, `doctors/${hospitalId}/${doctorDocRef.id}/license.pdf`);
-          await uploadBytes(licenseStorageRef, licenseFile);
-          licenseUrl = await getDownloadURL(licenseStorageRef);
-      }
-      
-      await updateDoc(doctorDocRef, { photoUrl, degreeUrl, licenseUrl });
+        const storage = getStorage();
+        const doctorDocRef = doc(collection(db, `ambulances/${hospitalId}/doctors`));
+        
+        // Create the document first with textual data
+        await setDoc(doctorDocRef, {
+            name, phone, email, gender, dob,
+            specialization, qualifications, experience, department, designation,
+            medicalRegNo, regCouncil, regYear,
+            consultationFee: parseFloat(consultationFee),
+            docStatus: 'Pending',
+            partnerId, password,
+            createdAt: serverTimestamp(),
+            // Set placeholder URLs, will be updated after upload
+            photoUrl: 'pending_upload',
+            degreeUrl: 'pending_upload',
+            licenseUrl: 'pending_upload',
+        });
 
-      toast({ title: 'Doctor Added', description: `Dr. ${name} has been added. Their credentials are now available.` });
-      setIsAddDoctorDialogOpen(false);
-      setGeneratedCreds({ id: partnerId, pass: password, role: 'Doctor' });
-      setIsCredsDialogOpen(true);
+        // Now, upload files and update the document with the real URLs
+        let photoUrl = '';
+        if (photoUpload) {
+            const photoStorageRef = ref(storage, `doctors/${hospitalId}/${doctorDocRef.id}/photo.jpg`);
+            await uploadBytes(photoStorageRef, photoUpload);
+            photoUrl = await getDownloadURL(photoStorageRef);
+        }
+        let degreeUrl = '';
+        if (degreeUpload) {
+            const degreeStorageRef = ref(storage, `doctors/${hospitalId}/${doctorDocRef.id}/degree.pdf`);
+            await uploadBytes(degreeStorageRef, degreeUpload);
+            degreeUrl = await getDownloadURL(degreeStorageRef);
+        }
+        let licenseUrl = '';
+        if (licenseUpload) {
+            const licenseStorageRef = ref(storage, `doctors/${hospitalId}/${doctorDocRef.id}/license.pdf`);
+            await uploadBytes(licenseStorageRef, licenseUpload);
+            licenseUrl = await getDownloadURL(licenseStorageRef);
+        }
+
+        // Update doc with actual file URLs
+        await updateDoc(doctorDocRef, { 
+            photoUrl: photoUrl || '',
+            degreeUrl: degreeUrl || '',
+            licenseUrl: licenseUrl || ''
+        });
+
+        toast({ title: 'Doctor Added', description: `Dr. ${name} has been added. Their credentials are now available.` });
+        setIsAddDoctorDialogOpen(false);
+        setGeneratedCreds({ id: partnerId, pass: password, role: 'Doctor' });
+        setIsCredsDialogOpen(true);
+        setNewDoctorData(initialDoctorState); // Reset form state
+
     } catch (error) {
-      console.error('Error adding doctor:', error);
-      toast({ variant: 'destructive', title: 'Error', description: 'Could not add doctor. Check console for details.' });
+        console.error('Error adding doctor:', error);
+        toast({ variant: 'destructive', title: 'Error', description: 'Could not add doctor. Check console for details.' });
     } finally {
         setIsSubmitting(false);
     }
-  };
+};
 
   const handleDeleteDoctor = async (doctorId: string, doctorName: string) => {
     if (!db || !hospitalId) return;
@@ -363,7 +406,7 @@ export default function DoctorsPage() {
                                                     <div className="flex justify-between"><span>Contact:</span><span className="font-semibold">{selectedAppointment?.patientPhone}</span></div>
                                                     <div className="flex justify-between"><span>Doctor:</span><span className="font-semibold">{selectedAppointment?.doctorName}</span></div>
                                                     <div className="flex justify-between items-center"><span>Status:</span><Badge variant={selectedAppointment?.status === 'Confirmed' ? 'default' : 'secondary'} className={cn(selectedAppointment?.status === 'Confirmed' && 'bg-blue-100 text-blue-800')}>{selectedAppointment?.status}</Badge></div>
-                                                </div>
+                                                 </div>
                                                  <div className="mt-2">
                                                     <h5 className="text-sm font-semibold">Visit History:</h5>
                                                     <p className="text-xs text-muted-foreground text-center py-2">No past visits recorded.</p>
@@ -502,41 +545,40 @@ export default function DoctorsPage() {
                                 <div className="py-6 min-h-[350px]">
                                     <TabsContent value="basic">
                                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div className="space-y-2"><Label htmlFor="fullName">Full Name</Label><Input name="fullName" required /></div>
-                                        <div className="space-y-2"><Label>Gender</Label><Select name="gender" required><SelectTrigger><SelectValue placeholder="Select Gender"/></SelectTrigger><SelectContent><SelectItem value="male">Male</SelectItem><SelectItem value="female">Female</SelectItem><SelectItem value="other">Other</SelectItem></SelectContent></Select></div>
-                                        <div className="space-y-2"><Label htmlFor="dob">Date of Birth</Label><Input name="dob" type="date" required /></div>
+                                        <div className="space-y-2"><Label htmlFor="fullName">Full Name</Label><Input name="fullName" required value={newDoctorData.fullName} onChange={e => handleFormChange('fullName', e.target.value)} /></div>
+                                        <div className="space-y-2"><Label>Gender</Label><Select name="gender" required onValueChange={v => handleFormChange('gender', v)} value={newDoctorData.gender}><SelectTrigger><SelectValue placeholder="Select Gender"/></SelectTrigger><SelectContent><SelectItem value="male">Male</SelectItem><SelectItem value="female">Female</SelectItem><SelectItem value="other">Other</SelectItem></SelectContent></Select></div>
+                                        <div className="space-y-2"><Label htmlFor="dob">Date of Birth</Label><Input name="dob" type="date" required value={newDoctorData.dob} onChange={e => handleFormChange('dob', e.target.value)} /></div>
                                         <div className="space-y-2">
                                             <Label htmlFor="contactNumber">Contact Number</Label>
                                             <div className="flex items-center gap-0 rounded-md border border-input focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2">
                                                 <span className="pl-3 text-muted-foreground text-sm">+91</span>
-                                                <Input id="contactNumber" name="contactNumber" type="tel" maxLength={10} placeholder="12345 67890" required className="border-0 h-9 focus-visible:ring-0 focus-visible:ring-offset-0 flex-1"/>
+                                                <Input id="contactNumber" name="contactNumber" type="tel" maxLength={10} placeholder="12345 67890" required value={newDoctorData.contactNumber} onChange={e => handleFormChange('contactNumber', e.target.value)} className="border-0 h-9 focus-visible:ring-0 focus-visible:ring-offset-0 flex-1"/>
                                             </div>
                                         </div>
-                                        <div className="md:col-span-2 space-y-2"><Label htmlFor="emailAddress">Email Address</Label><Input name="emailAddress" type="email" required /></div>
-                                        <div className="space-y-2 md:col-span-2"><Label htmlFor="photoUpload">Passport-size Photo</Label><Input name="photoUpload" type="file" /></div>
+                                        <div className="md:col-span-2 space-y-2"><Label htmlFor="emailAddress">Email Address</Label><Input name="emailAddress" type="email" required value={newDoctorData.emailAddress} onChange={e => handleFormChange('emailAddress', e.target.value)} /></div>
+                                        <div className="space-y-2 md:col-span-2"><Label htmlFor="photoUpload">Passport-size Photo</Label><Input name="photoUpload" type="file" onChange={e => handleFileChange('photoUpload', e.target.files ? e.target.files[0] : null)} /></div>
                                       </div>
                                     </TabsContent>
                                     <TabsContent value="professional">
                                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                          <div className="space-y-2"><Label>Specialization</Label><Select name="specialization" required><SelectTrigger><SelectValue placeholder="Select Specialization"/></SelectTrigger><SelectContent>{doctorSpecializations.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent></Select></div>
-                                          <div className="space-y-2"><Label>Qualifications</Label><Input name="qualifications" placeholder="MBBS, MD" required /></div>
-                                          <div className="space-y-2"><Label>Experience (years)</Label><Input name="experience" type="number" required /></div>
-                                          <div className="space-y-2"><Label>Department</Label><Input name="department" placeholder="e.g., Pediatrics" /></div>
+                                          <div className="space-y-2"><Label>Specialization</Label><Select name="specialization" required onValueChange={v => handleFormChange('specialization', v)} value={newDoctorData.specialization}><SelectTrigger><SelectValue placeholder="Select Specialization"/></SelectTrigger><SelectContent>{doctorSpecializations.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent></Select></div>
+                                          <div className="space-y-2"><Label>Qualifications</Label><Input name="qualifications" placeholder="MBBS, MD" required value={newDoctorData.qualifications} onChange={e => handleFormChange('qualifications', e.target.value)} /></div>
+                                          <div className="space-y-2"><Label>Experience (years)</Label><Input name="experience" type="number" required value={newDoctorData.experience} onChange={e => handleFormChange('experience', e.target.value)} /></div>
+                                          <div className="space-y-2"><Label>Department</Label><Input name="department" placeholder="e.g., Pediatrics" value={newDoctorData.department} onChange={e => handleFormChange('department', e.target.value)} /></div>
                                       </div>
                                     </TabsContent>
                                     <TabsContent value="verification">
                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                          <div className="space-y-2"><Label>Medical Registration No.</Label><Input name="medicalRegNo" required /></div>
-                                          <div className="space-y-2"><Label>Registration Council</Label><Input name="regCouncil" placeholder="e.g., Delhi Medical Council" required /></div>
-                                          <div className="space-y-2"><Label>Registration Year</Label><Input name="regYear" type="number" required /></div>
-                                          <div className="space-y-2"><Label>Medical License Upload</Label><Input name="licenseUpload" type="file" /></div>
-                                          <div className="md:col-span-2 space-y-2"><Label>Degree Certificate Upload</Label><Input name="degreeUpload" type="file" /></div>
+                                          <div className="space-y-2"><Label>Medical Registration No.</Label><Input name="medicalRegNo" required value={newDoctorData.medicalRegNo} onChange={e => handleFormChange('medicalRegNo', e.target.value)} /></div>
+                                          <div className="space-y-2"><Label>Registration Council</Label><Input name="regCouncil" placeholder="e.g., Delhi Medical Council" required value={newDoctorData.regCouncil} onChange={e => handleFormChange('regCouncil', e.target.value)} /></div>
+                                          <div className="space-y-2"><Label>Registration Year</Label><Input name="regYear" type="number" required value={newDoctorData.regYear} onChange={e => handleFormChange('regYear', e.target.value)} /></div>
+                                          <div className="space-y-2"><Label>Medical License Upload</Label><Input name="licenseUpload" type="file" onChange={e => handleFileChange('licenseUpload', e.target.files ? e.target.files[0] : null)} /></div>
+                                          <div className="md:col-span-2 space-y-2"><Label>Degree Certificate Upload</Label><Input name="degreeUpload" type="file" onChange={e => handleFileChange('degreeUpload', e.target.files ? e.target.files[0] : null)} /></div>
                                        </div>
                                     </TabsContent>
                                      <TabsContent value="consultation">
                                         <div className="space-y-4">
-                                            <div className="space-y-2"><Label>Consultation Fee (INR)</Label><Input name="consultationFee" type="number" placeholder="e.g., 800" required /></div>
-                                            {/* Add availability fields here in future */}
+                                            <div className="space-y-2"><Label>Consultation Fee (INR)</Label><Input name="consultationFee" type="number" placeholder="e.g., 800" required value={newDoctorData.consultationFee} onChange={e => handleFormChange('consultationFee', e.target.value)} /></div>
                                         </div>
                                     </TabsContent>
                                 </div>
