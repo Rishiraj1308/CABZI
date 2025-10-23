@@ -58,6 +58,7 @@ interface Doctor {
   createdAt: Timestamp;
   photoUrl?: string;
   degreeUrl?: string;
+  licenseUrl?: string;
   docStatus?: 'Verified' | 'Pending' | 'Awaiting Final Approval' | 'Rejected';
   partnerId?: string; 
   password?: string; 
@@ -220,6 +221,21 @@ export default function DoctorsPage() {
       const storage = getStorage();
       const doctorDocRef = doc(collection(db, `ambulances/${hospitalId}/doctors`));
       
+      // First, create the document with all textual data.
+      await setDoc(doctorDocRef, {
+        name, phone, email, gender, dob,
+        specialization, qualifications, experience, department,
+        medicalRegNo, regCouncil, regYear,
+        consultationFee: parseFloat(consultationFee),
+        docStatus: 'Pending',
+        partnerId, password,
+        createdAt: serverTimestamp(),
+        photoUrl: 'pending_upload', // Placeholder
+        degreeUrl: 'pending_upload',
+        licenseUrl: 'pending_upload',
+      });
+      
+      // Then, upload files and update the document with URLs
       let photoUrl = '';
       if (photoFile && photoFile.size > 0) {
           const photoStorageRef = ref(storage, `doctors/${hospitalId}/${doctorDocRef.id}/photo.jpg`);
@@ -239,16 +255,7 @@ export default function DoctorsPage() {
           licenseUrl = await getDownloadURL(licenseStorageRef);
       }
       
-      await setDoc(doctorDocRef, {
-        name, phone, email, gender, dob,
-        specialization, qualifications, experience, department,
-        medicalRegNo, regCouncil, regYear,
-        consultationFee: parseFloat(consultationFee),
-        photoUrl, degreeUrl, licenseUrl,
-        docStatus: 'Pending',
-        partnerId, password,
-        createdAt: serverTimestamp(),
-      });
+      await updateDoc(doctorDocRef, { photoUrl, degreeUrl, licenseUrl });
 
       toast({ title: 'Doctor Added', description: `Dr. ${name} has been added. Their credentials are now available.` });
       setIsAddDoctorDialogOpen(false);
@@ -501,7 +508,13 @@ export default function DoctorsPage() {
                                         <div className="space-y-2"><Label htmlFor="fullName">Full Name</Label><Input name="fullName" required /></div>
                                         <div className="space-y-2"><Label>Gender</Label><Select name="gender" required><SelectTrigger><SelectValue placeholder="Select Gender"/></SelectTrigger><SelectContent><SelectItem value="male">Male</SelectItem><SelectItem value="female">Female</SelectItem><SelectItem value="other">Other</SelectItem></SelectContent></Select></div>
                                         <div className="space-y-2"><Label htmlFor="dob">Date of Birth</Label><Input name="dob" type="date" required /></div>
-                                        <div className="space-y-2"><Label htmlFor="contactNumber">Contact Number</Label><Input name="contactNumber" type="tel" required /></div>
+                                        <div className="space-y-2">
+                                            <Label htmlFor="contactNumber">Contact Number</Label>
+                                            <div className="flex items-center gap-0 rounded-md border border-input focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2">
+                                                <span className="pl-3 text-muted-foreground text-sm">+91</span>
+                                                <Input id="contactNumber" name="contactNumber" type="tel" maxLength={10} placeholder="12345 67890" required className="border-0 h-9 focus-visible:ring-0 focus-visible:ring-offset-0 flex-1"/>
+                                            </div>
+                                        </div>
                                         <div className="md:col-span-2 space-y-2"><Label htmlFor="emailAddress">Email Address</Label><Input name="emailAddress" type="email" required /></div>
                                         <div className="space-y-2 md:col-span-2"><Label htmlFor="photoUpload">Passport-size Photo</Label><Input name="photoUpload" type="file" /></div>
                                       </div>
@@ -630,6 +643,16 @@ export default function DoctorsPage() {
                                                         </Button>
                                                     </TooltipTrigger>
                                                     {(!selectedDoctorForVerification?.degreeUrl || selectedDoctorForVerification?.degreeUrl === 'pending_upload') && <TooltipContent><p>Document not uploaded by the doctor yet.</p></TooltipContent>}
+                                                </Tooltip>
+                                                <Tooltip>
+                                                    <TooltipTrigger asChild>
+                                                         <Button asChild variant="outline" className="w-full justify-start gap-2" disabled={!selectedDoctorForVerification?.licenseUrl || selectedDoctorForVerification?.licenseUrl === 'pending_upload'}>
+                                                             <a href={selectedDoctorForVerification?.licenseUrl} target="_blank" rel="noopener noreferrer">
+                                                                <Download className="w-4 h-4"/> Download Medical License
+                                                             </a>
+                                                        </Button>
+                                                    </TooltipTrigger>
+                                                    {(!selectedDoctorForVerification?.licenseUrl || selectedDoctorForVerification?.licenseUrl === 'pending_upload') && <TooltipContent><p>Document not uploaded by the doctor yet.</p></TooltipContent>}
                                                 </Tooltip>
                                             </TooltipProvider>
                                         </div>
