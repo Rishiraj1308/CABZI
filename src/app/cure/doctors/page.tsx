@@ -144,6 +144,8 @@ export default function DoctorsPage() {
   const [hospitalId, setHospitalId] = useState<string | null>(null);
   const [selectedDoctorForVerification, setSelectedDoctorForVerification] = useState<Doctor | null>(null);
   const [newDoctorData, setNewDoctorData] = useState(initialDoctorState);
+  const [photoPreviewUrl, setPhotoPreviewUrl] = useState<string | null>(null);
+
 
   const handleFormChange = (field: keyof typeof newDoctorData, value: any) => {
     setNewDoctorData(prev => ({ ...prev, [field]: value }));
@@ -151,7 +153,17 @@ export default function DoctorsPage() {
 
   const handleFileChange = (field: 'photoFile', e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      handleFormChange(field, e.target.files[0]);
+      const file = e.target.files[0];
+      handleFormChange(field, file);
+      // Create a URL for preview
+      const previewUrl = URL.createObjectURL(file);
+      setPhotoPreviewUrl(previewUrl);
+    } else {
+      handleFormChange(field, null);
+      if (photoPreviewUrl) {
+          URL.revokeObjectURL(photoPreviewUrl);
+      }
+      setPhotoPreviewUrl(null);
     }
   };
 
@@ -239,7 +251,6 @@ export default function DoctorsPage() {
         const partnerId = `CZD-${phone.slice(-4)}${name.split(' ')[0].slice(0, 2).toUpperCase()}`;
         const password = `cAbZ@${Math.floor(1000 + Math.random() * 9000)}`;
 
-        // 1. Create document with placeholder URL
         const doctorDocRef = await addDoc(collection(db, `ambulances/${hospitalId}/doctors`), {
             name, phone, email, gender, dob,
             specialization, qualifications, experience, department, designation,
@@ -260,7 +271,6 @@ export default function DoctorsPage() {
             photoUrl = await getDownloadURL(photoRef);
         }
         
-        // 3. Update document with final URLs
         await updateDoc(doctorDocRef, {
             photoUrl: photoUrl
         });
@@ -270,6 +280,7 @@ export default function DoctorsPage() {
         setGeneratedCreds({ id: partnerId, pass: password, role: 'Doctor' });
         setIsCredsDialogOpen(true);
         setNewDoctorData(initialDoctorState);
+        setPhotoPreviewUrl(null); // Clear preview
 
     } catch (error) {
         console.error('Error adding doctor:', error);
@@ -496,7 +507,13 @@ export default function DoctorsPage() {
                         <CardTitle className="flex items-center gap-2"><Stethoscope className="w-6 h-6 text-primary"/> Doctor Roster</CardTitle>
                         <CardDescription>Add, view, and manage the doctors and specialists at your facility.</CardDescription>
                       </div>
-                      <Dialog open={isAddDoctorDialogOpen} onOpenChange={setIsAddDoctorDialogOpen}>
+                      <Dialog open={isAddDoctorDialogOpen} onOpenChange={(isOpen) => {
+                          setIsAddDoctorDialogOpen(isOpen);
+                          if (!isOpen) {
+                              setNewDoctorData(initialDoctorState);
+                              setPhotoPreviewUrl(null);
+                          }
+                      }}>
                         <DialogTrigger asChild>
                           <Button><UserPlus className="mr-2 h-4 w-4" /> Add Doctor</Button>
                         </DialogTrigger>
@@ -518,14 +535,13 @@ export default function DoctorsPage() {
                                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
                                         <div className="col-span-1 md:col-span-2 space-y-2">
                                           <Label htmlFor="photoUpload">Profile Photo</Label>
-                                          <Input id="photoUpload" type="file" accept="image/*" onChange={(e) => handleFileChange('photoFile', e)} className="h-auto" />
-                                           {newDoctorData.photoFile && (
-                                            <div className="text-xs text-muted-foreground flex items-center gap-2">
-                                              <BadgeCheck className="w-3 h-3 text-green-500"/>
-                                              <span>{newDoctorData.photoFile.name}</span>
-                                              <Button variant="ghost" size="icon" className="h-5 w-5" onClick={() => handleFormChange('photoFile', null)}><X className="w-3 h-3"/></Button>
-                                            </div>
-                                          )}
+                                          <div className="flex items-center gap-4">
+                                            <Avatar className="w-20 h-20">
+                                              <AvatarImage src={photoPreviewUrl ?? undefined} />
+                                              <AvatarFallback><UserIcon className="w-8 h-8 text-muted-foreground" /></AvatarFallback>
+                                            </Avatar>
+                                            <Input id="photoUpload" type="file" accept="image/*" onChange={(e) => handleFileChange('photoFile', e)} className="h-auto" />
+                                          </div>
                                         </div>
                                         <div className="space-y-2"><Label>Full Name</Label><Input name="fullName" required value={newDoctorData.fullName} onChange={e => handleFormChange('fullName', e.target.value)} /></div>
                                         <div className="space-y-2"><Label>Gender</Label><Select name="gender" required onValueChange={v => handleFormChange('gender', v)} value={newDoctorData.gender}><SelectTrigger><SelectValue placeholder="Select Gender"/></SelectTrigger><SelectContent><SelectItem value="male">Male</SelectItem><SelectItem value="female">Female</SelectItem><SelectItem value="other">Other</SelectItem></SelectContent></Select></div>
@@ -698,5 +714,3 @@ export default function DoctorsPage() {
     </div>
   )
 }
-
-    
