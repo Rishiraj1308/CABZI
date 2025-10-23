@@ -78,9 +78,9 @@ interface Appointment {
 }
 
 const mockAppointments: Appointment[] = [
-  { id: 'APP001', patientName: 'Priya Singh', patientPhone: '9876543210', department: 'Cardiology', doctorName: 'Dr. Ramesh Sharma', appointmentDate: '2024-09-10', appointmentTime: '11:00 AM', status: 'Pending', isRecurring: true },
-  { id: 'APP002', patientName: 'Rajesh Verma', patientPhone: '9988776655', department: 'Orthopedics', doctorName: 'Dr. Priya Gupta', appointmentDate: '2024-09-10', appointmentTime: '02:00 PM', status: 'Confirmed' },
-  { id: 'APP003', patientName: 'Anita Desai', patientPhone: '9123456789', department: 'General Physician', doctorName: 'Dr. Alok Verma', appointmentDate: '2024-09-11', appointmentTime: '10:00 AM', status: 'Pending' },
+  { id: 'APP001', patientName: 'Priya Singh', patientPhone: '9876543210', department: 'Cardiology', doctorName: 'Dr. Ramesh Sharma', appointmentDate: '2024-09-10T11:00:00', status: 'Pending', isRecurring: true },
+  { id: 'APP002', patientName: 'Rajesh Verma', patientPhone: '9988776655', department: 'Orthopedics', doctorName: 'Dr. Priya Gupta', appointmentDate: '2024-09-10T14:00:00', status: 'Confirmed' },
+  { id: 'APP003', patientName: 'Anita Desai', patientPhone: '9123456789', department: 'General Physician', doctorName: 'Dr. Alok Verma', appointmentDate: '2024-09-11T10:00:00', status: 'Pending' },
 ];
 
 const mockSchedule = {
@@ -203,7 +203,7 @@ export default function DoctorsPage() {
 
     setAppointments(prev => prev.map(appt => 
       appt.id === selectedAppointment.id 
-      ? { ...appt, appointmentDate: newDateTime.toISOString().split('T')[0], appointmentTime: newTime, status: 'Confirmed' } 
+      ? { ...appt, appointmentDate: newDateTime.toISOString(), appointmentTime: newTime, status: 'Confirmed' } 
       : appt
     ));
     
@@ -229,14 +229,21 @@ export default function DoctorsPage() {
         setIsSubmitting(false);
         return;
     }
-
+    
     const partnerId = `CZD-${phone.slice(-4)}${name.split(' ')[0].slice(0, 2).toUpperCase()}`;
     const password = `cAbZ@${Math.floor(1000 + Math.random() * 9000)}`;
-    const doctorDocRef = doc(collection(db, `ambulances/${hospitalId}/doctors`));
-
 
     try {
-        // Step 1: Create the document with placeholder URLs
+        const q = query(collection(db, 'doctors'), where('phone', '==', phone), limit(1));
+        const phoneCheck = await getDocs(q);
+        if (!phoneCheck.empty) {
+            toast({ variant: 'destructive', title: 'Phone Number Exists', description: 'A doctor with this phone number is already registered across the platform.' });
+            setIsSubmitting(false);
+            return;
+        }
+
+        const doctorDocRef = doc(collection(db, `ambulances/${hospitalId}/doctors`));
+        
         await setDoc(doctorDocRef, {
             name, phone, email, gender, dob,
             specialization, qualifications, experience, department, designation,
@@ -250,28 +257,18 @@ export default function DoctorsPage() {
             licenseUrl: 'pending_upload',
         });
         
-        // Step 2: Upload files and get URLs
         const storage = getStorage();
-        let photoUrl = '';
-        if (photoUpload) {
-            const photoStorageRef = ref(storage, `doctors/${hospitalId}/${doctorDocRef.id}/photo.jpg`);
-            await uploadBytes(photoStorageRef, photoUpload);
-            photoUrl = await getDownloadURL(photoStorageRef);
-        }
-        let degreeUrl = '';
-        if (degreeUpload) {
-            const degreeStorageRef = ref(storage, `doctors/${hospitalId}/${doctorDocRef.id}/degree.pdf`);
-            await uploadBytes(degreeStorageRef, degreeUpload);
-            degreeUrl = await getDownloadURL(degreeStorageRef);
-        }
-        let licenseUrl = '';
-        if (licenseUpload) {
-            const licenseStorageRef = ref(storage, `doctors/${hospitalId}/${doctorDocRef.id}/license.pdf`);
-            await uploadBytes(licenseStorageRef, licenseUpload);
-            licenseUrl = await getDownloadURL(licenseStorageRef);
-        }
+        const uploadFile = async (file: File | null, path: string) => {
+            if (!file) return '';
+            const storageRef = ref(storage, path);
+            await uploadBytes(storageRef, file);
+            return await getDownloadURL(storageRef);
+        };
 
-        // Step 3: Update the document with actual URLs
+        const photoUrl = await uploadFile(photoUpload, `doctors/${hospitalId}/${doctorDocRef.id}/photo.jpg`);
+        const degreeUrl = await uploadFile(degreeUpload, `doctors/${hospitalId}/${doctorDocRef.id}/degree.pdf`);
+        const licenseUrl = await uploadFile(licenseUpload, `doctors/${hospitalId}/${doctorDocRef.id}/license.pdf`);
+
         await updateDoc(doctorDocRef, { 
             photoUrl: photoUrl || '',
             degreeUrl: degreeUrl || '',
@@ -356,7 +353,7 @@ export default function DoctorsPage() {
                                      <div className="flex-1">
                                          <p className="font-semibold">{appt.patientName}</p>
                                          <p className="text-xs text-muted-foreground flex items-center gap-1.5"><Phone className="w-3 h-3"/> {appt.patientPhone}</p>
-                                         <p className="text-xs">{new Date(appt.appointmentDate).toLocaleDateString()} at {appt.appointmentTime}</p>
+                                         <p className="text-xs">{new Date(appt.appointmentDate).toLocaleDateString()} at {format(new Date(appt.appointmentDate), 'p')}</p>
                                      </div>
                                      <div className="flex flex-col items-end gap-1">
                                        {appt.status === 'Pending' && <Button size="sm" onClick={() => handleAppointmentAction(appt, 'confirm')}>Confirm</Button>}
@@ -754,5 +751,3 @@ export default function DoctorsPage() {
     </div>
   )
 }
-
-    
