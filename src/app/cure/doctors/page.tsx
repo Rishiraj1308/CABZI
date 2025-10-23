@@ -237,7 +237,6 @@ export default function DoctorsPage() {
         medicalRegNo, regCouncil, regYear, consultationFee, photoFile
     } = newDoctorData;
   
-    // Basic validation
     if (!name || !phone || !email || !specialization || !qualifications || !experience || !medicalRegNo || !regCouncil || !regYear || !consultationFee) {
         toast({ variant: 'destructive', title: 'Missing Required Fields', description: 'Please fill out all required fields.' });
         setIsSubmitting(false);
@@ -245,60 +244,59 @@ export default function DoctorsPage() {
     }
   
     try {
-      // 1. Check for duplicates within the hospital's roster first.
-      const hospitalDoctorsRef = collection(db, `ambulances/${hospitalId}/doctors`);
-      const q = query(hospitalDoctorsRef, where("phone", "==", phone), limit(1));
-      const phoneCheckSnapshot = await getDocs(q);
-      if (!phoneCheckSnapshot.empty) {
-        throw new Error("A doctor with this phone number is already registered in your hospital.");
-      }
+        const hospitalDoctorsRef = collection(db, `ambulances/${hospitalId}/doctors`);
+        const q = query(hospitalDoctorsRef, where("phone", "==", phone), limit(1));
+        const phoneCheckSnapshot = await getDocs(q);
+
+        if (!phoneCheckSnapshot.empty) {
+            throw new Error("A doctor with this phone number is already registered in your hospital.");
+        }
       
-      const partnerId = `CZD-${phone.slice(-4)}${name.split(' ')[0].slice(0, 2).toUpperCase()}`;
-      const password = `cAbZ@${Math.floor(1000 + Math.random() * 9000)}`;
+        const partnerId = `CZD-${phone.slice(-4)}${name.split(' ')[0].slice(0, 2).toUpperCase()}`;
+        const password = `cAbZ@${Math.floor(1000 + Math.random() * 9000)}`;
 
-      // 2. Add the doctor document to Firestore
-      const newDoctorDocRef = await addDoc(hospitalDoctorsRef, {
-        name, phone, email, gender, dob, specialization, qualifications, experience, department,
-        designation, medicalRegNo, regCouncil, regYear, consultationFee: parseFloat(consultationFee),
-        docStatus: 'Pending', partnerId, password, createdAt: serverTimestamp(), photoUrl: '',
-      });
+        // Step 1: Add document with empty photoUrl
+        const newDoctorDocRef = await addDoc(hospitalDoctorsRef, {
+            name, phone, email, gender, dob, specialization, qualifications, experience, department,
+            designation, medicalRegNo, regCouncil, regYear, consultationFee: parseFloat(consultationFee),
+            docStatus: 'Pending', partnerId, password, createdAt: serverTimestamp(), photoUrl: '',
+        });
+
+        // Step 2: Upload photo if it exists
+        if (photoFile) {
+            const storage = getStorage();
+            const photoPath = `doctors/${hospitalId}/${newDoctorDocRef.id}/photo.jpg`;
+            const photoRef = ref(storage, photoPath);
+            await uploadBytes(photoRef, photoFile);
+            const finalPhotoUrl = await getDownloadURL(photoRef);
+            
+            // Step 3: Update document with the photo URL
+            await updateDoc(newDoctorDocRef, { photoUrl: finalPhotoUrl });
+        }
+      
+        // Step 4: Create global login reference
+        const globalDoctorRef = doc(db, 'doctors', newDoctorDocRef.id);
+        await setDoc(globalDoctorRef, {
+            phone: phone,
+            email: email,
+            hospitalId: hospitalId,
+            partnerId: partnerId,
+        });
   
-      // 3. If a photo was selected, upload it now
-      let finalPhotoUrl = '';
-      if (photoFile) {
-        const storage = getStorage();
-        const photoPath = `doctors/${hospitalId}/${newDoctorDocRef.id}/photo.jpg`;
-        const photoRef = ref(storage, photoPath);
-        await uploadBytes(photoRef, photoFile);
-        finalPhotoUrl = await getDownloadURL(photoRef);
-
-        // 4. Update the document with the photo URL
-        await updateDoc(newDoctorDocRef, { photoUrl: finalPhotoUrl });
-      }
-
-      // 5. Create a global reference for login checks
-      const globalDoctorRef = doc(db, 'doctors', newDoctorDocRef.id);
-      await setDoc(globalDoctorRef, {
-          phone: phone,
-          email: email,
-          hospitalId: hospitalId,
-          partnerId: partnerId,
-      });
-  
-      // 6. Success feedback
-      setGeneratedCreds({ id: partnerId, pass: password, role: 'Doctor' });
-      toast({ title: 'Doctor Added', description: `Dr. ${name} has been added.` });
-      setIsAddDoctorDialogOpen(false);
-      setIsCredsDialogOpen(true);
-      setNewDoctorData(initialDoctorState);
-      if (photoPreviewUrl) URL.revokeObjectURL(photoPreviewUrl);
-      setPhotoPreviewUrl(null);
+        // Step 5: Finalize and show success
+        setGeneratedCreds({ id: partnerId, pass: password, role: 'Doctor' });
+        toast({ title: 'Doctor Added', description: `Dr. ${name} has been added.` });
+        setIsAddDoctorDialogOpen(false);
+        setIsCredsDialogOpen(true);
+        setNewDoctorData(initialDoctorState);
+        if (photoPreviewUrl) URL.revokeObjectURL(photoPreviewUrl);
+        setPhotoPreviewUrl(null);
   
     } catch (error: any) {
         console.error('Error adding doctor:', error);
         toast({ variant: 'destructive', title: 'Error Adding Doctor', description: error.message || 'An unexpected error occurred.' });
     } finally {
-        // THIS IS THE FIX: Ensure isSubmitting is always reset
+        // Step 6: ALWAYS reset the submitting state
         setIsSubmitting(false);
     }
   };
@@ -350,7 +348,7 @@ export default function DoctorsPage() {
 
   return (
     <div className="space-y-6">
-        <Tabs defaultValue="appointments">
+        <Tabs defaultValue="doctors">
             <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="appointments">Appointment Queue</TabsTrigger>
                 <TabsTrigger value="schedules">Doctor Schedules</TabsTrigger>
