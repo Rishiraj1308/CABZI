@@ -7,7 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { useToast } from '@/hooks/use-toast'
-import { Stethoscope, UserPlus, MoreHorizontal, Trash2, BadgeCheck, Clock, Briefcase, Calendar, IndianRupee, Phone, Check, Settings, X, User as UserIcon, FileText as FileTextIcon, Download, GraduationCap, Building, Shield, CircleUser, PhoneCall, Mail, Cake, VenetianSofa } from 'lucide-react'
+import { Stethoscope, UserPlus, MoreHorizontal, Trash2, BadgeCheck, Clock, Briefcase, Calendar, IndianRupee, Phone, Check, Settings, X, User as UserIcon, FileText as FileTextIcon, Download, GraduationCap, Building, Shield, CircleUser, PhoneCall, Mail, Cake, VenetianSofa, AlertTriangle } from 'lucide-react'
 import { useDb } from '@/firebase/client-provider'
 import { collection, query, onSnapshot, addDoc, doc, deleteDoc, serverTimestamp, Timestamp, orderBy, writeBatch, getDocs, where, updateDoc, setDoc } from 'firebase/firestore'
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage'
@@ -40,7 +40,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle, AlertDialogFooter, AlertDialogTrigger } from "@/components/ui/alert-dialog"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Calendar as CalendarPicker } from '@/components/ui/calendar'
 import { format } from 'date-fns'
@@ -230,9 +230,6 @@ export default function DoctorsPage() {
         docStatus: 'Pending',
         partnerId, password,
         createdAt: serverTimestamp(),
-        photoUrl: 'pending_upload', // Placeholder
-        degreeUrl: 'pending_upload',
-        licenseUrl: 'pending_upload',
       });
       
       // Then, upload files and update the document with URLs
@@ -492,7 +489,7 @@ export default function DoctorsPage() {
                         <DialogContent className="max-w-4xl">
                           <DialogHeader>
                             <DialogTitle>Add New Doctor</DialogTitle>
-                            <DialogDescription>Enter the details for the new doctor to add them to your hospital&apos;s roster.</DialogDescription>
+                            <DialogDescription>Enter the details for the new doctor to add them to your hospital's roster.</DialogDescription>
                           </DialogHeader>
                           <form onSubmit={handleAddDoctor}>
                               <Tabs defaultValue="basic" className="pt-4">
@@ -626,33 +623,48 @@ export default function DoctorsPage() {
                                             <TooltipProvider>
                                                 <Tooltip>
                                                     <TooltipTrigger asChild>
-                                                        <Button asChild variant="outline" className="w-full justify-start gap-2" disabled={!selectedDoctorForVerification?.photoUrl || selectedDoctorForVerification?.photoUrl === 'pending_upload'}>
+                                                        <Button 
+                                                            asChild 
+                                                            variant={!selectedDoctorForVerification?.photoUrl || selectedDoctorForVerification?.photoUrl === 'pending_upload' ? 'destructive' : 'outline'}
+                                                            className="w-full justify-start gap-2"
+                                                        >
                                                             <a href={selectedDoctorForVerification?.photoUrl} target="_blank" rel="noopener noreferrer">
-                                                               <Download className="w-4 h-4"/> Download Passport Photo
+                                                                {!selectedDoctorForVerification?.photoUrl || selectedDoctorForVerification?.photoUrl === 'pending_upload' ? <AlertTriangle className="w-4 h-4"/> : <Download className="w-4 h-4"/>}
+                                                                Passport Photo
                                                             </a>
                                                         </Button>
                                                     </TooltipTrigger>
-                                                    {(!selectedDoctorForVerification?.photoUrl || selectedDoctorForVerification?.photoUrl === 'pending_upload') && <TooltipContent><p>Document not uploaded by the doctor yet.</p></TooltipContent>}
+                                                    {(!selectedDoctorForVerification?.photoUrl || selectedDoctorForVerification?.photoUrl === 'pending_upload') && <TooltipContent><p>Document not uploaded yet.</p></TooltipContent>}
                                                 </Tooltip>
                                                 <Tooltip>
                                                     <TooltipTrigger asChild>
-                                                         <Button asChild variant="outline" className="w-full justify-start gap-2" disabled={!selectedDoctorForVerification?.degreeUrl || selectedDoctorForVerification?.degreeUrl === 'pending_upload'}>
-                                                             <a href={selectedDoctorForVerification?.degreeUrl} target="_blank" rel="noopener noreferrer">
-                                                                <Download className="w-4 h-4"/> Download Qualification Degree
-                                                             </a>
+                                                        <Button 
+                                                            asChild 
+                                                            variant={!selectedDoctorForVerification?.degreeUrl || selectedDoctorForVerification?.degreeUrl === 'pending_upload' ? 'destructive' : 'outline'}
+                                                            className="w-full justify-start gap-2"
+                                                        >
+                                                            <a href={selectedDoctorForVerification?.degreeUrl} target="_blank" rel="noopener noreferrer">
+                                                                {!selectedDoctorForVerification?.degreeUrl || selectedDoctorForVerification?.degreeUrl === 'pending_upload' ? <AlertTriangle className="w-4 h-4"/> : <Download className="w-4 h-4"/>}
+                                                                Qualification Degree
+                                                            </a>
                                                         </Button>
                                                     </TooltipTrigger>
-                                                    {(!selectedDoctorForVerification?.degreeUrl || selectedDoctorForVerification?.degreeUrl === 'pending_upload') && <TooltipContent><p>Document not uploaded by the doctor yet.</p></TooltipContent>}
+                                                     {(!selectedDoctorForVerification?.degreeUrl || selectedDoctorForVerification?.degreeUrl === 'pending_upload') && <TooltipContent><p>Document not uploaded yet.</p></TooltipContent>}
                                                 </Tooltip>
                                                 <Tooltip>
                                                     <TooltipTrigger asChild>
-                                                         <Button asChild variant="outline" className="w-full justify-start gap-2" disabled={!selectedDoctorForVerification?.licenseUrl || selectedDoctorForVerification?.licenseUrl === 'pending_upload'}>
+                                                         <Button 
+                                                            asChild 
+                                                            variant={!selectedDoctorForVerification?.licenseUrl || selectedDoctorForVerification?.licenseUrl === 'pending_upload' ? 'destructive' : 'outline'}
+                                                            className="w-full justify-start gap-2"
+                                                         >
                                                              <a href={selectedDoctorForVerification?.licenseUrl} target="_blank" rel="noopener noreferrer">
-                                                                <Download className="w-4 h-4"/> Download Medical License
+                                                                {!selectedDoctorForVerification?.licenseUrl || selectedDoctorForVerification?.licenseUrl === 'pending_upload' ? <AlertTriangle className="w-4 h-4"/> : <Download className="w-4 h-4"/>}
+                                                                Medical License
                                                              </a>
                                                         </Button>
                                                     </TooltipTrigger>
-                                                    {(!selectedDoctorForVerification?.licenseUrl || selectedDoctorForVerification?.licenseUrl === 'pending_upload') && <TooltipContent><p>Document not uploaded by the doctor yet.</p></TooltipContent>}
+                                                     {(!selectedDoctorForVerification?.licenseUrl || selectedDoctorForVerification?.licenseUrl === 'pending_upload') && <TooltipContent><p>Document not uploaded yet.</p></TooltipContent>}
                                                 </Tooltip>
                                             </TooltipProvider>
                                         </div>
