@@ -6,7 +6,7 @@ import { useToast } from '@/hooks/use-toast'
 import dynamic from 'next/dynamic'
 import { useFirebase, useAuth } from '@/firebase/client-provider'
 import { collection, addDoc, serverTimestamp, doc, GeoPoint, query, where, getDocs, updateDoc, getDoc } from 'firebase/firestore'
-import { motion, AnimatePresence } from 'framer-motion'
+import { MotionDiv, AnimatePresence } from '@/components/ui/motion-div'
 import EmergencyButtons from '@/components/EmergencyButtons'
 import LocationSelector from '@/components/location-selector'
 import RideStatus from '@/components/ride-status'
@@ -223,28 +223,19 @@ export default function UserPage() {
      );
 
     return (
-        <div className="h-full w-full relative flex flex-col">
+        <div className="h-full flex-1 flex flex-col">
             <div className="flex-1 relative">
-                 <LiveMap ref={liveMapRef} onLocationFound={handleLocationFound} routeGeometry={routeGeometry} />
+                <LiveMap ref={liveMapRef} onLocationFound={handleLocationFound} routeGeometry={routeGeometry} />
             </div>
-
-            <div className="absolute bottom-0 left-0 right-0 z-10">
-                <motion.div
-                    initial={{ y: "100%", opacity: 0 }}
-                    animate={{ y: 0, opacity: 1 }}
-                    exit={{ y: "100%", opacity: 0 }}
-                    transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-                    className="mx-auto max-w-lg w-full"
-                >
-                     <Card className="rounded-t-2xl shadow-2xl bg-background/80 backdrop-blur-sm border-t border-border/20">
-                         <AnimatePresence mode="wait">
-                            {view === 'selection' && renderSelectionScreen()}
-                            {view === 'path' && renderPathScreen()}
-                            {view === 'cure' && renderCureScreen()}
-                            {view === 'resq' && renderResqScreen()}
-                        </AnimatePresence>
-                     </Card>
-                </motion.div>
+            <div className="z-10">
+                 <Card className="rounded-t-2xl shadow-2xl">
+                     <AnimatePresence mode="wait">
+                        {view === 'selection' && renderSelectionScreen()}
+                        {view === 'path' && renderPathScreen()}
+                        {view === 'cure' && renderCureScreen()}
+                        {view === 'resq' && renderResqScreen()}
+                    </AnimatePresence>
+                 </Card>
             </div>
         </div>
     );
