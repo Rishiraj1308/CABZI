@@ -4,7 +4,7 @@
 import React, { useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Calendar as CalendarIcon, Stethoscope, Clock, Search, ArrowLeft, IndianRupee, BadgeCheck, Briefcase } from 'lucide-react'
+import { Calendar as CalendarIcon, Stethoscope, Clock, Search, ArrowLeft, IndianRupee, BadgeCheck, Briefcase, Star } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Calendar } from '@/components/ui/calendar'
@@ -17,9 +17,9 @@ import Link from 'next/link'
 import { Badge } from '@/components/ui/badge'
 
 const mockDoctors = [
-    { id: 'd1', name: 'Dr. Ramesh Sharma', specialization: 'Cardiology', qualifications: 'MD, FACC', experience: '15+ Years', photoUrl: 'https://i.pravatar.cc/100?u=doc1', consultationFee: 1200 },
-    { id: 'd2', name: 'Dr. Priya Gupta', specialization: 'Orthopedics', qualifications: 'MS (Ortho)', experience: '10+ Years', photoUrl: 'https://i.pravatar.cc/100?u=doc2', consultationFee: 1000 },
-    { id: 'd3', name: 'Dr. Alok Verma', specialization: 'General Physician', qualifications: 'MBBS, MD', experience: '8+ Years', photoUrl: 'https://i.pravatar.cc/100?u=doc3', consultationFee: 800 },
+    { id: 'd1', name: 'Dr. Ramesh Sharma', specialization: 'Cardiology', qualifications: 'MD, FACC', experience: '15+ Years', photoUrl: 'https://i.pravatar.cc/100?u=doc1', consultationFee: 1200, rating: 4.9, reviews: 215, nextAvailable: 'Today, 5:00 PM' },
+    { id: 'd2', name: 'Dr. Priya Gupta', specialization: 'Orthopedics', qualifications: 'MS (Ortho)', experience: '10+ Years', photoUrl: 'https://i.pravatar.cc/100?u=doc2', consultationFee: 1000, rating: 4.8, reviews: 189, nextAvailable: 'Tomorrow, 10:00 AM' },
+    { id: 'd3', name: 'Dr. Alok Verma', specialization: 'General Physician', qualifications: 'MBBS, MD', experience: '8+ Years', photoUrl: 'https://i.pravatar.cc/100?u=doc3', consultationFee: 800, rating: 4.7, reviews: 302, nextAvailable: 'Today, 4:30 PM' },
 ];
 
 const timeSlots = [
@@ -66,7 +66,7 @@ export default function BookAppointmentPage() {
              <>
                 <CardHeader>
                     <CardTitle>Step 1: Find Your Doctor</CardTitle>
-                    <CardDescription>Search by doctor's name or specialization.</CardDescription>
+                    <CardDescription>Search by doctor&apos;s name or specialization.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                     <div className="relative">
@@ -86,11 +86,15 @@ export default function BookAppointmentPage() {
                                     <div className="text-xs text-muted-foreground mt-2 space-y-1">
                                         <p className="flex items-center gap-1.5"><BadgeCheck className="w-3.5 h-3.5"/> {doctor.qualifications}</p>
                                         <p className="flex items-center gap-1.5"><Briefcase className="w-3.5 h-3.5"/> {doctor.experience} experience</p>
+                                        <p className="flex items-center gap-1.5"><Star className="w-3.5 h-3.5 text-yellow-500 fill-yellow-500"/> {doctor.rating} ({doctor.reviews} reviews)</p>
                                     </div>
                                 </div>
                                 <div className="text-right shrink-0">
                                     <p className="font-bold text-xl text-primary flex items-center justify-end"><IndianRupee className="w-5 h-5" />{doctor.consultationFee}</p>
-                                    <p className="text-xs text-muted-foreground">Consultation Fee</p>
+                                    <p className="text-xs text-muted-foreground mb-2">Consultation Fee</p>
+                                    <Badge variant="outline" className="bg-green-100/50 border-green-500/50 text-green-700 dark:text-green-300">
+                                        <Clock className="w-3 h-3 mr-1.5"/> Next Available: {doctor.nextAvailable}
+                                    </Badge>
                                 </div>
                            </div>
                        ))}
@@ -153,8 +157,49 @@ export default function BookAppointmentPage() {
                     </div>
                  </CardContent>
                  <CardFooter>
-                     <Button className="w-full" onClick={handleBookingConfirmation} disabled={!date || !time}>Request Appointment</Button>
+                     <Button className="w-full" onClick={() => setStep(3)} disabled={!date || !time}>Proceed to Confirmation</Button>
                  </CardFooter>
+            </>
+        )}
+
+        {step === 3 && selectedDoctor && date && time && (
+            <>
+                <CardHeader>
+                     <Button variant="ghost" size="sm" className="w-fit p-0 h-auto mb-2" onClick={() => setStep(2)}><ArrowLeft className="w-4 h-4 mr-2"/> Back to Scheduling</Button>
+                    <CardTitle>Step 3: Confirm Your Booking</CardTitle>
+                    <CardDescription>Please review your appointment details before confirming.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    <Card className="p-4 bg-muted/50">
+                        <div className="flex items-center gap-4">
+                             <Avatar className="w-16 h-16 border">
+                                <AvatarImage src={selectedDoctor.photoUrl} alt={selectedDoctor.name} />
+                                <AvatarFallback>{selectedDoctor.name.substring(0,2)}</AvatarFallback>
+                            </Avatar>
+                             <div>
+                                <h3 className="font-bold text-lg">Dr. {selectedDoctor.name}</h3>
+                                <p className="text-sm text-muted-foreground">{selectedDoctor.specialization}</p>
+                            </div>
+                        </div>
+                        <div className="mt-4 border-t pt-4 space-y-2 text-sm">
+                            <div className="flex justify-between">
+                                <span className="text-muted-foreground">Date:</span>
+                                <span className="font-semibold">{format(date, "PPP")}</span>
+                            </div>
+                            <div className="flex justify-between">
+                                <span className="text-muted-foreground">Time:</span>
+                                <span className="font-semibold">{time}</span>
+                            </div>
+                            <div className="flex justify-between text-lg font-bold">
+                                <span className="text-muted-foreground">Total Fee:</span>
+                                <span className="text-primary">₹{selectedDoctor.consultationFee}</span>
+                            </div>
+                        </div>
+                    </Card>
+                </CardContent>
+                <CardFooter>
+                    <Button className="w-full" onClick={handleBookingConfirmation}>Confirm & Request Appointment</Button>
+                </CardFooter>
             </>
         )}
       </Card>
