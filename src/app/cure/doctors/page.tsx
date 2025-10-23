@@ -1,4 +1,3 @@
-
 'use client'
 
 import React, { useState, useEffect } from 'react'
@@ -9,7 +8,7 @@ import { Button } from '@/components/ui/button'
 import { useToast } from '@/hooks/use-toast'
 import { Stethoscope, UserPlus, MoreHorizontal, Trash2, BadgeCheck, Clock, Briefcase, Calendar, IndianRupee, Phone, Check, Settings, X, User as UserIcon, FileText as FileTextIcon, Download, GraduationCap, Building, Shield, CircleUser, PhoneCall, Mail, Cake, VenetianSofa, AlertTriangle, UploadCloud } from 'lucide-react'
 import { useDb } from '@/firebase/client-provider'
-import { collection, query, onSnapshot, addDoc, doc, deleteDoc, serverTimestamp, Timestamp, orderBy, writeBatch, getDocs, where, updateDoc, setDoc } from 'firebase/firestore'
+import { collection, query, onSnapshot, addDoc, doc, deleteDoc, serverTimestamp, Timestamp, orderBy, writeBatch, getDocs, where, updateDoc, setDoc, limit } from 'firebase/firestore'
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
@@ -234,7 +233,7 @@ export default function DoctorsPage() {
     const password = `cAbZ@${Math.floor(1000 + Math.random() * 9000)}`;
 
     try {
-        const q = query(collection(db, 'doctors'), where('phone', '==', phone), limit(1));
+        const q = query(collectionGroup(db, 'doctors'), where("phone", "==", phone), limit(1));
         const phoneCheck = await getDocs(q);
         if (!phoneCheck.empty) {
             toast({ variant: 'destructive', title: 'Phone Number Exists', description: 'A doctor with this phone number is already registered across the platform.' });
@@ -242,9 +241,8 @@ export default function DoctorsPage() {
             return;
         }
 
-        const doctorDocRef = doc(collection(db, `ambulances/${hospitalId}/doctors`));
-        
-        await setDoc(doctorDocRef, {
+        // Step 1: Create the document with placeholder data
+        const doctorDocRef = await addDoc(collection(db, `ambulances/${hospitalId}/doctors`), {
             name, phone, email, gender, dob,
             specialization, qualifications, experience, department, designation,
             medicalRegNo, regCouncil, regYear,
@@ -257,8 +255,9 @@ export default function DoctorsPage() {
             licenseUrl: 'pending_upload',
         });
         
+        // Step 2: Upload files to storage
         const storage = getStorage();
-        const uploadFile = async (file: File | null, path: string) => {
+        const uploadFile = async (file: File | null, path: string): Promise<string> => {
             if (!file) return '';
             const storageRef = ref(storage, path);
             await uploadBytes(storageRef, file);
@@ -269,6 +268,7 @@ export default function DoctorsPage() {
         const degreeUrl = await uploadFile(degreeUpload, `doctors/${hospitalId}/${doctorDocRef.id}/degree.pdf`);
         const licenseUrl = await uploadFile(licenseUpload, `doctors/${hospitalId}/${doctorDocRef.id}/license.pdf`);
 
+        // Step 3: Update the document with final URLs
         await updateDoc(doctorDocRef, { 
             photoUrl: photoUrl || '',
             degreeUrl: degreeUrl || '',
