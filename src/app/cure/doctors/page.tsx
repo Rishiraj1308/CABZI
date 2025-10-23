@@ -10,6 +10,7 @@ import { useToast } from '@/hooks/use-toast'
 import { Stethoscope, UserPlus, MoreHorizontal, Trash2, BadgeCheck, Clock, Briefcase, Calendar, IndianRupee, Phone, Check, Settings, X, User as UserIcon, FileText as FileTextIcon, Download } from 'lucide-react'
 import { useDb } from '@/firebase/client-provider'
 import { collection, query, onSnapshot, addDoc, doc, deleteDoc, serverTimestamp, Timestamp, orderBy, writeBatch, getDocs, where, updateDoc } from 'firebase/firestore'
+import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
   Dialog,
@@ -55,11 +56,11 @@ interface Doctor {
   experience?: string;
   phone: string;
   createdAt: Timestamp;
-  photoUrl?: string; // To store uploaded photo URL
-  degreeUrl?: string; // To store uploaded degree URL
+  photoUrl?: string;
+  degreeUrl?: string;
   docStatus?: 'Verified' | 'Pending' | 'Awaiting Final Approval' | 'Rejected';
-  partnerId?: string; // For Doctor's own login
-  password?: string; // For Doctor's own login
+  partnerId?: string; 
+  password?: string; 
   consultationFee?: number;
 }
 
@@ -110,6 +111,7 @@ export default function DoctorsPage() {
   const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [appointments, setAppointments] = useState<Appointment[]>(mockAppointments);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [isAddDoctorDialogOpen, setIsAddDoctorDialogOpen] = useState(false);
   const [generatedCreds, setGeneratedCreds] = useState<{ id: string; pass: string; role: string } | null>(null);
   const [isCredsDialogOpen, setIsCredsDialogOpen] = useState(false);
@@ -181,6 +183,7 @@ export default function DoctorsPage() {
   const handleAddDoctor = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!db || !hospitalId) return;
+    setIsSubmitting(true);
 
     const formData = new FormData(event.currentTarget);
     const name = formData.get('doctorName') as string;
@@ -189,9 +192,13 @@ export default function DoctorsPage() {
     const qualifications = formData.get('qualifications') as string;
     const experience = formData.get('experience') as string;
     const consultationFee = formData.get('consultationFee') as string;
+    const photoFile = formData.get('doctorPhoto') as File;
+    const degreeFile = formData.get('degreeCert') as File;
+
 
     if (!name || !phone || !specialization || !qualifications || !experience || !consultationFee) {
       toast({ variant: 'destructive', title: 'Error', description: 'Please provide all doctor details, including the fee.' });
+      setIsSubmitting(false);
       return;
     }
     
@@ -199,11 +206,30 @@ export default function DoctorsPage() {
     const password = `cAbZ@${Math.floor(1000 + Math.random() * 9000)}`;
 
     try {
+        const storage = getStorage();
+        let photoUrl = '';
+        let degreeUrl = '';
+        const doctorDocRef = doc(collection(db, `ambulances/${hospitalId}/doctors`));
+
+        if (photoFile && photoFile.size > 0) {
+            const photoStorageRef = ref(storage, `doctors/${hospitalId}/${doctorDocRef.id}/photo.jpg`);
+            await uploadBytes(photoStorageRef, photoFile);
+            photoUrl = await getDownloadURL(photoStorageRef);
+        }
+
+        if (degreeFile && degreeFile.size > 0) {
+            const degreeStorageRef = ref(storage, `doctors/${hospitalId}/${doctorDocRef.id}/degree.pdf`);
+            await uploadBytes(degreeStorageRef, degreeFile);
+            degreeUrl = await getDownloadURL(degreeStorageRef);
+        }
+
       await addDoc(collection(db, `ambulances/${hospitalId}/doctors`), {
         name, phone, specialization, qualifications, experience,
         consultationFee: parseFloat(consultationFee),
-        photoUrl: 'pending_upload', degreeUrl: 'pending_upload', docStatus: 'Pending',
-        partnerId, password, // Save credentials
+        photoUrl: photoUrl || 'pending_upload',
+        degreeUrl: degreeUrl || 'pending_upload',
+        docStatus: 'Pending',
+        partnerId, password,
         createdAt: serverTimestamp(),
       });
       toast({ title: 'Doctor Added', description: `Dr. ${name} has been added. Their credentials are now available.` });
@@ -213,6 +239,8 @@ export default function DoctorsPage() {
     } catch (error) {
       console.error('Error adding doctor:', error);
       toast({ variant: 'destructive', title: 'Error', description: 'Could not add doctor.' });
+    } finally {
+        setIsSubmitting(false);
     }
   };
 
@@ -248,7 +276,7 @@ export default function DoctorsPage() {
           case 'Verified':
               return <Badge className="bg-green-100 text-green-800"><BadgeCheck className="w-3 h-3 mr-1"/>Verified</Badge>;
           case 'Pending':
-              return <Badge variant="destructive" className="bg-yellow-100 text-yellow-800"><Clock className="w-3 h-3 mr-1"/>Pending</Badge>;
+              return <Badge variant="destructive" className="bg-yellow-100 text-yellow-800"><Clock className="w-3 h-3 mr-1"/>Pending Docs</Badge>;
           case 'Awaiting Final Approval':
               return <Badge className="bg-blue-100 text-blue-800"><Clock className="w-3 h-3 mr-1"/>Awaiting Approval</Badge>;
           case 'Rejected':
@@ -490,7 +518,7 @@ export default function DoctorsPage() {
                               </div>
                             </div>
                             <DialogFooter>
-                              <Button type="submit">Add Doctor to Roster</Button>
+                              <Button type="submit" disabled={isSubmitting}>{isSubmitting ? "Adding..." : "Add Doctor to Roster"}</Button>
                             </DialogFooter>
                           </form>
                         </DialogContent>
@@ -571,23 +599,23 @@ export default function DoctorsPage() {
                                             <TooltipProvider>
                                                 <Tooltip>
                                                     <TooltipTrigger asChild>
-                                                        <Button variant="outline" className="w-full justify-start gap-2" disabled>
-                                                            <Download className="w-4 h-4"/> Download Passport Photo (pending)
+                                                        <Button asChild variant="outline" className="w-full justify-start gap-2" disabled={!selectedDoctorForVerification?.photoUrl || selectedDoctorForVerification?.photoUrl === 'pending_upload'}>
+                                                            <a href={selectedDoctorForVerification?.photoUrl} target="_blank" rel="noopener noreferrer">
+                                                               <Download className="w-4 h-4"/> Download Passport Photo
+                                                            </a>
                                                         </Button>
                                                     </TooltipTrigger>
-                                                    <TooltipContent>
-                                                        <p>Document not uploaded by the doctor yet.</p>
-                                                    </TooltipContent>
+                                                    {(!selectedDoctorForVerification?.photoUrl || selectedDoctorForVerification?.photoUrl === 'pending_upload') && <TooltipContent><p>Document not uploaded by the doctor yet.</p></TooltipContent>}
                                                 </Tooltip>
                                                 <Tooltip>
                                                     <TooltipTrigger asChild>
-                                                        <Button variant="outline" className="w-full justify-start gap-2" disabled>
-                                                            <Download className="w-4 h-4"/> Download Qualification Degree (pending)
+                                                         <Button asChild variant="outline" className="w-full justify-start gap-2" disabled={!selectedDoctorForVerification?.degreeUrl || selectedDoctorForVerification?.degreeUrl === 'pending_upload'}>
+                                                             <a href={selectedDoctorForVerification?.degreeUrl} target="_blank" rel="noopener noreferrer">
+                                                                <Download className="w-4 h-4"/> Download Qualification Degree
+                                                             </a>
                                                         </Button>
                                                     </TooltipTrigger>
-                                                    <TooltipContent>
-                                                        <p>Document not uploaded by the doctor yet.</p>
-                                                    </TooltipContent>
+                                                    {(!selectedDoctorForVerification?.degreeUrl || selectedDoctorForVerification?.degreeUrl === 'pending_upload') && <TooltipContent><p>Document not uploaded by the doctor yet.</p></TooltipContent>}
                                                 </Tooltip>
                                             </TooltipProvider>
                                         </div>
