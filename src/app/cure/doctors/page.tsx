@@ -1,4 +1,3 @@
-
 'use client'
 
 import React, { useState, useEffect } from 'react'
@@ -204,10 +203,10 @@ export default function DoctorsPage() {
     const [hours, minutes] = newTime.split(/[: ]/);
     newDateTime.setHours(newTime.includes('PM') ? parseInt(hours, 10) + 12 : parseInt(minutes, 10), parseInt(minutes, 10), 0);
 
-    setAppointments(prev => prev.map(a => 
-      a.id === selectedAppointment.id 
+    setAppointments(prev => prev.map(appt => 
+      appt.id === selectedAppointment.id 
       ? { ...a, appointmentDate: newDateTime.toISOString().split('T')[0], appointmentTime: newTime, status: 'Confirmed' } 
-      : a
+      : appt
     ));
     
     toast({ title: 'Appointment Rescheduled', description: `Appointment for ${selectedAppointment.patientName} is now on ${format(newDateTime, 'PPP')} at ${newTime}.` });
@@ -248,11 +247,11 @@ export default function DoctorsPage() {
 
     const partnerId = `CZD-${phone.slice(-4)}${name.split(' ')[0].slice(0, 2).toUpperCase()}`;
     const password = `cAbZ@${Math.floor(1000 + Math.random() * 9000)}`;
+    const doctorDocRef = doc(collection(db, `ambulances/${hospitalId}/doctors`));
+
 
     try {
-        const storage = getStorage();
-        const doctorDocRef = doc(collection(db, `ambulances/${hospitalId}/doctors`));
-        
+        // Step 1: Create the document with placeholder URLs
         await setDoc(doctorDocRef, {
             name, phone, email, gender, dob,
             specialization, qualifications, experience, department, designation,
@@ -265,7 +264,9 @@ export default function DoctorsPage() {
             degreeUrl: 'pending_upload',
             licenseUrl: 'pending_upload',
         });
-
+        
+        // Step 2: Upload files and get URLs
+        const storage = getStorage();
         let photoUrl = '';
         if (photoUpload) {
             const photoStorageRef = ref(storage, `doctors/${hospitalId}/${doctorDocRef.id}/photo.jpg`);
@@ -285,6 +286,7 @@ export default function DoctorsPage() {
             licenseUrl = await getDownloadURL(licenseStorageRef);
         }
 
+        // Step 3: Update the document with actual URLs
         await updateDoc(doctorDocRef, { 
             photoUrl: photoUrl || '',
             degreeUrl: degreeUrl || '',
@@ -752,5 +754,3 @@ export default function DoctorsPage() {
     </div>
   )
 }
-
-    
