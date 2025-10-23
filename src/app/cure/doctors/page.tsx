@@ -1,3 +1,4 @@
+
 'use client'
 
 import React, { useState, useEffect } from 'react'
@@ -62,6 +63,9 @@ interface Doctor {
   partnerId?: string; 
   password?: string; 
   consultationFee?: number;
+  medicalRegNo?: string;
+  regCouncil?: string;
+  regYear?: string;
 }
 
 interface Appointment {
@@ -72,14 +76,14 @@ interface Appointment {
   doctorName: string;
   appointmentDate: string;
   appointmentTime: string;
-  status: 'Confirmed' | 'Pending' | 'In Queue' | 'Cancelled';
+  status: 'Confirmed' | 'Pending' | 'In Queue' | 'Cancelled' | 'Completed';
   isRecurring?: boolean;
 }
 
 const mockAppointments: Appointment[] = [
   { id: 'APP001', patientName: 'Priya Singh', patientPhone: '9876543210', department: 'Cardiology', doctorName: 'Dr. Ramesh Sharma', appointmentDate: '2024-09-10T11:00:00', status: 'Pending', isRecurring: true },
   { id: 'APP002', patientName: 'Rajesh Verma', patientPhone: '9988776655', department: 'Orthopedics', doctorName: 'Dr. Priya Gupta', appointmentDate: '2024-09-10T14:00:00', status: 'Confirmed' },
-  { id: 'APP003', patientName: 'Anita Desai', patientPhone: '9123456789', department: 'General Physician', doctorName: 'Dr. Alok Verma', appointmentDate: '2024-09-11T10:00:00', status: 'Pending' },
+  { id: 'APP003', patientName: 'Anita Desai', patientPhone: '9123456789', department: 'General Physician', doctorName: 'Dr. Alok Verma', appointmentDate: '2024-09-11T10:00:00', status: 'Completed' },
 ];
 
 const mockSchedule = {
@@ -93,7 +97,7 @@ const mockSchedule = {
         '14:00': { patient: 'Rajesh Verma', status: 'Confirmed' },
     },
      'Dr. Alok Verma': {
-        '10:00': { patient: 'Anita Desai', status: 'Pending' },
+        '10:00': { patient: 'Anita Desai', status: 'Completed' },
         '11:00': null, // Available slot
         '12:00': { patient: 'Karan Malhotra', status: 'Confirmed' },
     },
@@ -122,9 +126,6 @@ const initialDoctorState = {
     regCouncil: '',
     regYear: '',
     consultationFee: '',
-    photoUpload: null as File | null,
-    degreeUpload: null as File | null,
-    licenseUpload: null as File | null,
 };
 
 export default function DoctorsPage() {
@@ -149,11 +150,6 @@ export default function DoctorsPage() {
   const handleFormChange = (field: keyof typeof newDoctorData, value: any) => {
     setNewDoctorData(prev => ({ ...prev, [field]: value }));
   };
-  
-  const handleFileChange = (field: 'photoUpload' | 'degreeUpload' | 'licenseUpload', file: File | null) => {
-    setNewDoctorData(prev => ({...prev, [field]: file}));
-  };
-
 
   useEffect(() => {
     if (db) {
@@ -198,7 +194,7 @@ export default function DoctorsPage() {
     }
     const newDateTime = new Date(newDate);
     const [hours, minutes] = newTime.split(/[: ]/);
-    newDateTime.setHours(newTime.includes('PM') ? parseInt(hours, 10) + 12 : parseInt(minutes, 10), parseInt(minutes, 10), 0);
+    newDateTime.setHours(newTime.includes('PM') ? parseInt(hours, 10) + 12 : parseInt(hours, 10), parseInt(minutes, 10), 0);
 
     setAppointments(prev => prev.map(appt => 
       appt.id === selectedAppointment.id 
@@ -219,8 +215,7 @@ export default function DoctorsPage() {
     const {
         fullName: name, contactNumber: phone, emailAddress: email, gender, dob,
         specialization, qualifications, experience, department, designation,
-        medicalRegNo, regCouncil, regYear, consultationFee,
-        photoUpload, degreeUpload, licenseUpload
+        medicalRegNo, regCouncil, regYear, consultationFee
     } = newDoctorData;
 
     if (!name || !phone || !email || !specialization || !qualifications || !experience || !medicalRegNo || !regCouncil || !regYear || !consultationFee) {
@@ -229,9 +224,6 @@ export default function DoctorsPage() {
         return;
     }
     
-    const partnerId = `CZD-${phone.slice(-4)}${name.split(' ')[0].slice(0, 2).toUpperCase()}`;
-    const password = `cAbZ@${Math.floor(1000 + Math.random() * 9000)}`;
-
     try {
         const q = query(collectionGroup(db, 'doctors'), where("phone", "==", phone), limit(1));
         const phoneCheck = await getDocs(q);
@@ -241,8 +233,10 @@ export default function DoctorsPage() {
             return;
         }
 
-        // Step 1: Create the document with placeholder data
-        const doctorDocRef = await addDoc(collection(db, `ambulances/${hospitalId}/doctors`), {
+        const partnerId = `CZD-${phone.slice(-4)}${name.split(' ')[0].slice(0, 2).toUpperCase()}`;
+        const password = `cAbZ@${Math.floor(1000 + Math.random() * 9000)}`;
+
+        await addDoc(collection(db, `ambulances/${hospitalId}/doctors`), {
             name, phone, email, gender, dob,
             specialization, qualifications, experience, department, designation,
             medicalRegNo, regCouncil, regYear,
@@ -250,31 +244,9 @@ export default function DoctorsPage() {
             docStatus: 'Pending',
             partnerId, password,
             createdAt: serverTimestamp(),
-            photoUrl: 'pending_upload',
-            degreeUrl: 'pending_upload',
-            licenseUrl: 'pending_upload',
+            // File URLs are no longer added
         });
         
-        // Step 2: Upload files to storage
-        const storage = getStorage();
-        const uploadFile = async (file: File | null, path: string): Promise<string> => {
-            if (!file) return '';
-            const storageRef = ref(storage, path);
-            await uploadBytes(storageRef, file);
-            return await getDownloadURL(storageRef);
-        };
-
-        const photoUrl = await uploadFile(photoUpload, `doctors/${hospitalId}/${doctorDocRef.id}/photo.jpg`);
-        const degreeUrl = await uploadFile(degreeUpload, `doctors/${hospitalId}/${doctorDocRef.id}/degree.pdf`);
-        const licenseUrl = await uploadFile(licenseUpload, `doctors/${hospitalId}/${doctorDocRef.id}/license.pdf`);
-
-        // Step 3: Update the document with final URLs
-        await updateDoc(doctorDocRef, { 
-            photoUrl: photoUrl || '',
-            degreeUrl: degreeUrl || '',
-            licenseUrl: licenseUrl || ''
-        });
-
         toast({ title: 'Doctor Added', description: `Dr. ${name} has been added. Their credentials are now available.` });
         setIsAddDoctorDialogOpen(false);
         setGeneratedCreds({ id: partnerId, pass: password, role: 'Doctor' });
@@ -360,6 +332,7 @@ export default function DoctorsPage() {
                                        {appt.status === 'Confirmed' && <Button size="sm" variant="secondary" onClick={() => handleAppointmentAction(appt, 'check-in')}>Check-in Patient</Button>}
                                        {appt.status === 'In Queue' && <Badge className="bg-blue-100 text-blue-800">In Queue</Badge>}
                                        {appt.status === 'Cancelled' && <Badge variant="destructive">Cancelled</Badge>}
+                                       {appt.status === 'Completed' && <Badge className="bg-green-100 text-green-800">Completed</Badge>}
                                     </div>
                                      <Dialog open={isManageAppointmentOpen && selectedAppointment?.id === appt.id} onOpenChange={(open) => {
                                         if (!open) {
@@ -536,12 +509,6 @@ export default function DoctorsPage() {
                                              </div>
                                         </div>
                                         <div className="md:col-span-2 space-y-2"><Label htmlFor="emailAddress">Email Address</Label><Input name="emailAddress" type="email" required value={newDoctorData.emailAddress} onChange={e => handleFormChange('emailAddress', e.target.value)} /></div>
-                                        <div className="space-y-2 md:col-span-2"><Label htmlFor="photoUpload">Passport-size Photo</Label>
-                                            <div className="flex items-center gap-2">
-                                              <Input id="photoUpload" name="photoUpload" type="file" accept="image/*" onChange={e => handleFileChange('photoUpload', e.target.files ? e.target.files[0] : null)} className="flex-1" />
-                                              {newDoctorData.photoUpload && <span className="text-xs text-muted-foreground truncate max-w-[150px]">{newDoctorData.photoUpload.name}</span>}
-                                            </div>
-                                        </div>
                                       </div>
                                     </TabsContent>
                                     <TabsContent value="professional">
@@ -557,18 +524,6 @@ export default function DoctorsPage() {
                                           <div className="space-y-2"><Label>Medical Registration No.</Label><Input name="medicalRegNo" required value={newDoctorData.medicalRegNo} onChange={e => handleFormChange('medicalRegNo', e.target.value)} /></div>
                                           <div className="space-y-2"><Label>Registration Council</Label><Input name="regCouncil" placeholder="e.g., Delhi Medical Council" required value={newDoctorData.regCouncil} onChange={e => handleFormChange('regCouncil', e.target.value)} /></div>
                                           <div className="space-y-2"><Label>Registration Year</Label><Input name="regYear" type="number" required value={newDoctorData.regYear} onChange={e => handleFormChange('regYear', e.target.value)} /></div>
-                                          <div className="space-y-2"><Label>Medical License Upload (PDF)</Label>
-                                                <div className="flex items-center gap-2">
-                                                    <Input name="licenseUpload" type="file" accept=".pdf" onChange={e => handleFileChange('licenseUpload', e.target.files ? e.target.files[0] : null)} className="flex-1" />
-                                                    {newDoctorData.licenseUpload && <span className="text-xs text-muted-foreground truncate max-w-[150px]">{newDoctorData.licenseUpload.name}</span>}
-                                                </div>
-                                          </div>
-                                          <div className="md:col-span-2 space-y-2"><Label>Degree Certificate Upload (PDF)</Label>
-                                               <div className="flex items-center gap-2">
-                                                  <Input name="degreeUpload" type="file" accept=".pdf" onChange={e => handleFileChange('degreeUpload', e.target.files ? e.target.files[0] : null)} className="flex-1" />
-                                                  {newDoctorData.degreeUpload && <span className="text-xs text-muted-foreground truncate max-w-[150px]">{newDoctorData.degreeUpload.name}</span>}
-                                               </div>
-                                          </div>
                                        </div>
                                     </TabsContent>
                                      <TabsContent value="consultation">
@@ -654,60 +609,21 @@ export default function DoctorsPage() {
                                     <DialogContent>
                                         <DialogHeader>
                                             <DialogTitle>Verify Doctor: Dr. {selectedDoctorForVerification?.name}</DialogTitle>
-                                            <DialogDescription>Review the uploaded documents and confirm their authenticity. This will send the profile to Cabzi for final approval.</DialogDescription>
+                                            <DialogDescription>Review the entered details and confirm their authenticity. This will send the profile to Cabzi for final approval.</DialogDescription>
                                         </DialogHeader>
                                         <div className="space-y-4 py-4">
-                                            <TooltipProvider>
-                                                <Tooltip>
-                                                    <TooltipTrigger asChild>
-                                                        <Button 
-                                                            asChild 
-                                                            variant={!selectedDoctorForVerification?.photoUrl || selectedDoctorForVerification?.photoUrl === 'pending_upload' ? 'destructive' : 'outline'}
-                                                            className="w-full justify-start gap-2"
-                                                        >
-                                                            <a href={selectedDoctorForVerification?.photoUrl} target="_blank" rel="noopener noreferrer">
-                                                                {!selectedDoctorForVerification?.photoUrl || selectedDoctorForVerification?.photoUrl === 'pending_upload' ? <AlertTriangle className="w-4 h-4"/> : <Download className="w-4 h-4"/>}
-                                                                Passport Photo
-                                                            </a>
-                                                        </Button>
-                                                    </TooltipTrigger>
-                                                    {(!selectedDoctorForVerification?.photoUrl || selectedDoctorForVerification?.photoUrl === 'pending_upload') && <TooltipContent><p>Document not uploaded yet.</p></TooltipContent>}
-                                                </Tooltip>
-                                                <Tooltip>
-                                                    <TooltipTrigger asChild>
-                                                        <Button 
-                                                            asChild 
-                                                            variant={!selectedDoctorForVerification?.degreeUrl || selectedDoctorForVerification?.degreeUrl === 'pending_upload' ? 'destructive' : 'outline'}
-                                                            className="w-full justify-start gap-2"
-                                                        >
-                                                            <a href={selectedDoctorForVerification?.degreeUrl} target="_blank" rel="noopener noreferrer">
-                                                                {!selectedDoctorForVerification?.degreeUrl || selectedDoctorForVerification?.degreeUrl === 'pending_upload' ? <AlertTriangle className="w-4 h-4"/> : <Download className="w-4 h-4"/>}
-                                                                Qualification Degree
-                                                            </a>
-                                                        </Button>
-                                                    </TooltipTrigger>
-                                                     {(!selectedDoctorForVerification?.degreeUrl || selectedDoctorForVerification?.degreeUrl === 'pending_upload') && <TooltipContent><p>Document not uploaded yet.</p></TooltipContent>}
-                                                </Tooltip>
-                                                <Tooltip>
-                                                    <TooltipTrigger asChild>
-                                                         <Button 
-                                                            asChild 
-                                                            variant={!selectedDoctorForVerification?.licenseUrl || selectedDoctorForVerification?.licenseUrl === 'pending_upload' ? 'destructive' : 'outline'}
-                                                            className="w-full justify-start gap-2"
-                                                         >
-                                                             <a href={selectedDoctorForVerification?.licenseUrl} target="_blank" rel="noopener noreferrer">
-                                                                {!selectedDoctorForVerification?.licenseUrl || selectedDoctorForVerification?.licenseUrl === 'pending_upload' ? <AlertTriangle className="w-4 h-4"/> : <Download className="w-4 h-4"/>}
-                                                                Medical License
-                                                             </a>
-                                                        </Button>
-                                                    </TooltipTrigger>
-                                                     {(!selectedDoctorForVerification?.licenseUrl || selectedDoctorForVerification?.licenseUrl === 'pending_upload') && <TooltipContent><p>Document not uploaded yet.</p></TooltipContent>}
-                                                </Tooltip>
-                                            </TooltipProvider>
+                                          <Card><CardContent className="p-3">
+                                            <Label className="text-xs">Medical Registration No.</Label>
+                                            <p className="font-mono text-sm">{selectedDoctorForVerification?.medicalRegNo}</p>
+                                          </CardContent></Card>
+                                          <Card><CardContent className="p-3">
+                                            <Label className="text-xs">Council & Year</Label>
+                                            <p className="font-semibold">{selectedDoctorForVerification?.regCouncil} ({selectedDoctorForVerification?.regYear})</p>
+                                          </CardContent></Card>
                                         </div>
                                          <DialogFooter>
                                             <Button variant="secondary" onClick={() => setSelectedDoctorForVerification(null)}>Cancel</Button>
-                                            <Button onClick={handleVerifyDoctor} disabled={!selectedDoctorForVerification?.photoUrl || !selectedDoctorForVerification?.degreeUrl || !selectedDoctorForVerification?.licenseUrl || selectedDoctorForVerification?.photoUrl === 'pending_upload'}>Submit for Final Approval</Button>
+                                            <Button onClick={handleVerifyDoctor}>Submit for Final Approval</Button>
                                         </DialogFooter>
                                     </DialogContent>
                                   </Dialog>
