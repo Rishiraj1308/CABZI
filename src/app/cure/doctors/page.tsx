@@ -128,7 +128,6 @@ const initialDoctorState = {
     regCouncil: '',
     regYear: '',
     consultationFee: '',
-    photoFile: null as File | null,
 };
 
 export default function DoctorsPage() {
@@ -148,26 +147,10 @@ export default function DoctorsPage() {
   const [hospitalId, setHospitalId] = useState<string | null>(null);
   const [selectedDoctorForVerification, setSelectedDoctorForVerification] = useState<Doctor | null>(null);
   const [newDoctorData, setNewDoctorData] = useState(initialDoctorState);
-  const [photoPreviewUrl, setPhotoPreviewUrl] = useState<string | null>(null);
 
 
   const handleFormChange = (field: keyof typeof newDoctorData, value: any) => {
     setNewDoctorData(prev => ({ ...prev, [field]: value }));
-  };
-
-  const handleFileChange = (field: 'photoFile', e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      handleFormChange(field, file);
-      const previewUrl = URL.createObjectURL(file);
-      setPhotoPreviewUrl(previewUrl);
-    } else {
-      handleFormChange(field, null);
-      if (photoPreviewUrl) {
-          URL.revokeObjectURL(photoPreviewUrl);
-      }
-      setPhotoPreviewUrl(null);
-    }
   };
 
   useEffect(() => {
@@ -239,7 +222,7 @@ const handleAddDoctor = async (event: React.FormEvent<HTMLFormElement>) => {
     const {
         fullName: name, contactNumber: phone, emailAddress: email, gender, dob,
         specialization, qualifications, experience, department, designation,
-        medicalRegNo, regCouncil, regYear, consultationFee, photoFile
+        medicalRegNo, regCouncil, regYear, consultationFee
     } = newDoctorData;
   
     if (!name || !phone || !email || !specialization || !qualifications || !experience || !medicalRegNo || !regCouncil || !regYear || !consultationFee) {
@@ -250,7 +233,6 @@ const handleAddDoctor = async (event: React.FormEvent<HTMLFormElement>) => {
     
     const hospitalDoctorsRef = collection(db, `ambulances/${hospitalId}/doctors`);
 
-    // Use a transaction to check for phone number uniqueness
     try {
         const q = query(hospitalDoctorsRef, where("phone", "==", phone), limit(1));
         const phoneCheckSnapshot = await getDocs(q);
@@ -262,7 +244,7 @@ const handleAddDoctor = async (event: React.FormEvent<HTMLFormElement>) => {
         const partnerId = `CZD-${phone.slice(-4)}${name.split(' ')[0].slice(0, 2).toUpperCase()}`;
         const password = `cAbZ@${Math.floor(1000 + Math.random() * 9000)}`;
         
-        const newDoctorDocRef = doc(hospitalDoctorsRef); // Generate a new doc reference
+        const newDoctorDocRef = doc(hospitalDoctorsRef);
         
         const doctorData = {
             id: newDoctorDocRef.id,
@@ -272,43 +254,21 @@ const handleAddDoctor = async (event: React.FormEvent<HTMLFormElement>) => {
             partnerId,
             password,
             createdAt: serverTimestamp(),
-            photoUrl: '', // Start with empty photo URL
+            photoUrl: '', // Default empty photo URL
         };
         
-        // 1. Create document with text data
         await setDoc(newDoctorDocRef, doctorData);
 
-        // Show credentials dialog immediately
         setGeneratedCreds({ id: partnerId, pass: password, role: 'Doctor' });
-        setIsAddDoctorDialogOpen(false); // Close the add form
-        setIsCredsDialogOpen(true); // Open the credentials dialog
-        
+        setIsAddDoctorDialogOpen(false);
+        setIsCredsDialogOpen(true);
         toast({ title: 'Doctor Record Created!', description: `Dr. ${name}'s credentials are now available.` });
-
-        // 2. Upload photo if it exists, in the background
-        if (photoFile) {
-            toast({ title: 'Uploading Photo...', description: `Please wait, uploading profile photo for Dr. ${name}.` });
-            const storage = getStorage();
-            const photoPath = `doctors/${hospitalId}/${newDoctorDocRef.id}/photo.jpg`;
-            const photoRef = ref(storage, photoPath);
-            await uploadBytes(photoRef, photoFile);
-            const finalPhotoUrl = await getDownloadURL(photoRef);
-            
-            // 3. Update the document with the photo URL
-            await updateDoc(newDoctorDocRef, { photoUrl: finalPhotoUrl });
-            toast({ title: 'Upload Complete', description: `Photo for Dr. ${name} has been uploaded.`, className: 'bg-green-600 text-white border-green-600' });
-        }
-
-        // 4. Reset form state after everything is done
         setNewDoctorData(initialDoctorState);
-        if (photoPreviewUrl) URL.revokeObjectURL(photoPreviewUrl);
-        setPhotoPreviewUrl(null);
   
     } catch (error: any) {
         console.error('Error adding doctor:', error);
         toast({ variant: 'destructive', title: 'Error Adding Doctor', description: error.message || 'An unexpected error occurred.' });
     } finally {
-        // GUARANTEED to run, preventing the button from getting stuck
         setIsSubmitting(false);
     }
 };
@@ -537,8 +497,6 @@ const handleAddDoctor = async (event: React.FormEvent<HTMLFormElement>) => {
                           setIsAddDoctorDialogOpen(isOpen);
                           if (!isOpen) {
                               setNewDoctorData(initialDoctorState);
-                              if (photoPreviewUrl) URL.revokeObjectURL(photoPreviewUrl);
-                              setPhotoPreviewUrl(null);
                           }
                       }}>
                         <DialogTrigger asChild>
@@ -555,16 +513,6 @@ const handleAddDoctor = async (event: React.FormEvent<HTMLFormElement>) => {
                                 <div className="space-y-4">
                                   <h3 className="text-lg font-semibold border-b pb-2">Basic Information</h3>
                                   <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
-                                    <div className="space-y-2 md:col-span-2">
-                                      <Label>Profile Photo</Label>
-                                      <div className="flex items-center gap-4">
-                                        <Avatar className="w-20 h-20"><AvatarImage src={photoPreviewUrl ?? undefined} /><AvatarFallback><UserIcon className="w-8 h-8 text-muted-foreground" /></AvatarFallback></Avatar>
-                                        <div className="w-full">
-                                          <Input id="photoUpload" type="file" accept="image/*" onChange={(e) => handleFileChange('photoFile', e)} className="h-auto" />
-                                          {newDoctorData.photoFile && (<div className="mt-2 text-xs text-muted-foreground flex items-center justify-between"><span>{newDoctorData.photoFile.name}</span><Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => { handleFormChange('photoFile', null); if(photoPreviewUrl) URL.revokeObjectURL(photoPreviewUrl); setPhotoPreviewUrl(null); }}><X className="w-3 h-3"/></Button></div>)}
-                                        </div>
-                                      </div>
-                                    </div>
                                     <div className="space-y-2"><Label>Full Name</Label><Input name="fullName" required value={newDoctorData.fullName} onChange={e => handleFormChange('fullName', e.target.value)} /></div>
                                     <div className="space-y-2"><Label>Gender</Label><Select name="gender" required onValueChange={v => handleFormChange('gender', v)} value={newDoctorData.gender}><SelectTrigger><SelectValue placeholder="Select Gender"/></SelectTrigger><SelectContent><SelectItem value="male">Male</SelectItem><SelectItem value="female">Female</SelectItem><SelectItem value="other">Other</SelectItem></SelectContent></Select></div>
                                     <div className="space-y-2"><Label>Date of Birth</Label><Input name="dob" type="date" required value={newDoctorData.dob} onChange={e => handleFormChange('dob', e.target.value)} /></div>
