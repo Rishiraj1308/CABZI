@@ -31,7 +31,7 @@ import { doc, updateDoc } from 'firebase/firestore';
 
 const navItems = [
     { href: '/user', label: 'Services', icon: Home, comingSoon: false },
-    { href: '/user/rides', label: 'My Rides', icon: History, comingSoon: false },
+    { href: '/user/rides', label: 'My Activity', icon: History, comingSoon: false },
     { href: '/user/profile', label: 'Profile', icon: User, comingSoon: false },
 ]
 
