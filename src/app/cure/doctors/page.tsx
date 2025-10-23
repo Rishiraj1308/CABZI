@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button'
 import { useToast } from '@/hooks/use-toast'
 import { Stethoscope, UserPlus, MoreHorizontal, Trash2, BadgeCheck, Clock, Briefcase, Calendar, IndianRupee, Phone, Check, Settings, X, User as UserIcon, FileText as FileTextIcon, Download, GraduationCap, Building, Shield, CircleUser, PhoneCall, Mail, Cake, VenetianSofa, AlertTriangle, UploadCloud } from 'lucide-react'
 import { useDb } from '@/firebase/client-provider'
-import { collection, query, onSnapshot, addDoc, doc, deleteDoc, serverTimestamp, Timestamp, orderBy, writeBatch, getDocs, where, updateDoc, setDoc, limit, collectionGroup } from 'firebase/firestore'
+import { collection, query, onSnapshot, addDoc, doc, deleteDoc, serverTimestamp, Timestamp, orderBy, writeBatch, getDocs, where, updateDoc, setDoc, limit } from 'firebase/firestore'
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
@@ -168,24 +168,26 @@ export default function DoctorsPage() {
   };
 
   useEffect(() => {
-    if (db) {
-      const session = localStorage.getItem('cabzi-cure-session');
-      if (session) {
-        const { partnerId } = JSON.parse(session);
-        setHospitalId(partnerId);
-        const doctorsRef = query(collection(db, `ambulances/${partnerId}/doctors`), orderBy('name', 'asc'));
-        const unsubscribe = onSnapshot(doctorsRef, (snapshot) => {
-          setDoctors(snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Doctor)));
-          setIsLoading(false);
-        }, (error) => {
-          console.error("Error fetching doctors:", error);
-          toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch doctor list.' });
-          setIsLoading(false);
-        });
-        return () => unsubscribe();
-      } else {
-        setIsLoading(false);
-      }
+    if (!db) {
+      setIsLoading(false);
+      return;
+    }
+    const session = localStorage.getItem('cabzi-cure-session');
+    if (session) {
+      const { partnerId } = JSON.parse(session);
+      setHospitalId(partnerId);
+      const doctorsRef = query(collection(db, `ambulances/${partnerId}/doctors`), orderBy('name', 'asc'));
+      const unsubscribe = onSnapshot(doctorsRef, (snapshot) => {
+        setDoctors(snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Doctor)));
+        setIsLoading(false); // Set loading to false after data is fetched
+      }, (error) => {
+        console.error("Error fetching doctors:", error);
+        toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch doctor list.' });
+        setIsLoading(false); // Also set loading to false on error
+      });
+      return () => unsubscribe();
+    } else {
+      setIsLoading(false);
     }
   }, [db, toast]);
   
@@ -728,7 +730,7 @@ export default function DoctorsPage() {
               </div>
               <AlertDialogFooter>
                   <Button variant="outline" onClick={() => {
-                      navigator.clipboard.writeText(`ID: ${generatedCreds?.id}\nPass: ${generatedCreds?.pass}`);
+                      navigator.clipboard.writeText(`ID: ${generatedCreds?.id}\\nPass: ${generatedCreds?.pass}`);
                       toast({ title: 'Copied!' });
                   }}>Copy</Button>
                   <AlertDialogAction onClick={() => { setGeneratedCreds(null); setIsCredsDialogOpen(false); }}>Close</AlertDialogAction>
