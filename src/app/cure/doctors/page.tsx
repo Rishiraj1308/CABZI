@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button'
 import { useToast } from '@/hooks/use-toast'
 import { Stethoscope, UserPlus, MoreHorizontal, Trash2, BadgeCheck, Clock, Briefcase, Calendar, IndianRupee, Phone, Check, Settings, X, User as UserIcon, FileText as FileTextIcon, Download, GraduationCap, Building, Shield, CircleUser, PhoneCall, Mail, Cake, VenetianSofa, AlertTriangle, UploadCloud } from 'lucide-react'
 import { useDb } from '@/firebase/client-provider'
-import { collection, query, onSnapshot, addDoc, doc, deleteDoc, serverTimestamp, Timestamp, orderBy, writeBatch, getDocs, where, updateDoc, setDoc, limit, collectionGroup, runTransaction } from 'firebase/firestore'
+import { collection, query, onSnapshot, addDoc, doc, deleteDoc, serverTimestamp, Timestamp, orderBy, writeBatch, getDocs, where, updateDoc, setDoc, limit, runTransaction } from 'firebase/firestore'
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
@@ -222,7 +222,7 @@ export default function DoctorsPage() {
     toast({ title: 'Appointment Rescheduled', description: `Appointment for ${selectedAppointment.patientName} is now on ${format(newDateTime, 'PPP')} at ${newTime}.` });
     setIsManageAppointmentOpen(false);
   }
-
+  
   const handleAddDoctor = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!db || !hospitalId) {
@@ -230,81 +230,79 @@ export default function DoctorsPage() {
         return;
     }
     setIsSubmitting(true);
-
+  
     const {
         fullName: name, contactNumber: phone, emailAddress: email, gender, dob,
         specialization, qualifications, experience, department, designation,
         medicalRegNo, regCouncil, regYear, consultationFee, photoFile
     } = newDoctorData;
-
+  
+    // Basic validation
     if (!name || !phone || !email || !specialization || !qualifications || !experience || !medicalRegNo || !regCouncil || !regYear || !consultationFee) {
         toast({ variant: 'destructive', title: 'Missing Required Fields', description: 'Please fill out all required fields.' });
         setIsSubmitting(false);
         return;
     }
-
+  
     try {
-        await runTransaction(db, async (transaction) => {
-            const hospitalDoctorsRef = collection(db, `ambulances/${hospitalId}/doctors`);
-            const q = query(hospitalDoctorsRef, where("phone", "==", phone), limit(1));
-            const phoneCheck = await getDocs(q);
+      // 1. Check for duplicates within the hospital's roster first.
+      const hospitalDoctorsRef = collection(db, `ambulances/${hospitalId}/doctors`);
+      const q = query(hospitalDoctorsRef, where("phone", "==", phone), limit(1));
+      const phoneCheckSnapshot = await getDocs(q);
+      if (!phoneCheckSnapshot.empty) {
+        throw new Error("A doctor with this phone number is already registered in your hospital.");
+      }
+      
+      const partnerId = `CZD-${phone.slice(-4)}${name.split(' ')[0].slice(0, 2).toUpperCase()}`;
+      const password = `cAbZ@${Math.floor(1000 + Math.random() * 9000)}`;
 
-            if (!phoneCheck.empty) {
-                throw new Error("Phone Number Exists: A doctor with this phone number is already registered in your hospital.");
-            }
+      // 2. Add the doctor document to Firestore
+      const newDoctorDocRef = await addDoc(hospitalDoctorsRef, {
+        name, phone, email, gender, dob, specialization, qualifications, experience, department,
+        designation, medicalRegNo, regCouncil, regYear, consultationFee: parseFloat(consultationFee),
+        docStatus: 'Pending', partnerId, password, createdAt: serverTimestamp(), photoUrl: '',
+      });
+  
+      // 3. If a photo was selected, upload it now
+      let finalPhotoUrl = '';
+      if (photoFile) {
+        const storage = getStorage();
+        const photoPath = `doctors/${hospitalId}/${newDoctorDocRef.id}/photo.jpg`;
+        const photoRef = ref(storage, photoPath);
+        await uploadBytes(photoRef, photoFile);
+        finalPhotoUrl = await getDownloadURL(photoRef);
 
-            const partnerId = `CZD-${phone.slice(-4)}${name.split(' ')[0].slice(0, 2).toUpperCase()}`;
-            const password = `cAbZ@${Math.floor(1000 + Math.random() * 9000)}`;
-            const newDoctorDocRef = doc(hospitalDoctorsRef);
+        // 4. Update the document with the photo URL
+        await updateDoc(newDoctorDocRef, { photoUrl: finalPhotoUrl });
+      }
 
-            let finalPhotoUrl = '';
-            if (photoFile) {
-                const storage = getStorage();
-                const photoPath = `doctors/${hospitalId}/${newDoctorDocRef.id}/photo.jpg`;
-                const photoRef = ref(storage, photoPath);
-                await uploadBytes(photoRef, photoFile);
-                finalPhotoUrl = await getDownloadURL(photoRef);
-            }
-
-            const newDoctorPayload = {
-                name, phone, email, gender, dob,
-                specialization, qualifications, experience, department, designation,
-                medicalRegNo, regCouncil, regYear,
-                consultationFee: parseFloat(consultationFee),
-                docStatus: 'Pending',
-                partnerId, password,
-                createdAt: serverTimestamp(),
-                photoUrl: finalPhotoUrl,
-            };
-
-            transaction.set(newDoctorDocRef, newDoctorPayload);
-            
-             // Create a reference in the global 'doctors' collection for login checks
-            const globalDoctorDocRef = doc(db, 'doctors', newDoctorDocRef.id);
-            transaction.set(globalDoctorDocRef, {
-                phone: phone,
-                email: email,
-                hospitalId: hospitalId,
-                partnerId: partnerId,
-            });
-
-            setGeneratedCreds({ id: partnerId, pass: password, role: 'Doctor' });
-        });
-
-        toast({ title: 'Doctor Added', description: `Dr. ${name} has been added.` });
-        setIsAddDoctorDialogOpen(false);
-        setIsCredsDialogOpen(true);
-        setNewDoctorData(initialDoctorState);
-        if (photoPreviewUrl) URL.revokeObjectURL(photoPreviewUrl);
-        setPhotoPreviewUrl(null);
-
+      // 5. Create a global reference for login checks
+      const globalDoctorRef = doc(db, 'doctors', newDoctorDocRef.id);
+      await setDoc(globalDoctorRef, {
+          phone: phone,
+          email: email,
+          hospitalId: hospitalId,
+          partnerId: partnerId,
+      });
+  
+      // 6. Success feedback
+      setGeneratedCreds({ id: partnerId, pass: password, role: 'Doctor' });
+      toast({ title: 'Doctor Added', description: `Dr. ${name} has been added.` });
+      setIsAddDoctorDialogOpen(false);
+      setIsCredsDialogOpen(true);
+      setNewDoctorData(initialDoctorState);
+      if (photoPreviewUrl) URL.revokeObjectURL(photoPreviewUrl);
+      setPhotoPreviewUrl(null);
+  
     } catch (error: any) {
         console.error('Error adding doctor:', error);
-        toast({ variant: 'destructive', title: error.message.startsWith('Phone Number Exists') ? 'Duplicate Entry' : 'Error', description: error.message || 'Could not add doctor.' });
+        toast({ variant: 'destructive', title: 'Error Adding Doctor', description: error.message || 'An unexpected error occurred.' });
     } finally {
+        // THIS IS THE FIX: Ensure isSubmitting is always reset
         setIsSubmitting(false);
     }
   };
+
 
   const handleDeleteDoctor = async (doctorId: string, doctorName: string) => {
     if (!db || !hospitalId) return;
