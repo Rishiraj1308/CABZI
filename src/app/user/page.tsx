@@ -14,6 +14,7 @@ import LocationSelector from '@/components/location-selector'
 import RideStatus from '@/components/ride-status'
 import type { RideData, AmbulanceCase, GarageRequest, ClientSession } from '@/lib/types'
 import { useRouter } from 'next/navigation'
+import { getRoute, searchPlace } from '@/lib/routing'
 
 const LiveMap = dynamic(() => import('@/components/live-map'), { 
     ssr: false,
@@ -47,9 +48,6 @@ export default function UserPage() {
     const { toast } = useToast()
     const router = useRouter();
 
-    // The session object is derived from the user object from Firebase Auth
-    // and combined with data from your Firestore 'users' collection.
-    // This is a simplified example; a real app might use a custom hook for this.
     const [session, setSession] = useState<ClientSession | null>(null);
 
     useEffect(() => {
