@@ -56,7 +56,7 @@ interface Doctor {
   createdAt: Timestamp;
   photoUrl?: string; // To store uploaded photo URL
   degreeUrl?: string; // To store uploaded degree URL
-  docStatus?: 'Verified' | 'Pending';
+  docStatus?: 'Verified' | 'Pending' | 'Awaiting Final Approval' | 'Rejected';
   partnerId?: string; // For Doctor's own login
   password?: string; // For Doctor's own login
   consultationFee?: number;
@@ -232,14 +232,29 @@ export default function DoctorsPage() {
     const doctorRef = doc(db, `ambulances/${hospitalId}/doctors`, selectedDoctorForVerification.id);
     try {
         await updateDoc(doctorRef, {
-            docStatus: 'Verified'
+            docStatus: 'Awaiting Final Approval'
         });
-        toast({ title: 'Doctor Verified', description: `Dr. ${selectedDoctorForVerification.name} is now a verified doctor on the platform.`, className: 'bg-green-600 border-green-600 text-white' });
+        toast({ title: 'Submitted for Final Approval', description: `Dr. ${selectedDoctorForVerification.name}'s profile has been sent to Cabzi for final verification.`, className: 'bg-blue-600 border-blue-600 text-white' });
         setSelectedDoctorForVerification(null);
     } catch (error) {
-        console.error('Error verifying doctor:', error);
-        toast({ variant: 'destructive', title: 'Verification Failed' });
+        console.error('Error submitting for verification:', error);
+        toast({ variant: 'destructive', title: 'Submission Failed' });
     }
+  }
+  
+  const getDoctorStatusBadge = (status?: 'Verified' | 'Pending' | 'Awaiting Final Approval' | 'Rejected') => {
+      switch (status) {
+          case 'Verified':
+              return <Badge className="bg-green-100 text-green-800"><BadgeCheck className="w-3 h-3 mr-1"/>Verified</Badge>;
+          case 'Pending':
+              return <Badge variant="destructive" className="bg-yellow-100 text-yellow-800"><Clock className="w-3 h-3 mr-1"/>Pending</Badge>;
+          case 'Awaiting Final Approval':
+              return <Badge className="bg-blue-100 text-blue-800"><Clock className="w-3 h-3 mr-1"/>Awaiting Approval</Badge>;
+          case 'Rejected':
+              return <Badge variant="destructive"><X className="w-3 h-3 mr-1"/>Rejected</Badge>;
+          default:
+              return <Badge variant="secondary">Unknown</Badge>;
+      }
   }
 
 
@@ -488,7 +503,7 @@ export default function DoctorsPage() {
                             <TableHead>Doctor Name</TableHead>
                             <TableHead>Specialization</TableHead>
                             <TableHead>Fee</TableHead>
-                            <TableHead>Documents</TableHead>
+                            <TableHead>Verification Status</TableHead>
                             <TableHead className="text-right">Actions</TableHead>
                           </TableRow>
                         </TableHeader>
@@ -509,20 +524,11 @@ export default function DoctorsPage() {
                                 <TableCell>
                                     <div className="font-medium">Dr. {doctor.name}</div>
                                     <div className="text-xs text-muted-foreground">{doctor.qualifications || 'N/A'}</div>
-                                    {doctor.experience && (
-                                      <div className="text-xs text-muted-foreground flex items-center gap-1.5 pt-1">
-                                        <Briefcase className="w-3 h-3" /> {doctor.experience} years exp.
-                                      </div>
-                                    )}
                                 </TableCell>
                                 <TableCell><Badge variant="secondary">{doctor.specialization}</Badge></TableCell>
                                 <TableCell className="font-semibold">₹{doctor.consultationFee?.toLocaleString() || 'N/A'}</TableCell>
                                 <TableCell>
-                                   {doctor.docStatus === 'Verified' ? (
-                                      <Badge className="bg-green-100 text-green-800"><BadgeCheck className="w-3 h-3 mr-1"/>Verified</Badge>
-                                   ) : (
-                                      <Badge variant="destructive" className="bg-yellow-100 text-yellow-800"><Clock className="w-3 h-3 mr-1"/>Pending</Badge>
-                                   )}
+                                   {getDoctorStatusBadge(doctor.docStatus)}
                                 </TableCell>
                                 <TableCell className="text-right">
                                   <Dialog onOpenChange={(open) => !open && setSelectedDoctorForVerification(null)}>
@@ -536,6 +542,11 @@ export default function DoctorsPage() {
                                                     <Check className="mr-2 h-4 w-4 text-green-500" /> Verify Documents
                                                 </DropdownMenuItem>
                                             </DialogTrigger>
+                                         )}
+                                          {doctor.docStatus === 'Awaiting Final Approval' && (
+                                                <DropdownMenuItem disabled>
+                                                    <Clock className="mr-2 h-4 w-4 text-blue-500" /> Pending Cabzi Approval
+                                                </DropdownMenuItem>
                                          )}
                                          <AlertDialog>
                                              <AlertDialogTrigger asChild>
@@ -554,17 +565,11 @@ export default function DoctorsPage() {
                                     <DialogContent>
                                         <DialogHeader>
                                             <DialogTitle>Verify Doctor: {selectedDoctorForVerification?.name}</DialogTitle>
-                                            <DialogDescription>Review the uploaded documents and confirm their authenticity.</DialogDescription>
+                                            <DialogDescription>Review the uploaded documents and confirm their authenticity. This will send the profile to Cabzi for final approval.</DialogDescription>
                                         </DialogHeader>
                                         <div className="space-y-4 py-4">
                                             <Button variant="outline" className="w-full justify-start gap-2"><Download className="w-4 h-4"/> Download Passport Photo (pending)</Button>
                                             <Button variant="outline" className="w-full justify-start gap-2"><Download className="w-4 h-4"/> Download Qualification Degree (pending)</Button>
-                                        </div>
-                                        <DialogFooter>
-                                            <Button variant="ghost" onClick={() => setSelectedDoctorForVerification(null)}>Close</Button>
-                                            <Button onClick={handleVerifyDoctor}>
-                                                <BadgeCheck className="mr-2 h-4 w-4"/> Mark as Verified
-                                            </Button>
                                         </DialogFooter>
                                     </DialogContent>
                                   </Dialog>
@@ -598,7 +603,7 @@ export default function DoctorsPage() {
               </div>
               <AlertDialogFooter>
                   <Button variant="outline" onClick={() => {
-                      navigator.clipboard.writeText(`ID: ${generatedCreds?.id}\\nPass: ${generatedCreds?.pass}`);
+                      navigator.clipboard.writeText(`ID: ${generatedCreds?.id}\nPass: ${generatedCreds?.pass}`);
                       toast({ title: 'Copied!' });
                   }}>Copy</Button>
                   <AlertDialogAction onClick={() => { setGeneratedCreds(null); setIsCredsDialogOpen(false); }}>Close</AlertDialogAction>
@@ -608,3 +613,5 @@ export default function DoctorsPage() {
     </div>
   )
 }
+
+    
