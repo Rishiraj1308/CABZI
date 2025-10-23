@@ -1,3 +1,4 @@
+
 'use client'
 
 import React from 'react';
@@ -110,7 +111,7 @@ export default function UserDashboard() {
                                             <Card className="h-full transition-all text-center bg-background/80 backdrop-blur-sm hover:shadow-2xl hover:border-primary/50">
                                                  <CardContent className="p-6 flex flex-col items-center justify-center gap-3">
                                                     <div className="p-4 bg-muted rounded-full">
-                                                      <service.icon className={`w-10 h-10 ${service.color}`} />
+                                                      <service.icon className={`w-8 h-8 ${service.color}`} />
                                                     </div>
                                                     <p className="font-semibold text-md">{service.title}</p>
                                                 </CardContent>

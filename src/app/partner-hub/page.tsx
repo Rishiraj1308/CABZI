@@ -69,7 +69,7 @@ export default function PartnerHub() {
                          <Link key={partner.type} href={partner.href} className="flex" legacyBehavior>
                             <Card className={cn("transition-all h-full flex flex-col w-full", partner.className)}>
                                <CardHeader>
-                                    <div className={cn("mx-auto p-4 rounded-full", partner.iconContainerClassName)}>
+                                    <div className={cn("mx-auto p-3 rounded-full", partner.iconContainerClassName)}>
                                         <partner.icon className={cn("w-8 h-8", partner.iconClassName)} />
                                     </div>
                                    <CardTitle className="pt-4">{partner.title}</CardTitle>
