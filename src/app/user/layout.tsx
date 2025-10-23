@@ -32,7 +32,6 @@ import { doc, updateDoc } from 'firebase/firestore';
 
 const navItems = [
     { href: '/user', label: 'Services', icon: Home, comingSoon: false },
-    { href: '/user/book', label: 'Book a Ride', icon: Car, comingSoon: false },
     { href: '/user/rides', label: 'My Rides', icon: History, comingSoon: false },
     { href: '/user/profile', label: 'Profile', icon: User, comingSoon: false },
 ]
@@ -153,12 +152,12 @@ export default function UserLayout({
             </DropdownMenu>
         </div>
       </header>
-      <main className="flex-1 overflow-y-auto pb-16 md:pb-0 h-full">
+      <main className="flex-1 overflow-y-auto pb-16 md:pb-0">
           {children}
       </main>
        <nav className="fixed bottom-0 left-0 right-0 z-10 border-t bg-background/95 backdrop-blur-sm md:hidden">
-        <div className="mx-auto grid h-16 max-w-lg grid-cols-4 items-center px-4">
-          {navItems.slice(0, 4).map((item) => (
+        <div className="mx-auto grid h-16 max-w-lg grid-cols-3 items-center px-4">
+          {navItems.map((item) => (
             <Link key={item.href} href={item.href} legacyBehavior>
               <a className={cn(
                 "flex flex-col items-center justify-center gap-1 text-xs text-muted-foreground",

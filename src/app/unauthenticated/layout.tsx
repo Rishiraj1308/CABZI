@@ -21,21 +21,35 @@ export default function UnauthenticatedLayout({
   useEffect(() => {
     setIsMounted(true);
     
-    const session = localStorage.getItem('cabzi-session');
-
-    if (session) {
+    // Check for a primary session first
+    const primarySession = localStorage.getItem('cabzi-session');
+    if (primarySession) {
         try {
-            const { role } = JSON.parse(session);
-            
-            // Redirect based on the primary role
+            const { role } = JSON.parse(primarySession);
             if (role) {
                  if (role === 'admin') router.replace('/admin');
-                 else router.replace(`/${role}`); // For user, driver, mechanic, cure, etc.
-                 return; // Stop further execution to prevent rendering login page
+                 else router.replace(`/${role}`);
+                 return;
             }
         } catch (e) {
-            // Corrupt session, remove it and allow login page to show.
             localStorage.removeItem('cabzi-session');
+        }
+    }
+    
+    // If no primary session, check for other partner sessions
+    const partnerSessionKeys = ['cabzi-resq-session', 'cabzi-cure-session', 'cabzi-ambulance-session', 'cabzi-doctor-session'];
+    for (const key of partnerSessionKeys) {
+        const session = localStorage.getItem(key);
+        if (session) {
+            try {
+                const { role } = JSON.parse(session);
+                if (role) {
+                    router.replace(`/${role}`);
+                    return;
+                }
+            } catch (e) {
+                localStorage.removeItem(key);
+            }
         }
     }
     

@@ -6,88 +6,94 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Car, Wrench, Ambulance, Calendar } from 'lucide-react';
 import Link from 'next/link';
 import { MotionDiv } from '@/components/ui/motion-div';
-import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 
 const serviceCards = [
     {
         title: 'Book a Ride',
-        description: 'Get a fair fare to your destination, with 0% commission for our partners.',
+        description: 'Fair fares for your daily commute.',
         icon: Car,
         href: '/user/book',
         color: 'text-primary',
-        hoverColor: 'hover:border-primary',
-        isPrimary: true,
+        category: 'Mobility & Transport'
     },
     {
-        title: 'CURE Emergency',
-        description: 'Instantly connect with the nearest hospital and dispatch an ambulance.',
+        title: 'Emergency SOS',
+        description: 'Dispatch the nearest ambulance.',
         icon: Ambulance,
-        href: '/user/book', // This will be handled by the page to show SOS
+        href: '/user/book', // SOS logic will be on the book page
         color: 'text-red-500',
-        hoverColor: 'hover:border-red-500',
-        isPrimary: false,
+        category: 'Health & Safety'
     },
      {
         title: 'Book Appointment',
-        description: 'Find specialists and book appointments at our partner hospitals.',
+        description: 'Consult with doctors at partner hospitals.',
         icon: Calendar,
         href: '/user/appointments',
         color: 'text-blue-500',
-        hoverColor: 'hover:border-blue-500',
-        isPrimary: false,
+        category: 'Health & Safety'
     },
     {
-        title: 'ResQ Assistance',
-        description: 'Coming soon: On-the-spot help for vehicle breakdowns.',
+        title: 'Roadside Assistance',
+        description: 'Get help for vehicle breakdowns.',
         icon: Wrench,
         href: '#',
         color: 'text-amber-500',
-        hoverColor: 'hover:border-amber-500',
-        isPrimary: false,
+        category: 'Mobility & Transport'
     },
 ];
 
 export default function UserDashboard() {
     const { toast } = useToast();
     
+    const servicesByCat = serviceCards.reduce((acc, service) => {
+        if (!acc[service.category]) {
+            acc[service.category] = [];
+        }
+        acc[service.category].push(service);
+        return acc;
+    }, {} as Record<string, typeof serviceCards>);
+
     return (
         <div className="p-4 md:p-6 space-y-6">
              <div className="animate-fade-in text-center md:text-left">
                 <h2 className="text-3xl font-bold tracking-tight">Welcome to Cabzi</h2>
-                <p className="text-muted-foreground">How can we help you today?</p>
+                <p className="text-muted-foreground">Your everyday super-app. How can we help you today?</p>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                 {serviceCards.map((service, index) => (
-                    <MotionDiv
-                        key={service.title}
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.5, delay: index * 0.1 }}
-                    >
-                        <Link href={service.href} legacyBehavior>
-                             <a onClick={(e) => {
-                                 if (service.href === '#') {
-                                     e.preventDefault();
-                                     toast({ title: 'Coming Soon!', description: 'This feature is under development.' });
-                                 }
-                             }}>
-                                <Card className={`h-full transition-all ${service.hoverColor} ${service.isPrimary ? 'bg-primary/5' : ''}`}>
-                                    <CardHeader className="flex flex-row items-center gap-4">
-                                        <service.icon className={`w-10 h-10 ${service.color}`} />
-                                        <div>
-                                            <CardTitle>{service.title}</CardTitle>
-                                            <CardDescription>{service.description}</CardDescription>
-                                        </div>
-                                    </CardHeader>
-                                </Card>
-                            </a>
-                        </Link>
-                    </MotionDiv>
-                 ))}
-            </div>
+            {Object.entries(servicesByCat).map(([category, services]) => (
+                <div key={category}>
+                    <h3 className="text-lg font-semibold mb-2 px-2">{category}</h3>
+                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        {services.map((service, index) => (
+                            <MotionDiv
+                                key={service.title}
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ duration: 0.5, delay: index * 0.1 }}
+                            >
+                                <Link href={service.href} legacyBehavior>
+                                    <a onClick={(e) => {
+                                        if (service.href === '#') {
+                                            e.preventDefault();
+                                            toast({ title: 'Coming Soon!', description: 'This feature is under development.' });
+                                        }
+                                    }}>
+                                        <Card className="h-full transition-all hover:border-primary hover:shadow-lg text-center">
+                                             <CardContent className="p-4 flex flex-col items-center justify-center gap-2">
+                                                <div className="p-3 bg-muted rounded-full">
+                                                  <service.icon className={`w-8 h-8 ${service.color}`} />
+                                                </div>
+                                                <p className="font-semibold text-sm">{service.title}</p>
+                                            </CardContent>
+                                        </Card>
+                                    </a>
+                                </Link>
+                            </MotionDiv>
+                        ))}
+                    </div>
+                </div>
+            ))}
         </div>
     );
 }
-

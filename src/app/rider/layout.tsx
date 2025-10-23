@@ -209,6 +209,6 @@ export default function RiderLayout({
           {children}
       </main>
       <Toaster />
-      </div>
+    </div>
   );
 }
