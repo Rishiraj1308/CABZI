@@ -7,7 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { useToast } from '@/hooks/use-toast'
-import { Stethoscope, UserPlus, MoreHorizontal, Trash2, BadgeCheck, Clock, Briefcase, Calendar, IndianRupee, Phone } from 'lucide-react'
+import { Stethoscope, UserPlus, MoreHorizontal, Trash2, BadgeCheck, Clock, Briefcase, Calendar, IndianRupee, Phone, Check, Settings, X } from 'lucide-react'
 import { useDb } from '@/firebase/client-provider'
 import { collection, query, onSnapshot, addDoc, doc, deleteDoc, serverTimestamp, Timestamp, orderBy, writeBatch, getDocs, where } from 'firebase/firestore'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -40,6 +40,11 @@ import {
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle, AlertDialogFooter, AlertDialogTrigger } from "@/components/ui/alert-dialog"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { Calendar as CalendarPicker } from '@/components/ui/calendar'
+import { format } from 'date-fns'
+import { cn } from '@/lib/utils'
+
 
 interface Doctor {
   id: string;
@@ -65,7 +70,7 @@ interface Appointment {
   doctorName: string;
   appointmentDate: string;
   appointmentTime: string;
-  status: 'Confirmed' | 'Pending' | 'In Queue';
+  status: 'Confirmed' | 'Pending' | 'In Queue' | 'Cancelled';
   isRecurring?: boolean;
 }
 
@@ -104,9 +109,13 @@ export default function DoctorsPage() {
   const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [appointments, setAppointments] = useState<Appointment[]>(mockAppointments);
   const [isLoading, setIsLoading] = useState(true);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isAddDoctorDialogOpen, setIsAddDoctorDialogOpen] = useState(false);
   const [generatedCreds, setGeneratedCreds] = useState<{ id: string; pass: string; role: string } | null>(null);
   const [isCredsDialogOpen, setIsCredsDialogOpen] = useState(false);
+  const [isManageAppointmentOpen, setIsManageAppointmentOpen] = useState(false);
+  const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
+  const [newDate, setNewDate] = useState<Date | undefined>(new Date());
+  const [newTime, setNewTime] = useState('');
   const { toast } = useToast();
   const db = useDb();
   const [hospitalId, setHospitalId] = useState<string | null>(null);
@@ -132,13 +141,40 @@ export default function DoctorsPage() {
       }
     }
   }, [db, toast]);
+  
+  const handleAppointmentAction = (appt: Appointment, action: 'confirm' | 'check-in' | 'cancel' | 'reschedule') => {
+      if (action === 'cancel') {
+          setAppointments(prev => prev.map(a => a.id === appt.id ? {...a, status: 'Cancelled'} : a));
+          toast({ variant: 'destructive', title: 'Appointment Cancelled', description: `Appointment for ${appt.patientName} has been cancelled.`});
+      } else if (action === 'confirm') {
+          setAppointments(prev => prev.map(a => a.id === appt.id ? {...a, status: 'Confirmed'} : a));
+          toast({ title: 'Appointment Confirmed', description: `Appointment for ${appt.patientName} has been confirmed.`});
+      } else if (action === 'check-in') {
+          setAppointments(prev => prev.map(a => a.id === appt.id ? {...a, status: 'In Queue'} : a));
+          toast({ title: 'Patient Checked In', description: `${appt.patientName} is now in the queue.`});
+      }
+      setIsManageAppointmentOpen(false);
+  }
 
-   const handleCheckIn = (appointmentId: string) => {
-        setAppointments(prev => prev.map(appt => 
-            appt.id === appointmentId ? { ...appt, status: 'In Queue' } : appt
-        ));
-        toast({ title: 'Patient Checked In', description: 'Patient has been added to the queue.' });
+  const handleRescheduleSubmit = () => {
+    if (!selectedAppointment || !newDate || !newTime) {
+      toast({ variant: 'destructive', title: 'Error', description: 'Please select a new date and time.' });
+      return;
     }
+    const newDateTime = new Date(newDate);
+    const [hours, minutes] = newTime.split(/[: ]/);
+    newDateTime.setHours(newTime.includes('PM') ? parseInt(hours, 10) + 12 : parseInt(hours, 10), parseInt(minutes, 10), 0);
+
+    setAppointments(prev => prev.map(a => 
+      a.id === selectedAppointment.id 
+      ? { ...a, appointmentDate: newDateTime.toISOString().split('T')[0], appointmentTime: newTime, status: 'Confirmed' } 
+      : a
+    ));
+    
+    toast({ title: 'Appointment Rescheduled', description: `Appointment for ${selectedAppointment.patientName} has been updated.` });
+    setIsManageAppointmentOpen(false);
+  }
+
 
   const handleAddDoctor = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -169,7 +205,7 @@ export default function DoctorsPage() {
         createdAt: serverTimestamp(),
       });
       toast({ title: 'Doctor Added', description: `Dr. ${name} has been added. Their credentials are now available.` });
-      setIsDialogOpen(false);
+      setIsAddDoctorDialogOpen(false);
       setGeneratedCreds({ id: partnerId, pass: password, role: 'Doctor' });
       setIsCredsDialogOpen(true);
     } catch (error) {
@@ -188,6 +224,7 @@ export default function DoctorsPage() {
        toast({ variant: 'destructive', title: 'Error', description: 'Could not remove the doctor.' });
     }
   };
+  
 
   return (
     <div className="space-y-6">
@@ -213,9 +250,66 @@ export default function DoctorsPage() {
                                          <p className="text-xs text-muted-foreground flex items-center gap-1.5"><Phone className="w-3 h-3"/> {appt.patientPhone}</p>
                                          <p className="text-xs">{appt.appointmentDate} at {appt.appointmentTime}</p>
                                      </div>
-                                     {appt.status === 'Pending' && <Button size="sm">Confirm</Button>}
-                                     {appt.status === 'Confirmed' && <Button size="sm" variant="secondary" onClick={() => handleCheckIn(appt.id)}>Check-in Patient</Button>}
-                                     {appt.status === 'In Queue' && <Badge className="bg-blue-100 text-blue-800">In Queue</Badge>}
+                                     <div className="flex flex-col items-end gap-1">
+                                       {appt.status === 'Pending' && <Button size="sm" onClick={() => handleAppointmentAction(appt, 'confirm')}>Confirm</Button>}
+                                       {appt.status === 'Confirmed' && <Button size="sm" variant="secondary" onClick={() => handleAppointmentAction(appt, 'check-in')}>Check-in Patient</Button>}
+                                       {appt.status === 'In Queue' && <Badge className="bg-blue-100 text-blue-800">In Queue</Badge>}
+                                       {appt.status === 'Cancelled' && <Badge variant="destructive">Cancelled</Badge>}
+                                    </div>
+                                     <Dialog open={isManageAppointmentOpen && selectedAppointment?.id === appt.id} onOpenChange={(open) => {
+                                        if (!open) {
+                                            setIsManageAppointmentOpen(false);
+                                            setSelectedAppointment(null);
+                                        }
+                                     }}>
+                                        <DialogTrigger asChild>
+                                           <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => {setIsManageAppointmentOpen(true); setSelectedAppointment(appt);}}>
+                                                <Settings className="w-4 h-4"/>
+                                           </Button>
+                                        </DialogTrigger>
+                                        <DialogContent>
+                                            <DialogHeader>
+                                                <DialogTitle>Manage Appointment</DialogTitle>
+                                                <DialogDescription>Patient: {selectedAppointment?.patientName}</DialogDescription>
+                                            </DialogHeader>
+                                            <div className="space-y-4 py-4">
+                                                <h4 className="font-semibold">Reschedule Appointment</h4>
+                                                 <div className="space-y-2">
+                                                    <Label>Select New Date</Label>
+                                                    <Popover>
+                                                        <PopoverTrigger asChild>
+                                                        <Button variant={"outline"} className={cn("w-full justify-start text-left font-normal", !newDate && "text-muted-foreground")}>
+                                                            <Calendar className="mr-2 h-4 w-4" />
+                                                            {newDate ? format(newDate, "PPP") : <span>Pick a date</span>}
+                                                        </Button>
+                                                        </PopoverTrigger>
+                                                        <PopoverContent className="w-auto p-0"><CalendarPicker mode="single" selected={newDate} onSelect={setNewDate} initialFocus/></PopoverContent>
+                                                    </Popover>
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <Label>Select New Time</Label>
+                                                    <div className="grid grid-cols-3 gap-2">
+                                                        {timeSlots.map(slot => (<Button key={slot} variant={newTime === slot ? 'default' : 'outline'} onClick={() => setNewTime(slot)}>{slot}</Button>))}
+                                                    </div>
+                                                </div>
+                                                <Button className="w-full" onClick={handleRescheduleSubmit}>Confirm Reschedule</Button>
+                                            </div>
+                                            <div className="border-t pt-4">
+                                                 <AlertDialog>
+                                                     <AlertDialogTrigger asChild>
+                                                        <Button variant="destructive" className="w-full">Cancel Appointment</Button>
+                                                    </AlertDialogTrigger>
+                                                     <AlertDialogContent>
+                                                        <AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle><AlertDialogDescription>This action cannot be undone. This will cancel the appointment for {selectedAppointment?.patientName}.</AlertDialogDescription></AlertDialogHeader>
+                                                        <AlertDialogFooter>
+                                                            <AlertDialogCancel>Go Back</AlertDialogCancel>
+                                                            <AlertDialogAction onClick={() => selectedAppointment && handleAppointmentAction(selectedAppointment, 'cancel')} className="bg-destructive hover:bg-destructive/90">Yes, Cancel</AlertDialogAction>
+                                                        </AlertDialogFooter>
+                                                    </AlertDialogContent>
+                                                 </AlertDialog>
+                                            </div>
+                                        </DialogContent>
+                                     </Dialog>
                                  </CardContent>
                              </Card>
                         ))}
@@ -290,7 +384,7 @@ export default function DoctorsPage() {
                         <CardTitle className="flex items-center gap-2"><Stethoscope className="w-6 h-6 text-primary"/> Doctor Roster</CardTitle>
                         <CardDescription>Add, view, and manage the doctors and specialists at your facility.</CardDescription>
                       </div>
-                      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                      <Dialog open={isAddDoctorDialogOpen} onOpenChange={setIsAddDoctorDialogOpen}>
                         <DialogTrigger asChild>
                           <Button><UserPlus className="mr-2 h-4 w-4" /> Add Doctor</Button>
                         </DialogTrigger>
@@ -459,5 +553,3 @@ export default function DoctorsPage() {
     </div>
   )
 }
-
-    
