@@ -1,3 +1,4 @@
+
 'use client'
 
 import React, { useState, useEffect } from 'react'
@@ -6,7 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { useToast } from '@/hooks/use-toast'
-import { Stethoscope, UserPlus, MoreHorizontal, Trash2, BadgeCheck, Clock, Briefcase, Calendar, IndianRupee, Phone, Check, Settings, X, User as UserIcon, FileText as FileTextIcon, Download, GraduationCap, Building, Shield, CircleUser, PhoneCall, Mail, Cake, VenetianSofa, AlertTriangle } from 'lucide-react'
+import { Stethoscope, UserPlus, MoreHorizontal, Trash2, BadgeCheck, Clock, Briefcase, Calendar, IndianRupee, Phone, Check, Settings, X, User as UserIcon, FileText as FileTextIcon, Download, GraduationCap, Building, Shield, CircleUser, PhoneCall, Mail, Cake, VenetianSofa, AlertTriangle, UploadCloud } from 'lucide-react'
 import { useDb } from '@/firebase/client-provider'
 import { collection, query, onSnapshot, addDoc, doc, deleteDoc, serverTimestamp, Timestamp, orderBy, writeBatch, getDocs, where, updateDoc, setDoc } from 'firebase/firestore'
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage'
@@ -99,7 +100,7 @@ const mockSchedule = {
     },
 };
 
-const timeSlots = ['09:00', '10:00', '11:00', '12:00', '14:00', '15:00', '16:00'];
+const timeSlots = ['09:00 AM', '10:00 AM', '11:00 AM', '12:00 PM', '02:00 PM', '03:00 PM', '04:00 PM'];
 
 
 const doctorSpecializations = [
@@ -144,7 +145,6 @@ export default function DoctorsPage() {
   const [hospitalId, setHospitalId] = useState<string | null>(null);
   const [selectedDoctorForVerification, setSelectedDoctorForVerification] = useState<Doctor | null>(null);
 
-  // Unified state for the new doctor form
   const [newDoctorData, setNewDoctorData] = useState(initialDoctorState);
 
   const handleFormChange = (field: keyof typeof newDoctorData, value: any) => {
@@ -205,7 +205,7 @@ export default function DoctorsPage() {
 
     setAppointments(prev => prev.map(appt => 
       appt.id === selectedAppointment.id 
-      ? { ...a, appointmentDate: newDateTime.toISOString().split('T')[0], appointmentTime: newTime, status: 'Confirmed' } 
+      ? { ...appt, appointmentDate: newDateTime.toISOString().split('T')[0], appointmentTime: newTime, status: 'Confirmed' } 
       : appt
     ));
     
@@ -220,23 +220,10 @@ export default function DoctorsPage() {
     setIsSubmitting(true);
 
     const {
-        fullName: name,
-        contactNumber: phone,
-        emailAddress: email,
-        gender,
-        dob,
-        specialization,
-        qualifications,
-        experience,
-        department,
-        designation,
-        medicalRegNo,
-        regCouncil,
-        regYear,
-        consultationFee,
-        photoUpload,
-        degreeUpload,
-        licenseUpload
+        fullName: name, contactNumber: phone, emailAddress: email, gender, dob,
+        specialization, qualifications, experience, department, designation,
+        medicalRegNo, regCouncil, regYear, consultationFee,
+        photoUpload, degreeUpload, licenseUpload
     } = newDoctorData;
 
     if (!name || !phone || !email || !specialization || !qualifications || !experience || !medicalRegNo || !regCouncil || !regYear || !consultationFee) {
@@ -371,7 +358,7 @@ export default function DoctorsPage() {
                                      <div className="flex-1">
                                          <p className="font-semibold">{appt.patientName}</p>
                                          <p className="text-xs text-muted-foreground flex items-center gap-1.5"><Phone className="w-3 h-3"/> {appt.patientPhone}</p>
-                                         <p className="text-xs">{appt.appointmentDate} at {appt.appointmentTime}</p>
+                                         <p className="text-xs">{new Date(appt.date).toLocaleDateString()} at {format(new Date(appt.date), 'p')}</p>
                                      </div>
                                      <div className="flex flex-col items-end gap-1">
                                        {appt.status === 'Pending' && <Button size="sm" onClick={() => handleAppointmentAction(appt, 'confirm')}>Confirm</Button>}
@@ -427,11 +414,11 @@ export default function DoctorsPage() {
                                                 </div>
                                                 <div className="space-y-2 mt-2">
                                                     <Label>Select New Time</Label>
-                                                    <div className="grid grid-cols-3 gap-2">
+                                                    <div className="grid grid-cols-4 gap-2">
                                                         {timeSlots.map(slot => (<Button key={slot} variant={newTime === slot ? 'default' : 'outline'} onClick={() => setNewTime(slot)}>{slot}</Button>))}
                                                     </div>
                                                 </div>
-                                                <Button className="w-full mt-4" onClick={handleRescheduleSubmit}>Confirm Reschedule</Button>
+                                                <Button className="w-full mt-4" onClick={handleRescheduleAppointment}>Confirm Reschedule</Button>
                                             </div>
                                             <DialogFooter className="border-t pt-4">
                                                  <AlertDialog>
@@ -487,7 +474,7 @@ export default function DoctorsPage() {
                                                 </TableCell>
                                                 {timeSlots.map(slot => {
                                                     // @ts-ignore
-                                                    const appointment = mockSchedule[doctor.name]?.[slot];
+                                                    const appointment = mockSchedule[`Dr. ${doctor.name}`]?.[slot.split(' ')[0]];
                                                     return (
                                                         <TableCell key={slot}>
                                                             {appointment ? (
@@ -548,13 +535,18 @@ export default function DoctorsPage() {
                                         <div className="space-y-2"><Label htmlFor="dob">Date of Birth</Label><Input name="dob" type="date" required value={newDoctorData.dob} onChange={e => handleFormChange('dob', e.target.value)} /></div>
                                         <div className="space-y-2">
                                             <Label htmlFor="contactNumber">Contact Number</Label>
-                                            <div className="flex items-center gap-0 rounded-md border border-input focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2">
-                                                <span className="pl-3 text-muted-foreground text-sm">+91</span>
-                                                <Input id="contactNumber" name="contactNumber" type="tel" maxLength={10} placeholder="12345 67890" required value={newDoctorData.contactNumber} onChange={e => handleFormChange('contactNumber', e.target.value)} className="border-0 h-9 focus-visible:ring-0 focus-visible:ring-offset-0 flex-1"/>
-                                            </div>
+                                             <div className="flex items-center gap-0 rounded-md border border-input focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2">
+                                                  <span className="pl-3 text-muted-foreground text-sm">+91</span>
+                                                  <Input id="contactNumber" name="contactNumber" type="tel" maxLength={10} placeholder="12345 67890" required value={newDoctorData.contactNumber} onChange={e => handleFormChange('contactNumber', e.target.value)} className="border-0 h-9 focus-visible:ring-0 focus-visible:ring-offset-0 flex-1"/>
+                                             </div>
                                         </div>
                                         <div className="md:col-span-2 space-y-2"><Label htmlFor="emailAddress">Email Address</Label><Input name="emailAddress" type="email" required value={newDoctorData.emailAddress} onChange={e => handleFormChange('emailAddress', e.target.value)} /></div>
-                                        <div className="space-y-2 md:col-span-2"><Label htmlFor="photoUpload">Passport-size Photo</Label><Input name="photoUpload" type="file" accept="image/*" onChange={e => handleFileChange('photoUpload', e.target.files ? e.target.files[0] : null)} /></div>
+                                        <div className="space-y-2 md:col-span-2"><Label htmlFor="photoUpload">Passport-size Photo</Label>
+                                            <div className="flex items-center gap-2">
+                                              <Input id="photoUpload" name="photoUpload" type="file" accept="image/*" onChange={e => handleFileChange('photoUpload', e.target.files ? e.target.files[0] : null)} className="flex-1" />
+                                              {newDoctorData.photoUpload && <span className="text-xs text-muted-foreground truncate max-w-[150px]">{newDoctorData.photoUpload.name}</span>}
+                                            </div>
+                                        </div>
                                       </div>
                                     </TabsContent>
                                     <TabsContent value="professional">
@@ -570,8 +562,18 @@ export default function DoctorsPage() {
                                           <div className="space-y-2"><Label>Medical Registration No.</Label><Input name="medicalRegNo" required value={newDoctorData.medicalRegNo} onChange={e => handleFormChange('medicalRegNo', e.target.value)} /></div>
                                           <div className="space-y-2"><Label>Registration Council</Label><Input name="regCouncil" placeholder="e.g., Delhi Medical Council" required value={newDoctorData.regCouncil} onChange={e => handleFormChange('regCouncil', e.target.value)} /></div>
                                           <div className="space-y-2"><Label>Registration Year</Label><Input name="regYear" type="number" required value={newDoctorData.regYear} onChange={e => handleFormChange('regYear', e.target.value)} /></div>
-                                          <div className="space-y-2"><Label>Medical License Upload</Label><Input name="licenseUpload" type="file" accept=".pdf" onChange={e => handleFileChange('licenseUpload', e.target.files ? e.target.files[0] : null)} /></div>
-                                          <div className="md:col-span-2 space-y-2"><Label>Degree Certificate Upload</Label><Input name="degreeUpload" type="file" accept=".pdf" onChange={e => handleFileChange('degreeUpload', e.target.files ? e.target.files[0] : null)} /></div>
+                                          <div className="space-y-2"><Label>Medical License Upload (PDF)</Label>
+                                                <div className="flex items-center gap-2">
+                                                    <Input name="licenseUpload" type="file" accept=".pdf" onChange={e => handleFileChange('licenseUpload', e.target.files ? e.target.files[0] : null)} className="flex-1" />
+                                                    {newDoctorData.licenseUpload && <span className="text-xs text-muted-foreground truncate max-w-[150px]">{newDoctorData.licenseUpload.name}</span>}
+                                                </div>
+                                          </div>
+                                          <div className="md:col-span-2 space-y-2"><Label>Degree Certificate Upload (PDF)</Label>
+                                               <div className="flex items-center gap-2">
+                                                  <Input name="degreeUpload" type="file" accept=".pdf" onChange={e => handleFileChange('degreeUpload', e.target.files ? e.target.files[0] : null)} className="flex-1" />
+                                                  {newDoctorData.degreeUpload && <span className="text-xs text-muted-foreground truncate max-w-[150px]">{newDoctorData.degreeUpload.name}</span>}
+                                               </div>
+                                          </div>
                                        </div>
                                     </TabsContent>
                                      <TabsContent value="consultation">
@@ -710,7 +712,7 @@ export default function DoctorsPage() {
                                         </div>
                                          <DialogFooter>
                                             <Button variant="secondary" onClick={() => setSelectedDoctorForVerification(null)}>Cancel</Button>
-                                            <Button onClick={handleVerifyDoctor}>Submit for Final Approval</Button>
+                                            <Button onClick={handleVerifyDoctor} disabled={!selectedDoctorForVerification?.photoUrl || !selectedDoctorForVerification?.degreeUrl || !selectedDoctorForVerification?.licenseUrl || selectedDoctorForVerification?.photoUrl === 'pending_upload'}>Submit for Final Approval</Button>
                                         </DialogFooter>
                                     </DialogContent>
                                   </Dialog>
