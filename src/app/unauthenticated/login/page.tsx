@@ -16,7 +16,7 @@ import { Sun, Moon, Globe, Loader2 } from 'lucide-react'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { useFirebase } from '@/firebase/client-provider'
-import { collection, query, where, getDocs, setDoc, doc, serverTimestamp, limit } from 'firebase/firestore'
+import { collection, query, where, getDocs, setDoc, doc, serverTimestamp, limit, collectionGroup } from 'firebase/firestore'
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signInWithPhoneNumber, RecaptchaVerifier, type ConfirmationResult, GoogleAuthProvider, signInWithPopup } from 'firebase/auth'
 import { AnimatePresence, motion } from 'framer-motion'
 
@@ -79,7 +79,7 @@ export default function LoginPage() {
   const [step, setStep] = useState<'login' | 'details' | 'otp'>('login');
   
   const [identifier, setIdentifier] = useState(searchParams.get('email') || '');
-  const [inputType, setInputType] = useState<'email' | 'phone' | 'none'>('none');
+  const [inputType, setInputType] = useState<'email' | 'phone' | 'partnerId' | 'none'>('none');
   
   const [password, setPassword] = useState('')
   const [otp, setOtp] = useState('')
@@ -102,7 +102,10 @@ export default function LoginPage() {
       setInputType('email');
     } else if (/^\d{1,10}$/.test(identifier)) {
       setInputType('phone');
-    } else {
+    } else if (identifier.startsWith('CZD') || identifier.startsWith('CZA') || identifier.startsWith('CZR')) {
+        setInputType('partnerId');
+    }
+     else {
       setInputType('none');
     }
   }, [identifier]);
@@ -135,22 +138,25 @@ export default function LoginPage() {
     const isPartnerLogin = ['driver', 'mechanic', 'cure', 'doctor', 'ambulance'].includes(roleFromQuery);
     
     const partnerCollections = [
-        { name: 'partners', role: 'driver' },
-        { name: 'mechanics', role: 'mechanic' },
-        { name: 'ambulances', role: 'cure' },
-        { name: 'ambulanceDrivers', role: 'ambulance'},
-        { name: 'doctors', role: 'doctor'},
+        { name: 'partners', role: 'driver', identifier: 'phone' },
+        { name: 'mechanics', role: 'mechanic', identifier: 'phone' },
+        { name: 'ambulances', role: 'cure', identifier: 'phone' },
+        { name: 'ambulanceDrivers', role: 'ambulance', identifier: 'partnerId' },
+        { name: 'doctors', role: 'doctor', identifier: 'partnerId' },
     ];
-    const userCollections = [{ name: 'users', role: 'user' }];
+    const userCollections = [{ name: 'users', role: 'user', identifier: 'phone' }];
 
     const collectionsToSearch = isPartnerLogin 
         ? [...partnerCollections, ...userCollections] 
         : [...userCollections, ...partnerCollections];
     
     let searchIdentifier: string | undefined;
-    let identifierField: 'email' | 'phone' = 'email';
+    let identifierField: 'email' | 'phone' | 'partnerId' = 'email';
 
-    if (user.email) {
+    if (inputType === 'partnerId') {
+        searchIdentifier = identifier;
+        identifierField = 'partnerId';
+    } else if (user.email) {
         searchIdentifier = user.email;
         identifierField = 'email';
     } else if (user.phoneNumber) {
@@ -160,16 +166,29 @@ export default function LoginPage() {
     
     if (!searchIdentifier) return false;
 
-    for (const { name: colName, role } of collectionsToSearch) {
-        const q = query(collection(db, colName), where(identifierField, "==", searchIdentifier), limit(1));
+    for (const { name: colName, role, identifier: idField } of collectionsToSearch) {
+        
+        let q;
+        if (role === 'doctor') {
+            q = query(collectionGroup(db, 'doctors'), where(idField, "==", searchIdentifier), limit(1));
+        } else {
+            q = query(collection(db, colName), where(idField, "==", searchIdentifier), limit(1));
+        }
+        
         const snapshot = await getDocs(q);
 
         if (!snapshot.empty) {
             const userDoc = snapshot.docs[0];
             const userData = userDoc.data();
-            
-            if (isPartnerLogin && role === 'user') {
+
+             if (isPartnerLogin && role === 'user') {
                 continue; 
+            }
+            
+            // Password check for partnerId logins
+            if (inputType === 'partnerId' && userData.password !== password) {
+                toast({ variant: 'destructive', title: 'Incorrect Password' });
+                return false;
             }
             
             const sessionData: any = { 
@@ -177,14 +196,16 @@ export default function LoginPage() {
                 phone: userData.phone, 
                 email: userData.email,
                 name: userData.name,
-                userId: user.uid,
+                partnerId: userData.partnerId,
             };
 
-            if (colName !== 'users') {
-                 sessionData.partnerId = userDoc.id;
-                 if(userData.hospitalId) sessionData.hospitalId = userData.hospitalId;
+            if (role === 'doctor' || role === 'ambulance') {
+                const pathParts = userDoc.ref.path.split('/');
+                if (pathParts.length >= 2) {
+                    sessionData.hospitalId = pathParts[1];
+                }
             }
-            
+
             let localStorageKey = 'cabzi-session';
             let redirectPath = `/${role}`;
             
@@ -192,8 +213,7 @@ export default function LoginPage() {
             if (role === 'cure') localStorageKey = 'cabzi-cure-session';
             if (role === 'ambulance') localStorageKey = 'cabzi-ambulance-session';
             if (role === 'doctor') localStorageKey = 'cabzi-doctor-session';
-            if (role === 'user') redirectPath = '/user';
-
+            
             localStorage.setItem(localStorageKey, JSON.stringify(sessionData));
             
             toast({ title: "Login Successful" });
@@ -202,32 +222,34 @@ export default function LoginPage() {
         }
     }
     
-    if (roleFromQuery === 'user') {
+    if (roleFromQuery === 'user' && inputType !== 'partnerId') {
         setStep('details');
         return true; 
     } else {
-        toast({ variant: 'destructive', title: 'Partner Not Found', description: 'This account does not exist. Please onboard first from the Partner Hub.' });
+        toast({ variant: 'destructive', title: 'Account Not Found', description: 'This account does not exist. Please check your credentials or onboard first.' });
         return false;
     }
   }
 
   const handleIdentifierSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setIsLoading(true);
+
     if (inputType === 'email') {
       await handleEmailSubmit();
     } else if (inputType === 'phone') {
       await handlePhoneSubmit();
+    } else if (inputType === 'partnerId') {
+      await findAndSetSession({ uid: '', email: '', phoneNumber: '' });
     }
+    setIsLoading(false);
   }
 
   const handleEmailSubmit = async () => {
-    setIsLoading(true);
     if (!auth || !db) return;
-
     try {
       const userCredential = await signInWithEmailAndPassword(auth, identifier, password);
       await findAndSetSession(userCredential.user);
-      
     } catch (error: any) {
       if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential') {
         if(roleFromQuery === 'user') {
@@ -240,13 +262,10 @@ export default function LoginPage() {
       } else {
         toast({ variant: 'destructive', title: 'Login Failed', description: error.message });
       }
-    } finally {
-      setIsLoading(false);
     }
   }
 
   const handlePhoneSubmit = async () => {
-    setIsLoading(true);
     if (!auth || !identifier || !recaptchaContainerRef.current) return;
     
     try {
@@ -258,15 +277,13 @@ export default function LoginPage() {
         toast({ title: 'OTP Sent!', description: `An OTP has been sent to ${fullPhoneNumber}.` });
     } catch (error: any) {
         toast({ variant: 'destructive', title: 'Failed to Send OTP', description: error.message });
-    } finally {
-        setIsLoading(false);
     }
   }
   
   const handleOtpSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
       e.preventDefault();
       setIsLoading(true);
-      if (!confirmationResult || !otp) return;
+      if (!confirmationResult || !otp) { setIsLoading(false); return };
       
       try {
           const result = await confirmationResult.confirm(otp);
@@ -386,13 +403,15 @@ export default function LoginPage() {
     }
 
     if (step === 'login') {
+        const isPartnerIdLogin = inputType === 'partnerId' || ['doctor', 'ambulance'].includes(roleFromQuery);
+        
         return (
           <motion.div key="login" variants={formVariants}>
             <div className="space-y-4">
                 <form onSubmit={handleIdentifierSubmit} className="space-y-4">
                      <div className="space-y-2">
-                        <Label htmlFor="identifier">Email or Phone Number</Label>
-                        {inputType === 'phone' ? (
+                        <Label htmlFor="identifier">{isPartnerIdLogin ? 'Partner ID' : 'Email or Phone Number'}</Label>
+                        {inputType === 'phone' && !isPartnerIdLogin ? (
                              <div className="flex items-center gap-0 rounded-md border border-input focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2">
                                 <span className="pl-3 text-muted-foreground text-sm">+91</span>
                                 <Input 
@@ -413,7 +432,7 @@ export default function LoginPage() {
                                 id="identifier" 
                                 name="identifier" 
                                 type="text" 
-                                placeholder="name@example.com or 1234567890" 
+                                placeholder={isPartnerIdLogin ? 'e.g., CZD12345' : 'name@example.com or 1234567890'} 
                                 required 
                                 value={identifier} 
                                 onChange={(e) => setIdentifier(e.target.value)} 
@@ -422,7 +441,7 @@ export default function LoginPage() {
                         )}
                     </div>
 
-                    {inputType === 'email' && (
+                    {(inputType === 'email' || isPartnerIdLogin) && (
                         <div className="space-y-2">
                             <Label htmlFor="password">Password</Label>
                             <Input id="password" name="password" type="password" placeholder="••••••••" required value={password} onChange={(e) => setPassword(e.target.value)} disabled={isLoading} />
