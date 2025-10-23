@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button'
 import { useToast } from '@/hooks/use-toast'
 import { Stethoscope, UserPlus, MoreHorizontal, Trash2, BadgeCheck, Clock, Briefcase, Calendar, IndianRupee, Phone, Check, Settings, X, User as UserIcon, FileText as FileTextIcon, Download, GraduationCap, Building, Shield, CircleUser, PhoneCall, Mail, Cake, VenetianSofa, AlertTriangle, UploadCloud } from 'lucide-react'
 import { useDb } from '@/firebase/client-provider'
-import { collection, query, onSnapshot, addDoc, doc, deleteDoc, serverTimestamp, Timestamp, orderBy, writeBatch, getDocs, where, updateDoc, setDoc, limit } from 'firebase/firestore'
+import { collection, query, onSnapshot, addDoc, doc, deleteDoc, serverTimestamp, Timestamp, orderBy, writeBatch, getDocs, where, updateDoc, setDoc, limit, collectionGroup } from 'firebase/firestore'
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
@@ -45,7 +45,6 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar as CalendarPicker } from '@/components/ui/calendar'
 import { format } from 'date-fns'
 import { cn } from '@/lib/utils'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 
 
 interface Doctor {
@@ -269,7 +268,7 @@ export default function DoctorsPage() {
             finalPhotoUrl = await getDownloadURL(photoRef);
         }
 
-        await setDoc(hospitalDoctorDocRef, {
+        const newDoctorPayload = {
             name, phone, email, gender, dob,
             specialization, qualifications, experience, department, designation,
             medicalRegNo, regCouncil, regYear,
@@ -278,15 +277,20 @@ export default function DoctorsPage() {
             partnerId, password,
             createdAt: serverTimestamp(),
             photoUrl: finalPhotoUrl,
-        });
+        };
 
+        // Write to both locations in a batch for atomicity
+        const batch = writeBatch(db);
+        batch.set(hospitalDoctorDocRef, newDoctorPayload);
         const globalDoctorDocRef = doc(globalDoctorsRef, hospitalDoctorDocRef.id);
-        await setDoc(globalDoctorDocRef, {
+        batch.set(globalDoctorDocRef, {
             phone: phone,
             email: email,
             hospitalId: hospitalId,
             partnerId: partnerId,
         });
+        
+        await batch.commit();
 
         toast({ title: 'Doctor Added', description: `Dr. ${name} has been added.` });
         
