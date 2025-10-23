@@ -32,7 +32,6 @@ const LiveMap = forwardRef<any, LiveMapProps>((props, ref) => {
     const locateControlRef = useRef<any | null>(null);
     const animationFrameRef = useRef<number | null>(null);
     const tileLayerRef = useRef<L.TileLayer | null>(null);
-    const trafficLayerRef = useRef<L.TileLayer | null>(null); // New ref for traffic layer
     const markerAnimationRef = useRef<Map<string, { startPos: L.LatLng, targetPos: L.LatLng, startTime: number }>>(new Map());
 
      const getAddress = useCallback(async (lat: number, lon: number): Promise<string | null> => {
@@ -172,10 +171,6 @@ const LiveMap = forwardRef<any, LiveMapProps>((props, ref) => {
         const initialAttribution = '&copy; <a href="https://www.stadiamaps.com/" target="_blank">Stadia Maps</a> &copy; <a href="https://openmaptiles.org/" target="_blank">OpenMapTiles</a> &copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a>';
 
         tileLayerRef.current = L.tileLayer(initialUrl, { attribution: initialAttribution }).addTo(map);
-
-        // Add Live Traffic Layer
-        const trafficUrl = `https://api.tomtom.com/traffic/map/4/tile/flow/relative/{z}/{x}/{y}.png?key=${process.env.NEXT_PUBLIC_TOMTOM_API_KEY}`;
-        trafficLayerRef.current = L.tileLayer(trafficUrl).addTo(map);
 
         L.control.zoom({ position: 'bottomright' }).addTo(map);
         
