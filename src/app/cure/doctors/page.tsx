@@ -63,6 +63,11 @@ interface Doctor {
   medicalRegNo?: string;
   regCouncil?: string;
   regYear?: string;
+  email?: string;
+  dob?: string;
+  gender?: string;
+  department?: string;
+  designation?: string;
 }
 
 interface Appointment {
@@ -224,81 +229,79 @@ export default function DoctorsPage() {
   }
   
   const handleAddDoctor = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if (!db || !hospitalId) {
-        toast({ variant: 'destructive', title: 'Error', description: 'Database or hospital information is missing.' });
-        return;
-    }
-    setIsSubmitting(true);
-  
-    const {
-        fullName: name, contactNumber: phone, emailAddress: email, gender, dob,
-        specialization, qualifications, experience, department, designation,
-        medicalRegNo, regCouncil, regYear, consultationFee, photoFile
-    } = newDoctorData;
-  
-    if (!name || !phone || !email || !specialization || !qualifications || !experience || !medicalRegNo || !regCouncil || !regYear || !consultationFee) {
-        toast({ variant: 'destructive', title: 'Missing Required Fields', description: 'Please fill out all required fields.' });
-        setIsSubmitting(false);
-        return;
-    }
-  
-    try {
-        const hospitalDoctorsRef = collection(db, `ambulances/${hospitalId}/doctors`);
-        const q = query(hospitalDoctorsRef, where("phone", "==", phone), limit(1));
-        const phoneCheckSnapshot = await getDocs(q);
+      event.preventDefault();
+      if (!db || !hospitalId) {
+          toast({ variant: 'destructive', title: 'Error', description: 'Database or hospital information is missing.' });
+          return;
+      }
+      setIsSubmitting(true);
+    
+      const {
+          fullName: name, contactNumber: phone, emailAddress: email, gender, dob,
+          specialization, qualifications, experience, department, designation,
+          medicalRegNo, regCouncil, regYear, consultationFee, photoFile
+      } = newDoctorData;
+    
+      if (!name || !phone || !email || !specialization || !qualifications || !experience || !medicalRegNo || !regCouncil || !regYear || !consultationFee) {
+          toast({ variant: 'destructive', title: 'Missing Required Fields', description: 'Please fill out all required fields.' });
+          setIsSubmitting(false);
+          return;
+      }
 
-        if (!phoneCheckSnapshot.empty) {
-            throw new Error("A doctor with this phone number is already registered in your hospital.");
-        }
-      
-        const partnerId = `CZD-${phone.slice(-4)}${name.split(' ')[0].slice(0, 2).toUpperCase()}`;
-        const password = `cAbZ@${Math.floor(1000 + Math.random() * 9000)}`;
+      const hospitalDoctorsRef = collection(db, `ambulances/${hospitalId}/doctors`);
+      const q = query(hospitalDoctorsRef, where("phone", "==", phone), limit(1));
+    
+      try {
+          const phoneCheckSnapshot = await getDocs(q);
+          if (!phoneCheckSnapshot.empty) {
+              throw new Error("A doctor with this phone number is already registered in your hospital.");
+          }
+        
+          const partnerId = `CZD-${phone.slice(-4)}${name.split(' ')[0].slice(0, 2).toUpperCase()}`;
+          const password = `cAbZ@${Math.floor(1000 + Math.random() * 9000)}`;
 
-        // Step 1: Add document with empty photoUrl
-        const newDoctorDocRef = await addDoc(hospitalDoctorsRef, {
-            name, phone, email, gender, dob, specialization, qualifications, experience, department,
-            designation, medicalRegNo, regCouncil, regYear, consultationFee: parseFloat(consultationFee),
-            docStatus: 'Pending', partnerId, password, createdAt: serverTimestamp(), photoUrl: '',
-        });
+          // Step 1: Create the document with all text data
+          const newDoctorDocRef = await addDoc(hospitalDoctorsRef, {
+              name, phone, email, gender, dob, specialization, qualifications, experience, department,
+              designation, medicalRegNo, regCouncil, regYear, consultationFee: parseFloat(consultationFee),
+              docStatus: 'Pending', partnerId, password, createdAt: serverTimestamp(), photoUrl: '',
+          });
 
-        // Step 2: Upload photo if it exists
-        if (photoFile) {
-            const storage = getStorage();
-            const photoPath = `doctors/${hospitalId}/${newDoctorDocRef.id}/photo.jpg`;
-            const photoRef = ref(storage, photoPath);
-            await uploadBytes(photoRef, photoFile);
-            const finalPhotoUrl = await getDownloadURL(photoRef);
-            
-            // Step 3: Update document with the photo URL
-            await updateDoc(newDoctorDocRef, { photoUrl: finalPhotoUrl });
-        }
-      
-        // Step 4: Create global login reference
-        const globalDoctorRef = doc(db, 'doctors', newDoctorDocRef.id);
-        await setDoc(globalDoctorRef, {
-            phone: phone,
-            email: email,
-            hospitalId: hospitalId,
-            partnerId: partnerId,
-        });
-  
-        // Step 5: Finalize and show success
-        setGeneratedCreds({ id: partnerId, pass: password, role: 'Doctor' });
-        toast({ title: 'Doctor Added', description: `Dr. ${name} has been added.` });
-        setIsAddDoctorDialogOpen(false);
-        setIsCredsDialogOpen(true);
-        setNewDoctorData(initialDoctorState);
-        if (photoPreviewUrl) URL.revokeObjectURL(photoPreviewUrl);
-        setPhotoPreviewUrl(null);
-  
-    } catch (error: any) {
-        console.error('Error adding doctor:', error);
-        toast({ variant: 'destructive', title: 'Error Adding Doctor', description: error.message || 'An unexpected error occurred.' });
-    } finally {
-        // Step 6: ALWAYS reset the submitting state
-        setIsSubmitting(false);
-    }
+          // Step 2: Upload photo if it exists
+          if (photoFile) {
+              const storage = getStorage();
+              const photoPath = `doctors/${hospitalId}/${newDoctorDocRef.id}/photo.jpg`;
+              const photoRef = ref(storage, photoPath);
+              await uploadBytes(photoRef, photoFile);
+              const finalPhotoUrl = await getDownloadURL(photoRef);
+              
+              // Step 3: Update document with the photo URL
+              await updateDoc(newDoctorDocRef, { photoUrl: finalPhotoUrl });
+          }
+        
+          // Step 4: Create global login reference
+          const globalDoctorRef = doc(db, 'doctors', newDoctorDocRef.id);
+          await setDoc(globalDoctorRef, {
+              phone: phone,
+              email: email,
+              hospitalId: hospitalId,
+              partnerId: partnerId,
+          });
+    
+          setGeneratedCreds({ id: partnerId, pass: password, role: 'Doctor' });
+          toast({ title: 'Doctor Added', description: `Dr. ${name} has been added.` });
+          setIsAddDoctorDialogOpen(false);
+          setIsCredsDialogOpen(true);
+          setNewDoctorData(initialDoctorState);
+          if (photoPreviewUrl) URL.revokeObjectURL(photoPreviewUrl);
+          setPhotoPreviewUrl(null);
+    
+      } catch (error: any) {
+          console.error('Error adding doctor:', error);
+          toast({ variant: 'destructive', title: 'Error Adding Doctor', description: error.message || 'An unexpected error occurred.' });
+      } finally {
+          setIsSubmitting(false);
+      }
   };
 
 
@@ -657,20 +660,62 @@ export default function DoctorsPage() {
                                          </AlertDialog>
                                       </DropdownMenuContent>
                                     </DropdownMenu>
-                                    <DialogContent>
+                                     <DialogContent className="max-w-2xl">
                                         <DialogHeader>
                                             <DialogTitle>Verify Doctor: Dr. {selectedDoctorForVerification?.name}</DialogTitle>
                                             <DialogDescription>Review the entered details and confirm their authenticity. This will send the profile to Cabzi for final approval.</DialogDescription>
                                         </DialogHeader>
-                                        <div className="space-y-4 py-4">
-                                          <Card><CardContent className="p-3">
-                                            <Label className="text-xs">Medical Registration No.</Label>
-                                            <p className="font-mono text-sm">{selectedDoctorForVerification?.medicalRegNo}</p>
-                                          </CardContent></Card>
-                                          <Card><CardContent className="p-3">
-                                            <Label className="text-xs">Council & Year</Label>
-                                            <p className="font-semibold">{selectedDoctorForVerification?.regCouncil} ({selectedDoctorForVerification?.regYear})</p>
-                                          </CardContent></Card>
+                                        <div className="grid md:grid-cols-2 gap-4 py-4 max-h-[60vh] overflow-y-auto pr-4">
+                                            <Card>
+                                                <CardHeader className="p-3">
+                                                    <div className="flex items-center gap-3">
+                                                        <Avatar className="w-12 h-12">
+                                                            <AvatarImage src={selectedDoctorForVerification?.photoUrl} />
+                                                            <AvatarFallback>{selectedDoctorForVerification?.name?.substring(0, 2)}</AvatarFallback>
+                                                        </Avatar>
+                                                        <div>
+                                                            <p className="font-bold">Dr. {selectedDoctorForVerification?.name}</p>
+                                                            <p className="text-sm text-muted-foreground">{selectedDoctorForVerification?.email}</p>
+                                                        </div>
+                                                    </div>
+                                                </CardHeader>
+                                            </Card>
+                                             <Card>
+                                                <CardContent className="p-3">
+                                                    <Label className="text-xs">Contact</Label>
+                                                    <p className="font-semibold">{selectedDoctorForVerification?.phone}</p>
+                                                </CardContent>
+                                            </Card>
+                                            <Card>
+                                                <CardContent className="p-3">
+                                                    <Label className="text-xs">Specialization & Dept.</Label>
+                                                    <p className="font-semibold">{selectedDoctorForVerification?.specialization}, {selectedDoctorForVerification?.department}</p>
+                                                </CardContent>
+                                            </Card>
+                                             <Card>
+                                                <CardContent className="p-3">
+                                                    <Label className="text-xs">Experience</Label>
+                                                    <p className="font-semibold">{selectedDoctorForVerification?.experience} years</p>
+                                                </CardContent>
+                                            </Card>
+                                            <Card className="md:col-span-2">
+                                                <CardContent className="p-3">
+                                                    <Label className="text-xs">Medical Registration Number</Label>
+                                                    <p className="font-mono text-lg">{selectedDoctorForVerification?.medicalRegNo}</p>
+                                                </CardContent>
+                                            </Card>
+                                             <Card>
+                                                <CardContent className="p-3">
+                                                    <Label className="text-xs">Registration Council</Label>
+                                                    <p className="font-semibold">{selectedDoctorForVerification?.regCouncil}</p>
+                                                </CardContent>
+                                            </Card>
+                                             <Card>
+                                                <CardContent className="p-3">
+                                                    <Label className="text-xs">Registration Year</Label>
+                                                    <p className="font-semibold">{selectedDoctorForVerification?.regYear}</p>
+                                                </CardContent>
+                                            </Card>
                                         </div>
                                          <DialogFooter>
                                             <Button variant="secondary" onClick={() => setSelectedDoctorForVerification(null)}>Cancel</Button>
@@ -718,5 +763,3 @@ export default function DoctorsPage() {
     </div>
   )
 }
-
-    
