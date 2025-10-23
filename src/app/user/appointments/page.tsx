@@ -4,10 +4,11 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Calendar, PlusCircle, Hospital, Stethoscope } from 'lucide-react';
+import { Calendar, PlusCircle, Hospital, Stethoscope, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 const mockAppointments = [
     { 
@@ -39,6 +40,12 @@ const mockAppointments = [
 
 export default function MyAppointmentsPage() {
     const { toast } = useToast();
+    const [hasActiveAppointment, setHasActiveAppointment] = useState(false);
+
+    useEffect(() => {
+        const active = mockAppointments.some(appt => appt.status === 'Confirmed' || appt.status === 'Pending');
+        setHasActiveAppointment(active);
+    }, []);
 
     const getStatusBadge = (status: string) => {
         switch (status) {
@@ -59,11 +66,21 @@ export default function MyAppointmentsPage() {
                     </h2>
                     <p className="text-muted-foreground">A history of all your past and upcoming appointments.</p>
                 </div>
-                 <Button asChild>
-                    <Link href="/user/book-appointment">
-                        <PlusCircle className="mr-2 h-4 w-4" /> Book New Appointment
-                    </Link>
-                </Button>
+                 <div>
+                    <Button asChild disabled={hasActiveAppointment}>
+                        <Link href="/user/book-appointment">
+                            <PlusCircle className="mr-2 h-4 w-4" /> Book New Appointment
+                        </Link>
+                    </Button>
+                    {hasActiveAppointment && (
+                         <Alert variant="destructive" className="mt-2 text-xs p-2">
+                             <AlertCircle className="h-4 w-4" />
+                             <AlertDescription>
+                                You can only have one active (Pending/Confirmed) appointment at a time.
+                             </AlertDescription>
+                        </Alert>
+                    )}
+                </div>
             </div>
             
             <div className="space-y-4 animate-fade-in">
