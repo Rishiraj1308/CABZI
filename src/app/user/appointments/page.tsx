@@ -26,6 +26,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogFooter,
 } from "@/components/ui/dialog"
 import { Calendar as CalendarPicker } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -180,7 +181,7 @@ export default function MyAppointmentsPage() {
                                 <span>{appt.hospital}</span>
                             </div>
                             <div className="flex items-center gap-2 text-sm text-muted-foreground mt-2">
-                                <Calendar className="w-4 h-4"/>
+                                <Clock className="w-4 h-4"/>
                                 <span>{new Date(appt.date).toLocaleString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: 'numeric', minute: 'numeric', hour12: true })}</span>
                             </div>
                         </CardContent>
