@@ -7,9 +7,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { useToast } from '@/hooks/use-toast'
-import { Stethoscope, UserPlus, MoreHorizontal, Trash2, BadgeCheck, Clock, Briefcase, Calendar, IndianRupee, Phone, Check, Settings, X, User as UserIcon, FileText as FileTextIcon } from 'lucide-react'
+import { Stethoscope, UserPlus, MoreHorizontal, Trash2, BadgeCheck, Clock, Briefcase, Calendar, IndianRupee, Phone, Check, Settings, X, User as UserIcon, FileText as FileTextIcon, Download } from 'lucide-react'
 import { useDb } from '@/firebase/client-provider'
-import { collection, query, onSnapshot, addDoc, doc, deleteDoc, serverTimestamp, Timestamp, orderBy, writeBatch, getDocs, where } from 'firebase/firestore'
+import { collection, query, onSnapshot, addDoc, doc, deleteDoc, serverTimestamp, Timestamp, orderBy, writeBatch, getDocs, where, updateDoc } from 'firebase/firestore'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
   Dialog,
@@ -119,6 +119,7 @@ export default function DoctorsPage() {
   const { toast } = useToast();
   const db = useDb();
   const [hospitalId, setHospitalId] = useState<string | null>(null);
+  const [selectedDoctorForVerification, setSelectedDoctorForVerification] = useState<Doctor | null>(null);
 
   useEffect(() => {
     if (db) {
@@ -225,6 +226,22 @@ export default function DoctorsPage() {
     }
   };
   
+  const handleVerifyDoctor = async () => {
+    if (!selectedDoctorForVerification || !db || !hospitalId) return;
+    
+    const doctorRef = doc(db, `ambulances/${hospitalId}/doctors`, selectedDoctorForVerification.id);
+    try {
+        await updateDoc(doctorRef, {
+            docStatus: 'Verified'
+        });
+        toast({ title: 'Doctor Verified', description: `Dr. ${selectedDoctorForVerification.name} is now a verified doctor on the platform.`, className: 'bg-green-600 border-green-600 text-white' });
+        setSelectedDoctorForVerification(null);
+    } catch (error) {
+        console.error('Error verifying doctor:', error);
+        toast({ variant: 'destructive', title: 'Verification Failed' });
+    }
+  }
+
 
   return (
     <div className="space-y-6">
@@ -508,27 +525,49 @@ export default function DoctorsPage() {
                                    )}
                                 </TableCell>
                                 <TableCell className="text-right">
-                                  <AlertDialog>
+                                  <Dialog onOpenChange={(open) => !open && setSelectedDoctorForVerification(null)}>
                                     <DropdownMenu>
                                       <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8"><MoreHorizontal className="h-4 w-4"/></Button></DropdownMenuTrigger>
                                       <DropdownMenuContent align="end">
                                          <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                         <AlertDialogTrigger asChild>
-                                            <DropdownMenuItem className="text-destructive focus:text-destructive" onSelect={(e) => e.preventDefault()}><Trash2 className="mr-2 h-4 w-4"/>Remove</DropdownMenuItem>
-                                         </AlertDialogTrigger>
+                                         {doctor.docStatus === 'Pending' && (
+                                            <DialogTrigger asChild>
+                                                <DropdownMenuItem onSelect={() => setSelectedDoctorForVerification(doctor)}>
+                                                    <Check className="mr-2 h-4 w-4 text-green-500" /> Verify Documents
+                                                </DropdownMenuItem>
+                                            </DialogTrigger>
+                                         )}
+                                         <AlertDialog>
+                                             <AlertDialogTrigger asChild>
+                                                <DropdownMenuItem className="text-destructive focus:text-destructive" onSelect={(e) => e.preventDefault()}><Trash2 className="mr-2 h-4 w-4"/>Remove</DropdownMenuItem>
+                                             </AlertDialogTrigger>
+                                              <AlertDialogContent>
+                                                <AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle><AlertDialogDescription>This will permanently remove Dr. {doctor.name} from your roster.</AlertDialogDescription></AlertDialogHeader>
+                                                <AlertDialogFooter>
+                                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                    <AlertDialogAction onClick={() => handleDeleteDoctor(doctor.id, doctor.name)} className="bg-destructive hover:bg-destructive/90">Yes, remove</AlertDialogAction>
+                                                </AlertDialogFooter>
+                                            </AlertDialogContent>
+                                         </AlertDialog>
                                       </DropdownMenuContent>
                                     </DropdownMenu>
-                                    <AlertDialogContent>
-                                        <AlertDialogHeader>
-                                          <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                                          <AlertDialogDescription>This will permanently remove Dr. {doctor.name} from your roster.</AlertDialogDescription>
-                                        </AlertDialogHeader>
-                                        <AlertDialogFooter>
-                                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                            <AlertDialogAction onClick={() => handleDeleteDoctor(doctor.id, doctor.name)} className="bg-destructive hover:bg-destructive/90">Yes, remove</AlertDialogAction>
-                                        </AlertDialogFooter>
-                                    </AlertDialogContent>
-                                  </AlertDialog>
+                                    <DialogContent>
+                                        <DialogHeader>
+                                            <DialogTitle>Verify Doctor: {selectedDoctorForVerification?.name}</DialogTitle>
+                                            <DialogDescription>Review the uploaded documents and confirm their authenticity.</DialogDescription>
+                                        </DialogHeader>
+                                        <div className="space-y-4 py-4">
+                                            <Button variant="outline" className="w-full justify-start gap-2"><Download className="w-4 h-4"/> Download Passport Photo (pending)</Button>
+                                            <Button variant="outline" className="w-full justify-start gap-2"><Download className="w-4 h-4"/> Download Qualification Degree (pending)</Button>
+                                        </div>
+                                        <DialogFooter>
+                                            <Button variant="ghost" onClick={() => setSelectedDoctorForVerification(null)}>Close</Button>
+                                            <Button onClick={handleVerifyDoctor}>
+                                                <BadgeCheck className="mr-2 h-4 w-4"/> Mark as Verified
+                                            </Button>
+                                        </DialogFooter>
+                                    </DialogContent>
+                                  </Dialog>
                                 </TableCell>
                               </TableRow>
                             ))
