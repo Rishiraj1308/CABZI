@@ -44,6 +44,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar as CalendarPicker } from '@/components/ui/calendar'
 import { format } from 'date-fns'
 import { cn } from '@/lib/utils'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 
 
 interface Doctor {
@@ -563,12 +564,32 @@ export default function DoctorsPage() {
                                     </DropdownMenu>
                                     <DialogContent>
                                         <DialogHeader>
-                                            <DialogTitle>Verify Doctor: {selectedDoctorForVerification?.name}</DialogTitle>
+                                            <DialogTitle>Verify Doctor: Dr. {selectedDoctorForVerification?.name}</DialogTitle>
                                             <DialogDescription>Review the uploaded documents and confirm their authenticity. This will send the profile to Cabzi for final approval.</DialogDescription>
                                         </DialogHeader>
                                         <div className="space-y-4 py-4">
-                                            <Button variant="outline" className="w-full justify-start gap-2"><Download className="w-4 h-4"/> Download Passport Photo (pending)</Button>
-                                            <Button variant="outline" className="w-full justify-start gap-2"><Download className="w-4 h-4"/> Download Qualification Degree (pending)</Button>
+                                            <TooltipProvider>
+                                                <Tooltip>
+                                                    <TooltipTrigger asChild>
+                                                        <Button variant="outline" className="w-full justify-start gap-2" disabled>
+                                                            <Download className="w-4 h-4"/> Download Passport Photo (pending)
+                                                        </Button>
+                                                    </TooltipTrigger>
+                                                    <TooltipContent>
+                                                        <p>Document not uploaded by the doctor yet.</p>
+                                                    </TooltipContent>
+                                                </Tooltip>
+                                                <Tooltip>
+                                                    <TooltipTrigger asChild>
+                                                        <Button variant="outline" className="w-full justify-start gap-2" disabled>
+                                                            <Download className="w-4 h-4"/> Download Qualification Degree (pending)
+                                                        </Button>
+                                                    </TooltipTrigger>
+                                                    <TooltipContent>
+                                                        <p>Document not uploaded by the doctor yet.</p>
+                                                    </TooltipContent>
+                                                </Tooltip>
+                                            </TooltipProvider>
                                         </div>
                                          <DialogFooter>
                                             <Button variant="secondary" onClick={() => setSelectedDoctorForVerification(null)}>Cancel</Button>
@@ -616,4 +637,3 @@ export default function DoctorsPage() {
     </div>
   )
 }
-
