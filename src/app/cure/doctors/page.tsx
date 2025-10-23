@@ -7,7 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { useToast } from '@/hooks/use-toast'
-import { Stethoscope, UserPlus, MoreHorizontal, Trash2, BadgeCheck, Clock, Briefcase, Calendar, IndianRupee, Phone, Check, Settings, X } from 'lucide-react'
+import { Stethoscope, UserPlus, MoreHorizontal, Trash2, BadgeCheck, Clock, Briefcase, Calendar, IndianRupee, Phone, Check, Settings, X, User as UserIcon, FileText as FileTextIcon } from 'lucide-react'
 import { useDb } from '@/firebase/client-provider'
 import { collection, query, onSnapshot, addDoc, doc, deleteDoc, serverTimestamp, Timestamp, orderBy, writeBatch, getDocs, where } from 'firebase/firestore'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -163,7 +163,7 @@ export default function DoctorsPage() {
     }
     const newDateTime = new Date(newDate);
     const [hours, minutes] = newTime.split(/[: ]/);
-    newDateTime.setHours(newTime.includes('PM') ? parseInt(hours, 10) + 12 : parseInt(hours, 10), parseInt(minutes, 10), 0);
+    newDateTime.setHours(newTime.includes('PM') ? parseInt(hours, 10) + 12 : parseInt(minutes, 10), 0);
 
     setAppointments(prev => prev.map(a => 
       a.id === selectedAppointment.id 
@@ -269,12 +269,28 @@ export default function DoctorsPage() {
                                         </DialogTrigger>
                                         <DialogContent>
                                             <DialogHeader>
-                                                <DialogTitle>Manage Appointment</DialogTitle>
-                                                <DialogDescription>Patient: {selectedAppointment?.patientName}</DialogDescription>
+                                                <DialogTitle>Manage: {selectedAppointment?.patientName}</DialogTitle>
+                                                <DialogDescription>
+                                                    View details, reschedule, or cancel the appointment.
+                                                </DialogDescription>
                                             </DialogHeader>
-                                            <div className="space-y-4 py-4">
+                                            
+                                            <div className="border-t pt-4">
+                                                <h4 className="font-semibold mb-2">Patient Details</h4>
+                                                <div className="space-y-2 text-sm p-3 bg-muted rounded-lg">
+                                                    <div className="flex justify-between"><span>Contact:</span><span className="font-semibold">{selectedAppointment?.patientPhone}</span></div>
+                                                    <div className="flex justify-between"><span>Doctor:</span><span className="font-semibold">{selectedAppointment?.doctorName}</span></div>
+                                                    <div className="flex justify-between"><span>Status:</span><Badge variant={selectedAppointment?.status === 'Confirmed' ? 'default' : 'secondary'} className={cn(selectedAppointment?.status === 'Confirmed' && 'bg-blue-100 text-blue-800')}>{selectedAppointment?.status}</Badge></div>
+                                                </div>
+                                                 <div className="mt-2">
+                                                    <h5 className="text-sm font-semibold">Visit History:</h5>
+                                                    <p className="text-xs text-muted-foreground text-center py-2">No past visits recorded.</p>
+                                                 </div>
+                                            </div>
+
+                                            <div className="border-t pt-4">
                                                 <h4 className="font-semibold">Reschedule Appointment</h4>
-                                                 <div className="space-y-2">
+                                                <div className="space-y-2 mt-2">
                                                     <Label>Select New Date</Label>
                                                     <Popover>
                                                         <PopoverTrigger asChild>
@@ -286,15 +302,15 @@ export default function DoctorsPage() {
                                                         <PopoverContent className="w-auto p-0"><CalendarPicker mode="single" selected={newDate} onSelect={setNewDate} initialFocus/></PopoverContent>
                                                     </Popover>
                                                 </div>
-                                                <div className="space-y-2">
+                                                <div className="space-y-2 mt-2">
                                                     <Label>Select New Time</Label>
                                                     <div className="grid grid-cols-3 gap-2">
                                                         {timeSlots.map(slot => (<Button key={slot} variant={newTime === slot ? 'default' : 'outline'} onClick={() => setNewTime(slot)}>{slot}</Button>))}
                                                     </div>
                                                 </div>
-                                                <Button className="w-full" onClick={handleRescheduleSubmit}>Confirm Reschedule</Button>
+                                                <Button className="w-full mt-4" onClick={handleRescheduleSubmit}>Confirm Reschedule</Button>
                                             </div>
-                                            <div className="border-t pt-4">
+                                            <DialogFooter className="border-t pt-4">
                                                  <AlertDialog>
                                                      <AlertDialogTrigger asChild>
                                                         <Button variant="destructive" className="w-full">Cancel Appointment</Button>
@@ -307,7 +323,7 @@ export default function DoctorsPage() {
                                                         </AlertDialogFooter>
                                                     </AlertDialogContent>
                                                  </AlertDialog>
-                                            </div>
+                                            </DialogFooter>
                                         </DialogContent>
                                      </Dialog>
                                  </CardContent>
