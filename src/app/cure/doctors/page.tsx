@@ -7,7 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { useToast } from '@/hooks/use-toast'
-import { Stethoscope, UserPlus, MoreHorizontal, Trash2, BadgeCheck, Clock, Briefcase, Calendar, IndianRupee, Phone, Check, Settings, X, User as UserIcon, FileText as FileTextIcon, Download } from 'lucide-react'
+import { Stethoscope, UserPlus, MoreHorizontal, Trash2, BadgeCheck, Clock, Briefcase, Calendar, IndianRupee, Phone, Check, Settings, X, User as UserIcon, FileText as FileTextIcon, Download, GraduationCap, Building, Shield, CircleUser, PhoneCall, Mail, Cake, VenetianSofa } from 'lucide-react'
 import { useDb } from '@/firebase/client-provider'
 import { collection, query, onSnapshot, addDoc, doc, deleteDoc, serverTimestamp, Timestamp, orderBy, writeBatch, getDocs, where, updateDoc, setDoc } from 'firebase/firestore'
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage'
@@ -186,18 +186,29 @@ export default function DoctorsPage() {
     setIsSubmitting(true);
 
     const formData = new FormData(event.currentTarget);
-    const name = formData.get('doctorName') as string;
-    const phone = formData.get('doctorPhone') as string;
+    const name = formData.get('fullName') as string;
+    const phone = formData.get('contactNumber') as string;
+    const email = formData.get('emailAddress') as string;
+    const gender = formData.get('gender') as string;
+    const dob = formData.get('dob') as string;
+    
     const specialization = formData.get('specialization') as string;
     const qualifications = formData.get('qualifications') as string;
     const experience = formData.get('experience') as string;
+    const department = formData.get('department') as string;
+
+    const medicalRegNo = formData.get('medicalRegNo') as string;
+    const regCouncil = formData.get('regCouncil') as string;
+    const regYear = formData.get('regYear') as string;
+
     const consultationFee = formData.get('consultationFee') as string;
-    const photoFile = formData.get('doctorPhoto') as File;
-    const degreeFile = formData.get('degreeCert') as File;
 
+    const photoFile = formData.get('photoUpload') as File;
+    const degreeFile = formData.get('degreeUpload') as File;
+    const licenseFile = formData.get('licenseUpload') as File;
 
-    if (!name || !phone || !specialization || !qualifications || !experience || !consultationFee) {
-      toast({ variant: 'destructive', title: 'Error', description: 'Please provide all doctor details, including the fee.' });
+    if (!name || !phone || !email || !specialization || !qualifications || !experience || !medicalRegNo || !regCouncil || !regYear || !consultationFee) {
+      toast({ variant: 'destructive', title: 'Missing Required Fields', description: 'Please fill out all required fields in the form.' });
       setIsSubmitting(false);
       return;
     }
@@ -209,39 +220,35 @@ export default function DoctorsPage() {
       const storage = getStorage();
       const doctorDocRef = doc(collection(db, `ambulances/${hospitalId}/doctors`));
       
-      // Step 1: Create the document with initial data
-      await setDoc(doctorDocRef, {
-        name, phone, specialization, qualifications, experience,
-        consultationFee: parseFloat(consultationFee),
-        photoUrl: 'pending_upload',
-        degreeUrl: 'pending_upload',
-        docStatus: 'Pending',
-        partnerId, password,
-        createdAt: serverTimestamp(),
-      });
-
       let photoUrl = '';
-      let degreeUrl = '';
-
-      // Step 2: Upload files if they exist
       if (photoFile && photoFile.size > 0) {
           const photoStorageRef = ref(storage, `doctors/${hospitalId}/${doctorDocRef.id}/photo.jpg`);
           await uploadBytes(photoStorageRef, photoFile);
           photoUrl = await getDownloadURL(photoStorageRef);
       }
+      let degreeUrl = '';
       if (degreeFile && degreeFile.size > 0) {
           const degreeStorageRef = ref(storage, `doctors/${hospitalId}/${doctorDocRef.id}/degree.pdf`);
           await uploadBytes(degreeStorageRef, degreeFile);
           degreeUrl = await getDownloadURL(degreeStorageRef);
       }
-      
-      // Step 3: Update the document with file URLs
-      if (photoUrl || degreeUrl) {
-          await updateDoc(doctorDocRef, {
-              photoUrl: photoUrl || 'pending_upload',
-              degreeUrl: degreeUrl || 'pending_upload',
-          });
+       let licenseUrl = '';
+      if (licenseFile && licenseFile.size > 0) {
+          const licenseStorageRef = ref(storage, `doctors/${hospitalId}/${doctorDocRef.id}/license.pdf`);
+          await uploadBytes(licenseStorageRef, licenseFile);
+          licenseUrl = await getDownloadURL(licenseStorageRef);
       }
+      
+      await setDoc(doctorDocRef, {
+        name, phone, email, gender, dob,
+        specialization, qualifications, experience, department,
+        medicalRegNo, regCouncil, regYear,
+        consultationFee: parseFloat(consultationFee),
+        photoUrl, degreeUrl, licenseUrl,
+        docStatus: 'Pending',
+        partnerId, password,
+        createdAt: serverTimestamp(),
+      });
 
       toast({ title: 'Doctor Added', description: `Dr. ${name} has been added. Their credentials are now available.` });
       setIsAddDoctorDialogOpen(false);
@@ -249,7 +256,7 @@ export default function DoctorsPage() {
       setIsCredsDialogOpen(true);
     } catch (error) {
       console.error('Error adding doctor:', error);
-      toast({ variant: 'destructive', title: 'Error', description: 'Could not add doctor.' });
+      toast({ variant: 'destructive', title: 'Error', description: 'Could not add doctor. Check console for details.' });
     } finally {
         setIsSubmitting(false);
     }
@@ -351,7 +358,7 @@ export default function DoctorsPage() {
                                                 <div className="space-y-2 text-sm p-3 bg-muted rounded-lg">
                                                     <div className="flex justify-between"><span>Contact:</span><span className="font-semibold">{selectedAppointment?.patientPhone}</span></div>
                                                     <div className="flex justify-between"><span>Doctor:</span><span className="font-semibold">{selectedAppointment?.doctorName}</span></div>
-                                                    <div className="flex justify-between"><span>Status:</span><Badge variant={selectedAppointment?.status === 'Confirmed' ? 'default' : 'secondary'} className={cn(selectedAppointment?.status === 'Confirmed' && 'bg-blue-100 text-blue-800')}>{selectedAppointment?.status}</Badge></div>
+                                                    <div className="flex justify-between items-center"><span>Status:</span><Badge variant={selectedAppointment?.status === 'Confirmed' ? 'default' : 'secondary'} className={cn(selectedAppointment?.status === 'Confirmed' && 'bg-blue-100 text-blue-800')}>{selectedAppointment?.status}</Badge></div>
                                                 </div>
                                                  <div className="mt-2">
                                                     <h5 className="text-sm font-semibold">Visit History:</h5>
@@ -475,59 +482,55 @@ export default function DoctorsPage() {
                         <DialogTrigger asChild>
                           <Button><UserPlus className="mr-2 h-4 w-4" /> Add Doctor</Button>
                         </DialogTrigger>
-                        <DialogContent className="sm:max-w-2xl">
+                        <DialogContent className="max-w-4xl">
                           <DialogHeader>
                             <DialogTitle>Add New Doctor</DialogTitle>
                             <DialogDescription>Enter the details for the new doctor to add them to your hospital&apos;s roster.</DialogDescription>
                           </DialogHeader>
                           <form onSubmit={handleAddDoctor}>
-                            <div className="grid gap-4 py-4">
-                              <div className="space-y-2">
-                                <Label htmlFor="doctorName">Doctor&apos;s Full Name</Label>
-                                <Input id="doctorName" name="doctorName" required />
-                              </div>
-                               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                  <div className="space-y-2">
-                                      <Label htmlFor="specialization">Specialization</Label>
-                                      <Select name="specialization" required>
-                                          <SelectTrigger><SelectValue placeholder="Select a specialization" /></SelectTrigger>
-                                          <SelectContent>
-                                          {doctorSpecializations.map(spec => (
-                                              <SelectItem key={spec} value={spec}>{spec}</SelectItem>
-                                          ))}
-                                          </SelectContent>
-                                      </Select>
-                                  </div>
-                                   <div className="space-y-2">
-                                      <Label htmlFor="doctorPhone">Contact Phone</Label>
-                                      <Input id="doctorPhone" name="doctorPhone" type="tel" required />
-                                  </div>
-                              </div>
-                               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                  <div className="space-y-2">
-                                    <Label htmlFor="qualifications">Qualifications</Label>
-                                    <Input id="qualifications" name="qualifications" placeholder="e.g., MBBS, MD (Cardiology)" required />
-                                  </div>
-                                  <div className="space-y-2">
-                                    <Label htmlFor="experience">Experience (in years)</Label>
-                                    <Input id="experience" name="experience" type="number" placeholder="e.g., 10" required />
-                                  </div>
-                              </div>
-                               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                  <div className="space-y-2">
-                                      <Label htmlFor="doctorPhoto">Passport-size Photo</Label>
-                                      <Input id="doctorPhoto" name="doctorPhoto" type="file" className="cursor-pointer"/>
-                                  </div>
-                                   <div className="space-y-2">
-                                      <Label htmlFor="degreeCert">Qualification Degree</Label>
-                                      <Input id="degreeCert" name="degreeCert" type="file" className="cursor-pointer"/>
-                                  </div>
-                              </div>
-                              <div className="space-y-2">
-                                <Label htmlFor="consultationFee">Consultation Fee (INR)</Label>
-                                <Input id="consultationFee" name="consultationFee" type="number" placeholder="e.g., 800" required />
-                              </div>
-                            </div>
+                              <Tabs defaultValue="basic" className="pt-4">
+                                <TabsList className="grid w-full grid-cols-4">
+                                  <TabsTrigger value="basic">Basic Info</TabsTrigger>
+                                  <TabsTrigger value="professional">Professional</TabsTrigger>
+                                  <TabsTrigger value="verification">Verification</TabsTrigger>
+                                  <TabsTrigger value="consultation">Consultation</TabsTrigger>
+                                </TabsList>
+                                <div className="py-6 min-h-[350px]">
+                                    <TabsContent value="basic">
+                                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div className="space-y-2"><Label htmlFor="fullName">Full Name</Label><Input name="fullName" required /></div>
+                                        <div className="space-y-2"><Label>Gender</Label><Select name="gender" required><SelectTrigger><SelectValue placeholder="Select Gender"/></SelectTrigger><SelectContent><SelectItem value="male">Male</SelectItem><SelectItem value="female">Female</SelectItem><SelectItem value="other">Other</SelectItem></SelectContent></Select></div>
+                                        <div className="space-y-2"><Label htmlFor="dob">Date of Birth</Label><Input name="dob" type="date" required /></div>
+                                        <div className="space-y-2"><Label htmlFor="contactNumber">Contact Number</Label><Input name="contactNumber" type="tel" required /></div>
+                                        <div className="md:col-span-2 space-y-2"><Label htmlFor="emailAddress">Email Address</Label><Input name="emailAddress" type="email" required /></div>
+                                        <div className="space-y-2 md:col-span-2"><Label htmlFor="photoUpload">Passport-size Photo</Label><Input name="photoUpload" type="file" /></div>
+                                      </div>
+                                    </TabsContent>
+                                    <TabsContent value="professional">
+                                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                          <div className="space-y-2"><Label>Specialization</Label><Select name="specialization" required><SelectTrigger><SelectValue placeholder="Select Specialization"/></SelectTrigger><SelectContent>{doctorSpecializations.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent></Select></div>
+                                          <div className="space-y-2"><Label>Qualifications</Label><Input name="qualifications" placeholder="MBBS, MD" required /></div>
+                                          <div className="space-y-2"><Label>Experience (years)</Label><Input name="experience" type="number" required /></div>
+                                          <div className="space-y-2"><Label>Department</Label><Input name="department" placeholder="e.g., Pediatrics" /></div>
+                                      </div>
+                                    </TabsContent>
+                                    <TabsContent value="verification">
+                                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                          <div className="space-y-2"><Label>Medical Registration No.</Label><Input name="medicalRegNo" required /></div>
+                                          <div className="space-y-2"><Label>Registration Council</Label><Input name="regCouncil" placeholder="e.g., Delhi Medical Council" required /></div>
+                                          <div className="space-y-2"><Label>Registration Year</Label><Input name="regYear" type="number" required /></div>
+                                          <div className="space-y-2"><Label>Medical License Upload</Label><Input name="licenseUpload" type="file" /></div>
+                                          <div className="md:col-span-2 space-y-2"><Label>Degree Certificate Upload</Label><Input name="degreeUpload" type="file" /></div>
+                                       </div>
+                                    </TabsContent>
+                                     <TabsContent value="consultation">
+                                        <div className="space-y-4">
+                                            <div className="space-y-2"><Label>Consultation Fee (INR)</Label><Input name="consultationFee" type="number" placeholder="e.g., 800" required /></div>
+                                            {/* Add availability fields here in future */}
+                                        </div>
+                                    </TabsContent>
+                                </div>
+                              </Tabs>
                             <DialogFooter>
                               <Button type="submit" disabled={isSubmitting}>{isSubmitting ? "Adding..." : "Add Doctor to Roster"}</Button>
                             </DialogFooter>
@@ -676,5 +679,3 @@ export default function DoctorsPage() {
     </div>
   )
 }
-
-    
