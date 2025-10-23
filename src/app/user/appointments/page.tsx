@@ -245,7 +245,7 @@ export default function MyAppointmentsPage() {
                                     variant={"outline"}
                                     className={cn("w-full justify-start text-left font-normal", !newDate && "text-muted-foreground")}
                                 >
-                                    <CalendarIcon className="mr-2 h-4 w-4" />
+                                    <Calendar className="mr-2 h-4 w-4" />
                                     {newDate ? format(newDate, "PPP") : <span>Pick a date</span>}
                                 </Button>
                                 </PopoverTrigger>
