@@ -75,7 +75,7 @@ export default function RiderLayout({
     setIsMounted(true);
     if (!isUserLoading && !user) {
       if (window.location.pathname.startsWith('/rider')) {
-        router.push('/login?role=rider');
+        router.push('/login?role=user');
       }
     }
   }, [user, isUserLoading, router]);
@@ -95,7 +95,7 @@ export default function RiderLayout({
     }
     auth.signOut().then(() => {
       localStorage.removeItem('cabzi-session');
-      router.push('/login?role=rider');
+      router.push('/login?role=user');
     });
   };
 
@@ -110,7 +110,7 @@ export default function RiderLayout({
   }
   
   return (
-      <div className="relative min-h-screen bg-background flex flex-col">
+      <div className="relative h-screen flex flex-col">
       <div className="absolute top-4 left-4 z-20">
           <Sheet open={open} onOpenChange={setOpen}>
               <SheetTrigger asChild>
@@ -177,8 +177,8 @@ export default function RiderLayout({
               <DropdownMenuContent align="end">
               <DropdownMenuLabel>Hi, {session?.name}</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onSelect={() => router.push('/rider/profile')}><User className="mr-2 h-4 w-4"/> Profile</DropdownMenuItem>
-              <DropdownMenuItem onSelect={() => router.push('/rider/support')}><Heart className="mr-2 h-4 w-4"/> Support</DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => router.push('/user/profile')}><User className="mr-2 h-4 w-4"/> Profile</DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => router.push('/user/support')}><Heart className="mr-2 h-4 w-4"/> Support</DropdownMenuItem>
               <DropdownMenuItem onSelect={() => toast({title: 'Coming Soon!'})}><Settings className="mr-2 h-4 w-4"/> Settings</DropdownMenuItem>
               <DropdownMenuSeparator />
               <AlertDialog>
@@ -205,7 +205,7 @@ export default function RiderLayout({
               </DropdownMenuContent>
           </DropdownMenu>
       </div>
-      <main className="flex-1 flex flex-col">
+      <main className="flex-1 flex flex-col h-full">
           {children}
       </main>
       <Toaster />
