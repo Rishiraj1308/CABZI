@@ -4,11 +4,10 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Calendar, PlusCircle, Hospital, Stethoscope, AlertCircle } from 'lucide-react';
+import { Calendar, PlusCircle, Hospital, Stethoscope } from 'lucide-react';
 import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -53,8 +52,6 @@ export default function MyAppointmentsPage() {
     const { toast } = useToast();
     const [appointments, setAppointments] = useState(initialAppointments);
 
-    const hasActiveAppointment = appointments.some(appt => appt.status === 'Confirmed' || appt.status === 'Pending');
-
     const handleCancelAppointment = (appointmentId: string) => {
         setAppointments(prev => prev.map(appt => 
             appt.id === appointmentId ? { ...appt, status: 'Cancelled' as const } : appt
@@ -87,19 +84,11 @@ export default function MyAppointmentsPage() {
                     <p className="text-muted-foreground">A history of all your past and upcoming appointments.</p>
                 </div>
                  <div>
-                    <Button asChild disabled={hasActiveAppointment}>
+                    <Button asChild>
                         <Link href="/user/book-appointment">
                             <PlusCircle className="mr-2 h-4 w-4" /> Book New Appointment
                         </Link>
                     </Button>
-                    {hasActiveAppointment && (
-                         <Alert variant="destructive" className="mt-2 text-xs p-2">
-                             <AlertCircle className="h-4 w-4" />
-                             <AlertDescription>
-                                You can only have one active (Pending/Confirmed) appointment at a time.
-                             </AlertDescription>
-                        </Alert>
-                    )}
                 </div>
             </div>
             
