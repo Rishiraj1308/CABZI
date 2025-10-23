@@ -30,7 +30,7 @@ import {
 import { Input } from '@/components/ui/input'
 import Link from 'next/link'
 import { useDb } from '@/firebase/client-provider'
-import { collection, getDocs, query, doc, updateDoc, deleteDoc, onSnapshot, collectionGroup } from 'firebase/firestore'
+import { collection, getDocs, query, doc, updateDoc, deleteDoc, onSnapshot, collectionGroup, where } from 'firebase/firestore'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
@@ -262,6 +262,7 @@ export default function PartnersClient() {
                Array.from({ length: 3 }).map((_, i) => (
                   <TableRow key={i}>
                     <TableCell><Skeleton className="h-5 w-32" /></TableCell>
+                    {partnerType === 'doctor' && <TableCell><Skeleton className="h-5 w-40" /></TableCell>}
                     <TableCell><Skeleton className="h-5 w-28" /></TableCell>
                     <TableCell><Skeleton className="h-6 w-20 rounded-full" /></TableCell>
                     <TableCell className="text-right"><Skeleton className="h-8 w-8 ml-auto rounded-full" /></TableCell>
@@ -392,5 +393,3 @@ export default function PartnersClient() {
     </Card>
   )
 }
-
-    
