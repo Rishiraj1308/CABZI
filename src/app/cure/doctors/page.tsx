@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button'
 import { useToast } from '@/hooks/use-toast'
 import { Stethoscope, UserPlus, MoreHorizontal, Trash2, BadgeCheck, Clock, Briefcase, Calendar, IndianRupee, Phone, Check, Settings, X, User as UserIcon, FileText as FileTextIcon, Download, GraduationCap, Building, Shield, CircleUser, PhoneCall, Mail, Cake, VenetianSofa, AlertTriangle, UploadCloud } from 'lucide-react'
 import { useDb } from '@/firebase/client-provider'
-import { collection, query, onSnapshot, addDoc, doc, deleteDoc, serverTimestamp, Timestamp, orderBy, writeBatch, getDocs, where, updateDoc, setDoc, limit } from 'firebase/firestore'
+import { collection, query, onSnapshot, addDoc, doc, deleteDoc, serverTimestamp, Timestamp, orderBy, writeBatch, getDocs, where, updateDoc, setDoc, limit, collectionGroup } from 'firebase/firestore'
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
@@ -251,7 +251,10 @@ export default function DoctorsPage() {
         const partnerId = `CZD-${phone.slice(-4)}${name.split(' ')[0].slice(0, 2).toUpperCase()}`;
         const password = `cAbZ@${Math.floor(1000 + Math.random() * 9000)}`;
 
-        const doctorDocRef = await addDoc(collection(db, `ambulances/${hospitalId}/doctors`), {
+        const doctorDocRef = doc(collection(db, `ambulances/${hospitalId}/doctors`));
+        
+        // 1. Create doc with placeholders
+        await setDoc(doctorDocRef, {
             name, phone, email, gender, dob,
             specialization, qualifications, experience, department, designation,
             medicalRegNo, regCouncil, regYear,
@@ -259,7 +262,7 @@ export default function DoctorsPage() {
             docStatus: 'Pending',
             partnerId, password,
             createdAt: serverTimestamp(),
-            photoUrl: '', // Placeholder
+            photoUrl: '',
         });
 
         let photoUrl = '';
@@ -271,6 +274,7 @@ export default function DoctorsPage() {
             photoUrl = await getDownloadURL(photoRef);
         }
         
+        // 2. Update doc with final URL
         await updateDoc(doctorDocRef, {
             photoUrl: photoUrl
         });
@@ -280,7 +284,7 @@ export default function DoctorsPage() {
         setGeneratedCreds({ id: partnerId, pass: password, role: 'Doctor' });
         setIsCredsDialogOpen(true);
         setNewDoctorData(initialDoctorState);
-        setPhotoPreviewUrl(null); // Clear preview
+        setPhotoPreviewUrl(null);
 
     } catch (error) {
         console.error('Error adding doctor:', error);
@@ -511,6 +515,7 @@ export default function DoctorsPage() {
                           setIsAddDoctorDialogOpen(isOpen);
                           if (!isOpen) {
                               setNewDoctorData(initialDoctorState);
+                              if (photoPreviewUrl) URL.revokeObjectURL(photoPreviewUrl);
                               setPhotoPreviewUrl(null);
                           }
                       }}>
@@ -534,13 +539,21 @@ export default function DoctorsPage() {
                                     <TabsContent value="basic">
                                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
                                         <div className="col-span-1 md:col-span-2 space-y-2">
-                                          <Label htmlFor="photoUpload">Profile Photo</Label>
+                                          <Label>Profile Photo</Label>
                                           <div className="flex items-center gap-4">
                                             <Avatar className="w-20 h-20">
                                               <AvatarImage src={photoPreviewUrl ?? undefined} />
                                               <AvatarFallback><UserIcon className="w-8 h-8 text-muted-foreground" /></AvatarFallback>
                                             </Avatar>
-                                            <Input id="photoUpload" type="file" accept="image/*" onChange={(e) => handleFileChange('photoFile', e)} className="h-auto" />
+                                             <div className="w-full">
+                                                <Input id="photoUpload" type="file" accept="image/*" onChange={(e) => handleFileChange('photoFile', e)} className="h-auto" />
+                                                {newDoctorData.photoFile && (
+                                                    <div className="mt-2 text-xs text-muted-foreground flex items-center justify-between">
+                                                        <span>{newDoctorData.photoFile.name}</span>
+                                                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => { handleFormChange('photoFile', null); if(photoPreviewUrl) URL.revokeObjectURL(photoPreviewUrl); setPhotoPreviewUrl(null); }}><X className="w-3 h-3"/></Button>
+                                                    </div>
+                                                )}
+                                            </div>
                                           </div>
                                         </div>
                                         <div className="space-y-2"><Label>Full Name</Label><Input name="fullName" required value={newDoctorData.fullName} onChange={e => handleFormChange('fullName', e.target.value)} /></div>
