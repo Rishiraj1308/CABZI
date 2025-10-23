@@ -257,7 +257,6 @@ export default function DoctorsPage() {
       }
   }
 
-
   return (
     <div className="space-y-6">
         <Tabs defaultValue="appointments">
@@ -570,6 +569,10 @@ export default function DoctorsPage() {
                                         <div className="space-y-4 py-4">
                                             <Button variant="outline" className="w-full justify-start gap-2"><Download className="w-4 h-4"/> Download Passport Photo (pending)</Button>
                                             <Button variant="outline" className="w-full justify-start gap-2"><Download className="w-4 h-4"/> Download Qualification Degree (pending)</Button>
+                                        </div>
+                                         <DialogFooter>
+                                            <Button variant="secondary" onClick={() => setSelectedDoctorForVerification(null)}>Cancel</Button>
+                                            <Button onClick={handleVerifyDoctor}>Submit for Final Approval</Button>
                                         </DialogFooter>
                                     </DialogContent>
                                   </Dialog>
@@ -614,4 +617,3 @@ export default function DoctorsPage() {
   )
 }
 
-    
