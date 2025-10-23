@@ -10,7 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 
 const serviceCards = [
     {
-        title: 'Book a Ride',
+        title: 'Ride',
         description: 'Fair fares for your daily commute.',
         icon: Car,
         href: '/user/book',
@@ -109,7 +109,7 @@ export default function UserDashboard() {
                                             }
                                         }}>
                                             <Card className="h-full transition-all text-center bg-background/80 backdrop-blur-sm hover:shadow-2xl hover:border-primary/50">
-                                                 <CardContent className="p-4 flex flex-col items-center justify-center gap-2">
+                                                 <CardContent className="p-3 flex flex-col items-center justify-center gap-2">
                                                     <div className="p-1 bg-muted rounded-full">
                                                       <service.icon className={`w-4 h-4 ${service.color}`} />
                                                     </div>
