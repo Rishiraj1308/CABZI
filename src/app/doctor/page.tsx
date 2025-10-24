@@ -83,8 +83,6 @@ const quickActions = [
     { title: 'Add Appointment', icon: Plus, action: 'add_appointment' },
     { title: 'Search Patient', icon: Search, action: 'search_patient' },
     { title: 'Upload Report', icon: UploadCloud, action: 'upload_report' },
-    { title: 'Generate Note', icon: FileText, action: 'generate_note' },
-    { title: 'View History', icon: History, action: 'view_history' },
 ];
 
 const timeSlots = [
@@ -137,23 +135,22 @@ export default function DoctorDashboardPage() {
   return (
     <div className="space-y-6">
        <div>
-        <h2 className="text-3xl font-bold tracking-tight">Doctor&apos;s Dashboard</h2>
-        <p className="text-muted-foreground">Welcome back, Doctor. Here&apos;s your snapshot for today.</p>
+        <h2 className="text-3xl font-bold tracking-tight">Doctor's Dashboard</h2>
+        <p className="text-muted-foreground">Welcome back, Doctor. Here's your snapshot for today.</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard title="Today’s Appointments" value={`${mockDashboardStats.todayAppointments}`} icon={Calendar} description="+3 from yesterday" />
         <StatCard title="New Patients Today" value={`${mockDashboardStats.newPatients}`} icon={User} description="New consultations scheduled" />
         <StatCard title="Avg. Consultation Time" value={`${mockDashboardStats.avgConsultationTime} min`} icon={Clock} description="Maintained from last week" />
-        <StatCard title="Pending Follow-Ups" value={`${mockDashboardStats.pendingFollowUps}`} icon={Calendar} description="Scheduled for today" />
-        <StatCard title="Completion Rate" value={`${mockDashboardStats.completionRate}%`} icon={Percent} description="Today's consultation completion" />
+        <StatCard title="Pending Follow-Ups" value={`${mockDashboardStats.pendingFollowUps}`} icon={FileClock} description="Scheduled for today" />
       </div>
 
-       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-2">
+       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+            <div className="lg:col-span-2 space-y-6">
                  <Card>
                     <CardHeader>
-                        <CardTitle>Today&apos;s Schedule</CardTitle>
+                        <CardTitle>Today's Schedule</CardTitle>
                         <CardDescription>A list of your confirmed and pending appointments for today.</CardDescription>
                     </CardHeader>
                     <CardContent>
@@ -161,31 +158,28 @@ export default function DoctorDashboardPage() {
                             <Dialog>
                                 {mockAppointments.map((apt, index) => (
                                     <Card key={index} className="bg-muted/50">
-                                        <CardHeader className="p-4">
-                                        <div className="flex justify-between items-start">
-                                                <div>
-                                                    <p className="font-semibold text-primary">{apt.time}</p>
-                                                    <CardTitle className="text-xl">{apt.patient}</CardTitle>
-                                                    <CardDescription>{apt.age} / {apt.gender}</CardDescription>
-                                                </div>
-                                                {getStatusBadge(apt.status)}
-                                        </div>
-                                        </CardHeader>
-                                        <CardContent className="p-4 pt-0 space-y-3 text-sm">
-                                            <div className="flex items-center gap-4 text-muted-foreground">
-                                                <Badge variant="outline">{apt.mode === 'Online' ? <Video className="w-3 h-3 mr-1.5"/> : <Building className="w-3 h-3 mr-1.5"/>}{apt.mode}</Badge>
-                                                <Badge variant="outline">{apt.visitType}</Badge>
+                                        <CardContent className="p-4 flex items-center gap-4">
+                                            <div className="text-center w-20">
+                                                <p className="font-bold text-primary text-lg">{apt.time.split(' ')[0]}</p>
+                                                <p className="text-xs text-muted-foreground">{apt.time.split(' ')[1]}</p>
                                             </div>
-                                            <p className="text-muted-foreground"><span className="font-semibold text-foreground">Reason:</span> {apt.reason}</p>
-                                        </CardContent>
-                                        <CardFooter className="p-4 pt-0 flex gap-2">
+                                            <div className="flex-1">
+                                                <div className="flex justify-between items-start">
+                                                    <div>
+                                                        <CardTitle className="text-xl">{apt.patient}</CardTitle>
+                                                        <CardDescription>{apt.age} / {apt.gender}</CardDescription>
+                                                    </div>
+                                                    {getStatusBadge(apt.status)}
+                                                </div>
+                                                <div className="flex items-center gap-2 mt-2 text-sm">
+                                                    <Badge variant="outline">{apt.mode === 'Online' ? <Video className="w-3 h-3 mr-1.5"/> : <Building className="w-3 h-3 mr-1.5"/>}{apt.mode}</Badge>
+                                                    <Badge variant="outline">{apt.visitType}</Badge>
+                                                </div>
+                                            </div>
                                             <DialogTrigger asChild>
-                                                <Button variant="outline" size="sm" onClick={() => setSelectedPatient(apt)}><FileText className="w-4 h-4 mr-2"/>View Details</Button>
+                                                <Button variant="outline" onClick={() => setSelectedPatient(apt)}>View Details</Button>
                                             </DialogTrigger>
-                                            <Button size="sm" disabled={apt.status !== 'Checked-in'} onClick={() => handleQuickAction('start_consultation')}><PlayCircle className="w-4 h-4 mr-2"/>Start Consultation</Button>
-                                            <Button variant="secondary" size="sm" onClick={() => handleQuickAction('add_notes')}><Plus className="w-4 h-4 mr-2"/>Add Notes</Button>
-                                            <Button variant="secondary" size="sm" disabled={apt.status === 'Completed'} onClick={() => handleQuickAction('mark_complete')}><CheckCircle className="w-4 h-4 mr-2"/>Mark Complete</Button>
-                                        </CardFooter>
+                                        </CardContent>
                                     </Card>
                                 ))}
                                 <DialogContent className="max-w-3xl">
@@ -301,7 +295,6 @@ export default function DoctorDashboardPage() {
                 <Card>
                     <CardHeader>
                         <CardTitle>Quick Actions</CardTitle>
-                        <CardDescription>Common tasks, just a click away.</CardDescription>
                     </CardHeader>
                     <CardContent className="grid grid-cols-3 gap-2">
                         {quickActions.map(action => (
@@ -334,12 +327,6 @@ export default function DoctorDashboardPage() {
                                 ))}
                             </div>
                         </div>
-                        <div>
-                            <h4 className="font-semibold text-sm mb-2">Common Feedback Tags:</h4>
-                            <div className="flex flex-wrap gap-2">
-                                {feedbackTags.map(tag => <Badge key={tag} variant="secondary">{tag}</Badge>)}
-                            </div>
-                        </div>
                     </CardContent>
                 </Card>
                  <Card>
@@ -367,3 +354,5 @@ export default function DoctorDashboardPage() {
     </div>
   );
 }
+
+    
