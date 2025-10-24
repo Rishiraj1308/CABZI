@@ -4,7 +4,7 @@
 import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { LogOut, Sun, Moon, LayoutDashboard, Calendar, User, PanelLeft } from 'lucide-react'
+import { LogOut, Sun, Moon, LayoutDashboard, Calendar, User, PanelLeft, Bell } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Toaster } from '@/components/ui/toaster'
@@ -17,12 +17,20 @@ import BrandLogo from '@/components/brand-logo'
 import { useTheme } from 'next-themes'
 import { useFirebase } from '@/firebase/client-provider'
 import { MotionDiv } from '@/components/ui/motion-div'
+import { Badge } from '@/components/ui/badge'
 
 const navItems = [
   { href: '/doctor', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/doctor/appointments', label: 'My Appointments', icon: Calendar },
   { href: '/doctor/profile', label: 'My Profile', icon: User },
 ]
+
+const mockNotifications = [
+    { id: 1, text: 'Patient Priya Sharma has checked in for her 10:00 AM appointment.', time: '5 mins ago', read: false },
+    { id: 2, text: 'Lab reports uploaded for Rohan Verma. Please review.', time: '1 hour ago', read: false },
+    { id: 3, text: 'Appointment for Suresh Kumar has been cancelled by the patient.', time: '3 hours ago', read: true },
+    { id: 4, text: 'New follow-up scheduled for Anjali Mehra tomorrow.', time: 'Yesterday', read: true },
+];
 
 function DoctorNav() {
   const pathname = usePathname()
@@ -72,6 +80,7 @@ export default function DoctorLayout({ children }: { children: React.ReactNode }
   const { toast } = useToast();
   const [userName, setUserName] = useState('');
   const { auth } = useFirebase();
+  const unreadCount = mockNotifications.filter(n => !n.read).length;
   
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -151,6 +160,29 @@ export default function DoctorLayout({ children }: { children: React.ReactNode }
          <div className="flex w-full items-center gap-4 md:ml-auto md:gap-2 lg:gap-4">
             <div className="ml-auto flex-1 sm:flex-initial"></div>
             <ThemeToggle/>
+            <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="icon" className="relative">
+                        <Bell className="h-5 w-5"/>
+                        {unreadCount > 0 && <Badge className="absolute -top-2 -right-2 h-5 w-5 justify-center p-0">{unreadCount}</Badge>}
+                        <span className="sr-only">Toggle notifications</span>
+                    </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-80">
+                    <DropdownMenuLabel>Notifications</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    {mockNotifications.map(notification => (
+                        <DropdownMenuItem key={notification.id} className={cn("flex items-start gap-2 whitespace-normal", !notification.read && "font-semibold")}>
+                           <div className={cn("mt-1 h-2 w-2 rounded-full", !notification.read ? "bg-primary" : "bg-transparent")}/>
+                           <div className="flex-1">
+                               <p className="text-xs">{notification.text}</p>
+                               <p className="text-xs text-muted-foreground mt-1">{notification.time}</p>
+                           </div>
+                        </DropdownMenuItem>
+                    ))}
+                    {mockNotifications.length === 0 && <DropdownMenuItem disabled>No new notifications</DropdownMenuItem>}
+                </DropdownMenuContent>
+            </DropdownMenu>
            <DropdownMenu>
              <DropdownMenuTrigger asChild>
                <Button variant="secondary" size="icon" className="rounded-full">
