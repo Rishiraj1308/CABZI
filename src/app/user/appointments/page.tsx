@@ -106,7 +106,7 @@ export default function MyAppointmentsPage() {
 
         const newDateTime = new Date(newDate);
         const [hours, minutes] = newTime.split(/[: ]/);
-        newDateTime.setHours(newTime.includes('PM') ? parseInt(hours, 10) + 12 : parseInt(hours, 10), parseInt(minutes, 10), 0);
+        newDateTime.setHours(newTime.includes('PM') ? parseInt(hours, 10) + 12 : parseInt(minutes, 10), parseInt(minutes, 10), 0);
 
         setAppointments(prev => prev.map(appt => 
             appt.id === selectedAppointment.id ? { ...appt, date: newDateTime.toISOString(), status: 'Confirmed' } : appt
@@ -154,14 +154,11 @@ export default function MyAppointmentsPage() {
                     <p className="text-muted-foreground">A history of all your past and upcoming appointments.</p>
                 </div>
                  <div>
-                    <Button asChild disabled={hasActiveAppointment}>
+                    <Button asChild>
                         <Link href="/user/book-appointment">
                             <PlusCircle className="mr-2 h-4 w-4" /> Book New Appointment
                         </Link>
                     </Button>
-                    {hasActiveAppointment && (
-                        <p className="text-xs text-muted-foreground mt-2 text-center md:text-right">Cancel or complete your active appointment to book a new one.</p>
-                    )}
                 </div>
             </div>
             
