@@ -650,7 +650,7 @@ const handleAddDoctor = async (event: React.FormEvent<HTMLFormElement>) => {
                                             </Card>
                                             <Card>
                                                 <CardContent className="p-3">
-                                                    <Label className="text-xs">Specialization & Dept.</Label>
+                                                    <Label className="text-xs">Specialization &amp; Dept.</Label>
                                                     <p className="font-semibold">{selectedDoctorForVerification?.specialization}, {selectedDoctorForVerification?.department}</p>
                                                 </CardContent>
                                             </Card>
@@ -725,3 +725,5 @@ const handleAddDoctor = async (event: React.FormEvent<HTMLFormElement>) => {
     </div>
   )
 }
+
+    
