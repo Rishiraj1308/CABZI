@@ -42,7 +42,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { Calendar as CalendarPicker } from '@/components/ui/calendar'
+import { Calendar } from '@/components/ui/calendar'
 import { format } from 'date-fns'
 import { cn } from '@/lib/utils'
 
@@ -414,7 +414,7 @@ const handleAddDoctor = async (event: React.FormEvent<HTMLFormElement>) => {
                                                             {newDate ? format(newDate, "PPP") : <span>Pick a date</span>}
                                                         </Button>
                                                         </PopoverTrigger>
-                                                        <PopoverContent className="w-auto p-0"><CalendarPicker mode="single" selected={newDate} onSelect={setNewDate} initialFocus/></PopoverContent>
+                                                        <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={newDate} onSelect={setNewDate} initialFocus/></PopoverContent>
                                                     </Popover>
                                                 </div>
                                                 <div className="space-y-2 mt-2">
