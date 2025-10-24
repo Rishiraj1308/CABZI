@@ -1,7 +1,6 @@
-
 'use client'
 
-import React, { useState, useEffect, useMemo } from 'react'
+import React, { useState, useEffect, useRef, useMemo } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
@@ -223,7 +222,7 @@ export default function FleetPage() {
             setIsCredsDialogOpen(true);
             (e.target as HTMLFormElement).reset();
 
-            toast({ title: 'Driver Added', description: `${name} has been added to your team.` });
+            toast({ title: 'Driver Added', description: `${name} has been added to your team. Their credentials are now available.` });
         } catch (error) {
             console.error(error);
             toast({ variant: 'destructive', title: 'Error', description: 'Could not add driver.' });

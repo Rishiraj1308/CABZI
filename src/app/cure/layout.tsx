@@ -1,4 +1,3 @@
-
 'use client'
 
 import React, { useState, useEffect } from 'react'
@@ -16,39 +15,8 @@ import { useToast } from '@/hooks/use-toast'
 import BrandLogo from '@/components/brand-logo'
 import { useTheme } from 'next-themes'
 import { useFirebase } from '@/firebase/client-provider'
-import { doc, updateDoc } from 'firebase/firestore'
+import { doc, updateDoc, onSnapshot } from 'firebase/firestore'
 import { MotionDiv } from '@/components/ui/motion-div'
-
-const navItems = [
-  { href: '/cure', label: 'Mission Control', icon: LayoutDashboard },
-  { href: '/cure/fleet', label: 'Fleet & Staff', icon: UsersIcon },
-  { href: '/cure/doctors', label: 'Doctors', icon: Stethoscope },
-  { href: '/cure/insurance', label: 'Insurance', icon: ShieldCheck },
-  { href: '/cure/billing', label: 'Billing & Payouts', icon: Landmark },
-  { href: '/cure/analytics', label: 'Analytics', icon: BarChart },
-  { href: '/cure/subscription', label: 'Subscription', icon: Gem },
-]
-
-function CureNav() {
-  const pathname = usePathname()
-  return (
-    <nav className="grid items-start gap-1 px-4 text-sm font-medium md:flex md:flex-row md:items-center md:gap-5 md:px-0">
-      {navItems.map((item) => (
-        <Link
-          key={item.href}
-          href={item.href}
-          className={cn(
-            'flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary md:p-0',
-            pathname === item.href && 'text-primary'
-          )}
-        >
-          <item.icon className="h-4 w-4 md:hidden" />
-          {item.label}
-        </Link>
-      ))}
-    </nav>
-  );
-}
 
 function ThemeToggle() {
     const { setTheme } = useTheme()
@@ -74,21 +42,53 @@ export default function CureLayout({ children }: { children: React.ReactNode }) 
   const pathname = usePathname();
   const router = useRouter();
   const { toast } = useToast();
-  const [userName, setUserName] = useState('');
+  const [session, setSession] = useState<any>(null);
   const { db, auth } = useFirebase();
-  
+  const [navItems, setNavItems] = useState<any[]>([]);
+
   useEffect(() => {
     if (pathname === '/cure/onboarding') return;
     if (typeof window !== 'undefined') {
         const sessionString = localStorage.getItem('cabzi-cure-session');
         if (sessionString) {
             try {
-                const session = JSON.parse(sessionString);
-                 if (!session.role || session.role !== 'cure' || !session.partnerId) {
+                const sessionData = JSON.parse(sessionString);
+                 if (!sessionData.role || sessionData.role !== 'cure' || !sessionData.partnerId) {
                     router.push('/login?role=driver');
                     return;
                 }
-                setUserName(session.name);
+                setSession(sessionData);
+
+                if (db && sessionData.partnerId) {
+                    const unsub = onSnapshot(doc(db, 'ambulances', sessionData.partnerId), (doc) => {
+                        if (doc.exists()) {
+                            const data = doc.data();
+                            const isHospital = data.businessType?.toLowerCase().includes('hospital');
+
+                            if (isHospital) {
+                                setNavItems([
+                                    { href: '/cure', label: 'Mission Control', icon: LayoutDashboard },
+                                    { href: '/cure/fleet', label: 'Fleet & Staff', icon: UsersIcon },
+                                    { href: '/cure/doctors', label: 'Doctors Roster', icon: Stethoscope },
+                                    { href: '/cure/insurance', label: 'Insurance', icon: ShieldCheck },
+                                    { href: '/cure/billing', label: 'Billing', icon: Landmark },
+                                    { href: '/cure/analytics', label: 'Analytics', icon: BarChart },
+                                    { href: '/cure/subscription', label: 'Subscription', icon: Gem },
+                                ]);
+                            } else {
+                                // Clinic navigation
+                                setNavItems([
+                                    { href: '/cure', label: 'Dashboard', icon: LayoutDashboard },
+                                    { href: '/cure/doctors', label: 'Appointments', icon: Stethoscope },
+                                    { href: '/cure/billing', label: 'Billing', icon: Landmark },
+                                    { href: '/cure/subscription', label: 'Subscription', icon: Gem },
+                                ]);
+                            }
+                        }
+                    });
+                    return () => unsub();
+                }
+
             } catch (error) {
                 console.error("Failed to parse session, redirecting", error);
                 localStorage.removeItem('cabzi-cure-session');
@@ -98,18 +98,13 @@ export default function CureLayout({ children }: { children: React.ReactNode }) 
             router.push('/login?role=driver');
         }
     }
-  }, [router, pathname]);
+  }, [router, pathname, db]);
 
   const handleLogout = async () => {
-    const sessionString = localStorage.getItem('cabzi-cure-session');
-    if(sessionString && db) {
+    if(session && db) {
         try {
-            const { partnerId } = JSON.parse(sessionString);
-            if(partnerId) {
-                const cureRef = doc(db, 'ambulances', partnerId);
-                // Fire and forget
-                updateDoc(cureRef, { isOnline: false });
-            }
+            const cureRef = doc(db, 'ambulances', session.partnerId);
+            await updateDoc(cureRef, { isOnline: false });
         } catch (error) {
           console.error("Failed to update logout status for cure partner:", error);
         }
@@ -121,6 +116,27 @@ export default function CureLayout({ children }: { children: React.ReactNode }) 
         description: 'You have been successfully logged out.'
     });
     router.push('/');
+  }
+  
+  function CureNav() {
+    const pathname = usePathname()
+    return (
+      <nav className="grid items-start gap-1 px-4 text-sm font-medium md:flex md:flex-row md:items-center md:gap-5 md:px-0">
+        {navItems.map((item) => (
+          <Link
+            key={item.href}
+            href={item.href}
+            className={cn(
+              'flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary md:p-0',
+              pathname === item.href && 'text-primary'
+            )}
+          >
+            <item.icon className="h-4 w-4 md:hidden" />
+            {item.label}
+          </Link>
+        ))}
+      </nav>
+    );
   }
 
   if (pathname === '/cure/onboarding') {
@@ -187,8 +203,8 @@ export default function CureLayout({ children }: { children: React.ReactNode }) 
              <DropdownMenuTrigger asChild>
                <Button variant="secondary" size="icon" className="rounded-full">
                  <Avatar className="h-8 w-8">
-                    <AvatarImage src="https://placehold.co/40x40.png" alt={userName} data-ai-hint="hospital building" />
-                    <AvatarFallback>{getInitials(userName).toUpperCase()}</AvatarFallback>
+                    <AvatarImage src="https://placehold.co/40x40.png" alt={session?.name} data-ai-hint="hospital building" />
+                    <AvatarFallback>{getInitials(session?.name || '').toUpperCase()}</AvatarFallback>
                  </Avatar>
                  <span className="sr-only">Toggle user menu</span>
                </Button>
