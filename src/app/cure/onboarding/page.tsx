@@ -58,11 +58,24 @@ export default function CureOnboardingPage() {
         setFormData(prev => ({...prev, [field]: value}));
     }
 
+    const handleLocationSelect = async () => {
+        if (mapRef.current) {
+            const center = mapRef.current.getCenter();
+            if (center) {
+                const address = await mapRef.current.getAddress(center.lat, center.lng);
+                if (address) {
+                    handleInputChange('location', { address, coords: { lat: center.lat, lon: center.lng } });
+                     toast({ title: "Location Confirmed!", description: "Your facility's address has been set." });
+                }
+            }
+        }
+    };
+
     const handleNextStep = () => {
         if (currentStep === 1) {
             const isHospital = formData.hospitalType.includes('Hospital');
             if (!formData.hospitalName || !formData.hospitalType || !formData.location || (isHospital && !formData.hospitalRegNo)) {
-                toast({ variant: 'destructive', title: "Incomplete Details", description: "Please fill all required fields and set a location." });
+                toast({ variant: 'destructive', title: "Incomplete Details", description: "Please fill all required fields and confirm a location on the map." });
                 return;
             }
         }
@@ -183,6 +196,7 @@ export default function CureOnboardingPage() {
                              <div className="h-64 w-full rounded-md overflow-hidden border">
                                 <LiveMap ref={mapRef} onLocationFound={(addr, coords) => handleInputChange('location', { address: addr, coords })} />
                             </div>
+                            <Button type="button" variant="outline" className="w-full" onClick={handleLocationSelect}>Confirm My Location on Map</Button>
                             {formData.location && <p className="text-sm text-green-600 font-medium text-center">Location Set: {formData.location.address}</p>}
                         </div>
                     </div>

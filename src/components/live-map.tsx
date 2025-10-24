@@ -83,7 +83,10 @@ const LiveMap = forwardRef<any, LiveMapProps>((props, ref) => {
                 tryLocate();
             });
         },
-        getAddress: getAddress
+        getAddress: getAddress,
+        getCenter: () => {
+            return mapInstanceRef.current?.getCenter();
+        }
     }));
     
     // Icon creation utility
@@ -476,4 +479,3 @@ const LiveMap = forwardRef<any, LiveMapProps>((props, ref) => {
 
 LiveMap.displayName = 'LiveMap';
 export default LiveMap;
-
