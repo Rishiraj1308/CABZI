@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, User, Clock, CheckCircle, Percent, Video, Building, FileText, PlayCircle, Plus, UploadCloud, Search, History, BrainCircuit, AlertTriangle, Send, UserPlus, FileUp, Share } from 'lucide-react';
+import { Calendar, User, Clock, CheckCircle, Percent, Video, Building, FileText, PlayCircle, Plus, UploadCloud, Search, History, BrainCircuit, AlertTriangle, Send, UserPlus, FileUp, Share, Star } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -114,6 +114,14 @@ const getStatusBadge = (status: string) => {
     }
 }
 
+const recentFeedback = [
+    { name: 'Priya S.', comment: 'Very professional and explained the issue clearly.', rating: 5 },
+    { name: 'Rohan V.', comment: 'The consultation started on time, which I appreciate a lot.', rating: 5 },
+    { name: 'Suresh K.', comment: 'Good doctor, but the waiting time at the clinic was a bit long.', rating: 4 },
+];
+
+const feedbackTags = ['Good Communication', 'Short Waiting Time', 'Helpful Staff', 'Clean Clinic'];
+
 
 export default function DoctorDashboardPage() {
     const [selectedPatient, setSelectedPatient] = useState<(typeof mockAppointments)[0] | null>(null);
@@ -187,7 +195,7 @@ export default function DoctorDashboardPage() {
                                             <TabsTrigger value="history">Visit History</TabsTrigger>
                                             <TabsTrigger value="reports">Reports & Notes</TabsTrigger>
                                             <TabsTrigger value="followup">Schedule Follow-up</TabsTrigger>
-                                             <TabsTrigger value="actions">Post-Consultation</TabsTrigger>
+                                            <TabsTrigger value="actions">Post-Consultation</TabsTrigger>
                                         </TabsList>
                                         <TabsContent value="history" className="mt-4">
                                             <Table>
@@ -270,13 +278,43 @@ export default function DoctorDashboardPage() {
                         <CardTitle>Quick Actions</CardTitle>
                         <CardDescription>Common tasks, just a click away.</CardDescription>
                     </CardHeader>
-                    <CardContent className="grid grid-cols-2 gap-2">
+                    <CardContent className="grid grid-cols-3 gap-2">
                         {quickActions.map(action => (
                             <Button key={action.title} variant="outline" className="flex-col h-20" onClick={() => toast({ title: `${action.title} - Coming Soon!` })}>
                                 <action.icon className="w-6 h-6 mb-1 text-primary"/>
                                 <span className="text-xs">{action.title}</span>
                             </Button>
                         ))}
+                    </CardContent>
+                </Card>
+                 <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2"><Star className="w-6 h-6 text-amber-400"/> Patient Satisfaction</CardTitle>
+                        <CardDescription>An overview of recent patient feedback.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                         <div className="p-4 rounded-lg bg-muted text-center">
+                            <p className="text-sm text-muted-foreground">Overall Rating</p>
+                            <p className="text-4xl font-bold flex items-center justify-center gap-1">4.8 <Star className="w-7 h-7 text-amber-400 fill-amber-400" /></p>
+                            <p className="text-xs text-muted-foreground">Based on 152 reviews</p>
+                        </div>
+                        <div>
+                            <h4 className="font-semibold text-sm mb-2">Recent Comments:</h4>
+                            <div className="space-y-2">
+                                {recentFeedback.map((fb, i) => (
+                                    <div key={i} className="p-2 border-l-4 border-primary/50 bg-muted/50 rounded-r-lg text-xs">
+                                        <p className="italic">&quot;{fb.comment}&quot;</p>
+                                        <p className="font-semibold text-right mt-1">- {fb.name}</p>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                        <div>
+                            <h4 className="font-semibold text-sm mb-2">Common Feedback Tags:</h4>
+                            <div className="flex flex-wrap gap-2">
+                                {feedbackTags.map(tag => <Badge key={tag} variant="secondary">{tag}</Badge>)}
+                            </div>
+                        </div>
                     </CardContent>
                 </Card>
                  <Card>
@@ -304,5 +342,3 @@ export default function DoctorDashboardPage() {
     </div>
   );
 }
-
-    
