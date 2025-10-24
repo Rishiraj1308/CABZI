@@ -547,7 +547,7 @@ export default function LoginPage() {
                 </Link>
               </div>
               <CardTitle className="text-2xl mt-4">{getPageTitle()}</CardTitle>
-              <CardDescription>
+              <div className="text-sm text-muted-foreground">
                 <AnimatePresence mode="wait">
                     <motion.div
                         key={step + roleFromQuery}
@@ -559,7 +559,7 @@ export default function LoginPage() {
                        {getPageDescription()}
                     </motion.div>
                 </AnimatePresence>
-              </CardDescription>
+              </div>
             </CardHeader>
             <CardContent>
               <AnimatePresence mode="wait">
@@ -586,3 +586,5 @@ export default function LoginPage() {
       </div>
   );
 }
+
+    
