@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, User, Clock, CheckCircle, Percent, Video, Building, FileText, PlayCircle, Plus, UploadCloud, Search, History, BrainCircuit, AlertTriangle, Send, UserPlus, FileUp, Share, Star } from 'lucide-react';
+import { Calendar, User, Clock, CheckCircle, Percent, Video, Building, FileText, PlayCircle, Plus, UploadCloud, Search, History, BrainCircuit, AlertTriangle, Send, UserPlus, FileUp, Share, Star, Stethoscope, FileClock, ClipboardPlus, FileSpreadsheet } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -74,8 +74,9 @@ const mockAppointments = [
 ];
 
 const mockPastVisits = [
-    { date: '2024-07-15', reason: 'Annual Check-up', notes: 'Routine blood work ordered. All vitals stable.' },
-    { date: '2023-11-20', reason: 'Viral Fever', notes: 'Prescribed Paracetamol. Advised rest.' },
+    { date: '2024-07-15', reason: 'Annual Check-up', notes: 'Routine blood work ordered. All vitals stable. Advised vitamin D supplements.', report: 'Blood Test Report.pdf', prescription: 'Prescription_2024-07-15.pdf' },
+    { date: '2023-11-20', reason: 'Viral Fever', notes: 'Prescribed Paracetamol and advised rest for 3 days. Patient to follow up if symptoms persist.', prescription: 'Prescription_2023-11-20.pdf' },
+    { date: '2023-05-01', reason: 'Initial Consultation', notes: 'Patient presented with no major complaints. General health advice given.', report: 'Initial Health Scan.pdf' },
 ];
 
 const quickActions = [
@@ -192,20 +193,42 @@ export default function DoctorDashboardPage() {
                                     </DialogHeader>
                                     <Tabs defaultValue="history">
                                         <TabsList className="grid w-full grid-cols-4">
-                                            <TabsTrigger value="history">Visit History</TabsTrigger>
-                                            <TabsTrigger value="reports">Reports & Notes</TabsTrigger>
+                                            <TabsTrigger value="history">Medical Timeline</TabsTrigger>
+                                            <TabsTrigger value="reports">Notes & Reports</TabsTrigger>
                                             <TabsTrigger value="followup">Schedule Follow-up</TabsTrigger>
                                             <TabsTrigger value="actions">Post-Consultation</TabsTrigger>
                                         </TabsList>
-                                        <TabsContent value="history" className="mt-4">
-                                            <Table>
-                                                <TableHeader><TableRow><TableHead>Date</TableHead><TableHead>Reason for Visit</TableHead><TableHead>Doctor's Notes</TableHead></TableRow></TableHeader>
-                                                <TableBody>
-                                                    {mockPastVisits.map(visit => (
-                                                        <TableRow key={visit.date}><TableCell>{visit.date}</TableCell><TableCell>{visit.reason}</TableCell><TableCell>{visit.notes}</TableCell></TableRow>
+                                         <TabsContent value="history" className="mt-4 max-h-[60vh] overflow-y-auto p-1">
+                                            <div className="relative pl-6">
+                                                {/* Vertical line */}
+                                                <div className="absolute left-9 top-0 h-full w-0.5 bg-border -translate-x-1/2"></div>
+                                                
+                                                <div className="space-y-8">
+                                                    {mockPastVisits.map((visit, index) => (
+                                                        <div key={index} className="relative">
+                                                            <div className="absolute top-0 left-9 -translate-x-1/2 w-4 h-4 bg-primary rounded-full border-4 border-background"></div>
+                                                            <div className="pl-12">
+                                                                <Card>
+                                                                    <CardHeader className="pb-3">
+                                                                        <CardTitle className="text-lg">{visit.reason}</CardTitle>
+                                                                        <CardDescription className="flex items-center gap-2"><Calendar className="w-3 h-3"/> {visit.date}</CardDescription>
+                                                                    </CardHeader>
+                                                                    <CardContent className="space-y-3">
+                                                                        <div>
+                                                                            <h4 className="font-semibold text-xs mb-1">Doctor&apos;s Notes</h4>
+                                                                            <p className="text-xs text-muted-foreground bg-muted p-2 rounded-md">{visit.notes}</p>
+                                                                        </div>
+                                                                         <div className="flex gap-2">
+                                                                            {visit.report && <Button variant="outline" size="sm" className="h-7"><FileSpreadsheet className="w-3 h-3 mr-2"/>{visit.report}</Button>}
+                                                                            {visit.prescription && <Button variant="outline" size="sm" className="h-7"><ClipboardPlus className="w-3 h-3 mr-2"/>{visit.prescription}</Button>}
+                                                                        </div>
+                                                                    </CardContent>
+                                                                </Card>
+                                                            </div>
+                                                        </div>
                                                     ))}
-                                                </TableBody>
-                                            </Table>
+                                                </div>
+                                            </div>
                                         </TabsContent>
                                         <TabsContent value="reports" className="mt-4 space-y-4">
                                             <Card>
@@ -319,7 +342,7 @@ export default function DoctorDashboardPage() {
                 </Card>
                  <Card>
                     <CardHeader>
-                        <CardTitle className="flex items-center gap-2"><BrainCircuit className="w-6 h-6 text-primary"/> AI Smart Assistant</CardTitle>
+                        <CardTitle className="flex items-center gap-2"><BrainCircuit className="w-6 h-6 text-primary"/> Smart Assistant</CardTitle>
                         <CardDescription>Your AI-powered co-pilot for smarter consultations.</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
