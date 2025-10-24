@@ -18,6 +18,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Calendar } from '@/components/ui/calendar'
 import { type DateRange } from "react-day-picker"
 import { addDays, format } from "date-fns"
+import { Badge } from '@/components/ui/badge'
 
 
 interface DoctorProfileData {
