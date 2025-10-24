@@ -49,8 +49,9 @@ export default function CureOnboardingPage() {
 
     const handleNextStep = () => {
         if (currentStep === 1) {
-            if (!formData.hospitalName || !formData.hospitalRegNo || !formData.hospitalType || !formData.location) {
-                toast({ variant: 'destructive', title: "Incomplete Details", description: "Please fill all fields in this step and set a location." });
+            const isHospital = formData.hospitalType.includes('Hospital');
+            if (!formData.hospitalName || !formData.hospitalType || !formData.location || (isHospital && !formData.hospitalRegNo)) {
+                toast({ variant: 'destructive', title: "Incomplete Details", description: "Please fill all required fields and set a location." });
                 return;
             }
         }
@@ -71,7 +72,7 @@ export default function CureOnboardingPage() {
 
         const { hospitalName, hospitalRegNo, hospitalType, contactPerson, phone, pan, gst, location } = formData;
 
-        if (!hospitalName || !hospitalRegNo || !hospitalType || !contactPerson || !phone || !pan || !location) {
+        if (!hospitalName || !hospitalType || !contactPerson || !phone || !pan || !location) {
             toast({ variant: 'destructive', title: "Incomplete Form", description: "Please ensure all steps are filled out correctly." });
             setIsLoading(false);
             return;
@@ -98,7 +99,7 @@ export default function CureOnboardingPage() {
                 return;
             }
 
-            const partnerId = `CZC-${phone.slice(-4)}${hospitalRegNo.replace(/\s/g, '').slice(-4).toUpperCase()}`
+            const partnerId = `CZC-${phone.slice(-4)}${(hospitalRegNo || 'CLINIC').replace(/\s/g, '').slice(-4).toUpperCase()}`
             
             await addDoc(collection(db, "ambulances"), {
                 partnerId,
@@ -133,21 +134,15 @@ export default function CureOnboardingPage() {
         }
     }
     
+    const isHospitalFlow = formData.hospitalType.includes('Hospital');
+
     const renderStepContent = () => {
         switch (currentStep) {
             case 1:
                 return (
                     <div className="space-y-6">
-                        <div className="space-y-2">
-                            <Label htmlFor="hospitalName">Hospital / Clinic Name</Label>
-                            <Input id="hospitalName" value={formData.hospitalName} onChange={e => handleInputChange('hospitalName', e.target.value)} required />
-                        </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div className="space-y-2">
-                                <Label htmlFor="hospitalRegNo">Registration Certificate No.</Label>
-                                <Input id="hospitalRegNo" value={formData.hospitalRegNo} onChange={e => handleInputChange('hospitalRegNo', e.target.value)} required />
-                            </div>
-                            <div className="space-y-2">
+                             <div className="space-y-2">
                                 <Label htmlFor="hospitalType">Facility Type</Label>
                                 <Select value={formData.hospitalType} onValueChange={(v) => handleInputChange('hospitalType', v)} required>
                                     <SelectTrigger id="hospitalType"><SelectValue placeholder="Select type" /></SelectTrigger>
@@ -160,6 +155,17 @@ export default function CureOnboardingPage() {
                                     </SelectContent>
                                 </Select>
                             </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="hospitalName">{isHospitalFlow ? 'Hospital Name' : 'Clinic Name'}</Label>
+                                <Input id="hospitalName" value={formData.hospitalName} onChange={e => handleInputChange('hospitalName', e.target.value)} required />
+                            </div>
+                           
+                            {isHospitalFlow && (
+                                <div className="space-y-2 md:col-span-2">
+                                    <Label htmlFor="hospitalRegNo">Hospital Registration Certificate No.</Label>
+                                    <Input id="hospitalRegNo" value={formData.hospitalRegNo} onChange={e => handleInputChange('hospitalRegNo', e.target.value)} required={isHospitalFlow} />
+                                </div>
+                            )}
                         </div>
                          <div className="space-y-2">
                             <Label htmlFor="address">Set Your Facility Location</Label>
@@ -197,10 +203,10 @@ export default function CureOnboardingPage() {
                          <div className="space-y-2">
                            <Label>Required Documents (Upload will be enabled after verification)</Label>
                            <ul className="text-sm text-muted-foreground list-disc pl-5 space-y-1">
-                               <li>Facility Registration Certificate</li>
+                               {isHospitalFlow && <li>Facility Registration Certificate</li>}
+                               {!isHospitalFlow && <li>Doctor's Registration Certificate</li>}
+                               <li>Business PAN Card</li>
                                <li>Fire &amp; Safety Certificate (if applicable)</li>
-                               <li>Ambulance RC Book &amp; Fitness Certificate for all vehicles</li>
-                               <li>Driver&apos;s License for all ambulance drivers</li>
                            </ul>
                         </div>
                     </div>
@@ -258,4 +264,3 @@ export default function CureOnboardingPage() {
         </div>
     );
 }
-
