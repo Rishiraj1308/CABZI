@@ -121,7 +121,7 @@ export default function DoctorLayout({ children }: { children: React.ReactNode }
                 const sessionData = JSON.parse(sessionString);
                 setUserName(sessionData.name);
                 setHospitalId(sessionData.hospitalId);
-                // Correctly use the document ID from session, not the readable partnerId
+                // Correctly use the document ID from session
                 setDoctorId(sessionData.id); 
             } catch (error) {
                 console.error("Failed to parse session, redirecting", error);
