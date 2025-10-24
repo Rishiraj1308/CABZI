@@ -10,7 +10,7 @@ import { Search, Calendar as CalendarIcon, Settings } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useDb } from '@/firebase/client-provider'
-import { collection, query, where, onSnapshot, Timestamp, orderBy } from 'firebase/firestore'
+import { collection, query, where, onSnapshot, Timestamp, orderBy, doc, updateDoc } from 'firebase/firestore'
 import { useToast } from '@/hooks/use-toast'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
@@ -25,7 +25,7 @@ interface Appointment {
     id: string;
     patientName: string;
     patientPhone: string;
-    appointmentDate: string;
+    appointmentDate: Timestamp;
     appointmentTime: string;
     status: 'Confirmed' | 'Pending' | 'Cancelled' | 'Completed' | 'In Queue';
     isRecurring: boolean;
@@ -57,18 +57,25 @@ export default function DoctorAppointmentsPage() {
         }
         
         const { name } = JSON.parse(session);
+        const doctorFullName = `Dr. ${name}`;
         
-        const mockAppointments: Appointment[] = [
-            { id: 'APT001', patientName: 'Priya Singh', patientPhone: '9876543210', doctorName: 'Dr. Ramesh Sharma', department: 'Cardiology', appointmentDate: '2024-09-10T11:00:00', appointmentTime: '11:00 AM', status: 'Pending', isRecurring: true },
-            { id: 'APT002', patientName: 'Rajesh Verma', patientPhone: '9988776655', doctorName: name, department: 'Orthopedics', appointmentDate: '2024-09-10T14:00:00', appointmentTime: '02:00 PM', status: 'Confirmed', isRecurring: false },
-            { id: 'APT003', patientName: 'Anita Desai', patientPhone: '9123456789', doctorName: name, department: 'General Physician', appointmentDate: '2024-08-25T10:00:00', appointmentTime: '10:00 AM', status: 'Completed', isRecurring: false },
-            { id: 'APT004', patientName: 'Suresh Kumar', patientPhone: '9876543211', doctorName: 'Dr. Priya Gupta', appointmentDate: '2024-09-11T16:00:00', appointmentTime: '04:00 PM', status: 'Cancelled', isRecurring: false },
-            { id: 'APT005', patientName: 'Geeta Iyer', patientPhone: '9876543212', doctorName: name, appointmentDate: '2024-09-12T09:30:00', appointmentTime: '09:30 AM', status: 'Confirmed', isRecurring: false },
-        ];
-        
-        setAppointments(mockAppointments.filter(a => a.doctorName === name));
-        setIsLoading(false);
+        const q = query(
+            collection(db, "appointments"), 
+            where("doctorName", "==", doctorFullName),
+            orderBy("appointmentDate", "desc")
+        );
 
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            const apptsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Appointment));
+            setAppointments(apptsData);
+            setIsLoading(false);
+        }, (error) => {
+            console.error("Error fetching appointments:", error);
+            toast({ variant: 'destructive', title: "Error", description: "Could not fetch appointment data." });
+            setIsLoading(false);
+        });
+
+        return () => unsubscribe();
     }, [db, toast]);
 
     const filteredAppointments = useMemo(() => {
@@ -77,22 +84,44 @@ export default function DoctorAppointmentsPage() {
             .filter(a => a.patientName.toLowerCase().includes(searchQuery.toLowerCase()));
     }, [appointments, searchQuery, statusFilter]);
 
-    const handleAppointmentAction = (appt: Appointment, action: 'confirm' | 'check-in' | 'cancel' | 'reschedule') => {
-      if (action === 'cancel') {
-          setAppointments(prev => prev.map(a => a.id === appt.id ? {...a, status: 'Cancelled'} : a));
-          toast({ variant: 'destructive', title: 'Appointment Cancelled', description: `Appointment for ${appt.patientName} has been cancelled.`});
-      } else if (action === 'confirm') {
-          setAppointments(prev => prev.map(a => a.id === appt.id ? {...a, status: 'Confirmed'} : a));
-          toast({ title: 'Appointment Confirmed', description: `Appointment for ${appt.patientName} has been confirmed.`});
-      } else if (action === 'check-in') {
-          setAppointments(prev => prev.map(a => a.id === appt.id ? {...a, status: 'In Queue'} : a));
-          toast({ title: 'Patient Checked In', description: `${appt.patientName} is now in the queue.`});
-      }
+    const handleAppointmentAction = async (apptId: string, action: 'confirm' | 'check-in' | 'cancel' | 'complete') => {
+        if(!db) return;
+        const apptRef = doc(db, 'appointments', apptId);
+        
+        let newStatus: Appointment['status'] = 'Pending';
+        let toastTitle = '';
+        
+        switch(action) {
+            case 'confirm':
+                newStatus = 'Confirmed';
+                toastTitle = 'Appointment Confirmed';
+                break;
+            case 'check-in':
+                newStatus = 'In Queue';
+                toastTitle = 'Patient Checked In';
+                break;
+            case 'cancel':
+                newStatus = 'Cancelled';
+                toastTitle = 'Appointment Cancelled';
+                break;
+             case 'complete':
+                newStatus = 'Completed';
+                toastTitle = 'Consultation Marked Complete';
+                break;
+        }
+
+        try {
+            await updateDoc(apptRef, { status: newStatus });
+            toast({ title: toastTitle });
+        } catch (error) {
+             toast({ variant: 'destructive', title: 'Action Failed' });
+        }
+
       setIsManageAppointmentOpen(false);
   }
 
-  const handleRescheduleSubmit = () => {
-    if (!selectedAppointment || !newDate || !newTime) {
+  const handleRescheduleSubmit = async () => {
+    if (!selectedAppointment || !newDate || !newTime || !db) {
       toast({ variant: 'destructive', title: 'Incomplete', description: 'Please select a new date and time.'});
       return;
     }
@@ -100,13 +129,18 @@ export default function DoctorAppointmentsPage() {
     const [hours, minutes] = newTime.split(/[: ]/);
     newDateTime.setHours(newTime.includes('PM') ? parseInt(hours, 10) + 12 : parseInt(minutes, 10), parseInt(minutes, 10), 0);
 
-    setAppointments(prev => prev.map(appt => 
-      appt.id === selectedAppointment.id 
-      ? { ...appt, appointmentDate: newDateTime.toISOString(), appointmentTime: newTime, status: 'Confirmed' } 
-      : appt
-    ));
-    
-    toast({ title: 'Appointment Rescheduled!', description: `Appointment for ${selectedAppointment.patientName} is now on ${format(newDateTime, 'PPP')} at ${newTime}.` });
+    const apptRef = doc(db, 'appointments', selectedAppointment.id);
+    try {
+        await updateDoc(apptRef, { 
+            appointmentDate: Timestamp.fromDate(newDateTime), 
+            appointmentTime: newTime,
+            status: 'Confirmed'
+        });
+        toast({ title: 'Appointment Rescheduled!', description: `Appointment for ${selectedAppointment.patientName} is now on ${format(newDateTime, 'PPP')} at ${newTime}.` });
+    } catch(e) {
+        toast({ variant: 'destructive', title: 'Reschedule Failed'});
+    }
+
     setIsManageAppointmentOpen(false);
   }
 
@@ -189,7 +223,7 @@ export default function DoctorAppointmentsPage() {
                                 <TableRow key={appt.id}>
                                     <TableCell className="font-medium">{appt.patientName}</TableCell>
                                     <TableCell>
-                                        <div>{new Date(appt.appointmentDate).toLocaleDateString()}</div>
+                                        <div>{appt.appointmentDate.toDate().toLocaleDateString()}</div>
                                         <div className="text-xs text-muted-foreground">{appt.appointmentTime}</div>
                                     </TableCell>
                                     <TableCell>{getStatusBadge(appt.status)}</TableCell>
@@ -238,7 +272,9 @@ export default function DoctorAppointmentsPage() {
                                                     </div>
                                                     <Button className="w-full mt-4" onClick={handleRescheduleSubmit}>Confirm Reschedule</Button>
                                                 </div>
-                                                <DialogFooter className="border-t pt-4">
+                                                <DialogFooter className="border-t pt-4 space-y-2 sm:space-y-0">
+                                                     {selectedAppointment && selectedAppointment.status === 'Pending' && <Button className="w-full" onClick={() => handleAppointmentAction(selectedAppointment.id, 'confirm')}>Confirm Appointment</Button>}
+                                                     {selectedAppointment && selectedAppointment.status === 'Confirmed' && <Button className="w-full" variant="secondary" onClick={() => handleAppointmentAction(selectedAppointment.id, 'check-in')}>Check-in Patient</Button>}
                                                      <AlertDialog>
                                                          <AlertDialogTrigger asChild>
                                                             <Button variant="destructive" className="w-full">Cancel Appointment</Button>
@@ -247,7 +283,7 @@ export default function DoctorAppointmentsPage() {
                                                             <AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle><AlertDialogDescription>This action will cancel the appointment for {selectedAppointment?.patientName}.</AlertDialogDescription></AlertDialogHeader>
                                                             <AlertDialogFooter>
                                                                 <AlertDialogCancel>Go Back</AlertDialogCancel>
-                                                                <AlertDialogAction onClick={() => selectedAppointment && handleAppointmentAction(selectedAppointment, 'cancel')} className="bg-destructive hover:bg-destructive/90">Yes, Cancel</AlertDialogAction>
+                                                                <AlertDialogAction onClick={() => selectedAppointment && handleAppointmentAction(selectedAppointment.id, 'cancel')} className="bg-destructive hover:bg-destructive/90">Yes, Cancel</AlertDialogAction>
                                                             </AlertDialogFooter>
                                                         </AlertDialogContent>
                                                      </AlertDialog>
