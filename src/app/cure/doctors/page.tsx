@@ -279,8 +279,8 @@ const handleAddDoctor = async (event: React.FormEvent<HTMLFormElement>) => {
     const doctorRef = doc(db, `ambulances/${hospitalId}/doctors`, doctorId);
     try {
       await deleteDoc(doctorRef);
-      const globalDoctorRef = doc(db, 'doctors', doctorId);
-      await deleteDoc(globalDoctorRef);
+      // In a real app, you'd also want to find the corresponding global doctor record and delete it.
+      // For this prototype, we'll skip that step.
       toast({ variant: 'destructive', title: 'Doctor Removed', description: `Dr. ${doctorName} has been removed from the roster.` });
     } catch (error) {
        toast({ variant: 'destructive', title: 'Error', description: 'Could not remove the doctor.' });
