@@ -43,6 +43,14 @@ export default function CureOnboardingPage() {
         gst: '',
         location: null as { address: string; coords: { lat: number; lon: number; }; } | null,
     });
+
+    useEffect(() => {
+        if (currentStep === 1 && mapRef.current) {
+            setTimeout(() => {
+                mapRef.current?.locate();
+            }, 500);
+        }
+    }, [currentStep]);
     
     const handleInputChange = (field: keyof typeof formData, value: string | { address: string; coords: { lat: number; lon: number; }; } | null) => {
         setFormData(prev => ({...prev, [field]: value}));
