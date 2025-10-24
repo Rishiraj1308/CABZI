@@ -2,7 +2,7 @@
 'use client'
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Calendar, User, Clock, CheckCircle } from 'lucide-react';
+import { Calendar, User, Clock, CheckCircle, Percent } from 'lucide-react';
 
 const mockAppointments = [
   { time: '10:00 AM', patient: 'Priya Sharma', status: 'Confirmed' },
@@ -16,13 +16,13 @@ export default function DoctorDashboardPage() {
     <div className="space-y-6">
        <div>
         <h2 className="text-3xl font-bold tracking-tight">Doctor&apos;s Dashboard</h2>
-        <p className="text-muted-foreground">Welcome back, Doctor. Here&apos;s your schedule for today.</p>
+        <p className="text-muted-foreground">Welcome back, Doctor. Here&apos;s your snapshot for today.</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
         <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium">Today&apos;s Appointments</CardTitle>
+                <CardTitle className="text-sm font-medium">Today’s Appointments</CardTitle>
                 <Calendar className="w-4 h-4 text-muted-foreground"/>
             </CardHeader>
             <CardContent>
@@ -32,12 +32,12 @@ export default function DoctorDashboardPage() {
         </Card>
         <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium">New Patients</CardTitle>
+                <CardTitle className="text-sm font-medium">New Patients Today</CardTitle>
                 <User className="w-4 h-4 text-muted-foreground"/>
             </CardHeader>
             <CardContent>
                 <div className="text-2xl font-bold">4</div>
-                <p className="text-xs text-muted-foreground">New consultations today</p>
+                <p className="text-xs text-muted-foreground">New consultations scheduled</p>
             </CardContent>
         </Card>
         <Card>
@@ -48,6 +48,26 @@ export default function DoctorDashboardPage() {
             <CardContent>
                 <div className="text-2xl font-bold">15 min</div>
                 <p className="text-xs text-muted-foreground">Maintained from last week</p>
+            </CardContent>
+        </Card>
+        <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium">Pending Follow-Ups</CardTitle>
+                <Calendar className="w-4 h-4 text-muted-foreground"/>
+            </CardHeader>
+            <CardContent>
+                <div className="text-2xl font-bold">3</div>
+                <p className="text-xs text-muted-foreground">Scheduled for today</p>
+            </CardContent>
+        </Card>
+        <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium">Completion Rate</CardTitle>
+                <Percent className="w-4 h-4 text-muted-foreground"/>
+            </CardHeader>
+            <CardContent>
+                <div className="text-2xl font-bold">95%</div>
+                <p className="text-xs text-muted-foreground">Today's consultation completion</p>
             </CardContent>
         </Card>
       </div>
