@@ -152,7 +152,7 @@ export default function CureOnboardingPage() {
                 partnerId: partnerId,
                 services: selectedServices,
                 location: new GeoPoint(location!.lat, location!.lon),
-                businessType: formData.clinicType,
+                clinicType: formData.clinicType, // Corrected field name
                 name: formData.clinicName,
                 phone: formData.clinicPhone,
                 type: 'cure',
@@ -284,7 +284,7 @@ export default function CureOnboardingPage() {
                          <div className="flex items-center space-x-2 pt-4">
                             <Checkbox id="terms" checked={formData.agreedToTerms} onCheckedChange={(checked) => setFormData(prev => ({...prev, agreedToTerms: !!checked}))} />
                             <Label htmlFor="terms" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                              I agree to Cabzi&apos;s terms & conditions and consent to the verification of all documents and credentials provided.
+                              I agree to Cabzi's terms & conditions and consent to the verification of all documents and credentials provided.
                             </Label>
                         </div>
                     </div>
@@ -326,5 +326,3 @@ export default function CureOnboardingPage() {
         </div>
     );
 }
-
-    
