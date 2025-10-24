@@ -36,24 +36,43 @@ const mockNotifications = [
 function DoctorNav() {
   const pathname = usePathname()
   return (
-    <nav className="grid items-start gap-1 px-4 text-sm font-medium md:flex md:flex-row md:items-center md:gap-5 md:px-0">
+    <nav className="hidden md:flex items-center space-x-6 text-sm font-medium">
       {navItems.map((item) => (
         <Link
           key={item.href}
           href={item.href}
           className={cn(
-            'flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary md:p-0',
-            pathname === item.href && 'text-primary'
+            'transition-colors hover:text-primary',
+            pathname === item.href ? 'text-primary font-semibold' : 'text-muted-foreground'
           )}
-          legacyBehavior>
-          <>
-            <item.icon className="h-4 w-4 md:hidden" />
-            {item.label}
-          </>
+        >
+          {item.label}
         </Link>
       ))}
     </nav>
   );
+}
+
+function DoctorNavMobile({setOpen}: {setOpen: (open: boolean) => void}) {
+    const pathname = usePathname();
+    return (
+        <nav className="grid gap-2 text-lg font-medium p-4">
+             {navItems.map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={() => setOpen(false)}
+                  className={cn(
+                    'flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary',
+                    pathname === item.href && 'bg-muted text-primary'
+                  )}
+                >
+                  <item.icon className="h-5 w-5" />
+                  {item.label}
+                </Link>
+              ))}
+        </nav>
+    )
 }
 
 function ThemeToggle() {
@@ -77,6 +96,7 @@ function ThemeToggle() {
 }
 
 export default function DoctorLayout({ children }: { children: React.ReactNode }) {
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
   const [userName, setUserName] = useState('');
@@ -122,7 +142,7 @@ export default function DoctorLayout({ children }: { children: React.ReactNode }
   return (
     <div className="flex min-h-screen w-full flex-col">
       <header className="sticky top-0 flex h-16 items-center gap-4 border-b bg-background/95 backdrop-blur-sm px-4 md:px-6 z-50">
-         <nav className="hidden flex-col gap-6 text-lg font-medium md:flex md:flex-row md:items-center md:gap-5 lg:gap-6">
+         <div className="flex items-center gap-6">
            <Link
              href="#"
              className="flex items-center gap-2 text-lg font-semibold md:text-base"
@@ -132,15 +152,14 @@ export default function DoctorLayout({ children }: { children: React.ReactNode }
              <span className="ml-2 text-xs font-semibold px-2 py-1 rounded-full bg-blue-500/20 text-blue-600">Doctor</span>
             </a>
            </Link>
-            <div className="w-px bg-border h-6 mx-2"></div>
             <DoctorNav />
-         </nav>
-         <Sheet>
+         </div>
+         <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
            <SheetTrigger asChild>
              <Button
                variant="outline"
                size="icon"
-               className="shrink-0 md:hidden"
+               className="shrink-0 md:hidden ml-auto"
              >
                <PanelLeft className="h-5 w-5" />
                <span className="sr-only">Toggle navigation menu</span>
@@ -155,11 +174,11 @@ export default function DoctorLayout({ children }: { children: React.ReactNode }
                     </a>
                  </Link>
               </div>
-              <DoctorNav />
+              <DoctorNavMobile setOpen={setIsMobileMenuOpen} />
            </SheetContent>
          </Sheet>
-         <div className="flex w-full items-center gap-4 md:ml-auto md:gap-2 lg:gap-4">
-            <div className="ml-auto flex-1 sm:flex-initial"></div>
+         <div className="flex w-full items-center gap-4 md:ml-auto md:gap-2 lg:gap-4 justify-end">
+            <div className="ml-auto flex-1 sm:flex-initial md:hidden"></div>
             <ThemeToggle/>
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
