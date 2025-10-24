@@ -1,7 +1,7 @@
 
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card'
@@ -30,6 +30,7 @@ export default function CureOnboardingPage() {
     const [isLoading, setIsLoading] = useState(false)
     const [currentStep, setCurrentStep] = useState(1);
     const totalSteps = 3;
+    const mapRef = useRef<any>(null);
     
     // Form state
     const [formData, setFormData] = useState({
@@ -170,7 +171,7 @@ export default function CureOnboardingPage() {
                          <div className="space-y-2">
                             <Label htmlFor="address">Set Your Facility Location</Label>
                              <div className="h-64 w-full rounded-md overflow-hidden border">
-                                <LiveMap onLocationFound={(addr, coords) => handleInputChange('location', { address: addr, coords })} />
+                                <LiveMap ref={mapRef} onLocationFound={(addr, coords) => handleInputChange('location', { address: addr, coords })} />
                             </div>
                             {formData.location && <p className="text-sm text-green-600 font-medium text-center">Location Set: {formData.location.address}</p>}
                         </div>
