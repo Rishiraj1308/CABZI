@@ -76,7 +76,7 @@ function AvailabilityToggle({ hospitalId, doctorId }: { hospitalId: string | nul
 
     const handleToggle = async (checked: boolean) => {
         if (!db || !hospitalId || !doctorId) {
-            toast({ variant: 'destructive', title: 'Error', description: 'Could not update availability.' });
+            toast({ variant: 'destructive', title: 'Error', description: 'Could not update availability. Session details missing.' });
             return;
         }
         const doctorRef = doc(db, `ambulances/${hospitalId}/doctors`, doctorId);
@@ -87,6 +87,7 @@ function AvailabilityToggle({ hospitalId, doctorId }: { hospitalId: string | nul
                 description: checked ? "You will appear for new bookings." : "You won't receive new booking requests.",
             });
         } catch (error) {
+            console.error("Availability toggle error:", error);
             toast({ variant: 'destructive', title: 'Update Failed' });
         }
     };
@@ -120,7 +121,8 @@ export default function DoctorLayout({ children }: { children: React.ReactNode }
                 const sessionData = JSON.parse(sessionString);
                 setUserName(sessionData.name);
                 setHospitalId(sessionData.hospitalId);
-                setDoctorId(sessionData.partnerId); // Assuming partnerId is the doc id
+                // Correctly use the document ID from session, not the readable partnerId
+                setDoctorId(sessionData.id); 
             } catch (error) {
                 console.error("Failed to parse session, redirecting", error);
                 localStorage.removeItem('cabzi-doctor-session');
