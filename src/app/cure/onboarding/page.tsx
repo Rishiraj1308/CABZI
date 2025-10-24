@@ -12,7 +12,7 @@ import Link from 'next/link'
 import BrandLogo from '@/components/brand-logo'
 import { db } from '@/lib/firebase'
 import { collection, addDoc, serverTimestamp, GeoPoint, query, where, getDocs, limit } from "firebase/firestore";
-import { ArrowLeft, PlusCircle, Trash2, UploadCloud } from 'lucide-react'
+import { ArrowLeft, PlusCircle, Trash2 } from 'lucide-react'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Progress } from '@/components/ui/progress'
 import { Textarea } from '@/components/ui/textarea'
@@ -25,6 +25,11 @@ const LiveMap = dynamic(() => import('@/components/live-map'), {
     loading: () => <Skeleton className="w-full h-[200px]" />,
     forwardRef: true
 } as any);
+
+const doctorSpecializations = [
+  'Cardiology', 'Neurology', 'Orthopedics', 'Pediatrics', 'Oncology', 
+  'Gastroenterology', 'General Physician', 'Dermatology', 'ENT Specialist'
+];
 
 
 export default function CureOnboardingPage() {
@@ -61,7 +66,7 @@ export default function CureOnboardingPage() {
     });
     
     const [doctors, setDoctors] = useState([
-        { fullName: '', qualifications: '', regNumber: '', experience: '', consultationFee: '' }
+        { fullName: '', qualifications: '', specialization: '', regNumber: '', experience: '', consultationFee: '' }
     ]);
 
     useEffect(() => {
@@ -80,15 +85,14 @@ export default function CureOnboardingPage() {
         setFormData(prev => ({...prev, [name]: value}));
     }
     
-    const handleDoctorChange = (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
-        const { name, value } = e.target;
+    const handleDoctorChange = (index: number, field: string, value: string) => {
         const newDoctors = [...doctors];
-        newDoctors[index] = { ...newDoctors[index], [name]: value };
+        (newDoctors[index] as any)[field] = value;
         setDoctors(newDoctors);
     }
     
     const addDoctor = () => {
-        setDoctors([...doctors, { fullName: '', qualifications: '', regNumber: '', experience: '', consultationFee: '' }]);
+        setDoctors([...doctors, { fullName: '', qualifications: '', specialization: '', regNumber: '', experience: '', consultationFee: '' }]);
     }
 
     const removeDoctor = (index: number) => {
@@ -185,7 +189,19 @@ export default function CureOnboardingPage() {
                     <div className="space-y-6">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="space-y-2"><Label htmlFor="clinicName">Clinic / Hospital Name*</Label><Input id="clinicName" name="clinicName" value={formData.clinicName} onChange={handleInputChange} required /></div>
-                            <div className="space-y-2"><Label htmlFor="clinicType">Facility Type*</Label><Select name="clinicType" required onValueChange={v => handleSelectChange('clinicType', v)} value={formData.clinicType}><SelectTrigger><SelectValue placeholder="Select type"/></SelectTrigger><SelectContent><SelectItem value="Clinic">Clinic</SelectItem><SelectItem value="Specialist Clinic">Specialist Clinic</SelectItem><SelectItem value="Diagnostic Center">Diagnostic Center</SelectItem><SelectItem value="Private Hospital">Private Hospital</SelectItem><SelectItem value="Government Hospital">Government Hospital</SelectItem></SelectContent></Select></div>
+                            <div className="space-y-2">
+                                <Label htmlFor="clinicType">Facility Type*</Label>
+                                <Select name="clinicType" required onValueChange={v => handleSelectChange('clinicType', v)} value={formData.clinicType}>
+                                    <SelectTrigger><SelectValue placeholder="Select type"/></SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="Clinic">Clinic</SelectItem>
+                                        <SelectItem value="Specialist Clinic">Specialist Clinic</SelectItem>
+                                        <SelectItem value="Diagnostic Center">Diagnostic Center</SelectItem>
+                                        <SelectItem value="Private Hospital">Private Hospital</SelectItem>
+                                        <SelectItem value="Government Hospital">Government Hospital</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
                             <div className="space-y-2"><Label htmlFor="clinicPhone">Contact Number*</Label><Input id="clinicPhone" name="clinicPhone" type="tel" value={formData.clinicPhone} onChange={handleInputChange} required /></div>
                             <div className="space-y-2"><Label htmlFor="email">Email ID</Label><Input id="email" name="email" type="email" value={formData.email} onChange={handleInputChange} /></div>
                         </div>
@@ -193,7 +209,7 @@ export default function CureOnboardingPage() {
                             <Label>Set Facility Location*</Label>
                             <CardDescription>Drag the map to pin your exact location.</CardDescription>
                             <div className="h-48 w-full rounded-md overflow-hidden border">
-                                <LiveMap ref={mapRef} onLocationFound={(addr, coords) => setFormData(prev => ({ ...prev, address: addr, location: coords }))} />
+                                <LiveMap ref={mapRef} onLocationFound={(addr: any, coords: any) => setFormData(prev => ({ ...prev, address: addr, location: coords }))} />
                             </div>
                             <Button type="button" className="w-full" onClick={handleLocationSelect}>Confirm My Location on Map</Button>
                             {formData.address && <p className="text-sm text-green-600 font-medium text-center">{formData.address}</p>}
@@ -222,11 +238,21 @@ export default function CureOnboardingPage() {
                                     {index > 0 && <Button variant="destructive" size="icon" onClick={() => removeDoctor(index)}><Trash2 className="w-4 h-4"/></Button>}
                                 </div>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                     <div className="space-y-1"><Label>Full Name*</Label><Input name="fullName" value={doctor.fullName} onChange={e => handleDoctorChange(index, e)} required/></div>
-                                     <div className="space-y-1"><Label>Qualifications*</Label><Input name="qualifications" placeholder="MBBS, MD" value={doctor.qualifications} onChange={e => handleDoctorChange(index, e)} required/></div>
-                                     <div className="space-y-1"><Label>Medical Registration No.*</Label><Input name="regNumber" value={doctor.regNumber} onChange={e => handleDoctorChange(index, e)} required/></div>
-                                     <div className="space-y-1"><Label>Years of Experience*</Label><Input name="experience" type="number" value={doctor.experience} onChange={e => handleDoctorChange(index, e)} required/></div>
-                                     <div className="md:col-span-2 space-y-1"><Label>Consultation Fees (Optional)</Label><Input name="consultationFee" type="number" placeholder="e.g., 800" value={doctor.consultationFee} onChange={e => handleDoctorChange(index, e)} /></div>
+                                     <div className="space-y-1"><Label>Full Name*</Label><Input name="fullName" value={doctor.fullName} onChange={e => handleDoctorChange(index, e.target.name, e.target.value)} required/></div>
+                                     <div className="space-y-1"><Label>Qualifications*</Label><Input name="qualifications" placeholder="MBBS, MD" value={doctor.qualifications} onChange={e => handleDoctorChange(index, e.target.name, e.target.value)} required/></div>
+                                     <div className="space-y-1"><Label>Specialization*</Label>
+                                        <Select name="specialization" required onValueChange={(value) => handleDoctorChange(index, 'specialization', value)} value={doctor.specialization}>
+                                            <SelectTrigger><SelectValue placeholder="Select Specialization"/></SelectTrigger>
+                                            <SelectContent>
+                                                {doctorSpecializations.map(spec => (
+                                                    <SelectItem key={spec} value={spec}>{spec}</SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                     </div>
+                                     <div className="space-y-1"><Label>Medical Registration No.*</Label><Input name="regNumber" value={doctor.regNumber} onChange={e => handleDoctorChange(index, e.target.name, e.target.value)} required/></div>
+                                     <div className="space-y-1"><Label>Years of Experience*</Label><Input name="experience" type="number" value={doctor.experience} onChange={e => handleDoctorChange(index, e.target.name, e.target.value)} required/></div>
+                                     <div className="space-y-1"><Label>Consultation Fees (Optional)</Label><Input name="consultationFee" type="number" placeholder="e.g., 800" value={doctor.consultationFee} onChange={e => handleDoctorChange(index, e.target.name, e.target.value)} /></div>
                                 </div>
                             </Card>
                         ))}
