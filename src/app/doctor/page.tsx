@@ -5,11 +5,12 @@ import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, User, Clock, CheckCircle, Percent, Video, Building, FileText, PlayCircle, Plus, UploadCloud, Search, History } from 'lucide-react';
+import { Calendar, User, Clock, CheckCircle, Percent, Video, Building, FileText, PlayCircle, Plus, UploadCloud, Search, History, BrainCircuit, AlertTriangle } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 const mockDashboardStats = {
     todayAppointments: 12,
@@ -229,6 +230,26 @@ export default function DoctorDashboardPage() {
                                 <span className="text-xs">{action.title}</span>
                             </Button>
                         ))}
+                    </CardContent>
+                </Card>
+                 <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2"><BrainCircuit className="w-6 h-6 text-primary"/> AI Smart Assistant</CardTitle>
+                        <CardDescription>Your AI-powered co-pilot for smarter consultations.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                         <Alert variant="destructive" className="bg-amber-500/10 border-amber-500/30 text-amber-700 dark:text-amber-300">
+                            <AlertTriangle className="h-4 w-4 text-amber-500" />
+                            <AlertTitle>Under Development</AlertTitle>
+                            <AlertDescription>
+                                This feature is coming soon and will be powered by Genkit AI.
+                            </AlertDescription>
+                        </Alert>
+                        <ul className="text-sm text-muted-foreground list-disc pl-5 space-y-1">
+                            <li>Auto-summarize last 5 consultations.</li>
+                            <li>Get symptom-based diagnosis suggestions.</li>
+                            <li>Autofill smart prescription templates.</li>
+                        </ul>
                     </CardContent>
                 </Card>
             </div>
