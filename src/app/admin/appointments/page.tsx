@@ -8,6 +8,9 @@ import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Search, CalendarCheck } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
+import { useFirestore } from '@/firebase/client-provider'
+import { collection, query, orderBy, onSnapshot, Timestamp } from 'firebase/firestore'
+import { useToast } from '@/hooks/use-toast'
 
 interface Appointment {
     id: string;
@@ -15,32 +18,37 @@ interface Appointment {
     hospitalName: string;
     department: string;
     doctorName: string;
-    appointmentDate: string;
+    appointmentDate: Timestamp;
     appointmentTime: string;
-    status: 'Confirmed' | 'Pending' | 'Cancelled';
+    status: 'Confirmed' | 'Pending' | 'Cancelled' | 'Completed' | 'In Queue';
 }
-
-// Mock data until Firestore collection is implemented
-const mockAppointments: Appointment[] = [
-    { id: 'APT001', patientName: 'Priya Singh', hospitalName: 'Max Healthcare, Saket', department: 'Cardiology', doctorName: 'Dr. Sharma', appointmentDate: '2024-09-10', appointmentTime: '11:00 AM', status: 'Confirmed' },
-    { id: 'APT002', patientName: 'Rajesh Verma', hospitalName: 'Apollo Hospital, Sarita Vihar', department: 'Orthopedics', doctorName: 'Dr. Gupta', appointmentDate: '2024-09-10', appointmentTime: '02:00 PM', status: 'Confirmed' },
-    { id: 'APT003', patientName: 'Anita Desai', hospitalName: 'Fortis Escorts, Okhla', department: 'General Physician', doctorName: 'Dr. Verma', appointmentDate: '2024-09-11', appointmentTime: '10:00 AM', status: 'Pending' },
-    { id: 'APT004', patientName: 'Suresh Kumar', hospitalName: 'Max Healthcare, Saket', department: 'Neurology', doctorName: 'Dr. Reddy', appointmentDate: '2024-09-11', appointmentTime: '04:00 PM', status: 'Cancelled' },
-];
-
 
 export default function AdminAppointmentsPage() {
     const [appointments, setAppointments] = useState<Appointment[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
+    const db = useFirestore();
+    const { toast } = useToast();
     
-    // Simulate fetching data
     useEffect(() => {
-        setTimeout(() => {
-            setAppointments(mockAppointments);
+        if (!db) {
             setIsLoading(false);
-        }, 1000);
-    }, []);
+            return;
+        }
+
+        const q = query(collection(db, 'appointments'), orderBy('appointmentDate', 'desc'));
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            const apptsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Appointment));
+            setAppointments(apptsData);
+            setIsLoading(false);
+        }, (error) => {
+            console.error("Error fetching appointments:", error);
+            toast({ variant: 'destructive', title: "Error", description: "Could not fetch appointments."});
+            setIsLoading(false);
+        });
+
+        return () => unsubscribe();
+    }, [db, toast]);
 
     const filteredAppointments = useMemo(() => {
         if (!searchQuery) {
@@ -55,9 +63,11 @@ export default function AdminAppointmentsPage() {
 
     const getStatusBadge = (status: Appointment['status']) => {
         switch (status) {
-            case 'Confirmed': return <Badge className="bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-200">{status}</Badge>;
+            case 'Confirmed': return <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200">{status}</Badge>;
             case 'Pending': return <Badge className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-200">{status}</Badge>;
             case 'Cancelled': return <Badge variant="destructive">{status}</Badge>;
+            case 'Completed': return <Badge className="bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-200">{status}</Badge>;
+            case 'In Queue': return <Badge className="bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-200">In Queue</Badge>;
             default: return <Badge variant="secondary">{status}</Badge>;
         }
     }
@@ -114,7 +124,7 @@ export default function AdminAppointmentsPage() {
                                         <div className="text-xs text-muted-foreground">{appt.doctorName} ({appt.department})</div>
                                     </TableCell>
                                     <TableCell>
-                                        <div>{appt.appointmentDate}</div>
+                                        <div>{appt.appointmentDate?.toDate().toLocaleDateString() || 'N/A'}</div>
                                         <div className="text-xs text-muted-foreground">{appt.appointmentTime}</div>
                                     </TableCell>
                                     <TableCell>{getStatusBadge(appt.status)}</TableCell>

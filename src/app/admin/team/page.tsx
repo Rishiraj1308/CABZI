@@ -27,17 +27,9 @@ interface AdminUser {
     icon: React.ElementType;
 }
 
-const initialAdmins: AdminUser[] = [
-    { id: 'ADM001', name: 'Ankit Kumar', email: 'ankit.k@cabzi.com', role: 'Platform Owner', status: 'Active', salary: 'Equity', equity: '50%', icon: UserCog },
-    { id: 'ADM002', name: 'Bhaskar Sharma', email: 'bhaskar.s@cabzi.com', role: 'Co-founder', status: 'Active', salary: 'Equity', equity: '50%', icon: UserCog },
-    { id: 'ADM003', name: 'Alok Singh', email: 'alok.s@cabzi.com', role: 'Manager', status: 'Active', salary: '₹90,000', icon: Briefcase },
-    { id: 'ADM004', name: 'Priya Sharma', email: 'priya.s@cabzi.com', role: 'Support Staff', status: 'Active', salary: '₹40,000', icon: User },
-    { id: 'ADM005', name: 'Rahul Verma', email: 'rahul.v@cabzi.com', role: 'Tech Intern', status: 'Active', salary: '₹25,000', icon: Code },
-    { id: 'ADM006', name: 'AI Assistant', email: 'ai.support@cabzi.com', role: 'AI Assistant', status: 'Active', salary: 'API Credits', icon: Bot },
-]
 
 export default function AdminTeamPage() {
-  const [admins, setAdmins] = useState(initialAdmins);
+  const [admins, setAdmins] = useState<AdminUser[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [loggedInUserRole, setLoggedInUserRole] = useState<AdminRole | undefined>(undefined); 
   const { toast } = useToast();
@@ -49,12 +41,24 @@ export default function AdminTeamPage() {
   const [newAdminEquity, setNewAdminEquity] = useState('');
 
   useEffect(() => {
+    // In a real app, this would fetch from Firestore.
+    // Since this page is for demonstration of RBAC, we will keep mock data
+    // but initialize it inside useEffect.
+    const initialAdmins: AdminUser[] = [
+        { id: 'ADM001', name: 'Ankit Kumar', email: 'ankit.k@cabzi.com', role: 'Platform Owner', status: 'Active', salary: 'Equity', equity: '50%', icon: UserCog },
+        { id: 'ADM002', name: 'Bhaskar Sharma', email: 'bhaskar.s@cabzi.com', role: 'Co-founder', status: 'Active', salary: 'Equity', equity: '50%', icon: UserCog },
+        { id: 'ADM003', name: 'Alok Singh', email: 'alok.s@cabzi.com', role: 'Manager', status: 'Active', salary: '₹90,000', icon: Briefcase },
+        { id: 'ADM004', name: 'Priya Sharma', email: 'priya.s@cabzi.com', role: 'Support Staff', status: 'Active', salary: '₹40,000', icon: User },
+        { id: 'ADM005', name: 'Rahul Verma', email: 'rahul.v@cabzi.com', role: 'Tech Intern', status: 'Active', salary: '₹25,000', icon: Code },
+        { id: 'ADM006', name: 'AI Assistant', email: 'ai.support@cabzi.com', role: 'AI Assistant', status: 'Active', salary: 'API Credits', icon: Bot },
+    ];
+    setAdmins(initialAdmins);
+
     const session = localStorage.getItem('cabzi-session');
     if (session) {
         const parsedSession = JSON.parse(session);
         setLoggedInUserRole(parsedSession.adminRole); 
     } else {
-        // Default to a low-privilege role if session is not found, for safety.
         setLoggedInUserRole('Support Staff');
     }
   }, []);
@@ -99,7 +103,6 @@ export default function AdminTeamPage() {
     setAdmins(prev => [...prev, newAdmin]);
     toast({ title: 'Member Added', description: `${newAdminName} has been added to the team.` });
     
-    // Reset form
     setNewAdminName('');
     setNewAdminEmail('');
     setNewAdminRole('');
@@ -130,7 +133,7 @@ export default function AdminTeamPage() {
         <div>
             <CardTitle>Team & Access Control</CardTitle>
             <CardDescription>
-                Manage your organization&apos;s members, roles, and equity stakes.
+                Manage your organization's members, roles, and equity stakes.
             </CardDescription>
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
@@ -202,47 +205,55 @@ export default function AdminTeamPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {admins.map((admin) => (
-              <TableRow key={admin.id}>
-                <TableCell>
-                    <div className="font-medium">{admin.name}</div>
-                    <div className="text-muted-foreground text-xs">{admin.email}</div>
-                </TableCell>
-                <TableCell>
-                    <div className="flex items-center gap-2">
-                        <admin.icon className="h-4 w-4 text-muted-foreground" />
-                        <span>{admin.role}</span>
-                    </div>
-                </TableCell>
-                 {isFounder && <TableCell className="font-mono">{admin.salary}</TableCell>}
-                 {isFounder && (
-                    <TableCell className="font-mono">
-                        {admin.equity ? (
-                            <div className="flex items-center gap-1">
-                                <Percent className="w-3 h-3 text-muted-foreground"/> {admin.equity}
-                            </div>
-                        ) : 'N/A'}
-                    </TableCell>
-                 )}
-                <TableCell>{getStatusBadge(admin.status)}</TableCell>
-                <TableCell className="text-right">
-                   <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" className="h-8 w-8 p-0" disabled={admin.role === 'Platform Owner' || !canManageTeam}>
-                          <span className="sr-only">Open menu</span>
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                        <DropdownMenuItem>Edit Details</DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem className="text-destructive">Remove Member</DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                </TableCell>
-              </TableRow>
-            ))}
+            {admins.length > 0 ? (
+              admins.map((admin) => (
+                <TableRow key={admin.id}>
+                  <TableCell>
+                      <div className="font-medium">{admin.name}</div>
+                      <div className="text-muted-foreground text-xs">{admin.email}</div>
+                  </TableCell>
+                  <TableCell>
+                      <div className="flex items-center gap-2">
+                          <admin.icon className="h-4 w-4 text-muted-foreground" />
+                          <span>{admin.role}</span>
+                      </div>
+                  </TableCell>
+                   {isFounder && <TableCell className="font-mono">{admin.salary}</TableCell>}
+                   {isFounder && (
+                      <TableCell className="font-mono">
+                          {admin.equity ? (
+                              <div className="flex items-center gap-1">
+                                  <Percent className="w-3 h-3 text-muted-foreground"/> {admin.equity}
+                              </div>
+                          ) : 'N/A'}
+                      </TableCell>
+                   )}
+                  <TableCell>{getStatusBadge(admin.status)}</TableCell>
+                  <TableCell className="text-right">
+                     <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" className="h-8 w-8 p-0" disabled={admin.role === 'Platform Owner' || !canManageTeam}>
+                            <span className="sr-only">Open menu</span>
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                          <DropdownMenuItem>Edit Details</DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem className="text-destructive">Remove Member</DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                  </TableCell>
+                </TableRow>
+              ))
+            ) : (
+                <TableRow>
+                  <TableCell colSpan={isFounder ? 6 : 4} className="h-24 text-center">
+                    No team members found.
+                  </TableCell>
+                </TableRow>
+            )}
           </TableBody>
         </Table>
       </CardContent>

@@ -18,7 +18,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
+} from "@/components/ui/alert-dialog"
 import {
   Dialog,
   DialogContent,
@@ -33,7 +33,9 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { Label } from '@/components/ui/label';
-
+import { useFirebase } from '@/firebase/client-provider';
+import { collection, query, where, onSnapshot, doc, updateDoc, Timestamp } from 'firebase/firestore';
+import { Skeleton } from '@/components/ui/skeleton';
 
 type AppointmentStatus = 'Confirmed' | 'Pending' | 'Completed' | 'Cancelled';
 
@@ -41,38 +43,11 @@ interface Appointment {
     id: string;
     doctorName: string;
     specialization: string;
-    hospital: string;
-    date: string;
+    hospitalName: string;
+    appointmentDate: Timestamp;
     status: AppointmentStatus;
 }
 
-
-const initialAppointments: Appointment[] = [
-    { 
-        id: 'apt1', 
-        doctorName: 'Dr. Ramesh Sharma', 
-        specialization: 'Cardiology', 
-        hospital: 'Max Healthcare, Saket',
-        date: '2024-09-10T11:00:00',
-        status: 'Confirmed'
-    },
-    { 
-        id: 'apt2', 
-        doctorName: 'Dr. Priya Gupta', 
-        specialization: 'Orthopedics',
-        hospital: 'Apollo Hospital, Sarita Vihar',
-        date: '2024-09-12T14:00:00',
-        status: 'Pending'
-    },
-     { 
-        id: 'apt3', 
-        doctorName: 'Dr. Alok Verma', 
-        specialization: 'General Physician',
-        hospital: 'Fortis Escorts, Okhla',
-        date: '2024-08-25T10:00:00',
-        status: 'Completed'
-    },
-];
 
 const timeSlots = [
   '09:00 AM', '10:00 AM', '11:00 AM', '12:00 PM', '02:00 PM', '03:00 PM', '04:00 PM'
@@ -81,53 +56,82 @@ const timeSlots = [
 
 export default function MyAppointmentsPage() {
     const { toast } = useToast();
-    const [appointments, setAppointments] = useState(initialAppointments);
+    const [appointments, setAppointments] = useState<Appointment[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
     const [isRescheduleOpen, setIsRescheduleOpen] = useState(false);
     const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
     const [newDate, setNewDate] = useState<Date | undefined>(new Date());
     const [newTime, setNewTime] = useState('');
+    const { db, user } = useFirebase();
 
-    const handleCancelAppointment = (appointmentId: string) => {
-        setAppointments(prev => prev.map(appt => 
-            appt.id === appointmentId ? { ...appt, status: 'Cancelled' as const } : appt
-        ));
-        toast({
-            variant: 'destructive',
-            title: "Appointment Cancelled",
-            description: "Your appointment has been successfully cancelled."
-        });
+    useEffect(() => {
+      if (!db || !user) {
+        setIsLoading(false);
+        return;
+      }
+      
+      const q = query(collection(db, 'appointments'), where('patientId', '==', user.uid));
+      const unsubscribe = onSnapshot(q, (snapshot) => {
+        const apptsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Appointment));
+        setAppointments(apptsData);
+        setIsLoading(false);
+      }, (error) => {
+        console.error("Error fetching appointments:", error);
+        toast({ variant: 'destructive', title: "Error", description: "Could not fetch your appointments." });
+        setIsLoading(false);
+      });
+
+      return () => unsubscribe();
+    }, [db, user, toast]);
+
+    const handleCancelAppointment = async (appointmentId: string) => {
+        if (!db) return;
+        const apptRef = doc(db, 'appointments', appointmentId);
+        try {
+            await updateDoc(apptRef, { status: 'Cancelled' });
+            toast({
+                variant: 'destructive',
+                title: "Appointment Cancelled",
+                description: "Your appointment has been successfully cancelled."
+            });
+        } catch (error) {
+            toast({ variant: 'destructive', title: "Error", description: "Could not cancel the appointment." });
+        }
     };
     
-    const handleRescheduleAppointment = () => {
-        if (!selectedAppointment || !newDate || !newTime) {
+    const handleRescheduleAppointment = async () => {
+        if (!selectedAppointment || !newDate || !newTime || !db) {
             toast({ variant: 'destructive', title: "Incomplete", description: "Please select a new date and time."});
             return;
         }
 
         const newDateTime = new Date(newDate);
         const [hours, minutes] = newTime.split(/[: ]/);
-        newDateTime.setHours(newTime.includes('PM') ? parseInt(hours, 10) + 12 : parseInt(minutes, 10), parseInt(minutes, 10), 0);
+        newDateTime.setHours(newTime.includes('PM') && parseInt(hours, 10) !== 12 ? parseInt(hours, 10) + 12 : parseInt(hours, 10), parseInt(minutes, 10));
 
-        setAppointments(prev => prev.map(appt => 
-            appt.id === selectedAppointment.id ? { ...appt, date: newDateTime.toISOString(), status: 'Confirmed' } : appt
-        ));
-
-        toast({
-            title: "Appointment Rescheduled!",
-            description: `Your appointment with Dr. ${selectedAppointment.doctorName} is now on ${format(newDateTime, 'PPP')} at ${newTime}.`,
-            className: 'bg-green-600 border-green-600 text-white'
-        });
+        const apptRef = doc(db, 'appointments', selectedAppointment.id);
         
-        setIsRescheduleOpen(false);
-        setSelectedAppointment(null);
-        setNewDate(new Date());
-        setNewTime('');
+        try {
+             await updateDoc(apptRef, { 
+                appointmentDate: Timestamp.fromDate(newDateTime),
+                appointmentTime: newTime,
+                status: 'Pending' // Re-set to pending for re-confirmation
+            });
+            toast({
+                title: "Appointment Rescheduled!",
+                description: `Your appointment with ${selectedAppointment.doctorName} is now requested for ${format(newDateTime, 'PPP')} at ${newTime}.`,
+            });
+            setIsRescheduleOpen(false);
+            setSelectedAppointment(null);
+        } catch (error) {
+            toast({ variant: 'destructive', title: "Update Failed", description: "Could not reschedule appointment." });
+        }
     }
 
     const openRescheduleDialog = (appointment: Appointment) => {
         setSelectedAppointment(appointment);
-        setNewDate(new Date(appointment.date));
-        setNewTime(format(new Date(appointment.date), 'hh:mm a'));
+        setNewDate(appointment.appointmentDate.toDate());
+        setNewTime(''); // Reset time selection
         setIsRescheduleOpen(true);
     };
 
@@ -140,8 +144,6 @@ export default function MyAppointmentsPage() {
             default: return <Badge variant="secondary">{status}</Badge>;
         }
     }
-    
-    const hasActiveAppointment = appointments.some(appt => appt.status === 'Confirmed' || appt.status === 'Pending');
     
     return (
         <div className="p-4 md:p-6 space-y-6">
@@ -163,11 +165,14 @@ export default function MyAppointmentsPage() {
             </div>
             
             <div className="space-y-4 animate-fade-in">
-                {appointments.map(appt => (
+                {isLoading ? (
+                    Array.from({ length: 2 }).map((_, i) => <Skeleton key={i} className="h-40 w-full" />)
+                ) : appointments.length > 0 ? (
+                    appointments.map(appt => (
                     <Card key={appt.id}>
                         <CardHeader className="flex flex-row items-start justify-between">
                             <div>
-                                <CardTitle className="flex items-center gap-2"><Stethoscope className="w-5 h-5 text-primary"/> Dr. {appt.doctorName}</CardTitle>
+                                <CardTitle className="flex items-center gap-2"><Stethoscope className="w-5 h-5 text-primary"/> {appt.doctorName}</CardTitle>
                                 <CardDescription>{appt.specialization}</CardDescription>
                             </div>
                             {getStatusBadge(appt.status)}
@@ -175,11 +180,11 @@ export default function MyAppointmentsPage() {
                         <CardContent>
                              <div className="flex items-center gap-2 text-sm text-muted-foreground">
                                 <Hospital className="w-4 h-4"/>
-                                <span>{appt.hospital}</span>
+                                <span>{appt.hospitalName}</span>
                             </div>
                             <div className="flex items-center gap-2 text-sm text-muted-foreground mt-2">
                                 <Clock className="w-4 h-4"/>
-                                <span>{new Date(appt.date).toLocaleString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: 'numeric', minute: 'numeric', hour12: true })}</span>
+                                <span>{appt.appointmentDate.toDate().toLocaleString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: 'numeric', minute: 'numeric', hour12: true })}</span>
                             </div>
                         </CardContent>
                         {['Confirmed', 'Pending'].includes(appt.status) && (
@@ -193,7 +198,7 @@ export default function MyAppointmentsPage() {
                                         <AlertDialogHeader>
                                             <AlertDialogTitle>Are you sure you want to cancel?</AlertDialogTitle>
                                             <AlertDialogDescription>
-                                                This action cannot be undone. Your appointment with Dr. {appt.doctorName} will be cancelled.
+                                                This action cannot be undone. Your appointment with {appt.doctorName} will be cancelled.
                                             </AlertDialogDescription>
                                         </AlertDialogHeader>
                                         <AlertDialogFooter>
@@ -210,9 +215,7 @@ export default function MyAppointmentsPage() {
                             </CardFooter>
                         )}
                     </Card>
-                ))}
-                
-                {appointments.length === 0 && (
+                ))) : (
                     <Card className="h-48 flex items-center justify-center">
                         <div className="text-center">
                             <p className="text-muted-foreground mb-4">You have no appointments booked.</p>
@@ -231,7 +234,7 @@ export default function MyAppointmentsPage() {
                     <DialogHeader>
                         <DialogTitle>Reschedule Appointment</DialogTitle>
                         <DialogDescription>
-                            Select a new date and time for your appointment with Dr. {selectedAppointment?.doctorName}.
+                            Select a new date and time for your appointment with {selectedAppointment?.doctorName}.
                         </DialogDescription>
                     </DialogHeader>
                     <div className="space-y-4 py-4">
