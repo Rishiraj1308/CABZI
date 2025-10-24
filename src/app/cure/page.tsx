@@ -30,8 +30,8 @@ export default function CureDashboardPage() {
                 const unsub = onSnapshot(doc(db, 'ambulances', partnerId), (docSnap) => {
                     if (docSnap.exists()) {
                         const data = docSnap.data();
-                        // Make logic more robust: default to hospital unless explicitly 'clinic'
-                        const type = data.businessType?.toLowerCase() || 'hospital';
+                        // Correctly read 'clinicType' instead of 'businessType'
+                        const type = data.clinicType?.toLowerCase() || 'hospital';
                         
                         if (type.includes('clinic')) {
                             setFacilityType('clinic');
@@ -39,7 +39,6 @@ export default function CureDashboardPage() {
                             setFacilityType('hospital');
                         }
                     } else {
-                        // Handle case where document doesn't exist
                         toast({ variant: 'destructive', title: 'Error', description: 'Partner profile not found.' });
                     }
                     setIsLoading(false);
