@@ -6,15 +6,17 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Skeleton } from '@/components/ui/skeleton'
 import { useToast } from '@/hooks/use-toast'
 import { useDb } from '@/firebase/client-provider'
-import { collection, query, where, getDocs } from 'firebase/firestore'
+import { collection, query, where, getDocs, doc, updateDoc } from 'firebase/firestore'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
-import { Stethoscope, Briefcase, BadgeCheck, Hospital } from 'lucide-react'
+import { Stethoscope, Briefcase, BadgeCheck, Hospital, Clock, Settings, Bell, KeyRound } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
+import { Switch } from '@/components/ui/switch'
 
 interface DoctorProfileData {
+    id: string;
     name: string;
     phone: string;
     partnerId: string;
@@ -22,6 +24,7 @@ interface DoctorProfileData {
     specialization: string;
     qualifications: string;
     experience: string;
+    isAvailable: boolean;
 }
 
 export default function DoctorProfilePage() {
@@ -29,7 +32,7 @@ export default function DoctorProfilePage() {
     const [isLoading, setIsLoading] = useState(true);
     const { toast } = useToast();
     const db = useDb();
-
+    
     useEffect(() => {
         if (!db) {
             setIsLoading(false);
@@ -38,13 +41,17 @@ export default function DoctorProfilePage() {
         const session = localStorage.getItem('cabzi-doctor-session');
         if (session) {
             const { partnerId } = JSON.parse(session);
-            // In a real app, we would query the specific hospital's doctor subcollection.
-            // For now, we assume a global `doctors` collection.
+            // This assumes doctor documents are stored in a top-level `doctors` collection.
+            // A more robust implementation might query a hospital's subcollection.
             const q = query(collection(db, "doctors"), where("partnerId", "==", partnerId));
             
             getDocs(q).then(querySnapshot => {
                 if (!querySnapshot.empty) {
-                    setProfile(querySnapshot.docs[0].data() as DoctorProfileData);
+                    const docData = querySnapshot.docs[0].data();
+                    setProfile({
+                        id: querySnapshot.docs[0].id,
+                        ...docData
+                    } as DoctorProfileData);
                 } else {
                     toast({ variant: 'destructive', title: 'Error', description: 'Could not find your profile.' });
                 }
@@ -58,13 +65,26 @@ export default function DoctorProfilePage() {
         }
     }, [toast, db]);
 
+    const handleAvailabilityToggle = async (isAvailable: boolean) => {
+        if (!profile || !db) return;
+        
+        const doctorRef = doc(db, 'doctors', profile.id);
+        try {
+            await updateDoc(doctorRef, { isAvailable });
+            setProfile(prev => prev ? { ...prev, isAvailable } : null);
+            toast({
+                title: isAvailable ? 'You are now Online' : 'You are now Offline',
+                description: isAvailable ? 'You will now appear for new appointment bookings.' : 'You will not be visible for new bookings.',
+            });
+        } catch (error) {
+             toast({ variant: 'destructive', title: 'Update Failed' });
+        }
+    }
+
     const getInitials = (name: string) => {
         if (!name) return 'Dr';
         const names = name.split(' ');
-        if (names.length > 1) {
-            return `Dr. ${names[names.length - 1][0]}`;
-        }
-        return `Dr. ${name.substring(0, 1)}`;
+        return names.length > 1 ? `Dr. ${names[names.length - 1][0]}` : `Dr. ${name.substring(0, 1)}`;
     }
     
     if (isLoading) {
@@ -95,12 +115,12 @@ export default function DoctorProfilePage() {
                 <CardHeader>
                     <div className="flex items-center gap-4">
                         <Avatar className="w-16 h-16 border-2 border-primary">
-                            <AvatarImage src="https://i.pravatar.cc/100?u=doctor-profile" alt={profile?.name} data-ai-hint="doctor portrait"/>
-                            <AvatarFallback>{getInitials(profile?.name || '').toUpperCase()}</AvatarFallback>
+                            <AvatarImage src="https://i.pravatar.cc/100?u=doctor-profile" alt={profile.name} data-ai-hint="doctor portrait"/>
+                            <AvatarFallback>{getInitials(profile.name).toUpperCase()}</AvatarFallback>
                         </Avatar>
                         <div>
-                            <CardTitle className="text-2xl">Dr. {profile?.name}</CardTitle>
-                            <CardDescription>Partner ID: {profile?.partnerId}</CardDescription>
+                            <CardTitle className="text-2xl">Dr. {profile.name}</CardTitle>
+                            <CardDescription>Partner ID: {profile.partnerId}</CardDescription>
                         </div>
                     </div>
                 </CardHeader>
@@ -108,16 +128,35 @@ export default function DoctorProfilePage() {
                     <div className="grid md:grid-cols-2 gap-4">
                         <div className="space-y-2">
                             <Label>Contact Number</Label>
-                            <Input value={profile?.phone} disabled />
+                            <Input value={profile.phone} disabled />
                         </div>
                         <div className="space-y-2">
                             <Label>Primary Hospital</Label>
                             <div className="flex items-center gap-2 p-2 bg-muted rounded-md h-10">
                                 <Hospital className="w-4 h-4 text-muted-foreground"/>
-                                <span className="font-semibold">{profile?.hospitalName}</span>
+                                <span className="font-semibold">{profile.hospitalName}</span>
                             </div>
                         </div>
                     </div>
+                </CardContent>
+            </Card>
+            
+            <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2"><Settings className="w-5 h-5 text-primary"/> Availability &amp; Settings</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                     <div className="flex items-center justify-between p-4 border rounded-lg">
+                        <div>
+                            <Label htmlFor="availability-switch" className="font-semibold text-lg">My Availability</Label>
+                            <p className="text-sm text-muted-foreground">Toggle this to appear for new appointment bookings.</p>
+                        </div>
+                        <Switch id="availability-switch" checked={profile.isAvailable} onCheckedChange={handleAvailabilityToggle} />
+                    </div>
+                    <Button variant="outline" className="w-full">
+                        <Clock className="mr-2 h-4 w-4"/>
+                        Manage My Working Hours &amp; Schedule
+                    </Button>
                 </CardContent>
             </Card>
 
@@ -142,6 +181,31 @@ export default function DoctorProfilePage() {
                  <CardFooter>
                     <Button variant="outline">Update My Profile (Requires Admin Approval)</Button>
                 </CardFooter>
+            </Card>
+
+             <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2"><Bell className="w-5 h-5 text-primary"/> Notification Preferences</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                     <div className="flex items-center justify-between">
+                        <Label htmlFor="new-appointment-notif">New Appointment Requests</Label>
+                        <Switch id="new-appointment-notif" defaultChecked />
+                    </div>
+                     <div className="flex items-center justify-between">
+                        <Label htmlFor="cancellation-notif">Cancellations &amp; Reschedules</Label>
+                        <Switch id="cancellation-notif" defaultChecked />
+                    </div>
+                </CardContent>
+            </Card>
+
+            <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2"><KeyRound className="w-5 h-5 text-primary"/> Security</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <Button variant="outline" className="w-full">Change Password</Button>
+                </CardContent>
             </Card>
         </div>
     );
