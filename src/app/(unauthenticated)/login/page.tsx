@@ -78,7 +78,8 @@ export default function LoginPage() {
 
   const [step, setStep] = useState<'login' | 'details' | 'otp'>('login');
   
-  const [identifier, setIdentifier] = useState(searchParams.get('email') || '');
+  const [identifier, setIdentifier] = useState(searchParams.get('phone') || '');
+  const [inputType, setInputType] = useState<'email' | 'phone' | 'partnerId' | 'none'>('none');
   
   const [password, setPassword] = useState('')
   const [otp, setOtp] = useState('')
@@ -95,6 +96,19 @@ export default function LoginPage() {
   useEffect(() => {
     setIsMounted(true);
   }, []);
+
+  useEffect(() => {
+    if (identifier.includes('@')) {
+      setInputType('email');
+    } else if (/^\d{1,10}$/.test(identifier)) {
+      setInputType('phone');
+    } else if (identifier.startsWith('CZD') || identifier.startsWith('CZA') || identifier.startsWith('CZR')) {
+        setInputType('partnerId');
+    }
+     else {
+      setInputType('none');
+    }
+  }, [identifier]);
 
   const handleAdminLogin = (e: React.FormEvent<HTMLFormElement>) => {
       e.preventDefault();
@@ -124,74 +138,94 @@ export default function LoginPage() {
     const isPartnerLogin = ['driver', 'mechanic', 'cure', 'doctor', 'ambulance'].includes(roleFromQuery);
     
     const partnerCollections = [
-        { name: 'partners', role: 'driver' },
-        { name: 'mechanics', role: 'mechanic' },
-        { name: 'ambulances', role: 'cure' },
-        { name: 'doctors', role: 'doctor' },
-        { name: 'ambulanceDrivers', role: 'ambulance' },
+        { name: 'partners', role: 'driver', identifier: 'phone' },
+        { name: 'mechanics', role: 'mechanic', identifier: 'phone' },
+        { name: 'ambulances', role: 'cure', identifier: 'phone' },
+        { name: 'ambulanceDrivers', role: 'ambulance', identifier: 'partnerId' },
+        { name: 'doctors', role: 'doctor', identifier: 'partnerId' },
     ];
-    const userCollections = [{ name: 'users', role: 'user' }];
+    const userCollections = [{ name: 'users', role: 'user', identifier: 'phone' }];
+
+    const collectionsToSearch = isPartnerLogin 
+        ? [...partnerCollections, ...userCollections] 
+        : [...userCollections, ...partnerCollections];
     
-    const collectionsToSearch = isPartnerLogin ? partnerCollections : userCollections;
+    let searchIdentifier: string | undefined;
+    let identifierField: 'email' | 'phone' | 'partnerId' = 'email';
 
-    for (const { name: colName, role } of collectionsToSearch) {
-        // Create multiple queries for each possible identifier
-        const queries = [
-            query(collection(db, colName), where("phone", "==", identifier), limit(1)),
-            query(collection(db, colName), where("email", "==", identifier), limit(1)),
-            query(collection(db, colName), where("partnerId", "==", identifier), limit(1)),
-        ];
+    if (inputType === 'partnerId') {
+        searchIdentifier = identifier;
+        identifierField = 'partnerId';
+    } else if (user.email) {
+        searchIdentifier = user.email;
+        identifierField = 'email';
+    } else if (user.phoneNumber) {
+        searchIdentifier = user.phoneNumber.replace('+91', '');
+        identifierField = 'phone';
+    } else if (inputType === 'phone' && identifier) {
+        searchIdentifier = identifier;
+        identifierField = 'phone';
+    }
+    
+    if (!searchIdentifier) return false;
 
-        for (const q of queries) {
-             const snapshot = await getDocs(q);
+    for (const { name: colName, role, identifier: idField } of collectionsToSearch) {
+        
+        let q;
+        if (role === 'doctor') {
+            q = query(collectionGroup(db, 'doctors'), where(idField, "==", searchIdentifier), limit(1));
+        } else {
+            q = query(collection(db, colName), where(idField, "==", searchIdentifier), limit(1));
+        }
+        
+        const snapshot = await getDocs(q);
 
-            if (!snapshot.empty) {
-                const userDoc = snapshot.docs[0];
-                const userData = userDoc.data();
+        if (!snapshot.empty) {
+            const userDoc = snapshot.docs[0];
+            const userData = userDoc.data();
 
-                // If a partner is trying to log in via the user flow, skip to the next collection
-                if (roleFromQuery === 'user' && partnerCollections.some(p => p.role === role)) {
-                    continue;
-                }
-                
-                // Password check is required for all partner logins
-                if (isPartnerLogin && userData.password !== password) {
-                    toast({ variant: 'destructive', title: 'Incorrect Password' });
-                    return false;
-                }
-                
-                let localStorageKey = 'cabzi-session';
-                if (role === 'mechanic') localStorageKey = 'cabzi-resq-session';
-                if (role === 'cure') localStorageKey = 'cabzi-cure-session';
-                if (role === 'ambulance') localStorageKey = 'cabzi-ambulance-session';
-                if (role === 'doctor') localStorageKey = 'cabzi-doctor-session';
-
-                const sessionData: any = { 
-                    role: role,
-                    phone: userData.phone, 
-                    email: userData.email,
-                    name: userData.name,
-                    partnerId: userData.partnerId || userDoc.id,
-                };
-                
-                 if (role === 'doctor' || role === 'ambulance') {
-                    const pathParts = userDoc.ref.path.split('/');
-                    if (pathParts.length >= 2) {
-                        sessionData.hospitalId = pathParts[1];
-                    }
-                }
-
-                localStorage.setItem(localStorageKey, JSON.stringify(sessionData));
-                
-                toast({ title: "Login Successful" });
-                router.push(`/${role}`);
-                return true;
+             if (isPartnerLogin && role === 'user') {
+                continue; 
             }
+            
+            // Password check for partnerId or email logins
+            if ((inputType === 'partnerId' || inputType === 'email') && userData.password !== password) {
+                toast({ variant: 'destructive', title: 'Incorrect Password' });
+                return false;
+            }
+            
+            const sessionData: any = { 
+                role: role,
+                phone: userData.phone, 
+                email: userData.email,
+                name: userData.name,
+                partnerId: userData.partnerId,
+            };
+
+            if (role === 'doctor' || role === 'ambulance') {
+                const pathParts = userDoc.ref.path.split('/');
+                if (pathParts.length >= 2) {
+                    sessionData.hospitalId = pathParts[1];
+                }
+            }
+
+            let localStorageKey = 'cabzi-session';
+            let redirectPath = `/${role}`;
+            
+            if (role === 'mechanic') localStorageKey = 'cabzi-resq-session';
+            if (role === 'cure') localStorageKey = 'cabzi-cure-session';
+            if (role === 'ambulance') localStorageKey = 'cabzi-ambulance-session';
+            if (role === 'doctor') localStorageKey = 'cabzi-doctor-session';
+            
+            localStorage.setItem(localStorageKey, JSON.stringify(sessionData));
+            
+            toast({ title: "Login Successful" });
+            router.push(redirectPath);
+            return true;
         }
     }
     
-    // Fallback logic if no user/partner is found
-     if (roleFromQuery === 'user' && !identifier.startsWith('CZ')) {
+    if (roleFromQuery === 'user' && inputType !== 'partnerId') {
         setStep('details');
         return true; 
     } else {
@@ -204,17 +238,13 @@ export default function LoginPage() {
     e.preventDefault();
     setIsLoading(true);
 
-    const isPhoneNumber = /^\d{10}$/.test(identifier);
-
-    if (isPhoneNumber && roleFromQuery === 'user') {
+    if (inputType === 'phone') {
       await handlePhoneSubmit();
     } else {
-       await findAndSetSession({ uid: '', email: null, phoneNumber: null });
+      await findAndSetSession({ uid: '', email: identifier, phoneNumber: '' });
     }
-    
     setIsLoading(false);
   }
-
 
   const handlePhoneSubmit = async () => {
     if (!auth || !identifier || !recaptchaContainerRef.current) return;
@@ -259,31 +289,40 @@ export default function LoginPage() {
       try {
           let user = auth.currentUser;
 
+          if (!user && inputType === 'email') {
+              user = (await createUserWithEmailAndPassword(auth, identifier, password)).user;
+          }
+
           if (!user) {
-              // This flow is for phone OTP. If email login needs creation, it needs separate logic.
-              // For simplicity, we assume phone OTP flow leads here.
-              toast({ variant: 'destructive', title: 'Authentication Error', description: 'User not authenticated. Please try again.' });
+              toast({ variant: 'destructive', title: 'Authentication Error', description: 'User session not found. Please try logging in again.' });
               setIsLoading(false);
+              setStep('login');
               return;
           }
 
           const newUserRef = doc(db, "users", user.uid);
           await setDoc(newUserRef, {
               name,
-              phone: user.phoneNumber ? user.phoneNumber.replace('+91','') : identifier,
+              email: user.email || (inputType === 'email' ? identifier : null),
+              phone: user.phoneNumber ? user.phoneNumber.replace('+91','') : (inputType === 'phone' ? identifier : null),
               gender,
               role: 'user', 
               createdAt: serverTimestamp(),
               isOnline: false,
           });
   
-          localStorage.setItem('cabzi-session', JSON.stringify({ role: 'user', phone: user.phoneNumber, name, gender, userId: user.uid }));
+          localStorage.setItem('cabzi-session', JSON.stringify({ role: 'user', email: user.email, name, gender, userId: user.uid }));
           toast({ title: "Account Created!", description: "Welcome to Cabzi! Redirecting...", className: "bg-green-600 text-white border-green-600" });
           router.push('/user');
   
       } catch (error: any) {
           console.error("Error creating new user:", error);
-          toast({ variant: 'destructive', title: 'Registration Failed', description: error.message || 'Could not create your account.' });
+          if (error.code === 'auth/email-already-in-use') {
+              toast({ variant: 'destructive', title: 'Registration Failed', description: 'This email is already in use. Please log in.' });
+              setStep('login');
+          } else {
+              toast({ variant: 'destructive', title: 'Registration Failed', description: error.message || 'Could not create your account.' });
+          }
       } finally {
           setIsLoading(false);
       }
@@ -296,6 +335,7 @@ export default function LoginPage() {
     try {
         const result = await signInWithPopup(auth, provider);
         setIdentifier(result.user.email || ''); 
+        setInputType('email');
         await findAndSetSession(result.user);
 
     } catch (error: any) {
@@ -319,7 +359,7 @@ export default function LoginPage() {
       if (roleFromQuery === 'admin') return 'Please enter your credentials to access the panel.'
       if (step === 'details') return 'Just one more step! Please provide your details.'
       if (step === 'otp') return `Enter the 6-digit code sent to +91 ${identifier}`
-       if (isPartnerFlow) return `Enter your Partner ID, Phone, or Email to log in.`
+       if (isPartnerFlow) return `Enter your credentials to log in.`
       return `Sign in or create an account to get started.`
   };
   
@@ -330,9 +370,6 @@ export default function LoginPage() {
   };
 
   const renderForms = () => {
-    const isPartnerFlow = ['driver', 'mechanic', 'cure', 'doctor', 'ambulance'].includes(roleFromQuery);
-    const isPhoneNumber = /^\d{10}$/.test(identifier);
-
     if (roleFromQuery === 'admin') {
       return (
         <motion.div key="admin" variants={formVariants}>
@@ -354,12 +391,14 @@ export default function LoginPage() {
     }
 
     if (step === 'login') {
+        const isPartnerFlow = ['driver', 'mechanic', 'cure', 'doctor', 'ambulance'].includes(roleFromQuery);
+        
         return (
           <motion.div key="login" variants={formVariants}>
             <div className="space-y-4">
                 <form onSubmit={handleIdentifierSubmit} className="space-y-4">
                      <div className="space-y-2">
-                        <Label htmlFor="identifier">{isPartnerFlow ? "Partner ID, Email, or Phone" : "Email or Phone Number"}</Label>
+                        <Label htmlFor="identifier">{isPartnerFlow ? "Partner ID, Email, or Phone" : 'Email or Phone Number'}</Label>
                         <Input 
                             id="identifier" 
                             name="identifier" 
@@ -372,15 +411,15 @@ export default function LoginPage() {
                         />
                     </div>
 
-                    {isPartnerFlow && (
+                    {(inputType === 'email' || inputType === 'partnerId') && (
                         <div className="space-y-2">
                             <Label htmlFor="password">Password</Label>
                             <Input id="password" name="password" type="password" placeholder="••••••••" required value={password} onChange={(e) => setPassword(e.target.value)} disabled={isLoading} />
                         </div>
                     )}
                     
-                    <Button type="submit" className="w-full" disabled={isLoading || !identifier}>
-                         {isLoading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Please wait...</> : (isPhoneNumber && !isPartnerFlow ? 'Send OTP' : 'Continue')}
+                    <Button type="submit" className="w-full" disabled={isLoading || inputType === 'none'}>
+                         {isLoading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Please wait...</> : (inputType === 'phone' ? 'Send OTP' : 'Continue')}
                     </Button>
                 </form>
 
@@ -420,10 +459,23 @@ export default function LoginPage() {
          return (
             <motion.div key="details" variants={formVariants}>
                 <form onSubmit={handleDetailsSubmit} className="space-y-4">
-                    <div className="space-y-2">
-                        <Label>Identifier</Label>
-                        <Input value={identifier} disabled />
-                    </div>
+                    {inputType === 'email' ? (
+                        <>
+                            <div className="space-y-2">
+                                <Label htmlFor="email">Email Address</Label>
+                                <Input id="email" value={identifier} disabled />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="password_details">Create Password</Label>
+                                <Input id="password_details" name="password" type="password" placeholder="••••••••" required value={password} onChange={(e) => setPassword(e.target.value)} />
+                            </div>
+                        </>
+                    ) : (
+                        <div className="space-y-2">
+                            <Label htmlFor="phone_details">Phone Number</Label>
+                            <Input id="phone_details" value={identifier} disabled />
+                        </div>
+                    )}
                     <div className="space-y-2">
                         <Label htmlFor="name">Full Name</Label>
                         <Input id="name" name="name" placeholder="e.g., Priya Sharma" required value={name} onChange={(e) => setName(e.target.value)} autoFocus />
@@ -447,6 +499,8 @@ export default function LoginPage() {
   }
   
   if (!isMounted) return null;
+
+  const isPartnerFlow = ['driver', 'mechanic', 'cure', 'doctor', 'ambulance'].includes(roleFromQuery);
 
   return (
       <div className="flex min-h-screen items-center justify-center p-4 bg-muted/40">
@@ -486,8 +540,8 @@ export default function LoginPage() {
                     {roleFromQuery === 'user' && (
                         <p>Want to partner with us? <Link href="/partner-hub" className="underline text-primary">Become a Partner</Link></p>
                     )}
-                    {roleFromQuery !== 'user' && (
-                        <p>Looking for a ride? <Link href="/login?role=user" className="underline text-primary" onClick={() => {setStep('login'); setIdentifier('');}}>Login as a User</Link></p>
+                    {isPartnerFlow && (
+                        <p>Looking for a ride? <Link href="/login?role=user" className="underline text-primary" onClick={() => {setStep('login'); setInputType('none'); setIdentifier('');}}>Login as a User</Link></p>
                     )}
                     {roleFromQuery !== 'admin' && (
                          <p>
