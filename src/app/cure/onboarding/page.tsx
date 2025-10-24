@@ -173,6 +173,20 @@ export default function CureOnboardingPage() {
             setIsLoading(false);
         }
     }
+
+    const getFacilityNameLabel = () => {
+        const type = formData.clinicType.toLowerCase();
+        if (type.includes('hospital')) {
+            return 'Hospital Name*';
+        }
+        if (type.includes('diagnostic')) {
+            return 'Center Name*';
+        }
+        if (type.includes('clinic')) {
+            return 'Clinic Name*';
+        }
+        return 'Facility Name*';
+    }
     
     const renderStepContent = () => {
         switch (currentStep) {
@@ -194,9 +208,7 @@ export default function CureOnboardingPage() {
                                 </Select>
                             </div>
                             <div className="space-y-2">
-                                <Label htmlFor="clinicName">
-                                    {formData.clinicType.toLowerCase().includes('hospital') ? 'Hospital Name*' : 'Clinic Name*'}
-                                </Label>
+                                <Label htmlFor="clinicName">{getFacilityNameLabel()}</Label>
                                 <Input id="clinicName" name="clinicName" value={formData.clinicName} onChange={handleInputChange} required />
                             </div>
                             <div className="space-y-2"><Label htmlFor="clinicPhone">Contact Number*</Label><Input id="clinicPhone" name="clinicPhone" type="tel" value={formData.clinicPhone} onChange={handleInputChange} required /></div>
