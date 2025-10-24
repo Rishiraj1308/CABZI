@@ -29,12 +29,17 @@ export default function CureDashboardPage() {
             if (partnerId) {
                 const unsub = onSnapshot(doc(db, 'ambulances', partnerId), (docSnap) => {
                     if (docSnap.exists()) {
-                        const type = docSnap.data().businessType?.toLowerCase() || '';
-                        if (type.includes('hospital')) {
-                            setFacilityType('hospital');
-                        } else {
+                        const data = docSnap.data();
+                        // Make logic more robust: default to hospital unless explicitly 'clinic'
+                        const type = data.businessType?.toLowerCase() || 'hospital'; // Default to 'hospital'
+                        if (type.includes('clinic')) {
                             setFacilityType('clinic');
+                        } else {
+                            setFacilityType('hospital');
                         }
+                    } else {
+                        // Handle case where document doesn't exist
+                        toast({ variant: 'destructive', title: 'Error', description: 'Partner profile not found.' });
                     }
                     setIsLoading(false);
                 }, (error) => {
@@ -43,6 +48,8 @@ export default function CureDashboardPage() {
                     setIsLoading(false);
                 });
                 return () => unsub();
+            } else {
+                 setIsLoading(false);
             }
         } else {
              setIsLoading(false);
@@ -73,5 +80,14 @@ export default function CureDashboardPage() {
     }
     
     // Fallback or error state
-    return <div className="text-center">Could not load dashboard. Invalid facility type.</div>
+    return (
+        <div className="flex h-full items-center justify-center">
+            <Card className="max-w-md p-8 text-center">
+                <CardHeader>
+                    <CardTitle>Dashboard Error</CardTitle>
+                    <CardDescription>Could not load the correct dashboard because the facility type is not set correctly in your profile.</CardDescription>
+                </CardHeader>
+            </Card>
+        </div>
+    )
 }
