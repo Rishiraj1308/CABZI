@@ -99,7 +99,7 @@ const LiveMap = forwardRef<any, LiveMapProps>((props, ref) => {
         
         switch (type) {
             case 'hospital':
-                iconHtml = `<div style="background-color: #4f46e5; border-radius: 9999px; padding: 4px; display:flex; align-items:center; justify-content:center; box-shadow: 0 1px 4px rgba(0,0,0,0.2); border: 1.5px solid white;"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-hospital"><path d="M12 6v4"/><path d="M14 14h-4"/><path d="M14 18v-4"/><path d="M14 10h-4"/><path d="M18 12h2a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-9a2 2 0 0 1 2-2h2"/><path d="M18 22V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v18"/></svg></div>`;
+                iconHtml = `<div style="background-color: #4f46e5; border-radius: 9999px; padding: 4px; display:flex; align-items:center; justify-content:center; box-shadow: 0 1px 4px rgba(0,0,0,0.2); border: 1.5px solid white;"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-hospital"><path d="M12 6v4"/><path d="M14 14h-4"/><path d="M14 18v-4"/><path d="M14 10h-4"/><path d="M18 12h2a2 2 0 0 1 2 2v6a2 2 0 0 1-2-2H4a2 2 0 0 1-2-2v-9a2 2 0 0 1 2-2h2"/><path d="M18 22V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v18"/></svg></div>`;
                 iconSize = [20, 20];
                 iconAnchor = [10, 10];
                 break;
@@ -196,14 +196,17 @@ const LiveMap = forwardRef<any, LiveMapProps>((props, ref) => {
             drawCircle: false,
         }).addTo(map);
 
-        map.on('locationfound', (e: any) => {
+        const onFound = (e: any) => {
             const { lat, lng } = e.latlng;
             getAddress(lat, lng).then(address => {
                 if (address && props.onLocationFound) {
                     props.onLocationFound(address, { lat, lon: lng });
                 }
             });
-        });
+            mapInstanceRef.current?.flyTo([lat, lng], 16);
+        };
+
+        map.on('locationfound', onFound);
         
         map.whenReady(() => {
             if (props.onLocationFound) {
@@ -247,7 +250,7 @@ const LiveMap = forwardRef<any, LiveMapProps>((props, ref) => {
             routeLayerRef.current = null;
         }
 
-        if (props.routeGeometry) {
+        if (props.routeGeometry && props.routeGeometry.coordinates) {
             const routeCoords = props.routeGeometry.coordinates.map((coord: number[]) => [coord[1], coord[0]]);
             
             routeLayerRef.current = L.polyline([], {
@@ -275,7 +278,7 @@ const LiveMap = forwardRef<any, LiveMapProps>((props, ref) => {
             animate();
             if (props.driverLocation && props.riderLocation) {
                  map.flyToBounds(L.latLngBounds(routeCoords), { padding: [50, 50], maxZoom: 16 });
-            } else if (!props.isTripInProgress) {
+            } else if (!props.isTripInProgress && routeCoords.length > 0) {
                  map.flyToBounds(L.latLngBounds(routeCoords), { padding: [50, 50] });
             }
         }
@@ -481,3 +484,6 @@ const LiveMap = forwardRef<any, LiveMapProps>((props, ref) => {
 LiveMap.displayName = 'LiveMap';
 export default LiveMap;
 
+
+
+    
