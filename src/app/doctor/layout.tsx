@@ -4,7 +4,7 @@
 import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { LogOut, Sun, Moon, LayoutDashboard, Calendar, User, PanelLeft, Bell } from 'lucide-react'
+import { LogOut, Sun, Moon, LayoutDashboard, Calendar, User, PanelLeft, Bell, BarChart } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Toaster } from '@/components/ui/toaster'
@@ -22,6 +22,7 @@ import { Badge } from '@/components/ui/badge'
 const navItems = [
   { href: '/doctor', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/doctor/appointments', label: 'My Appointments', icon: Calendar },
+  { href: '/doctor/analytics', label: 'Analytics', icon: BarChart },
   { href: '/doctor/profile', label: 'My Profile', icon: User },
 ]
 
