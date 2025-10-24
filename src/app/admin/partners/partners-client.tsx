@@ -198,21 +198,21 @@ export default function PartnersClient() {
     }
   };
 
-  const handleUpdateStatus = async (partner: PartnerData, status: string) => {
-    const { id, type, hospitalId } = partner;
-    let collectionName = getCollectionName(type, hospitalId);
+  const handleUpdateStatus = async (partner: PartnerData, newStatus: string) => {
+    const { id, type, hospitalId, name } = partner;
+    const collectionName = getCollectionName(type, hospitalId);
     if (!collectionName || !db) return;
     
-    const docId = id;
-    const partnerRef = doc(db, collectionName, docId);
+    const partnerRef = doc(db, collectionName, id);
     
-    const statusField = type === 'doctor' ? 'docStatus' : 'status';
+    // For doctors, the status field is 'docStatus', for others it is 'status'.
+    const fieldToUpdate = type === 'doctor' ? 'docStatus' : 'status';
 
     try {
-        await updateDoc(partnerRef, { [statusField]: status });
+        await updateDoc(partnerRef, { [fieldToUpdate]: newStatus });
         toast({
             title: 'Status Updated',
-            description: `${partner.name}'s status has been set to ${status}.`,
+            description: `${name}'s status has been set to ${newStatus}.`,
         });
         fetchAllPartners();
     } catch(e) {
@@ -335,7 +335,7 @@ export default function PartnersClient() {
                                       </DropdownMenuItem>
                                   </>
                               )}
-                              {partner.status !== 'rejected' && partner.status !== 'Rejected' && partner.docStatus !== 'Rejected' && (
+                              {partner.status !== 'rejected' && partner.docStatus !== 'Rejected' && (
                                   <DropdownMenuItem onClick={() => handleUpdateStatus(partner, 'rejected')}>
                                      <X className="mr-2 h-4 w-4 text-red-500" /> Reject
                                   </DropdownMenuItem>
