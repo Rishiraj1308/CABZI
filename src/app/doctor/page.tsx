@@ -8,7 +8,6 @@ import { Badge } from '@/components/ui/badge';
 import { Calendar, User, Clock, CheckCircle, Percent, Video, Building, FileText, PlayCircle, Plus, UploadCloud, Search, History, BrainCircuit, AlertTriangle, Send, UserPlus, FileUp, Share, Star, Stethoscope, FileClock, ClipboardPlus, FileSpreadsheet } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Textarea } from '@/components/ui/textarea';
@@ -20,10 +19,8 @@ import { Label } from '@/components/ui/label';
 
 const mockDashboardStats = {
     todayAppointments: 12,
-    newPatients: 4,
     avgConsultationTime: 15,
     pendingFollowUps: 3,
-    completionRate: 95,
 };
 
 const mockAppointments = [
@@ -89,7 +86,6 @@ const timeSlots = [
   '09:00 AM', '10:00 AM', '11:00 AM', '12:00 PM', '02:00 PM', '03:00 PM', '04:00 PM'
 ]
 
-
 const StatCard = ({ title, value, icon: Icon, description }: { title: string, value: string, icon: React.ElementType, description: string }) => (
     <Card>
         <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -119,9 +115,6 @@ const recentFeedback = [
     { name: 'Suresh K.', comment: 'Good doctor, but the waiting time at the clinic was a bit long.', rating: 4 },
 ];
 
-const feedbackTags = ['Good Communication', 'Short Waiting Time', 'Helpful Staff', 'Clean Clinic'];
-
-
 export default function DoctorDashboardPage() {
     const [selectedPatient, setSelectedPatient] = useState<(typeof mockAppointments)[0] | null>(null);
     const [date, setDate] = useState<Date | undefined>(new Date());
@@ -132,16 +125,19 @@ export default function DoctorDashboardPage() {
         toast({ title: "Feature coming soon!", description: `The "${action.replace(/_/g, ' ')}" functionality is under development.` });
     };
 
+    const handleAppointmentAction = (action: string) => {
+        toast({ title: "Action performed (prototype)", description: `This would ${action.replace(/_/g, ' ')}.` });
+    }
+
   return (
     <div className="space-y-6">
        <div>
-        <h2 className="text-3xl font-bold tracking-tight">Doctor's Dashboard</h2>
-        <p className="text-muted-foreground">Welcome back, Doctor. Here's your snapshot for today.</p>
+        <h2 className="text-3xl font-bold tracking-tight">Doctor&apos;s Dashboard</h2>
+        <p className="text-muted-foreground">Welcome back, Doctor. Here&apos;s your snapshot for today.</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard title="Today’s Appointments" value={`${mockDashboardStats.todayAppointments}`} icon={Calendar} description="+3 from yesterday" />
-        <StatCard title="New Patients Today" value={`${mockDashboardStats.newPatients}`} icon={User} description="New consultations scheduled" />
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <StatCard title="Today’s Appointments" value={`${mockDashboardStats.todayAppointments}`} icon={Calendar} description="Total patients scheduled" />
         <StatCard title="Avg. Consultation Time" value={`${mockDashboardStats.avgConsultationTime} min`} icon={Clock} description="Maintained from last week" />
         <StatCard title="Pending Follow-Ups" value={`${mockDashboardStats.pendingFollowUps}`} icon={FileClock} description="Scheduled for today" />
       </div>
@@ -150,8 +146,8 @@ export default function DoctorDashboardPage() {
             <div className="lg:col-span-2 space-y-6">
                  <Card>
                     <CardHeader>
-                        <CardTitle>Today's Schedule</CardTitle>
-                        <CardDescription>A list of your confirmed and pending appointments for today.</CardDescription>
+                        <CardTitle>Today&apos;s Patient Queue</CardTitle>
+                        <CardDescription>A real-time queue of your appointments for today.</CardDescription>
                     </CardHeader>
                     <CardContent>
                         <div className="space-y-4">
@@ -164,39 +160,34 @@ export default function DoctorDashboardPage() {
                                                 <p className="text-xs text-muted-foreground">{apt.time.split(' ')[1]}</p>
                                             </div>
                                             <div className="flex-1">
-                                                <div className="flex justify-between items-start">
-                                                    <div>
-                                                        <CardTitle className="text-xl">{apt.patient}</CardTitle>
-                                                        <CardDescription>{apt.age} / {apt.gender}</CardDescription>
-                                                    </div>
-                                                    {getStatusBadge(apt.status)}
-                                                </div>
-                                                <div className="flex items-center gap-2 mt-2 text-sm">
-                                                    <Badge variant="outline">{apt.mode === 'Online' ? <Video className="w-3 h-3 mr-1.5"/> : <Building className="w-3 h-3 mr-1.5"/>}{apt.mode}</Badge>
-                                                    <Badge variant="outline">{apt.visitType}</Badge>
-                                                </div>
+                                                <CardTitle className="text-xl">{apt.patient}</CardTitle>
+                                                <CardDescription>{apt.age} / {apt.gender} • {apt.reason}</CardDescription>
+                                            </div>
+                                            <div className="flex flex-col items-center gap-2">
+                                                {getStatusBadge(apt.status)}
+                                                {apt.status === 'Checked-in' && <Button size="sm" onClick={() => handleAppointmentAction('start_consultation')}>Start Consultation</Button>}
                                             </div>
                                             <DialogTrigger asChild>
-                                                <Button variant="outline" onClick={() => setSelectedPatient(apt)}>View Details</Button>
+                                                <Button variant="outline" onClick={() => setSelectedPatient(apt)}>View EMR</Button>
                                             </DialogTrigger>
                                         </CardContent>
                                     </Card>
                                 ))}
-                                <DialogContent className="max-w-3xl">
+                                <DialogContent className="max-w-4xl h-[90vh]">
                                     <DialogHeader>
-                                        <DialogTitle className="text-2xl">Patient Details: {selectedPatient?.patient}</DialogTitle>
+                                        <DialogTitle className="text-2xl">EMR / Patient Details: {selectedPatient?.patient}</DialogTitle>
                                         <DialogDescription>
                                             Age: {selectedPatient?.age}, Gender: {selectedPatient?.gender}, Contact: {selectedPatient?.contact}
                                         </DialogDescription>
                                     </DialogHeader>
-                                    <Tabs defaultValue="history">
+                                    <Tabs defaultValue="history" className="flex-1 flex flex-col overflow-hidden">
                                         <TabsList className="grid w-full grid-cols-4">
                                             <TabsTrigger value="history">Medical Timeline</TabsTrigger>
                                             <TabsTrigger value="reports">Notes & Reports</TabsTrigger>
                                             <TabsTrigger value="followup">Schedule Follow-up</TabsTrigger>
                                             <TabsTrigger value="actions">Post-Consultation</TabsTrigger>
                                         </TabsList>
-                                         <TabsContent value="history" className="mt-4 max-h-[60vh] overflow-y-auto p-1">
+                                         <TabsContent value="history" className="mt-4 flex-1 overflow-y-auto p-1">
                                             <div className="relative pl-6">
                                                 <div className="absolute left-9 top-0 h-full w-0.5 bg-border -translate-x-1/2"></div>
                                                 <div className="space-y-8">
@@ -226,7 +217,7 @@ export default function DoctorDashboardPage() {
                                                 </div>
                                             </div>
                                         </TabsContent>
-                                        <TabsContent value="reports" className="mt-4 space-y-4">
+                                        <TabsContent value="reports" className="mt-4 space-y-4 flex-1 overflow-y-auto p-1">
                                             <Card>
                                                 <CardHeader><CardTitle>Clinical Notes</CardTitle></CardHeader>
                                                 <CardContent>
@@ -237,7 +228,6 @@ export default function DoctorDashboardPage() {
                                              <Card>
                                                 <CardHeader><CardTitle>Uploaded Reports</CardTitle></CardHeader>
                                                 <CardContent>
-                                                    <p className="text-sm text-muted-foreground text-center py-4">No reports have been uploaded for this patient yet.</p>
                                                     <div className="mt-4 p-6 border-2 border-dashed rounded-lg text-center">
                                                         <FileUp className="w-10 h-10 text-muted-foreground mx-auto mb-2"/>
                                                         <p className="font-semibold mb-1">Upload Prescription / Report</p>
@@ -247,7 +237,7 @@ export default function DoctorDashboardPage() {
                                                 </CardContent>
                                             </Card>
                                         </TabsContent>
-                                        <TabsContent value="followup" className="mt-4">
+                                        <TabsContent value="followup" className="mt-4 flex-1 overflow-y-auto p-1">
                                             <Card>
                                                 <CardHeader><CardTitle>Schedule a Follow-up Visit</CardTitle><CardDescription>Book the next appointment for this patient.</CardDescription></CardHeader>
                                                 <CardContent className="space-y-4">
@@ -275,7 +265,7 @@ export default function DoctorDashboardPage() {
                                                 </CardFooter>
                                             </Card>
                                         </TabsContent>
-                                         <TabsContent value="actions" className="mt-4">
+                                         <TabsContent value="actions" className="mt-4 flex-1 overflow-y-auto p-1">
                                             <Card>
                                                 <CardHeader><CardTitle>Post-Consultation Actions</CardTitle><CardDescription>Additional actions to ensure patient care continuity.</CardDescription></CardHeader>
                                                 <CardContent className="space-y-2">
@@ -308,7 +298,6 @@ export default function DoctorDashboardPage() {
                  <Card>
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2"><Star className="w-6 h-6 text-amber-400"/> Patient Satisfaction</CardTitle>
-                        <CardDescription>An overview of recent patient feedback.</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
                          <div className="p-4 rounded-lg bg-muted text-center">
@@ -332,7 +321,6 @@ export default function DoctorDashboardPage() {
                  <Card>
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2"><BrainCircuit className="w-6 h-6 text-primary"/> Smart Assistant</CardTitle>
-                        <CardDescription>Your AI-powered co-pilot for smarter consultations.</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
                          <Alert variant="destructive" className="bg-amber-500/10 border-amber-500/30 text-amber-700 dark:text-amber-300">
@@ -343,7 +331,7 @@ export default function DoctorDashboardPage() {
                             </AlertDescription>
                         </Alert>
                         <ul className="text-sm text-muted-foreground list-disc pl-5 space-y-1">
-                            <li>Auto-summarize last 5 consultations.</li>
+                            <li>Auto-summarize past consultations.</li>
                             <li>Get symptom-based diagnosis suggestions.</li>
                             <li>Autofill smart prescription templates.</li>
                         </ul>
