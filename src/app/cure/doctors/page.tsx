@@ -76,17 +76,11 @@ interface Appointment {
   patientPhone: string;
   department: string;
   doctorName: string;
-  appointmentDate: string;
+  appointmentDate: Timestamp;
   appointmentTime: string;
   status: 'Confirmed' | 'Pending' | 'In Queue' | 'Cancelled' | 'Completed';
   isRecurring?: boolean;
 }
-
-const mockAppointments: Appointment[] = [
-  { id: 'APP001', patientName: 'Priya Singh', patientPhone: '9876543210', department: 'Cardiology', doctorName: 'Dr. Ramesh Sharma', appointmentDate: '2024-09-10T11:00:00', appointmentTime: '11:00 AM', status: 'Pending', isRecurring: true },
-  { id: 'APP002', patientName: 'Rajesh Verma', patientPhone: '9988776655', department: 'Orthopedics', doctorName: 'Dr. Priya Gupta', appointmentDate: '2024-09-10T14:00:00', appointmentTime: '02:00 PM', status: 'Confirmed' },
-  { id: 'APP003', patientName: 'Anita Desai', patientPhone: '9123456789', department: 'General Physician', doctorName: 'Dr. Alok Verma', appointmentDate: '2024-08-25T10:00:00', appointmentTime: '10:00 AM', status: 'Completed' },
-];
 
 const mockSchedule = {
     'Dr. Ramesh Sharma': {
@@ -132,7 +126,7 @@ const initialDoctorState = {
 
 export default function DoctorsPage() {
   const [doctors, setDoctors] = useState<Doctor[]>([]);
-  const [appointments, setAppointments] = useState<Appointment[]>(mockAppointments);
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isAddDoctorDialogOpen, setIsAddDoctorDialogOpen] = useState(false);
@@ -164,7 +158,7 @@ export default function DoctorsPage() {
       const { partnerId } = JSON.parse(session);
       setHospitalId(partnerId);
       const doctorsRef = query(collection(db, `ambulances/${partnerId}/doctors`), orderBy('name', 'asc'));
-      const unsubscribe = onSnapshot(doctorsRef, (snapshot) => {
+      const unsubDoctors = onSnapshot(doctorsRef, (snapshot) => {
         setDoctors(snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Doctor)));
         setIsLoading(false);
       }, (error) => {
@@ -172,28 +166,60 @@ export default function DoctorsPage() {
         toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch doctor list.' });
         setIsLoading(false);
       });
-      return () => unsubscribe();
+      
+      const apptQuery = query(collection(db, 'appointments'), where('hospitalId', '==', partnerId));
+      const unsubAppts = onSnapshot(apptQuery, (snapshot) => {
+        setAppointments(snapshot.docs.map(d => ({id: d.id, ...d.data()} as Appointment)));
+      });
+
+
+      return () => {
+        unsubDoctors();
+        unsubAppts();
+      }
     } else {
       setIsLoading(false);
     }
   }, [db, toast]);
   
-  const handleAppointmentAction = (appt: Appointment, action: 'confirm' | 'check-in' | 'cancel' | 'reschedule') => {
-      if (action === 'cancel') {
-          setAppointments(prev => prev.map(a => a.id === appt.id ? {...a, status: 'Cancelled'} : a));
-          toast({ variant: 'destructive', title: 'Appointment Cancelled', description: `Appointment for ${appt.patientName} has been cancelled.`});
-      } else if (action === 'confirm') {
-          setAppointments(prev => prev.map(a => a.id === appt.id ? {...a, status: 'Confirmed'} : a));
-          toast({ title: 'Appointment Confirmed', description: `Appointment for ${appt.patientName} has been confirmed.`});
-      } else if (action === 'check-in') {
-          setAppointments(prev => prev.map(a => a.id === appt.id ? {...a, status: 'In Queue'} : a));
-          toast({ title: 'Patient Checked In', description: `${appt.patientName} is now in the queue.`});
+  const handleAppointmentAction = async (apptId: string, action: 'confirm' | 'check-in' | 'cancel' | 'complete') => {
+      if (!db) return;
+
+      const apptRef = doc(db, 'appointments', apptId);
+      let newStatus: Appointment['status'] = 'Pending';
+      let toastTitle = '';
+      let toastDescription = '';
+
+      switch(action) {
+          case 'confirm':
+              newStatus = 'Confirmed';
+              toastTitle = 'Appointment Confirmed';
+              break;
+          case 'check-in':
+              newStatus = 'In Queue';
+              toastTitle = 'Patient Checked In';
+              break;
+          case 'complete':
+              newStatus = 'Completed';
+              toastTitle = 'Consultation Marked Complete';
+              break;
+          case 'cancel':
+              newStatus = 'Cancelled';
+              toastTitle = 'Appointment Cancelled';
+              break;
+      }
+      
+      try {
+          await updateDoc(apptRef, { status: newStatus });
+          toast({ title: toastTitle, description: toastDescription });
+      } catch (error) {
+          toast({ variant: 'destructive', title: 'Action Failed' });
       }
       setIsManageAppointmentOpen(false);
   }
 
-  const handleRescheduleSubmit = () => {
-    if (!selectedAppointment || !newDate || !newTime) {
+  const handleRescheduleSubmit = async () => {
+    if (!selectedAppointment || !newDate || !newTime || !db) {
       toast({ variant: 'destructive', title: 'Incomplete', description: 'Please select a new date and time.'});
       return;
     }
@@ -201,13 +227,18 @@ export default function DoctorsPage() {
     const [hours, minutes] = newTime.split(/[: ]/);
     newDateTime.setHours(newTime.includes('PM') ? parseInt(hours, 10) + 12 : parseInt(minutes, 10), parseInt(minutes, 10), 0);
 
-    setAppointments(prev => prev.map(appt => 
-      appt.id === selectedAppointment.id 
-      ? { ...appt, appointmentDate: newDateTime.toISOString(), appointmentTime: newTime, status: 'Confirmed' } 
-      : appt
-    ));
+    const apptRef = doc(db, 'appointments', selectedAppointment.id);
+    try {
+        await updateDoc(apptRef, {
+            appointmentDate: newDateTime,
+            appointmentTime: newTime,
+            status: 'Confirmed'
+        });
+        toast({ title: 'Appointment Rescheduled!', description: `Appointment for ${selectedAppointment.patientName} is now on ${format(newDateTime, 'PPP')} at ${newTime}.` });
+    } catch (error) {
+        toast({ variant: 'destructive', title: 'Reschedule Failed' });
+    }
     
-    toast({ title: 'Appointment Rescheduled!', description: `Appointment for ${selectedAppointment.patientName} is now on ${format(newDateTime, 'PPP')} at ${newTime}.` });
     setIsManageAppointmentOpen(false);
   }
   
@@ -279,8 +310,6 @@ const handleAddDoctor = async (event: React.FormEvent<HTMLFormElement>) => {
     const doctorRef = doc(db, `ambulances/${hospitalId}/doctors`, doctorId);
     try {
       await deleteDoc(doctorRef);
-      // In a real app, you'd also want to find the corresponding global doctor record and delete it.
-      // For this prototype, we'll skip that step.
       toast({ variant: 'destructive', title: 'Doctor Removed', description: `Dr. ${doctorName} has been removed from the roster.` });
     } catch (error) {
        toast({ variant: 'destructive', title: 'Error', description: 'Could not remove the doctor.' });
@@ -317,10 +346,21 @@ const handleAddDoctor = async (event: React.FormEvent<HTMLFormElement>) => {
               return <Badge variant="secondary">Unknown</Badge>;
       }
   }
+  
+  const getAppointmentStatusBadge = (status: Appointment['status']) => {
+    switch(status) {
+        case 'Confirmed': return <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200">{status}</Badge>;
+        case 'In Queue': return <Badge className="bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-200">{status}</Badge>;
+        case 'Completed': return <Badge className="bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-200">{status}</Badge>;
+        case 'Pending': return <Badge className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-200">{status}</Badge>;
+        case 'Cancelled': return <Badge variant="destructive">{status}</Badge>;
+        default: return <Badge variant="secondary">{status}</Badge>;
+    }
+  }
 
   return (
     <div className="space-y-6">
-        <Tabs defaultValue="doctors">
+        <Tabs defaultValue="appointments">
             <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="appointments">Appointment Queue</TabsTrigger>
                 <TabsTrigger value="schedules">Doctor Schedules</TabsTrigger>
@@ -333,21 +373,17 @@ const handleAddDoctor = async (event: React.FormEvent<HTMLFormElement>) => {
                         <CardDescription>Manage incoming patient appointments and check-ins.</CardDescription>
                     </CardHeader>
                      <CardContent>
-                        {appointments.map(appt => (
+                        {isLoading ? <Skeleton className="h-40"/> : appointments.length > 0 ? appointments.map(appt => (
                              <Card key={appt.id} className="mb-2">
                                  <CardContent className="p-3 flex items-center gap-3">
                                     <Avatar className="h-10 w-10"><AvatarFallback>{appt.patientName.substring(0,1)}</AvatarFallback></Avatar>
                                      <div className="flex-1">
                                          <p className="font-semibold">{appt.patientName}</p>
                                          <p className="text-xs text-muted-foreground flex items-center gap-1.5"><Phone className="w-3 h-3"/> {appt.patientPhone}</p>
-                                         <p className="text-xs">{new Date(appt.appointmentDate).toLocaleDateString()} at {format(new Date(appt.appointmentDate), 'p')}</p>
+                                         <p className="text-xs">{appt.appointmentDate.toDate().toLocaleDateString()} at {appt.appointmentTime}</p>
                                      </div>
                                      <div className="flex flex-col items-end gap-1">
-                                       {appt.status === 'Pending' && <Button size="sm" onClick={() => handleAppointmentAction(appt, 'confirm')}>Confirm</Button>}
-                                       {appt.status === 'Confirmed' && <Button size="sm" variant="secondary" onClick={() => handleAppointmentAction(appt, 'check-in')}>Check-in Patient</Button>}
-                                       {appt.status === 'In Queue' && <Badge className="bg-blue-100 text-blue-800">In Queue</Badge>}
-                                       {appt.status === 'Cancelled' && <Badge variant="destructive">Cancelled</Badge>}
-                                       {appt.status === 'Completed' && <Badge className="bg-green-100 text-green-800">Completed</Badge>}
+                                        {getAppointmentStatusBadge(appt.status)}
                                     </div>
                                      <Dialog open={isManageAppointmentOpen && selectedAppointment?.id === appt.id} onOpenChange={(open) => {
                                         if (!open) {
@@ -367,28 +403,14 @@ const handleAddDoctor = async (event: React.FormEvent<HTMLFormElement>) => {
                                                     View details, reschedule, or cancel the appointment.
                                                 </DialogDescription>
                                             </DialogHeader>
-                                            
                                             <div className="border-t pt-4">
-                                                <h4 className="font-semibold mb-2">Patient Details</h4>
-                                                <div className="space-y-2 text-sm p-3 bg-muted rounded-lg">
-                                                    <div className="flex justify-between"><span>Contact:</span><span className="font-semibold">{selectedAppointment?.patientPhone}</span></div>
-                                                    <div className="flex justify-between"><span>Doctor:</span><span className="font-semibold">{selectedAppointment?.doctorName}</span></div>
-                                                    <div className="flex justify-between items-center"><span>Status:</span><Badge variant={selectedAppointment?.status === 'Confirmed' ? 'default' : 'secondary'} className={cn(selectedAppointment?.status === 'Confirmed' && 'bg-blue-100 text-blue-800')}>{selectedAppointment?.status}</Badge></div>
-                                                 </div>
-                                                 <div className="mt-2">
-                                                    <h5 className="text-sm font-semibold">Visit History:</h5>
-                                                    <p className="text-xs text-muted-foreground text-center py-2">No past visits recorded.</p>
-                                                 </div>
-                                            </div>
-
-                                            <div className="border-t pt-4">
-                                                <h4 className="font-semibold">Reschedule Appointment</h4>
+                                                <h4 className="font-semibold mb-2">Reschedule Appointment</h4>
                                                 <div className="space-y-2 mt-2">
                                                     <Label>Select New Date</Label>
                                                     <Popover>
                                                         <PopoverTrigger asChild>
                                                         <Button variant={"outline"} className={cn("w-full justify-start text-left font-normal", !newDate && "text-muted-foreground")}>
-                                                            <Calendar className="mr-2 h-4 w-4" />
+                                                            <CalendarIcon className="mr-2 h-4 w-4" />
                                                             {newDate ? format(newDate, "PPP") : <span>Pick a date</span>}
                                                         </Button>
                                                         </PopoverTrigger>
@@ -403,7 +425,9 @@ const handleAddDoctor = async (event: React.FormEvent<HTMLFormElement>) => {
                                                 </div>
                                                 <Button className="w-full mt-4" onClick={handleRescheduleSubmit}>Confirm Reschedule</Button>
                                             </div>
-                                            <DialogFooter className="border-t pt-4">
+                                            <DialogFooter className="border-t pt-4 space-y-2 sm:space-y-0">
+                                                {selectedAppointment && selectedAppointment.status === 'Pending' && <Button className="w-full" onClick={() => handleAppointmentAction(selectedAppointment.id, 'confirm')}>Confirm Appointment</Button>}
+                                                {selectedAppointment && selectedAppointment.status === 'Confirmed' && <Button className="w-full" variant="secondary" onClick={() => handleAppointmentAction(selectedAppointment.id, 'check-in')}>Check-in Patient</Button>}
                                                  <AlertDialog>
                                                      <AlertDialogTrigger asChild>
                                                         <Button variant="destructive" className="w-full">Cancel Appointment</Button>
@@ -412,7 +436,7 @@ const handleAddDoctor = async (event: React.FormEvent<HTMLFormElement>) => {
                                                         <AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle><AlertDialogDescription>This action will cancel the appointment for {selectedAppointment?.patientName}.</AlertDialogDescription></AlertDialogHeader>
                                                         <AlertDialogFooter>
                                                             <AlertDialogCancel>Go Back</AlertDialogCancel>
-                                                            <AlertDialogAction onClick={() => selectedAppointment && handleAppointmentAction(selectedAppointment, 'cancel')} className="bg-destructive hover:bg-destructive/90">Yes, Cancel</AlertDialogAction>
+                                                            <AlertDialogAction onClick={() => selectedAppointment && handleAppointmentAction(selectedAppointment.id, 'cancel')} className="bg-destructive hover:bg-destructive/90">Yes, Cancel</AlertDialogAction>
                                                         </AlertDialogFooter>
                                                     </AlertDialogContent>
                                                  </AlertDialog>
@@ -421,7 +445,7 @@ const handleAddDoctor = async (event: React.FormEvent<HTMLFormElement>) => {
                                      </Dialog>
                                  </CardContent>
                              </Card>
-                        ))}
+                        )) : <p className="text-center text-muted-foreground py-4">No new appointment requests.</p>}
                     </CardContent>
                 </Card>
             </TabsContent>
@@ -456,14 +480,13 @@ const handleAddDoctor = async (event: React.FormEvent<HTMLFormElement>) => {
                                                     <div className="text-xs text-muted-foreground font-normal">{doctor.specialization}</div>
                                                 </TableCell>
                                                 {timeSlots.map(slot => {
-                                                    // @ts-ignore
-                                                    const appointment = mockSchedule[`Dr. ${doctor.name}`]?.[slot.split(' ')[0]];
+                                                    const appointment = appointments.find(a => a.doctorName === `Dr. ${doctor.name}` && a.appointmentTime === slot && a.status !== 'Cancelled' && a.status !== 'Completed');
                                                     return (
                                                         <TableCell key={slot}>
                                                             {appointment ? (
                                                                 <Card className="p-2 text-xs text-center bg-muted">
-                                                                    <p className="font-semibold truncate">{appointment.patient}</p>
-                                                                    <Badge variant={appointment.status === 'Confirmed' ? 'default' : 'secondary'} className={appointment.status === 'Confirmed' ? 'bg-green-100 text-green-800' : ''}>{appointment.status}</Badge>
+                                                                    <p className="font-semibold truncate">{appointment.patientName}</p>
+                                                                    {getAppointmentStatusBadge(appointment.status)}
                                                                 </Card>
                                                             ) : (
                                                                 <div className="h-12 w-full flex items-center justify-center text-green-600">

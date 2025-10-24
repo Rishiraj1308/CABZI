@@ -14,9 +14,10 @@ import { cn } from '@/lib/utils'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { useToast } from '@/hooks/use-toast'
 import Link from 'next/link'
-import { useDb } from '@/firebase/client-provider'
-import { collectionGroup, getDocs, query, where } from 'firebase/firestore'
+import { useDb, useFirebase } from '@/firebase/client-provider'
+import { collection, collectionGroup, getDocs, query, where, addDoc, serverTimestamp } from 'firebase/firestore'
 import { Skeleton } from '@/components/ui/skeleton'
+import type { ClientSession } from '@/lib/types'
 
 const timeSlots = [
   '09:00 AM', '10:00 AM', '11:00 AM', '12:00 PM', '02:00 PM', '03:00 PM', '04:00 PM'
@@ -31,6 +32,8 @@ interface Doctor {
     photoUrl?: string; 
     consultationFee: number;
     docStatus?: 'Verified' | 'Pending' | 'Awaiting Final Approval' | 'Rejected';
+    hospitalId: string; // Add hospitalId to know where to send the request
+    hospitalName: string;
 }
 
 
@@ -38,12 +41,25 @@ export default function BookAppointmentPage() {
   const [step, setStep] = useState(1);
   const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isBooking, setIsBooking] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedDoctor, setSelectedDoctor] = useState<Doctor | null>(null);
   const [date, setDate] = useState<Date | undefined>(new Date());
   const [time, setTime] = useState('');
   const { toast } = useToast();
-  const db = useDb();
+  const { user, db } = useFirebase();
+  const [session, setSession] = useState<ClientSession | null>(null);
+
+  useEffect(() => {
+    if (user) {
+        setSession({
+            userId: user.uid,
+            name: user.displayName || 'User',
+            phone: user.phoneNumber || '',
+            gender: 'other', // This should be fetched from user profile
+        });
+    }
+  }, [user]);
 
   useEffect(() => {
     const fetchVerifiedDoctors = async () => {
@@ -56,8 +72,30 @@ export default function BookAppointmentPage() {
             const doctorsQuery = query(collectionGroup(db, 'doctors'), where('docStatus', '==', 'Verified'));
             const snapshot = await getDocs(doctorsQuery);
             const doctorsList: Doctor[] = [];
+            
+            // Fetch hospital names
+            const hospitalIds = snapshot.docs.map(doc => doc.ref.parent.parent?.id).filter(Boolean) as string[];
+            const uniqueHospitalIds = [...new Set(hospitalIds)];
+            let hospitalNames: Record<string, string> = {};
+
+            if (uniqueHospitalIds.length > 0) {
+                 const hospitalsQuery = query(collection(db, 'ambulances'), where('__name__', 'in', uniqueHospitalIds));
+                 const hospitalsSnap = await getDocs(hospitalsQuery);
+                 hospitalsSnap.forEach(doc => {
+                    hospitalNames[doc.id] = doc.data().name;
+                 });
+            }
+
             snapshot.forEach(doc => {
-                doctorsList.push({ id: doc.id, ...doc.data() } as Doctor);
+                const hospitalId = doc.ref.parent.parent?.id;
+                if(hospitalId) {
+                    doctorsList.push({ 
+                        id: doc.id, 
+                        ...doc.data(),
+                        hospitalId: hospitalId,
+                        hospitalName: hospitalNames[hospitalId] || 'Unknown Hospital'
+                    } as Doctor);
+                }
             });
             setDoctors(doctorsList);
         } catch (error) {
@@ -81,15 +119,48 @@ export default function BookAppointmentPage() {
     setSelectedDoctor(null);
     setDate(new Date());
     setTime('');
+    setIsBooking(false);
   };
   
-  const handleBookingConfirmation = () => {
-      toast({
-          title: "Appointment Requested!",
-          description: `Your request for Dr. ${selectedDoctor?.name} has been sent. You will be notified upon confirmation.`,
-          className: 'bg-green-600 border-green-600 text-white'
-      });
-      resetFlow();
+  const handleBookingConfirmation = async () => {
+      if (!selectedDoctor || !session || !db || !date || !time) {
+          toast({ variant: 'destructive', title: 'Error', description: 'Missing required information to book.' });
+          return;
+      }
+
+      setIsBooking(true);
+      const appointmentDateTime = new Date(date);
+      const [hours, minutes] = time.split(/[: ]/);
+      appointmentDateTime.setHours(time.includes('PM') && parseInt(hours, 10) !== 12 ? parseInt(hours, 10) + 12 : parseInt(hours, 10), parseInt(minutes, 10));
+
+      const newAppointment = {
+          patientId: session.userId,
+          patientName: session.name,
+          patientPhone: session.phone,
+          hospitalId: selectedDoctor.hospitalId,
+          hospitalName: selectedDoctor.hospitalName,
+          doctorId: selectedDoctor.id,
+          doctorName: `Dr. ${selectedDoctor.name}`,
+          department: selectedDoctor.specialization,
+          appointmentDate: appointmentDateTime,
+          appointmentTime: time,
+          status: 'Pending',
+          createdAt: serverTimestamp()
+      };
+
+      try {
+          await addDoc(collection(db, 'appointments'), newAppointment);
+          toast({
+              title: "Appointment Requested!",
+              description: `Your request for Dr. ${selectedDoctor?.name} has been sent. You will be notified upon confirmation.`,
+              className: 'bg-green-600 border-green-600 text-white'
+          });
+          resetFlow();
+      } catch(error) {
+          console.error("Failed to book appointment:", error);
+          toast({ variant: 'destructive', title: 'Booking Failed', description: 'There was an issue sending your request.' });
+          setIsBooking(false);
+      }
   }
   
   const filteredDoctors = doctors.filter(d => 
@@ -203,7 +274,9 @@ export default function BookAppointmentPage() {
                     </div>
                  </CardContent>
                  <CardFooter>
-                     <Button className="w-full" onClick={handleBookingConfirmation} disabled={!date || !time}>Request Appointment</Button>
+                     <Button className="w-full" onClick={handleBookingConfirmation} disabled={!date || !time || isBooking}>
+                        {isBooking ? 'Requesting...' : 'Request Appointment'}
+                     </Button>
                  </CardFooter>
             </>
         )}
