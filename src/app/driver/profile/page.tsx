@@ -12,7 +12,7 @@ import { CheckCircle, QrCode, Download, KeyRound } from 'lucide-react'
 import DriverIdCard from '@/components/driver-id-card'
 import { db, auth } from '@/lib/firebase'
 import { collection, query, where, onSnapshot } from 'firebase/firestore'
-import { Skeleton } from '@/components/ui/skeleton'
+import { Skeleton } from './ui/skeleton'
 import { useToast } from '@/hooks/use-toast'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger, } from "@/components/ui/alert-dialog"
@@ -187,23 +187,10 @@ export default function ProfilePage() {
         }
         
         try {
-            // Ensure the reCAPTCHA container is clean
-            const recaptchaContainer = document.getElementById('recaptcha-container-profile');
-            if (recaptchaContainer) {
-                recaptchaContainer.innerHTML = '';
-            }
             // @ts-ignore
-            if (window.recaptchaVerifierProfile) {
-                // @ts-ignore
-                window.recaptchaVerifierProfile.clear();
-            }
-
-            const verifier = new RecaptchaVerifier(auth, 'recaptcha-container-profile', {
-                'size': 'invisible',
-                'callback': () => {}
-            });
+            window.recaptchaVerifier = window.recaptchaVerifier || new RecaptchaVerifier(auth, 'recaptcha-container-profile', { size: 'invisible' });
             // @ts-ignore
-            window.recaptchaVerifierProfile = verifier;
+            const verifier = window.recaptchaVerifier;
 
             const fullPhoneNumber = `+91${partnerData.phone}`;
             const result = await signInWithPhoneNumber(auth, fullPhoneNumber, verifier);
@@ -422,5 +409,3 @@ export default function ProfilePage() {
       </div>
   );
 }
-
-    
