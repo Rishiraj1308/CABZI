@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Skeleton } from '@/components/ui/skeleton'
 import { useToast } from '@/hooks/use-toast'
 import { useDb } from '@/firebase/client-provider'
-import { collection, query, where, getDocs, doc, updateDoc } from 'firebase/firestore'
+import { collection, query, where, getDocs, doc, updateDoc, onSnapshot } from 'firebase/firestore'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
@@ -40,26 +40,32 @@ export default function DoctorProfilePage() {
         }
         const session = localStorage.getItem('cabzi-doctor-session');
         if (session) {
-            const { partnerId } = JSON.parse(session);
-            // This assumes doctor documents are stored in a top-level `doctors` collection.
-            // A more robust implementation might query a hospital's subcollection.
-            const q = query(collection(db, "doctors"), where("partnerId", "==", partnerId));
+            const { partnerId, hospitalId, name } = JSON.parse(session);
+
+            if (!hospitalId || !partnerId) {
+                toast({ variant: 'destructive', title: 'Error', description: 'Session is invalid. Could not find hospital or partner ID.' });
+                setIsLoading(false);
+                return;
+            }
+
+            const doctorRef = doc(db, `ambulances/${hospitalId}/doctors`, partnerId);
             
-            getDocs(q).then(querySnapshot => {
-                if (!querySnapshot.empty) {
-                    const docData = querySnapshot.docs[0].data();
-                    setProfile({
-                        id: querySnapshot.docs[0].id,
-                        ...docData
+            const unsubscribe = onSnapshot(doctorRef, (docSnap) => {
+                if (docSnap.exists()) {
+                     setProfile({
+                        id: docSnap.id,
+                        ...docSnap.data()
                     } as DoctorProfileData);
                 } else {
                     toast({ variant: 'destructive', title: 'Error', description: 'Could not find your profile.' });
                 }
                 setIsLoading(false);
-            }).catch(error => {
-                console.error("Error fetching doctor profile:", error);
-                setIsLoading(false);
+            }, (error) => {
+                 console.error("Error fetching doctor profile:", error);
+                 setIsLoading(false);
             });
+
+            return () => unsubscribe();
         } else {
             setIsLoading(false);
         }
@@ -68,7 +74,11 @@ export default function DoctorProfilePage() {
     const handleAvailabilityToggle = async (isAvailable: boolean) => {
         if (!profile || !db) return;
         
-        const doctorRef = doc(db, 'doctors', profile.id);
+        const session = localStorage.getItem('cabzi-doctor-session');
+        if (!session) return;
+        const { hospitalId } = JSON.parse(session);
+        
+        const doctorRef = doc(db, `ambulances/${hospitalId}/doctors`, profile.id);
         try {
             await updateDoc(doctorRef, { isAvailable });
             setProfile(prev => prev ? { ...prev, isAvailable } : null);
