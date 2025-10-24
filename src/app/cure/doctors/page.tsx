@@ -83,9 +83,9 @@ interface Appointment {
 }
 
 const mockAppointments: Appointment[] = [
-  { id: 'APP001', patientName: 'Priya Singh', patientPhone: '9876543210', department: 'Cardiology', doctorName: 'Dr. Ramesh Sharma', appointmentDate: '2024-09-10T11:00:00', status: 'Pending', isRecurring: true },
-  { id: 'APP002', patientName: 'Rajesh Verma', patientPhone: '9988776655', department: 'Orthopedics', doctorName: 'Dr. Priya Gupta', appointmentDate: '2024-09-10T14:00:00', status: 'Confirmed' },
-  { id: 'APP003', patientName: 'Anita Desai', patientPhone: '9123456789', department: 'General Physician', doctorName: 'Dr. Alok Verma', appointmentDate: '2024-08-25T10:00:00', status: 'Completed' },
+  { id: 'APP001', patientName: 'Priya Singh', patientPhone: '9876543210', department: 'Cardiology', doctorName: 'Dr. Ramesh Sharma', appointmentDate: '2024-09-10T11:00:00', appointmentTime: '11:00 AM', status: 'Pending', isRecurring: true },
+  { id: 'APP002', patientName: 'Rajesh Verma', patientPhone: '9988776655', department: 'Orthopedics', doctorName: 'Dr. Priya Gupta', appointmentDate: '2024-09-10T14:00:00', appointmentTime: '02:00 PM', status: 'Confirmed' },
+  { id: 'APP003', patientName: 'Anita Desai', patientPhone: '9123456789', department: 'General Physician', doctorName: 'Dr. Alok Verma', appointmentDate: '2024-08-25T10:00:00', appointmentTime: '10:00 AM', status: 'Completed' },
 ];
 
 const mockSchedule = {
@@ -203,7 +203,7 @@ export default function DoctorsPage() {
 
     setAppointments(prev => prev.map(appt => 
       appt.id === selectedAppointment.id 
-      ? { ...appt, appointmentDate: newDateTime.toISOString(), status: 'Confirmed' } 
+      ? { ...appt, appointmentDate: newDateTime.toISOString(), appointmentTime: newTime, status: 'Confirmed' } 
       : appt
     ));
     
@@ -725,5 +725,3 @@ const handleAddDoctor = async (event: React.FormEvent<HTMLFormElement>) => {
     </div>
   )
 }
-
-    
