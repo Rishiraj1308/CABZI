@@ -135,7 +135,7 @@ export default function LoginPage() {
   const findAndSetSession = async (user: { uid: string; email?: string | null; phoneNumber?: string | null }) => {
     if (!db) return false;
 
-    const isPartnerLogin = ['driver', 'mechanic', 'cure', 'doctor', 'ambulance'].includes(roleFromQuery);
+    const isUserLogin = roleFromQuery === 'user';
     
     const partnerCollections = [
         { name: 'partners', role: 'driver', identifier: 'phone' },
@@ -146,9 +146,9 @@ export default function LoginPage() {
     ];
     const userCollections = [{ name: 'users', role: 'user', identifier: 'phone' }];
 
-    const collectionsToSearch = isPartnerLogin 
-        ? [...partnerCollections, ...userCollections] 
-        : [...userCollections, ...partnerCollections];
+    // If it's a user login, ONLY search the 'users' collection.
+    // If it's a partner login, search ALL partner collections.
+    const collectionsToSearch = isUserLogin ? userCollections : partnerCollections;
     
     let searchIdentifier: string | undefined;
     
@@ -178,10 +178,6 @@ export default function LoginPage() {
         if (!snapshot.empty) {
             const userDoc = snapshot.docs[0];
             const userData = userDoc.data();
-
-             if (isPartnerLogin && role === 'user') {
-                continue; 
-            }
             
             // Password check for partnerId logins
             if (inputType === 'partnerId' && userData.password !== password) {
@@ -194,9 +190,8 @@ export default function LoginPage() {
                 phone: userData.phone, 
                 email: userData.email,
                 name: userData.name,
-                // For CURE partners, the doc ID is the partnerId. For others, it's a field.
                 partnerId: role === 'cure' ? userDoc.id : userData.partnerId,
-                id: userDoc.id, // Storing document ID for doctor/ambulance lookups
+                id: userDoc.id,
             };
 
             if (role === 'doctor' || role === 'ambulance') {
@@ -222,11 +217,13 @@ export default function LoginPage() {
         }
     }
     
-    if (roleFromQuery === 'user' && inputType !== 'partnerId') {
-        setStep('details');
+    // This part is only reached if no account was found in the searched collections.
+    if (isUserLogin) {
+        setStep('details'); // If user login and not found, proceed to create account.
         return true; 
     } else {
-        toast({ variant: 'destructive', title: 'Account Not Found', description: 'This account does not exist. Please check your credentials or onboard first.' });
+        // If partner login and not found, show an error.
+        toast({ variant: 'destructive', title: 'Partner Not Found', description: 'This account does not exist. Please check your credentials or onboard first.' });
         return false;
     }
   }
@@ -589,5 +586,3 @@ export default function LoginPage() {
       </div>
   );
 }
-
-    
