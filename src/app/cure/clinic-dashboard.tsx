@@ -59,7 +59,9 @@ const ClinicDashboard = () => {
             return;
         }
         
-        // Fetch all pending and confirmed appointments, not just for today
+        const today = new Date();
+        const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+
         const apptQuery = query(
             collection(db, 'appointments'),
             where('hospitalId', '==', partnerId),
@@ -70,14 +72,10 @@ const ClinicDashboard = () => {
             const apptsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Appointment));
             setAppointments(apptsData);
             
-            // Calculate stats for today only
-            const today = new Date();
-            const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 0, 0, 0);
             const todayAppointmentsCount = apptsData.filter(a => a.appointmentDate.toDate() >= startOfToday).length;
             setStats(prev => ({...prev, todayAppointments: todayAppointmentsCount}));
         });
         
-        // Fetch doctors for the roster
         const doctorsQuery = query(collection(db, `ambulances/${partnerId}/doctors`));
         const unsubDoctors = onSnapshot(doctorsQuery, (snapshot) => {
             const doctorsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Doctor));
