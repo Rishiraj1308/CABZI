@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Skeleton } from '@/components/ui/skeleton'
 import { useToast } from '@/hooks/use-toast'
 import { useDb } from '@/firebase/client-provider'
-import { collection, query, where, getDocs, doc, updateDoc, onSnapshot } from 'firebase/firestore'
+import { collection, query, where, onSnapshot, doc, updateDoc, getDocs } from 'firebase/firestore'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
@@ -40,7 +40,7 @@ export default function DoctorProfilePage() {
         }
         const session = localStorage.getItem('cabzi-doctor-session');
         if (session) {
-            const { partnerId, hospitalId, name } = JSON.parse(session);
+            const { partnerId, hospitalId } = JSON.parse(session);
 
             if (!hospitalId || !partnerId) {
                 toast({ variant: 'destructive', title: 'Error', description: 'Session is invalid. Could not find hospital or partner ID.' });
@@ -48,10 +48,12 @@ export default function DoctorProfilePage() {
                 return;
             }
 
-            const doctorRef = doc(db, `ambulances/${hospitalId}/doctors`, partnerId);
+            const doctorsCollectionRef = collection(db, `ambulances/${hospitalId}/doctors`);
+            const q = query(doctorsCollectionRef, where("partnerId", "==", partnerId));
             
-            const unsubscribe = onSnapshot(doctorRef, (docSnap) => {
-                if (docSnap.exists()) {
+            const unsubscribe = onSnapshot(q, (querySnapshot) => {
+                if (!querySnapshot.empty) {
+                    const docSnap = querySnapshot.docs[0];
                      setProfile({
                         id: docSnap.id,
                         ...docSnap.data()
