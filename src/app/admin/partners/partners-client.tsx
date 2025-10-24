@@ -7,7 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { useToast } from '@/hooks/use-toast'
-import { Car, Wrench, MoreHorizontal, Trash2, Search, Check, X, Ban, Ambulance, Stethoscope, Clock, BadgeCheck } from 'lucide-react'
+import { Car, Wrench, MoreHorizontal, Trash2, Search, Check, X, Ban, Ambulance, Stethoscope, Clock, BadgeCheck, Handshake, CheckCircle, CircleHelp, AlertTriangle } from 'lucide-react'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -46,6 +46,27 @@ interface PartnerData {
   hospitalName?: string;
   hospitalId?: string;
 }
+
+interface StatCardProps {
+    title: string;
+    value: string | number;
+    description: string;
+    icon: React.ElementType;
+}
+
+const StatCard = ({ title, value, description, icon: Icon }: StatCardProps) => (
+    <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">{title}</CardTitle>
+            <Icon className="h-4 w-4 text-muted-foreground" />
+        </CardHeader>
+        <CardContent>
+            <div className="text-2xl font-bold">{value}</div>
+            <p className="text-xs text-muted-foreground">{description}</p>
+        </CardContent>
+    </Card>
+);
+
 
 export default function PartnersClient() {
   const [allPartners, setAllPartners] = useState<PartnerData[]>([]);
@@ -156,6 +177,16 @@ export default function PartnersClient() {
     );
   }, [allPartners, searchQuery]);
   
+  const stats = useMemo(() => {
+    return {
+      total: allPartners.length,
+      verified: allPartners.filter(p => p.status === 'verified' || p.status === 'Verified').length,
+      pending: allPartners.filter(p => p.status === 'pending_verification' || p.status === 'Pending' || p.status === 'Awaiting Final Approval').length,
+      flagged: allPartners.filter(p => p.status === 'rejected' || p.status === 'Rejected' || p.status === 'suspended').length,
+    }
+  }, [allPartners]);
+
+
   const getCollectionName = (type: string, hospitalId?: string) => {
     switch (type) {
       case 'driver': return 'partners';
@@ -349,47 +380,55 @@ export default function PartnersClient() {
   }
 
   return (
-    <Card>
-      <CardHeader>
-         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <div>
-                <CardTitle>Unified Partner Management</CardTitle>
-                <CardDescription>View, approve, or reject all partners across the CPR ecosystem.</CardDescription>
-            </div>
-            <div className="relative w-full md:w-auto">
-                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input
-                    type="search"
-                    placeholder="Search by Name, Phone, ID..."
-                    className="pl-8 sm:w-full md:w-[300px]"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                />
-            </div>
-        </div>
-      </CardHeader>
-      <CardContent>
-        <Tabs defaultValue="path">
-            <TabsList className="grid w-full grid-cols-4">
-                <TabsTrigger value="path">Path (Drivers)</TabsTrigger>
-                <TabsTrigger value="resq">ResQ (Mechanics)</TabsTrigger>
-                <TabsTrigger value="cure">Cure (Hospitals)</TabsTrigger>
-                <TabsTrigger value="doctors">Doctor Approvals</TabsTrigger>
-            </TabsList>
-            <TabsContent value="path" className="mt-4">
-              {renderTable('driver')}
-            </TabsContent>
-            <TabsContent value="resq" className="mt-4">
-              {renderTable('mechanic')}
-            </TabsContent>
-            <TabsContent value="cure" className="mt-4">
-              {renderTable('cure')}
-            </TabsContent>
-             <TabsContent value="doctors" className="mt-4">
-              {renderTable('doctor')}
-            </TabsContent>
-        </Tabs>
-      </CardContent>
-    </Card>
+    <>
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <StatCard title="Total Partners" value={isLoading ? '...' : stats.total} description="Path, ResQ, and Cure" icon={Handshake} />
+        <StatCard title="Verified" value={isLoading ? '...' : stats.verified} description="Active on the platform" icon={CheckCircle} />
+        <StatCard title="Pending Verification" value={isLoading ? '...' : stats.pending} description="Awaiting admin approval" icon={CircleHelp} />
+        <StatCard title="Flagged/Rejected" value={isLoading ? '...' : stats.flagged} description="Suspended or rejected partners" icon={AlertTriangle} />
+      </div>
+      <Card>
+        <CardHeader>
+           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+              <div>
+                  <CardTitle>Unified Partner Management</CardTitle>
+                  <CardDescription>View, approve, or reject all partners across the CPR ecosystem.</CardDescription>
+              </div>
+              <div className="relative w-full md:w-auto">
+                  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Input
+                      type="search"
+                      placeholder="Search by Name, Phone, ID..."
+                      className="pl-8 sm:w-full md:w-[300px]"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                  />
+              </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <Tabs defaultValue="path">
+              <TabsList className="grid w-full grid-cols-4">
+                  <TabsTrigger value="path">Path (Drivers)</TabsTrigger>
+                  <TabsTrigger value="resq">ResQ (Mechanics)</TabsTrigger>
+                  <TabsTrigger value="cure">Cure (Hospitals)</TabsTrigger>
+                  <TabsTrigger value="doctors">Doctor Approvals</TabsTrigger>
+              </TabsList>
+              <TabsContent value="path" className="mt-4">
+                {renderTable('driver')}
+              </TabsContent>
+              <TabsContent value="resq" className="mt-4">
+                {renderTable('mechanic')}
+              </TabsContent>
+              <TabsContent value="cure" className="mt-4">
+                {renderTable('cure')}
+              </TabsContent>
+               <TabsContent value="doctors" className="mt-4">
+                {renderTable('doctor')}
+              </TabsContent>
+          </Tabs>
+        </CardContent>
+      </Card>
+    </>
   )
 }
