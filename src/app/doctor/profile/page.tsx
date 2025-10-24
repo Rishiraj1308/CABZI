@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/button'
 import { Stethoscope, Briefcase, BadgeCheck, Hospital, Clock, Settings, Bell, KeyRound } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Switch } from '@/components/ui/switch'
+import { TimePicker } from '@/components/ui/time-picker'
 
 interface DoctorProfileData {
     id: string;
@@ -25,11 +26,16 @@ interface DoctorProfileData {
     qualifications: string;
     experience: string;
     isAvailable: boolean;
+    weeklyAvailability?: Record<string, { available: boolean, start: string, end: string }>;
 }
+
+const daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+
 
 export default function DoctorProfilePage() {
     const [profile, setProfile] = useState<DoctorProfileData | null>(null);
     const [isLoading, setIsLoading] = useState(true);
+    const [availability, setAvailability] = useState<Record<string, { available: boolean, start: string, end: string }>>({});
     const { toast } = useToast();
     const db = useDb();
     
@@ -51,10 +57,16 @@ export default function DoctorProfilePage() {
             const unsubscribe = onSnapshot(q, (querySnapshot) => {
                 if (!querySnapshot.empty) {
                     const docSnap = querySnapshot.docs[0];
-                     setProfile({
-                        id: docSnap.id,
-                        ...docSnap.data()
-                    } as DoctorProfileData);
+                    const data = docSnap.data() as DoctorProfileData
+                     setProfile({ id: docSnap.id, ...data });
+
+                     // Initialize availability state
+                    const initialAvailability: Record<string, { available: boolean, start: string, end: string }> = {};
+                    daysOfWeek.forEach(day => {
+                        initialAvailability[day] = data.weeklyAvailability?.[day] || { available: false, start: '09:00', end: '17:00' };
+                    });
+                    setAvailability(initialAvailability);
+
                 } else {
                     toast({ variant: 'destructive', title: 'Error', description: 'Could not find your profile.' });
                 }
@@ -70,23 +82,28 @@ export default function DoctorProfilePage() {
         }
     }, [toast, db]);
 
-    const handleAvailabilityToggle = async (isAvailable: boolean) => {
+    const handleAvailabilityChange = (day: string, field: 'available' | 'start' | 'end', value: boolean | string) => {
+        setAvailability(prev => ({
+            ...prev,
+            [day]: {
+                ...prev[day],
+                [field]: value
+            }
+        }));
+    };
+
+    const handleSaveAvailability = async () => {
         if (!profile || !db) return;
-        
         const session = localStorage.getItem('cabzi-doctor-session');
         if (!session) return;
         const { hospitalId } = JSON.parse(session);
-        
+
         const doctorRef = doc(db, `ambulances/${hospitalId}/doctors`, profile.id);
         try {
-            await updateDoc(doctorRef, { isAvailable });
-            setProfile(prev => prev ? { ...prev, isAvailable } : null);
-            toast({
-                title: isAvailable ? 'You are now Online' : 'You are now Offline',
-                description: isAvailable ? 'You will now appear for new appointment bookings.' : 'You will not be visible for new bookings.',
-            });
+            await updateDoc(doctorRef, { weeklyAvailability: availability });
+            toast({ title: "Availability Saved", description: "Your weekly schedule has been updated." });
         } catch (error) {
-             toast({ variant: 'destructive', title: 'Update Failed' });
+            toast({ variant: 'destructive', title: "Save Failed", description: "Could not update your schedule." });
         }
     }
 
@@ -157,45 +174,42 @@ export default function DoctorProfilePage() {
                 <div className="lg:col-span-2 space-y-6">
                      <Card>
                         <CardHeader>
-                            <CardTitle className="flex items-center gap-2"><Settings className="w-5 h-5 text-primary"/> Availability &amp; Notifications</CardTitle>
+                            <CardTitle className="flex items-center gap-2"><Settings className="w-5 h-5 text-primary"/> Manage Weekly Availability</CardTitle>
+                            <CardDescription>Set your working hours for the week. This will determine when you appear for new appointment bookings.</CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-4">
-                             <div className="flex items-center justify-between p-4 border rounded-lg">
-                                <div>
-                                    <Label htmlFor="availability-switch" className="font-semibold text-lg">My Availability</Label>
-                                    <p className="text-sm text-muted-foreground">Toggle this to appear for new appointment bookings.</p>
-                                </div>
-                                <Switch id="availability-switch" checked={profile.isAvailable} onCheckedChange={handleAvailabilityToggle} />
-                            </div>
-                             <div className="p-4 border rounded-lg space-y-3">
-                                 <h4 className="font-semibold">Notification Preferences</h4>
-                                <div className="flex items-center justify-between">
-                                    <Label htmlFor="new-appointment-notif">New Appointment Requests</Label>
-                                    <Switch id="new-appointment-notif" defaultChecked />
-                                </div>
-                                <div className="flex items-center justify-between">
-                                    <Label htmlFor="cancellation-notif">Cancellations &amp; Reschedules</Label>
-                                    <Switch id="cancellation-notif" defaultChecked />
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
-                     <Card>
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2"><Briefcase className="w-5 h-5 text-primary"/> Professional Details</CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            <div className="p-3 rounded-lg border flex justify-between items-center bg-muted/50">
-                                <Label className="font-semibold flex items-center gap-2"><Stethoscope/>Specialization</Label>
-                                <Badge variant="secondary" className="text-base">{profile.specialization}</Badge>
-                            </div>
-                             <div className="p-3 rounded-lg border flex justify-between items-center bg-muted/50">
-                                <Label className="font-semibold flex items-center gap-2"><BadgeCheck/>Qualifications</Label>
-                                <span className="font-medium">{profile.qualifications}</span>
-                            </div>
+                           {daysOfWeek.map(day => (
+                               <div key={day} className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 p-3 border rounded-lg bg-muted/50">
+                                   <div className="flex items-center gap-3">
+                                       <Switch 
+                                         id={`avail-${day}`} 
+                                         checked={availability[day]?.available} 
+                                         onCheckedChange={(checked) => handleAvailabilityChange(day, 'available', checked)}
+                                       />
+                                       <Label htmlFor={`avail-${day}`} className="font-semibold w-24">{day}</Label>
+                                   </div>
+                                   <div className="flex items-center gap-2 flex-1">
+                                       <Input 
+                                          type="time" 
+                                          value={availability[day]?.start}
+                                          onChange={e => handleAvailabilityChange(day, 'start', e.target.value)}
+                                          disabled={!availability[day]?.available}
+                                          className="bg-background"
+                                       />
+                                       <span>-</span>
+                                       <Input 
+                                          type="time"
+                                          value={availability[day]?.end}
+                                          onChange={e => handleAvailabilityChange(day, 'end', e.target.value)}
+                                          disabled={!availability[day]?.available}
+                                          className="bg-background"
+                                       />
+                                   </div>
+                               </div>
+                           ))}
                         </CardContent>
                          <CardFooter>
-                            <Button variant="outline">Update My Profile (Requires Admin Approval)</Button>
+                            <Button onClick={handleSaveAvailability}>Save Schedule</Button>
                         </CardFooter>
                     </Card>
                 </div>

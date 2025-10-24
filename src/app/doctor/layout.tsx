@@ -4,7 +4,7 @@
 import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { LogOut, Sun, Moon, LayoutDashboard, Calendar, User, PanelLeft, Bell, BarChart, Settings } from 'lucide-react'
+import { LogOut, Sun, Moon, LayoutDashboard, Calendar, User, PanelLeft, Bell, BarChart, Settings, Power } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Toaster } from '@/components/ui/toaster'
@@ -19,6 +19,10 @@ import { useFirebase } from '@/firebase/client-provider'
 import { MotionDiv } from '@/components/ui/motion-div'
 import { Badge } from '@/components/ui/badge'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { Switch } from '@/components/ui/switch'
+import { Label } from '@/components/ui/label'
+import { doc, onSnapshot, updateDoc } from 'firebase/firestore'
+
 
 const navItems = [
   { href: '/doctor', label: 'Dashboard', icon: LayoutDashboard },
@@ -54,12 +58,57 @@ function ThemeToggle() {
     )
 }
 
+function AvailabilityToggle({ hospitalId, doctorId }: { hospitalId: string | null; doctorId: string | null }) {
+    const [isAvailable, setIsAvailable] = useState(false);
+    const { db } = useFirebase();
+    const { toast } = useToast();
+
+    useEffect(() => {
+        if (!db || !hospitalId || !doctorId) return;
+        const doctorRef = doc(db, `ambulances/${hospitalId}/doctors`, doctorId);
+        const unsubscribe = onSnapshot(doctorRef, (docSnap) => {
+            if (docSnap.exists()) {
+                setIsAvailable(docSnap.data().isAvailable || false);
+            }
+        });
+        return () => unsubscribe();
+    }, [db, hospitalId, doctorId]);
+
+    const handleToggle = async (checked: boolean) => {
+        if (!db || !hospitalId || !doctorId) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Could not update availability.' });
+            return;
+        }
+        const doctorRef = doc(db, `ambulances/${hospitalId}/doctors`, doctorId);
+        try {
+            await updateDoc(doctorRef, { isAvailable: checked });
+            toast({
+                title: checked ? "You're now Online" : "You're now Offline",
+                description: checked ? "You will appear for new bookings." : "You won't receive new booking requests.",
+            });
+        } catch (error) {
+            toast({ variant: 'destructive', title: 'Update Failed' });
+        }
+    };
+
+    return (
+        <div className="flex items-center gap-2">
+            <Switch id="availability-toggle-header" checked={isAvailable} onCheckedChange={handleToggle} />
+            <Label htmlFor="availability-toggle-header" className={cn("font-medium", isAvailable ? 'text-green-600' : 'text-muted-foreground')}>
+                {isAvailable ? 'Online' : 'Offline'}
+            </Label>
+        </div>
+    );
+}
+
 export default function DoctorLayout({ children }: { children: React.ReactNode }) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
   const { toast } = useToast();
   const [userName, setUserName] = useState('');
+  const [hospitalId, setHospitalId] = useState<string | null>(null);
+  const [doctorId, setDoctorId] = useState<string | null>(null);
   const { auth } = useFirebase();
   const unreadCount = mockNotifications.filter(n => !n.read).length;
   
@@ -68,7 +117,10 @@ export default function DoctorLayout({ children }: { children: React.ReactNode }
         const sessionString = localStorage.getItem('cabzi-doctor-session');
         if (sessionString) {
             try {
-                setUserName(JSON.parse(sessionString).name);
+                const sessionData = JSON.parse(sessionString);
+                setUserName(sessionData.name);
+                setHospitalId(sessionData.hospitalId);
+                setDoctorId(sessionData.partnerId); // Assuming partnerId is the doc id
             } catch (error) {
                 console.error("Failed to parse session, redirecting", error);
                 localStorage.removeItem('cabzi-doctor-session');
@@ -164,6 +216,7 @@ export default function DoctorLayout({ children }: { children: React.ReactNode }
                     </SheetContent>
                 </Sheet>
                  <div className="flex w-full items-center gap-4 md:ml-auto md:gap-2 lg:gap-4 justify-end">
+                    <AvailabilityToggle hospitalId={hospitalId} doctorId={doctorId} />
                     <ThemeToggle/>
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
