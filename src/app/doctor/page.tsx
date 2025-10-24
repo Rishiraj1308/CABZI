@@ -5,12 +5,18 @@ import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, User, Clock, CheckCircle, Percent, Video, Building, FileText, PlayCircle, Plus, UploadCloud, Search, History, BrainCircuit, AlertTriangle } from 'lucide-react';
+import { Calendar, User, Clock, CheckCircle, Percent, Video, Building, FileText, PlayCircle, Plus, UploadCloud, Search, History, BrainCircuit, AlertTriangle, Send, UserPlus, FileUp, Share } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Textarea } from '@/components/ui/textarea';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar as CalendarPicker } from '@/components/ui/calendar';
+import { cn } from '@/lib/utils';
+import { format } from 'date-fns';
+import { Label } from '@/components/ui/label';
 
 const mockDashboardStats = {
     todayAppointments: 12,
@@ -80,6 +86,11 @@ const quickActions = [
     { title: 'View History', icon: History, action: () => {} },
 ];
 
+const timeSlots = [
+  '09:00 AM', '10:00 AM', '11:00 AM', '12:00 PM', '02:00 PM', '03:00 PM', '04:00 PM'
+]
+
+
 const StatCard = ({ title, value, icon: Icon, description }: { title: string, value: string, icon: React.ElementType, description: string }) => (
     <Card>
         <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -106,6 +117,8 @@ const getStatusBadge = (status: string) => {
 
 export default function DoctorDashboardPage() {
     const [selectedPatient, setSelectedPatient] = useState<(typeof mockAppointments)[0] | null>(null);
+    const [date, setDate] = useState<Date | undefined>(new Date());
+    const [time, setTime] = useState('');
     const { toast } = useToast();
 
   return (
@@ -157,7 +170,7 @@ export default function DoctorDashboardPage() {
                                                 <Button variant="outline" size="sm" onClick={() => setSelectedPatient(apt)}><FileText className="w-4 h-4 mr-2"/>View Details</Button>
                                             </DialogTrigger>
                                             <Button size="sm" disabled={apt.status !== 'Checked-in'}><PlayCircle className="w-4 h-4 mr-2"/>Start Consultation</Button>
-                                            <Button variant="secondary" size="sm"><Plus className="w-4 h-4 mr-2"/>Add Notes</Button>
+                                            <Button variant="secondary" size="sm" onClick={() => toast({title: "Feature coming soon!"})}><Plus className="w-4 h-4 mr-2"/>Add Notes</Button>
                                             <Button variant="secondary" size="sm" disabled={apt.status === 'Completed'}><CheckCircle className="w-4 h-4 mr-2"/>Mark Complete</Button>
                                         </CardFooter>
                                     </Card>
@@ -170,14 +183,15 @@ export default function DoctorDashboardPage() {
                                         </DialogDescription>
                                     </DialogHeader>
                                     <Tabs defaultValue="history">
-                                        <TabsList className="grid w-full grid-cols-3">
+                                        <TabsList className="grid w-full grid-cols-4">
                                             <TabsTrigger value="history">Visit History</TabsTrigger>
                                             <TabsTrigger value="reports">Reports & Notes</TabsTrigger>
                                             <TabsTrigger value="followup">Schedule Follow-up</TabsTrigger>
+                                             <TabsTrigger value="actions">Post-Consultation</TabsTrigger>
                                         </TabsList>
                                         <TabsContent value="history" className="mt-4">
                                             <Table>
-                                                <TableHeader><TableRow><TableHead>Date</TableHead><TableHead>Reason for Visit</TableHead><TableHead>Doctor&apos;s Notes</TableHead></TableRow></TableHeader>
+                                                <TableHeader><TableRow><TableHead>Date</TableHead><TableHead>Reason for Visit</TableHead><TableHead>Doctor's Notes</TableHead></TableRow></TableHeader>
                                                 <TableBody>
                                                     {mockPastVisits.map(visit => (
                                                         <TableRow key={visit.date}><TableCell>{visit.date}</TableCell><TableCell>{visit.reason}</TableCell><TableCell>{visit.notes}</TableCell></TableRow>
@@ -185,29 +199,62 @@ export default function DoctorDashboardPage() {
                                                 </TableBody>
                                             </Table>
                                         </TabsContent>
-                                        <TabsContent value="reports" className="mt-4">
-                                        <Card>
-                                            <CardHeader><CardTitle>Uploaded Reports</CardTitle></CardHeader>
-                                            <CardContent>
+                                        <TabsContent value="reports" className="mt-4 space-y-4">
+                                            <Card>
+                                                <CardHeader><CardTitle>Clinical Notes</CardTitle></CardHeader>
+                                                <CardContent>
+                                                    <Textarea placeholder="Add your clinical notes for this consultation..."/>
+                                                     <Button className="mt-2" size="sm">Save Notes</Button>
+                                                </CardContent>
+                                            </Card>
+                                             <Card>
+                                                <CardHeader><CardTitle>Uploaded Reports</CardTitle></CardHeader>
+                                                <CardContent>
                                                     <p className="text-sm text-muted-foreground text-center py-4">No reports have been uploaded for this patient yet.</p>
-                                                <div className="mt-4 p-6 border-2 border-dashed rounded-lg text-center">
-                                                    <UploadCloud className="w-10 h-10 text-muted-foreground mx-auto mb-2"/>
-                                                    <p className="font-semibold mb-1">Upload New Report</p>
-                                                    <p className="text-xs text-muted-foreground mb-2">Drag & drop files here or click to browse.</p>
-                                                    <Button size="sm" variant="outline">Browse Files</Button>
-                                                </div>
-                                            </CardContent>
-                                        </Card>
+                                                    <div className="mt-4 p-6 border-2 border-dashed rounded-lg text-center">
+                                                        <FileUp className="w-10 h-10 text-muted-foreground mx-auto mb-2"/>
+                                                        <p className="font-semibold mb-1">Upload Prescription / Report</p>
+                                                        <p className="text-xs text-muted-foreground mb-2">Drag & drop files here or click to browse.</p>
+                                                        <Button size="sm" variant="outline">Browse Files</Button>
+                                                    </div>
+                                                </CardContent>
+                                            </Card>
                                         </TabsContent>
                                         <TabsContent value="followup" className="mt-4">
                                             <Card>
                                                 <CardHeader><CardTitle>Schedule a Follow-up Visit</CardTitle><CardDescription>Book the next appointment for this patient.</CardDescription></CardHeader>
                                                 <CardContent className="space-y-4">
-                                                    <p className="text-sm text-muted-foreground">Follow-up scheduling feature coming soon.</p>
+                                                    <div className="space-y-2">
+                                                        <Label>Select Date</Label>
+                                                        <Popover>
+                                                            <PopoverTrigger asChild>
+                                                                <Button variant={"outline"} className={cn("w-full justify-start text-left font-normal", !date && "text-muted-foreground")}>
+                                                                    <Calendar className="mr-2 h-4 w-4" />
+                                                                    {date ? format(date, "PPP") : <span>Pick a date</span>}
+                                                                </Button>
+                                                            </PopoverTrigger>
+                                                            <PopoverContent className="w-auto p-0"><CalendarPicker mode="single" selected={date} onSelect={setDate} initialFocus/></PopoverContent>
+                                                        </Popover>
+                                                    </div>
+                                                    <div className="space-y-2">
+                                                        <Label>Select Time</Label>
+                                                        <div className="grid grid-cols-4 gap-2">
+                                                          {timeSlots.map(slot => (<Button key={slot} variant={time === slot ? 'default' : 'outline'} onClick={() => setTime(slot)}>{slot}</Button>))}
+                                                        </div>
+                                                    </div>
                                                 </CardContent>
                                                 <CardFooter>
-                                                    <Button>Schedule Follow-up</Button>
+                                                    <Button disabled={!date || !time}>Schedule Follow-up</Button>
                                                 </CardFooter>
+                                            </Card>
+                                        </TabsContent>
+                                         <TabsContent value="actions" className="mt-4">
+                                            <Card>
+                                                <CardHeader><CardTitle>Post-Consultation Actions</CardTitle><CardDescription>Additional actions to ensure patient care continuity.</CardDescription></CardHeader>
+                                                <CardContent className="space-y-2">
+                                                    <Button variant="outline" className="w-full justify-start gap-2"><Share className="w-4 h-4"/>Refer Patient to Specialist</Button>
+                                                    <Button variant="outline" className="w-full justify-start gap-2"><Send className="w-4 h-4"/>Send Automated Care Instructions</Button>
+                                                </CardContent>
                                             </Card>
                                         </TabsContent>
                                     </Tabs>
@@ -257,3 +304,5 @@ export default function DoctorDashboardPage() {
     </div>
   );
 }
+
+    
