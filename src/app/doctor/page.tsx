@@ -80,11 +80,11 @@ const mockPastVisits = [
 ];
 
 const quickActions = [
-    { title: 'Add Appointment', icon: Plus, action: () => {} },
-    { title: 'Search Patient', icon: Search, action: () => {} },
-    { title: 'Upload Report', icon: UploadCloud, action: () => {} },
-    { title: 'Generate Note', icon: FileText, action: () => {} },
-    { title: 'View History', icon: History, action: () => {} },
+    { title: 'Add Appointment', icon: Plus, action: 'add_appointment' },
+    { title: 'Search Patient', icon: Search, action: 'search_patient' },
+    { title: 'Upload Report', icon: UploadCloud, action: 'upload_report' },
+    { title: 'Generate Note', icon: FileText, action: 'generate_note' },
+    { title: 'View History', icon: History, action: 'view_history' },
 ];
 
 const timeSlots = [
@@ -129,12 +129,16 @@ export default function DoctorDashboardPage() {
     const [date, setDate] = useState<Date | undefined>(new Date());
     const [time, setTime] = useState('');
     const { toast } = useToast();
+    
+    const handleQuickAction = (action: string) => {
+        toast({ title: "Feature coming soon!", description: `The "${action.replace(/_/g, ' ')}" functionality is under development.` });
+    };
 
   return (
     <div className="space-y-6">
        <div>
-        <h2 className="text-3xl font-bold tracking-tight">Doctor's Dashboard</h2>
-        <p className="text-muted-foreground">Welcome back, Doctor. Here's your snapshot for today.</p>
+        <h2 className="text-3xl font-bold tracking-tight">Doctor&apos;s Dashboard</h2>
+        <p className="text-muted-foreground">Welcome back, Doctor. Here&apos;s your snapshot for today.</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
@@ -149,7 +153,7 @@ export default function DoctorDashboardPage() {
             <div className="lg:col-span-2">
                  <Card>
                     <CardHeader>
-                        <CardTitle>Today's Schedule</CardTitle>
+                        <CardTitle>Today&apos;s Schedule</CardTitle>
                         <CardDescription>A list of your confirmed and pending appointments for today.</CardDescription>
                     </CardHeader>
                     <CardContent>
@@ -178,9 +182,9 @@ export default function DoctorDashboardPage() {
                                             <DialogTrigger asChild>
                                                 <Button variant="outline" size="sm" onClick={() => setSelectedPatient(apt)}><FileText className="w-4 h-4 mr-2"/>View Details</Button>
                                             </DialogTrigger>
-                                            <Button size="sm" disabled={apt.status !== 'Checked-in'}><PlayCircle className="w-4 h-4 mr-2"/>Start Consultation</Button>
-                                            <Button variant="secondary" size="sm" onClick={() => toast({title: "Feature coming soon!"})}><Plus className="w-4 h-4 mr-2"/>Add Notes</Button>
-                                            <Button variant="secondary" size="sm" disabled={apt.status === 'Completed'}><CheckCircle className="w-4 h-4 mr-2"/>Mark Complete</Button>
+                                            <Button size="sm" disabled={apt.status !== 'Checked-in'} onClick={() => handleQuickAction('start_consultation')}><PlayCircle className="w-4 h-4 mr-2"/>Start Consultation</Button>
+                                            <Button variant="secondary" size="sm" onClick={() => handleQuickAction('add_notes')}><Plus className="w-4 h-4 mr-2"/>Add Notes</Button>
+                                            <Button variant="secondary" size="sm" disabled={apt.status === 'Completed'} onClick={() => handleQuickAction('mark_complete')}><CheckCircle className="w-4 h-4 mr-2"/>Mark Complete</Button>
                                         </CardFooter>
                                     </Card>
                                 ))}
@@ -200,9 +204,7 @@ export default function DoctorDashboardPage() {
                                         </TabsList>
                                          <TabsContent value="history" className="mt-4 max-h-[60vh] overflow-y-auto p-1">
                                             <div className="relative pl-6">
-                                                {/* Vertical line */}
                                                 <div className="absolute left-9 top-0 h-full w-0.5 bg-border -translate-x-1/2"></div>
-                                                
                                                 <div className="space-y-8">
                                                     {mockPastVisits.map((visit, index) => (
                                                         <div key={index} className="relative">
@@ -219,8 +221,8 @@ export default function DoctorDashboardPage() {
                                                                             <p className="text-xs text-muted-foreground bg-muted p-2 rounded-md">{visit.notes}</p>
                                                                         </div>
                                                                          <div className="flex gap-2">
-                                                                            {visit.report && <Button variant="outline" size="sm" className="h-7"><FileSpreadsheet className="w-3 h-3 mr-2"/>{visit.report}</Button>}
-                                                                            {visit.prescription && <Button variant="outline" size="sm" className="h-7"><ClipboardPlus className="w-3 h-3 mr-2"/>{visit.prescription}</Button>}
+                                                                            {visit.report && <Button variant="outline" size="sm" className="h-7" onClick={() => handleQuickAction('view_report')}><FileSpreadsheet className="w-3 h-3 mr-2"/>{visit.report}</Button>}
+                                                                            {visit.prescription && <Button variant="outline" size="sm" className="h-7" onClick={() => handleQuickAction('view_prescription')}><ClipboardPlus className="w-3 h-3 mr-2"/>{visit.prescription}</Button>}
                                                                         </div>
                                                                     </CardContent>
                                                                 </Card>
@@ -235,7 +237,7 @@ export default function DoctorDashboardPage() {
                                                 <CardHeader><CardTitle>Clinical Notes</CardTitle></CardHeader>
                                                 <CardContent>
                                                     <Textarea placeholder="Add your clinical notes for this consultation..."/>
-                                                     <Button className="mt-2" size="sm">Save Notes</Button>
+                                                     <Button className="mt-2" size="sm" onClick={() => handleQuickAction('save_notes')}>Save Notes</Button>
                                                 </CardContent>
                                             </Card>
                                              <Card>
@@ -246,7 +248,7 @@ export default function DoctorDashboardPage() {
                                                         <FileUp className="w-10 h-10 text-muted-foreground mx-auto mb-2"/>
                                                         <p className="font-semibold mb-1">Upload Prescription / Report</p>
                                                         <p className="text-xs text-muted-foreground mb-2">Drag & drop files here or click to browse.</p>
-                                                        <Button size="sm" variant="outline">Browse Files</Button>
+                                                        <Button size="sm" variant="outline" onClick={() => handleQuickAction('upload_report')}>Browse Files</Button>
                                                     </div>
                                                 </CardContent>
                                             </Card>
@@ -275,7 +277,7 @@ export default function DoctorDashboardPage() {
                                                     </div>
                                                 </CardContent>
                                                 <CardFooter>
-                                                    <Button disabled={!date || !time}>Schedule Follow-up</Button>
+                                                    <Button disabled={!date || !time} onClick={() => handleQuickAction('schedule_follow_up')}>Schedule Follow-up</Button>
                                                 </CardFooter>
                                             </Card>
                                         </TabsContent>
@@ -283,8 +285,8 @@ export default function DoctorDashboardPage() {
                                             <Card>
                                                 <CardHeader><CardTitle>Post-Consultation Actions</CardTitle><CardDescription>Additional actions to ensure patient care continuity.</CardDescription></CardHeader>
                                                 <CardContent className="space-y-2">
-                                                    <Button variant="outline" className="w-full justify-start gap-2"><Share className="w-4 h-4"/>Refer Patient to Specialist</Button>
-                                                    <Button variant="outline" className="w-full justify-start gap-2"><Send className="w-4 h-4"/>Send Automated Care Instructions</Button>
+                                                    <Button variant="outline" className="w-full justify-start gap-2" onClick={() => handleQuickAction('refer_patient')}><Share className="w-4 h-4"/>Refer Patient to Specialist</Button>
+                                                    <Button variant="outline" className="w-full justify-start gap-2" onClick={() => handleQuickAction('send_instructions')}><Send className="w-4 h-4"/>Send Automated Care Instructions</Button>
                                                 </CardContent>
                                             </Card>
                                         </TabsContent>
@@ -303,7 +305,7 @@ export default function DoctorDashboardPage() {
                     </CardHeader>
                     <CardContent className="grid grid-cols-3 gap-2">
                         {quickActions.map(action => (
-                            <Button key={action.title} variant="outline" className="flex-col h-20" onClick={() => toast({ title: `${action.title} - Coming Soon!` })}>
+                            <Button key={action.title} variant="outline" className="flex-col h-20" onClick={() => handleQuickAction(action.action)}>
                                 <action.icon className="w-6 h-6 mb-1 text-primary"/>
                                 <span className="text-xs">{action.title}</span>
                             </Button>
