@@ -40,6 +40,7 @@ interface PartnerData {
   phone: string;
   partnerId?: string;
   status?: string;
+  docStatus?: 'Verified' | 'Pending' | 'Awaiting Final Approval' | 'Rejected';
   type: 'driver' | 'mechanic' | 'cure' | 'doctor';
   createdAt: { toDate: () => Date };
   specialization?: string;
@@ -120,7 +121,7 @@ export default function PartnersClient() {
                 name: `Dr. ${data.name}`,
                 phone: data.phone,
                 partnerId: data.partnerId,
-                status: data.docStatus,
+                docStatus: data.docStatus, // Keep the original field name
                 type: 'doctor',
                 createdAt: data.createdAt,
                 specialization: data.specialization,
@@ -180,9 +181,9 @@ export default function PartnersClient() {
   const stats = useMemo(() => {
     return {
       total: allPartners.length,
-      verified: allPartners.filter(p => p.status === 'verified' || p.status === 'Verified').length,
-      pending: allPartners.filter(p => p.status === 'pending_verification' || p.status === 'Pending' || p.status === 'Awaiting Final Approval').length,
-      flagged: allPartners.filter(p => p.status === 'rejected' || p.status === 'Rejected' || p.status === 'suspended').length,
+      verified: allPartners.filter(p => p.status === 'verified' || p.status === 'Verified' || p.docStatus === 'Verified').length,
+      pending: allPartners.filter(p => p.status === 'pending_verification' || p.docStatus === 'Pending' || p.docStatus === 'Awaiting Final Approval').length,
+      flagged: allPartners.filter(p => p.status === 'rejected' || p.status === 'Rejected' || p.docStatus === 'Rejected' || p.status === 'suspended').length,
     }
   }, [allPartners]);
 
@@ -202,11 +203,9 @@ export default function PartnersClient() {
     let collectionName = getCollectionName(type, hospitalId);
     if (!collectionName || !db) return;
     
-    // For doctors, the document ID is what we need, not the partnerId
     const docId = id;
     const partnerRef = doc(db, collectionName, docId);
     
-    // Use the correct status field for doctors
     const statusField = type === 'doctor' ? 'docStatus' : 'status';
 
     try {
@@ -241,7 +240,7 @@ export default function PartnersClient() {
     }
   }
 
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = (status?: string | 'Verified' | 'Pending' | 'Awaiting Final Approval' | 'Rejected') => {
     switch (status) {
       case 'verified':
       case 'Verified':
@@ -257,7 +256,7 @@ export default function PartnersClient() {
        case 'Awaiting Final Approval':
         return <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100/80 dark:bg-blue-900/40 dark:text-blue-200"><Clock className="w-3 h-3 mr-1"/> Awaiting Approval</Badge>
       default:
-        return <Badge variant="secondary">{status}</Badge>
+        return <Badge variant="secondary">{status || 'Unknown'}</Badge>;
     }
   }
 
@@ -314,7 +313,7 @@ export default function PartnersClient() {
                     <TableCell className="text-xs text-muted-foreground">{partner.hospitalName || 'N/A'}</TableCell>
                   )}
                   <TableCell>+91 {partner.phone}</TableCell>
-                  <TableCell>{getStatusBadge(partner.status || 'Unknown')}</TableCell>
+                  <TableCell>{getStatusBadge(partner.docStatus || partner.status)}</TableCell>
                   <TableCell className="text-right">
                     <AlertDialog>
                       <DropdownMenu>
@@ -328,15 +327,15 @@ export default function PartnersClient() {
                                <DropdownMenuItem asChild>
                                  <Link href={`/admin/partners/${partner.id}?type=${partner.type.toLowerCase()}${partner.hospitalId ? `&hospitalId=${partner.hospitalId}` : ''}`}>View Details</Link>
                               </DropdownMenuItem>
-                              {(partner.status === 'pending_verification' || partner.status === 'Awaiting Final Approval' || partner.status === 'Rejected') && (
+                              {(partner.status === 'pending_verification' || partner.docStatus === 'Awaiting Final Approval' || partner.status === 'Rejected' || partner.docStatus === 'Rejected') && (
                                   <>
                                       <DropdownMenuSeparator />
-                                      <DropdownMenuItem onClick={() => handleUpdateStatus(partner, 'verified')}>
+                                      <DropdownMenuItem onClick={() => handleUpdateStatus(partner, 'Verified')}>
                                           <Check className="mr-2 h-4 w-4 text-green-500" /> Approve
                                       </DropdownMenuItem>
                                   </>
                               )}
-                              {partner.status !== 'rejected' && partner.status !== 'Rejected' && (
+                              {partner.status !== 'rejected' && partner.status !== 'Rejected' && partner.docStatus !== 'Rejected' && (
                                   <DropdownMenuItem onClick={() => handleUpdateStatus(partner, 'rejected')}>
                                      <X className="mr-2 h-4 w-4 text-red-500" /> Reject
                                   </DropdownMenuItem>
