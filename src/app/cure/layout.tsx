@@ -147,9 +147,12 @@ export default function CureLayout({ children }: { children: React.ReactNode }) 
          <nav className="hidden flex-col gap-6 text-lg font-medium md:flex md:flex-row md:items-center md:gap-5 lg:gap-6">
            <Link
              href="/"
-             className="flex items-center gap-2 text-lg font-semibold md:text-base">
+             className="flex items-center gap-2 text-lg font-semibold md:text-base"
+             passHref legacyBehavior>
+             <a>
                 <BrandLogo />
                 <span className="ml-2 text-xs font-semibold px-2 py-1 rounded-full bg-red-500/20 text-red-600">Cure</span>
+             </a>
            </Link>
             <div className="w-px bg-border h-6 mx-2"></div>
             <CureNav />

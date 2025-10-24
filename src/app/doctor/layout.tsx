@@ -37,8 +37,10 @@ function DoctorNav() {
             pathname === item.href && 'text-primary'
           )}
           legacyBehavior>
-          <item.icon className="h-4 w-4 md:hidden" />
-          {item.label}
+          <>
+            <item.icon className="h-4 w-4 md:hidden" />
+            {item.label}
+          </>
         </Link>
       ))}
     </nav>
@@ -114,9 +116,11 @@ export default function DoctorLayout({ children }: { children: React.ReactNode }
            <Link
              href="#"
              className="flex items-center gap-2 text-lg font-semibold md:text-base"
-             legacyBehavior>
+             passHref legacyBehavior>
+            <a>
              <BrandLogo />
              <span className="ml-2 text-xs font-semibold px-2 py-1 rounded-full bg-blue-500/20 text-blue-600">Doctor</span>
+            </a>
            </Link>
             <div className="w-px bg-border h-6 mx-2"></div>
             <DoctorNav />
@@ -135,8 +139,10 @@ export default function DoctorLayout({ children }: { children: React.ReactNode }
            <SheetContent side="left" className="p-0">
               <div className="flex h-16 items-center border-b px-6">
                  <Link href="/" className="flex items-center gap-2 font-semibold" legacyBehavior>
-                   <BrandLogo />
-                   <span className="ml-2 text-xs font-semibold px-2 py-1 rounded-full bg-blue-500/20 text-blue-600">Doctor</span>
+                    <a>
+                        <BrandLogo />
+                        <span className="ml-2 text-xs font-semibold px-2 py-1 rounded-full bg-blue-500/20 text-blue-600">Doctor</span>
+                    </a>
                  </Link>
               </div>
               <DoctorNav />
