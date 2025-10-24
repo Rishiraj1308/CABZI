@@ -121,11 +121,11 @@ export default function PartnersClient() {
                 name: `Dr. ${data.name}`,
                 phone: data.phone,
                 partnerId: data.partnerId,
-                docStatus: data.docStatus, // Keep the original field name
+                docStatus: data.docStatus, 
                 type: 'doctor',
                 createdAt: data.createdAt,
                 specialization: data.specialization,
-                hospitalId: hospitalId, // Store for actions
+                hospitalId: hospitalId,
             } as PartnerData;
         })
     );
@@ -181,9 +181,9 @@ export default function PartnersClient() {
   const stats = useMemo(() => {
     return {
       total: allPartners.length,
-      verified: allPartners.filter(p => p.status === 'verified' || p.status === 'Verified' || p.docStatus === 'Verified').length,
+      verified: allPartners.filter(p => p.status === 'verified' || p.docStatus === 'Verified').length,
       pending: allPartners.filter(p => p.status === 'pending_verification' || p.docStatus === 'Pending' || p.docStatus === 'Awaiting Final Approval').length,
-      flagged: allPartners.filter(p => p.status === 'rejected' || p.status === 'Rejected' || p.docStatus === 'Rejected' || p.status === 'suspended').length,
+      flagged: allPartners.filter(p => p.status === 'rejected' || p.docStatus === 'Rejected' || p.status === 'suspended').length,
     }
   }, [allPartners]);
 
