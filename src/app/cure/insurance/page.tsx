@@ -148,7 +148,7 @@ export default function InsurancePage() {
                                                     <DialogHeader>
                                                         <DialogTitle>Manage Claim: {selectedClaim?.id}</DialogTitle>
                                                         <DialogDescription>
-                                                           Update the status for {selectedClaim?.patientName}&apos;s claim based on communication from the insurer.
+                                                           Update the status for {selectedClaim?.patientName}'s claim based on communication from the insurer.
                                                         </DialogDescription>
                                                     </DialogHeader>
                                                     <div className="space-y-4 py-4 text-sm">
@@ -159,7 +159,7 @@ export default function InsurancePage() {
                                                          <div className="flex justify-between items-center text-lg font-bold border-t pt-2 mt-2"><span>Claim Amount:</span> <span className="text-primary">₹{selectedClaim?.claimAmount.toLocaleString()}</span></div>
                                                     </div>
                                                     <DialogFooter className="grid grid-cols-1 gap-2">
-                                                        <Button variant="secondary" onClick={() => selectedClaim && handleUpdateStatus(selectedClaim.id, 'Query Raised')}>Mark as &apos;Query Raised&apos;</Button>
+                                                        <Button variant="secondary" onClick={() => selectedClaim && handleUpdateStatus(selectedClaim.id, 'Query Raised')}>Mark as 'Query Raised'</Button>
                                                         <Button variant="destructive" onClick={() => selectedClaim && handleUpdateStatus(selectedClaim.id, 'Rejected')}>Mark as Rejected</Button>
                                                         <Button onClick={() => selectedClaim && handleUpdateStatus(selectedClaim.id, 'Approved')} className="bg-green-600 hover:bg-green-700">Mark as Approved</Button>
                                                     </DialogFooter>

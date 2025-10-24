@@ -199,7 +199,7 @@ export default function DoctorsPage() {
     }
     const newDateTime = new Date(newDate);
     const [hours, minutes] = newTime.split(/[: ]/);
-    newDateTime.setHours(newTime.includes('PM') ? parseInt(hours, 10) + 12 : parseInt(hours, 10), parseInt(minutes, 10), 0);
+    newDateTime.setHours(newTime.includes('PM') ? parseInt(hours, 10) + 12 : parseInt(minutes, 10), parseInt(minutes, 10), 0);
 
     setAppointments(prev => prev.map(appt => 
       appt.id === selectedAppointment.id 
@@ -715,7 +715,7 @@ const handleAddDoctor = async (event: React.FormEvent<HTMLFormElement>) => {
               </div>
               <AlertDialogFooter>
                   <Button variant="outline" onClick={() => {
-                      navigator.clipboard.writeText(`ID: ${generatedCreds?.id}\\nPass: ${generatedCreds?.pass}`);
+                      navigator.clipboard.writeText(`ID: ${generatedCreds?.id}\nPass: ${generatedCreds?.pass}`);
                       toast({ title: 'Copied!' });
                   }}>Copy</Button>
                   <AlertDialogAction onClick={() => { setGeneratedCreds(null); setIsCredsDialogOpen(false); }}>Close</AlertDialogAction>
