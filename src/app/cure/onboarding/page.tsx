@@ -23,25 +23,35 @@ import { Skeleton } from '@/components/ui/skeleton'
 const LiveMap = dynamic(() => import('@/components/live-map'), {
     ssr: false,
     loading: () => <Skeleton className="w-full h-[200px]" />,
-    forwardRef: true
-} as any);
+});
+
+const serviceCategories = [
+    { id: 'consultation', label: 'General Consultation' },
+    { id: 'emergency', label: '24/7 Emergency Care' },
+    { id: 'ipd', label: 'In-Patient Services (IPD)' },
+    { id: 'pharmacy', label: 'Pharmacy' },
+    { id: 'diagnostics', label: 'Lab / Diagnostics' },
+    { id: 'icu', label: 'ICU / Critical Care' },
+    { id: 'minor_ot', label: 'Minor OT / Surgery' },
+    { id: 'ambulance', label: 'Ambulance Services' },
+];
+
 
 export default function CureOnboardingPage() {
     const { toast } = useToast()
     const router = useRouter()
     const [isLoading, setIsLoading] = useState(false)
     const [currentStep, setCurrentStep] = useState(1);
-    const totalSteps = 4; // Updated from 5 to 4
+    const totalSteps = 4;
     const mapRef = useRef<any>(null);
+    const [selectedServices, setSelectedServices] = useState<string[]>([]);
 
     const [formData, setFormData] = useState({
         clinicName: '',
         clinicType: '',
         address: '',
-        landmark: '',
         clinicPhone: '',
         email: '',
-        website: '',
         ownerName: '',
         ownerRole: '',
         ownerPhone: '',
@@ -51,7 +61,6 @@ export default function CureOnboardingPage() {
         gstNumber: '',
         weekdaysTime: '',
         weekendsTime: '',
-        servicesOffered: '',
         bankAccountName: '',
         bankAccountNumber: '',
         bankIfscCode: '',
@@ -61,7 +70,7 @@ export default function CureOnboardingPage() {
 
     useEffect(() => {
         if (currentStep === 1 && mapRef.current) {
-            mapRef.current.locate();
+             mapRef.current?.locate();
         }
     }, [currentStep]);
 
@@ -71,8 +80,16 @@ export default function CureOnboardingPage() {
         setFormData(prev => ({...prev, [name]: value}));
     };
     
-    const handleSelectChange = (name: keyof typeof formData, value: string) => {
+    const handleSelectChange = (name: keyof Omit<typeof formData, 'location' | 'agreedToTerms'>, value: string) => {
         setFormData(prev => ({...prev, [name]: value}));
+    }
+    
+    const handleServiceChange = (serviceLabel: string) => {
+        setSelectedServices(prev => 
+            prev.includes(serviceLabel) 
+                ? prev.filter(label => label !== serviceLabel)
+                : [...prev, serviceLabel]
+        );
     }
     
     const handleNextStep = () => {
@@ -119,7 +136,7 @@ export default function CureOnboardingPage() {
         }
 
         try {
-            const { location, ...restOfData } = formData;
+            const { location, agreedToTerms, ...restOfData } = formData;
             const q = query(collection(db, "ambulances"), where("clinicPhone", "==", formData.clinicPhone), limit(1));
             const querySnapshot = await getDocs(q);
             if (!querySnapshot.empty) {
@@ -130,6 +147,7 @@ export default function CureOnboardingPage() {
             
             await addDoc(collection(db, "ambulances"), {
                 ...restOfData,
+                services: selectedServices,
                 location: new GeoPoint(location!.lat, location!.lon),
                 businessType: formData.clinicType,
                 name: formData.clinicName,
@@ -202,7 +220,7 @@ export default function CureOnboardingPage() {
                          <div className="space-y-2"><Label>Upload Owner ID Proof (Aadhaar, PAN, etc.)</Label><div className="flex items-center justify-center w-full p-6 border-2 border-dashed rounded-lg text-center text-muted-foreground"><p>Upload will be enabled after verification.</p></div></div>
                     </div>
                 );
-            case 3: // Licenses (Previously step 4)
+            case 3: // Licenses
                 return (
                     <div className="space-y-6">
                         {formData.clinicType !== 'Clinic' && (
@@ -213,14 +231,28 @@ export default function CureOnboardingPage() {
                         <div className="space-y-2"><Label>Upload Registration Document</Label><div className="flex items-center justify-center w-full p-6 border-2 border-dashed rounded-lg text-center text-muted-foreground"><p>Upload will be enabled after verification.</p></div></div>
                     </div>
                 );
-            case 4: // Operational Info (Previously step 5)
+            case 4: // Operational Info
                 return (
                      <div className="space-y-6">
                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="space-y-2"><Label htmlFor="weekdaysTime">Clinic Timings (Weekdays)*</Label><Input id="weekdaysTime" name="weekdaysTime" placeholder="e.g., 9 AM - 8 PM" value={formData.weekdaysTime} onChange={handleInputChange} required /></div>
                             <div className="space-y-2"><Label htmlFor="weekendsTime">Clinic Timings (Weekends)*</Label><Input id="weekendsTime" name="weekendsTime" placeholder="e.g., 10 AM - 4 PM or Closed" value={formData.weekendsTime} onChange={handleInputChange} required /></div>
                         </div>
-                        <div className="space-y-2"><Label htmlFor="servicesOffered">Services Offered*</Label><Textarea id="servicesOffered" name="servicesOffered" placeholder="e.g., General Consultation, Lab Tests, Pharmacy..." value={formData.servicesOffered} onChange={handleInputChange} required /></div>
+                        <div className="space-y-2">
+                          <Label>Services Offered*</Label>
+                          <div className="grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-3 p-4 border rounded-lg">
+                            {serviceCategories.map(service => (
+                                <div key={service.id} className="flex items-center space-x-2">
+                                    <Checkbox 
+                                        id={service.id} 
+                                        onCheckedChange={() => handleServiceChange(service.label)}
+                                        checked={selectedServices.includes(service.label)}
+                                    />
+                                    <Label htmlFor={service.id} className="text-sm font-normal cursor-pointer">{service.label}</Label>
+                                </div>
+                            ))}
+                          </div>
+                        </div>
                          <div>
                             <h4 className="font-medium mb-2">Bank Details (for payments)</h4>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-4 border rounded-lg">
