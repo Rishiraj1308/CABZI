@@ -1,3 +1,4 @@
+
 'use client'
 
 import React, { useState, useEffect, useRef } from 'react'
@@ -7,6 +8,8 @@ import { onSnapshot, doc } from 'firebase/firestore'
 import { Skeleton } from '@/components/ui/skeleton'
 import HospitalMissionControl from './hospital-dashboard'
 import ClinicDashboard from './clinic-dashboard'
+import { Card, CardContent, CardHeader } from '@/components/ui/card'
+
 
 export default function CureDashboardPage() {
     const [isLoading, setIsLoading] = useState(true);
