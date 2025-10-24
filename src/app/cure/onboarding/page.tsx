@@ -22,7 +22,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 
 const LiveMap = dynamic(() => import('@/components/live-map'), {
     ssr: false,
-    loading: () => <Skeleton className="w-full h-[200px]" />,
+    loading: () => <Skeleton className="w-full h-full bg-muted" />,
 });
 
 const serviceCategories = [
@@ -176,12 +176,11 @@ export default function CureOnboardingPage() {
     
     const renderStepContent = () => {
         switch (currentStep) {
-            case 1: // Clinic Details
+            case 1: // Facility Details
                 return (
                     <div className="space-y-6">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div className="space-y-2"><Label htmlFor="clinicName">Clinic / Hospital Name*</Label><Input id="clinicName" name="clinicName" value={formData.clinicName} onChange={handleInputChange} required /></div>
-                            <div className="space-y-2">
+                             <div className="space-y-2">
                                 <Label htmlFor="clinicType">Facility Type*</Label>
                                 <Select name="clinicType" required onValueChange={v => handleSelectChange('clinicType', v)} value={formData.clinicType}>
                                     <SelectTrigger><SelectValue placeholder="Select type"/></SelectTrigger>
@@ -193,6 +192,12 @@ export default function CureOnboardingPage() {
                                         <SelectItem value="Government Hospital">Government Hospital</SelectItem>
                                     </SelectContent>
                                 </Select>
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="clinicName">
+                                    {formData.clinicType.toLowerCase().includes('hospital') ? 'Hospital Name*' : 'Clinic Name*'}
+                                </Label>
+                                <Input id="clinicName" name="clinicName" value={formData.clinicName} onChange={handleInputChange} required />
                             </div>
                             <div className="space-y-2"><Label htmlFor="clinicPhone">Contact Number*</Label><Input id="clinicPhone" name="clinicPhone" type="tel" value={formData.clinicPhone} onChange={handleInputChange} required /></div>
                             <div className="space-y-2"><Label htmlFor="email">Email ID</Label><Input id="email" name="email" type="email" value={formData.email} onChange={handleInputChange} /></div>
