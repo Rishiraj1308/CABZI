@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
-import { Search, Calendar, Filter } from 'lucide-react'
+import { Search, Calendar } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useDb } from '@/firebase/client-provider'
@@ -42,8 +42,6 @@ export default function DoctorAppointmentsPage() {
         
         const { name } = JSON.parse(session);
         
-        // This is a mock query for now. In a real app, you'd have an appointments collection
-        // For demonstration, we'll keep the mock data filtered by the logged-in doctor's name
         const mockAppointments: (Appointment & { doctorName: string })[] = [
             { id: 'APT001', patientName: 'Priya Singh', doctorName: 'Dr. Ramesh Sharma', appointmentDate: '2024-09-10', appointmentTime: '11:00 AM', status: 'Confirmed', isRecurring: true },
             { id: 'APT002', patientName: 'Rajesh Verma', doctorName: name, appointmentDate: '2024-09-10', appointmentTime: '02:00 PM', status: 'Completed', isRecurring: false },
@@ -74,13 +72,18 @@ export default function DoctorAppointmentsPage() {
     }
 
     return (
+      <div className="space-y-6">
+        <div>
+            <h2 className="text-3xl font-bold tracking-tight">My Appointments</h2>
+            <p className="text-muted-foreground">View and manage your upcoming and past patient appointments.</p>
+        </div>
         <Card>
             <CardHeader>
                 <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                     <div>
                         <CardTitle className="flex items-center gap-2">
-                            <Calendar className="w-6 h-6 text-primary"/>
-                            My Schedule
+                            <Calendar className="w-6 h-6"/>
+                            Appointment Log
                         </CardTitle>
                         <CardDescription>A complete log of your confirmed and past consultations.</CardDescription>
                     </div>
@@ -101,8 +104,9 @@ export default function DoctorAppointmentsPage() {
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="All">All Statuses</SelectItem>
-                                <SelectItem value="Confirmed">Confirmed</SelectItem>
+                                <SelectItem value="Confirmed">Upcoming</SelectItem>
                                 <SelectItem value="Completed">Completed</SelectItem>
+                                <SelectItem value="Cancelled">Cancelled</SelectItem>
                             </SelectContent>
                         </Select>
                     </div>
@@ -153,5 +157,6 @@ export default function DoctorAppointmentsPage() {
                 </Table>
             </CardContent>
         </Card>
+      </div>
     )
 }

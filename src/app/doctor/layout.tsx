@@ -4,11 +4,11 @@
 import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { LogOut, Sun, Moon, LayoutDashboard, Calendar, User, PanelLeft, Bell, BarChart } from 'lucide-react'
+import { LogOut, Sun, Moon, LayoutDashboard, Calendar, User, PanelLeft, Bell, BarChart, Settings } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Toaster } from '@/components/ui/toaster'
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog"
@@ -18,12 +18,13 @@ import { useTheme } from 'next-themes'
 import { useFirebase } from '@/firebase/client-provider'
 import { MotionDiv } from '@/components/ui/motion-div'
 import { Badge } from '@/components/ui/badge'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 
 const navItems = [
   { href: '/doctor', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/doctor/appointments', label: 'My Appointments', icon: Calendar },
   { href: '/doctor/analytics', label: 'Analytics', icon: BarChart },
-  { href: '/doctor/profile', label: 'My Profile', icon: User },
+  { href: '/doctor/profile', label: 'Profile & Settings', icon: User },
 ]
 
 const mockNotifications = [
@@ -33,56 +34,14 @@ const mockNotifications = [
     { id: 4, text: 'New follow-up scheduled for Anjali Mehra tomorrow.', time: 'Yesterday', read: true },
 ];
 
-function DoctorNav() {
-  const pathname = usePathname()
-  return (
-    <nav className="hidden md:flex items-center space-x-6 text-sm font-medium">
-      {navItems.map((item) => (
-        <Link
-          key={item.href}
-          href={item.href}
-          className={cn(
-            'transition-colors hover:text-primary',
-            pathname === item.href ? 'text-primary font-semibold' : 'text-muted-foreground'
-          )}
-        >
-          {item.label}
-        </Link>
-      ))}
-    </nav>
-  );
-}
-
-function DoctorNavMobile({setOpen}: {setOpen: (open: boolean) => void}) {
-    const pathname = usePathname();
-    return (
-        <nav className="grid gap-2 text-lg font-medium p-4">
-             {navItems.map((item) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  onClick={() => setOpen(false)}
-                  className={cn(
-                    'flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary',
-                    pathname === item.href && 'bg-muted text-primary'
-                  )}
-                >
-                  <item.icon className="h-5 w-5" />
-                  {item.label}
-                </Link>
-              ))}
-        </nav>
-    )
-}
-
 function ThemeToggle() {
     const { setTheme } = useTheme()
     return (
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
-               <Button variant="outline" size="icon">
-                <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-                <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+               <Button variant="ghost" size="icon">
+                <Sun className="h-5 w-5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+                <Moon className="absolute h-5 w-5 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
                 <span className="sr-only">Toggle theme</span>
               </Button>
             </DropdownMenuTrigger>
@@ -98,6 +57,7 @@ function ThemeToggle() {
 export default function DoctorLayout({ children }: { children: React.ReactNode }) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const router = useRouter();
+  const pathname = usePathname();
   const { toast } = useToast();
   const [userName, setUserName] = useState('');
   const { auth } = useFirebase();
@@ -140,119 +100,139 @@ export default function DoctorLayout({ children }: { children: React.ReactNode }
   }
 
   return (
-    <div className="flex min-h-screen w-full flex-col">
-      <header className="sticky top-0 flex h-16 items-center gap-4 border-b bg-background/95 backdrop-blur-sm px-4 md:px-6 z-50">
-         <div className="flex items-center gap-6">
-           <Link
-             href="#"
-             className="flex items-center gap-2 text-lg font-semibold md:text-base"
-             passHref legacyBehavior>
-            <a>
-             <BrandLogo />
-             <span className="ml-2 text-xs font-semibold px-2 py-1 rounded-full bg-blue-500/20 text-blue-600">Doctor</span>
-            </a>
-           </Link>
-            <DoctorNav />
-         </div>
-         <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
-           <SheetTrigger asChild>
-             <Button
-               variant="outline"
-               size="icon"
-               className="shrink-0 md:hidden ml-auto"
-             >
-               <PanelLeft className="h-5 w-5" />
-               <span className="sr-only">Toggle navigation menu</span>
-             </Button>
-           </SheetTrigger>
-           <SheetContent side="left" className="p-0">
-              <div className="flex h-16 items-center border-b px-6">
-                 <Link href="/" className="flex items-center gap-2 font-semibold" legacyBehavior>
-                    <a>
-                        <BrandLogo />
-                        <span className="ml-2 text-xs font-semibold px-2 py-1 rounded-full bg-blue-500/20 text-blue-600">Doctor</span>
-                    </a>
-                 </Link>
-              </div>
-              <DoctorNavMobile setOpen={setIsMobileMenuOpen} />
-           </SheetContent>
-         </Sheet>
-         <div className="flex w-full items-center gap-4 md:ml-auto md:gap-2 lg:gap-4 justify-end">
-            <div className="ml-auto flex-1 sm:flex-initial md:hidden"></div>
-            <ThemeToggle/>
-            <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="icon" className="relative">
-                        <Bell className="h-5 w-5"/>
-                        {unreadCount > 0 && <Badge className="absolute -top-2 -right-2 h-5 w-5 justify-center p-0">{unreadCount}</Badge>}
-                        <span className="sr-only">Toggle notifications</span>
-                    </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-80">
-                    <DropdownMenuLabel>Notifications</DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                    {mockNotifications.map(notification => (
-                        <DropdownMenuItem key={notification.id} className={cn("flex items-start gap-2 whitespace-normal", !notification.read && "font-semibold")}>
-                           <div className={cn("mt-1 h-2 w-2 rounded-full", !notification.read ? "bg-primary" : "bg-transparent")}/>
-                           <div className="flex-1">
-                               <p className="text-xs">{notification.text}</p>
-                               <p className="text-xs text-muted-foreground mt-1">{notification.time}</p>
-                           </div>
-                        </DropdownMenuItem>
-                    ))}
-                    {mockNotifications.length === 0 && <DropdownMenuItem disabled>No new notifications</DropdownMenuItem>}
-                </DropdownMenuContent>
-            </DropdownMenu>
-           <DropdownMenu>
-             <DropdownMenuTrigger asChild>
-               <Button variant="secondary" size="icon" className="rounded-full">
-                 <Avatar className="h-8 w-8">
-                   <AvatarImage src="https://i.pravatar.cc/40?u=doctor" alt={userName} data-ai-hint="doctor portrait" />
-                   <AvatarFallback>{getInitials(userName).toUpperCase()}</AvatarFallback>
-                 </Avatar>
-                 <span className="sr-only">Toggle user menu</span>
-               </Button>
-             </DropdownMenuTrigger>
-             <DropdownMenuContent align="end">
-               <DropdownMenuLabel>Dr. {userName}</DropdownMenuLabel>
-               <DropdownMenuSeparator />
-                <DropdownMenuItem onSelect={() => router.push('/doctor/profile')}>My Profile</DropdownMenuItem>
-                <DropdownMenuItem onSelect={() => router.push('/doctor/support')}>Support</DropdownMenuItem>
-               <DropdownMenuSeparator />
-               <AlertDialog>
-                 <AlertDialogTrigger asChild>
-                    <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:text-destructive">
-                      Logout
-                    </DropdownMenuItem>
-                 </AlertDialogTrigger>
-                 <AlertDialogContent>
-                     <AlertDialogHeader>
-                         <AlertDialogTitle>Are you sure you want to log out?</AlertDialogTitle>
-                     </AlertDialogHeader>
-                     <AlertDialogFooter>
-                         <AlertDialogCancel>Cancel</AlertDialogCancel>
-                         <AlertDialogAction onClick={handleLogout} className="bg-destructive hover:bg-destructive/90">
-                             Logout
-                         </AlertDialogAction>
-                     </AlertDialogFooter>
-                 </AlertDialogContent>
-               </AlertDialog>
-             </DropdownMenuContent>
-           </DropdownMenu>
-         </div>
-       </header>
-      <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
-        <MotionDiv 
-            key={usePathname()}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, ease: 'easeInOut' }}
-            className="h-full"
-        >
-          {children}
-        </MotionDiv>
-      </main>
-      <Toaster />
+    <div className="flex min-h-screen w-full bg-muted/40">
+        {/* --- DESKTOP SIDEBAR --- */}
+        <aside className="hidden w-20 flex-col items-center border-r bg-background sm:flex">
+            <div className="flex h-16 items-center justify-center border-b">
+                 <Link href="/doctor"><BrandLogo hideText /></Link>
+            </div>
+            <nav className="flex flex-col items-center gap-4 px-2 sm:py-5">
+              <TooltipProvider>
+                {navItems.map((item) => (
+                  <Tooltip key={item.href}>
+                    <TooltipTrigger asChild>
+                      <Link
+                        href={item.href}
+                        className={cn(
+                          "flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:text-foreground md:h-8 md:w-8",
+                          pathname === item.href && "bg-accent text-accent-foreground"
+                        )}
+                      >
+                        <item.icon className="h-5 w-5" />
+                        <span className="sr-only">{item.label}</span>
+                      </Link>
+                    </TooltipTrigger>
+                    <TooltipContent side="right">{item.label}</TooltipContent>
+                  </Tooltip>
+                ))}
+              </TooltipProvider>
+            </nav>
+        </aside>
+
+        <div className="flex flex-col sm:gap-4 sm:py-4 sm:pl-14 flex-1">
+            {/* --- MOBILE & MAIN HEADER --- */}
+            <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6">
+                <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
+                    <SheetTrigger asChild>
+                        <Button size="icon" variant="outline" className="sm:hidden">
+                            <PanelLeft className="h-5 w-5" />
+                            <span className="sr-only">Toggle Menu</span>
+                        </Button>
+                    </SheetTrigger>
+                    <SheetContent side="left" className="sm:max-w-xs p-0">
+                         <div className="flex h-16 items-center border-b px-6">
+                             <Link href="/doctor" className="flex items-center gap-2 font-semibold">
+                                <BrandLogo />
+                             </Link>
+                        </div>
+                        <nav className="grid gap-2 text-lg font-medium p-4">
+                            {navItems.map((item) => (
+                                <Link
+                                key={item.href}
+                                href={item.href}
+                                onClick={() => setIsMobileMenuOpen(false)}
+                                className={cn(
+                                    'flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary',
+                                    pathname === item.href && 'bg-muted text-primary'
+                                )}
+                                >
+                                <item.icon className="h-5 w-5" />
+                                {item.label}
+                                </Link>
+                            ))}
+                        </nav>
+                    </SheetContent>
+                </Sheet>
+                 <div className="flex w-full items-center gap-4 md:ml-auto md:gap-2 lg:gap-4 justify-end">
+                    <ThemeToggle/>
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="relative">
+                                <Bell className="h-5 w-5"/>
+                                {unreadCount > 0 && <Badge className="absolute -top-1 -right-1 h-4 w-4 justify-center p-0">{unreadCount}</Badge>}
+                                <span className="sr-only">Toggle notifications</span>
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-80">
+                            <DropdownMenuLabel>Notifications</DropdownMenuLabel>
+                            <DropdownMenuSeparator />
+                             {mockNotifications.map(notification => (
+                                <DropdownMenuItem key={notification.id} className={cn("flex items-start gap-2 whitespace-normal", !notification.read && "font-semibold")}>
+                                <div className={cn("mt-1 h-2 w-2 rounded-full", !notification.read ? "bg-primary" : "bg-transparent")}/>
+                                <div className="flex-1">
+                                    <p className="text-xs">{notification.text}</p>
+                                    <p className="text-xs text-muted-foreground mt-1">{notification.time}</p>
+                                </div>
+                                </DropdownMenuItem>
+                            ))}
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="outline" size="icon" className="overflow-hidden rounded-full">
+                                <Avatar className="h-8 w-8">
+                                    <AvatarImage src="https://i.pravatar.cc/40?u=doctor" alt={userName} data-ai-hint="doctor portrait" />
+                                    <AvatarFallback>{getInitials(userName).toUpperCase()}</AvatarFallback>
+                                </Avatar>
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                            <DropdownMenuLabel>Dr. {userName}</DropdownMenuLabel>
+                            <DropdownMenuSeparator />
+                                <DropdownMenuItem onSelect={() => router.push('/doctor/profile')}>Profile</DropdownMenuItem>
+                                <DropdownMenuItem onSelect={() => toast({title: "Coming Soon!"})}>Support</DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                    <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:text-destructive">
+                                    <LogOut className="mr-2 h-4 w-4"/> Logout
+                                    </DropdownMenuItem>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                    <AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle></AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                        <AlertDialogAction onClick={handleLogout} className="bg-destructive hover:bg-destructive/90">Logout</AlertDialogAction>
+                                    </AlertDialogFooter>
+                                </AlertDialogContent>
+                            </AlertDialog>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                </div>
+            </header>
+            <main className="flex-1 overflow-auto p-4 sm:px-6 sm:py-0">
+                <MotionDiv 
+                    key={pathname}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, ease: 'easeInOut' }}
+                    className="h-full"
+                >
+                {children}
+                </MotionDiv>
+            </main>
+        </div>
+        <Toaster />
     </div>
   );
 }

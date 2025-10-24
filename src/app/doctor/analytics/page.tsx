@@ -1,9 +1,13 @@
+
 'use client'
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { BarChart as BarChartIcon, Clock, Users, Star, Activity } from 'lucide-react'
+import { Skeleton } from '@/components/ui/skeleton'
+import { BarChart as BarChartIcon, Clock, Users, Star, Activity, AlertTriangle } from 'lucide-react'
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } from "recharts"
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart'
+
 
 const StatCard = ({ title, value, icon: Icon, description }: { title: string, value: string, icon: React.ElementType, description: string }) => (
     <Card>
@@ -18,13 +22,12 @@ const StatCard = ({ title, value, icon: Icon, description }: { title: string, va
     </Card>
 );
 
-
 const patientVolumeData = [
-    { month: 'Apr', new: 80, returning: 40 },
-    { month: 'May', new: 95, returning: 55 },
-    { month: 'Jun', new: 110, returning: 60 },
-    { month: 'Jul', new: 105, returning: 75 },
-    { month: 'Aug', new: 120, returning: 85 },
+  { month: 'Apr', new: 80, returning: 40 },
+  { month: 'May', new: 95, returning: 55 },
+  { month: 'Jun', new: 110, returning: 60 },
+  { month: 'Jul', new: 105, returning: 75 },
+  { month: 'Aug', new: 120, returning: 85 },
 ];
 
 const commonCasesData = [
@@ -33,6 +36,7 @@ const commonCasesData = [
     { reason: 'Ortho Pain', count: 120 },
     { reason: 'Skin Issue', count: 95 },
     { reason: 'Stomach Ache', count: 80 },
+    { reason: 'Other', count: 110 },
 ];
 
 const patientChartConfig = {
@@ -52,13 +56,13 @@ export default function DoctorAnalyticsPage() {
                 <h2 className="text-3xl font-bold tracking-tight">Analytics & Insights</h2>
                 <p className="text-muted-foreground">Understand your patient trends and consultation patterns.</p>
             </div>
-
-             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <StatCard 
                     title="Monthly Patients"
                     value="205"
                     icon={Users}
-                    description="Total patients this month"
+                    description="+12% from last month"
                 />
                  <StatCard 
                     title="Avg. Consultation Time"
