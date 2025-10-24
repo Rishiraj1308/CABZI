@@ -1,7 +1,7 @@
 
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Calendar as CalendarIcon, Stethoscope, Clock, Search, ArrowLeft, IndianRupee } from 'lucide-react'
@@ -14,25 +14,67 @@ import { cn } from '@/lib/utils'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { useToast } from '@/hooks/use-toast'
 import Link from 'next/link'
-
-const mockDoctors = [
-    { id: 'd1', name: 'Dr. Ramesh Sharma', specialization: 'Cardiology', qualifications: 'MD, FACC', experience: '15+ Years', photoUrl: 'https://i.pravatar.cc/100?u=doc1', consultationFee: 1200 },
-    { id: 'd2', name: 'Dr. Priya Gupta', specialization: 'Orthopedics', qualifications: 'MS (Ortho)', experience: '10+ Years', photoUrl: 'https://i.pravatar.cc/100?u=doc2', consultationFee: 1000 },
-    { id: 'd3', name: 'Dr. Alok Verma', specialization: 'General Physician', qualifications: 'MBBS, MD', experience: '8+ Years', photoUrl: 'https://i.pravatar.cc/100?u=doc3', consultationFee: 800 },
-];
+import { useDb } from '@/firebase/client-provider'
+import { collectionGroup, getDocs, query, where } from 'firebase/firestore'
+import { Skeleton } from '@/components/ui/skeleton'
 
 const timeSlots = [
   '09:00 AM', '10:00 AM', '11:00 AM', '12:00 PM', '02:00 PM', '03:00 PM', '04:00 PM'
 ]
 
-type Doctor = typeof mockDoctors[0];
+interface Doctor { 
+    id: string; 
+    name: string; 
+    specialization: string; 
+    qualifications: string; 
+    experience: string; 
+    photoUrl?: string; 
+    consultationFee: number;
+    docStatus?: 'Verified' | 'Pending' | 'Awaiting Final Approval' | 'Rejected';
+}
+
 
 export default function BookAppointmentPage() {
   const [step, setStep] = useState(1);
+  const [doctors, setDoctors] = useState<Doctor[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedDoctor, setSelectedDoctor] = useState<Doctor | null>(null);
   const [date, setDate] = useState<Date | undefined>(new Date());
   const [time, setTime] = useState('');
+  const { toast } = useToast();
+  const db = useDb();
+
+  useEffect(() => {
+    const fetchVerifiedDoctors = async () => {
+        if (!db) {
+            setIsLoading(false);
+            return;
+        }
+        setIsLoading(true);
+        try {
+            const doctorsQuery = query(collectionGroup(db, 'doctors'), where('docStatus', '==', 'Verified'));
+            const snapshot = await getDocs(doctorsQuery);
+            const doctorsList: Doctor[] = [];
+            snapshot.forEach(doc => {
+                doctorsList.push({ id: doc.id, ...doc.data() } as Doctor);
+            });
+            setDoctors(doctorsList);
+        } catch (error) {
+            console.error("Error fetching verified doctors:", error);
+            toast({
+                variant: 'destructive',
+                title: 'Failed to load doctors',
+                description: 'Could not fetch the list of available doctors. Please try again later.'
+            });
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    fetchVerifiedDoctors();
+  }, [db, toast]);
+
 
   const resetFlow = () => {
     setStep(1);
@@ -41,8 +83,6 @@ export default function BookAppointmentPage() {
     setTime('');
   };
   
-  const { toast } = useToast();
-
   const handleBookingConfirmation = () => {
       toast({
           title: "Appointment Requested!",
@@ -51,6 +91,11 @@ export default function BookAppointmentPage() {
       });
       resetFlow();
   }
+  
+  const filteredDoctors = doctors.filter(d => 
+    d.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+    d.specialization.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   return (
     <div className="p-4 md:p-6 space-y-6">
@@ -74,23 +119,31 @@ export default function BookAppointmentPage() {
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         <Input id="doctor-search" placeholder="e.g., Cardiology or Dr. Sharma" className="pl-10" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
                     </div>
-                    <div className="space-y-2">
-                       {mockDoctors.filter(d => d.name.toLowerCase().includes(searchQuery.toLowerCase()) || d.specialization.toLowerCase().includes(searchQuery.toLowerCase())).map(doctor => (
-                           <Card key={doctor.id} className="p-3 flex items-center gap-3 cursor-pointer hover:bg-muted" onClick={() => { setSelectedDoctor(doctor); setStep(2); }}>
-                                <Avatar className="w-12 h-12">
-                                    <AvatarImage src={doctor.photoUrl} alt={doctor.name} />
-                                    <AvatarFallback>{doctor.name.substring(0,2)}</AvatarFallback>
-                                </Avatar>
-                                <div className="flex-1">
-                                    <p className="font-bold">Dr. {doctor.name}</p>
-                                    <p className="text-sm text-muted-foreground">{doctor.specialization} &bull; {doctor.qualifications}</p>
-                                </div>
-                                <div className="text-right">
-                                    <p className="font-bold text-lg text-primary flex items-center justify-end"><IndianRupee className="w-4 h-4" />{doctor.consultationFee}</p>
-                                    <p className="text-xs text-muted-foreground">Fee</p>
-                                </div>
-                           </Card>
-                       ))}
+                    <div className="space-y-2 max-h-96 overflow-y-auto pr-2">
+                       {isLoading ? (
+                           Array.from({length: 3}).map((_, i) => <Skeleton key={i} className="h-20 w-full" />)
+                       ) : filteredDoctors.length > 0 ? (
+                           filteredDoctors.map(doctor => (
+                               <Card key={doctor.id} className="p-3 flex items-center gap-3 cursor-pointer hover:bg-muted" onClick={() => { setSelectedDoctor(doctor); setStep(2); }}>
+                                    <Avatar className="w-12 h-12">
+                                        <AvatarImage src={doctor.photoUrl || `https://i.pravatar.cc/100?u=${doctor.id}`} alt={doctor.name} />
+                                        <AvatarFallback>{doctor.name.substring(0,2)}</AvatarFallback>
+                                    </Avatar>
+                                    <div className="flex-1">
+                                        <p className="font-bold">Dr. {doctor.name}</p>
+                                        <p className="text-sm text-muted-foreground">{doctor.specialization} &bull; {doctor.qualifications}</p>
+                                    </div>
+                                    <div className="text-right">
+                                        <p className="font-bold text-lg text-primary flex items-center justify-end"><IndianRupee className="w-4 h-4" />{doctor.consultationFee}</p>
+                                        <p className="text-xs text-muted-foreground">Fee</p>
+                                    </div>
+                               </Card>
+                           ))
+                       ) : (
+                           <div className="text-center py-10 text-muted-foreground">
+                               <p>No doctors found matching your search.</p>
+                           </div>
+                       )}
                     </div>
                 </CardContent>
             </>
