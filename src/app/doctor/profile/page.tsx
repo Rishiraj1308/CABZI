@@ -19,6 +19,7 @@ import { Calendar } from '@/components/ui/calendar'
 import { type DateRange } from "react-day-picker"
 import { addDays, format } from "date-fns"
 import { Badge } from '@/components/ui/badge'
+import { cn } from '@/lib/utils'
 
 
 interface DoctorProfileData {
