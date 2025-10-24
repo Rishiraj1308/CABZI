@@ -22,6 +22,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
 import { doc, onSnapshot, updateDoc } from 'firebase/firestore'
+import { Skeleton } from '@/components/ui/skeleton'
 
 
 const navItems = [
@@ -112,6 +113,7 @@ export default function DoctorLayout({ children }: { children: React.ReactNode }
   const [doctorId, setDoctorId] = useState<string | null>(null);
   const { auth } = useFirebase();
   const unreadCount = mockNotifications.filter(n => !n.read).length;
+  const [isSessionLoading, setIsSessionLoading] = useState(true);
   
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -131,6 +133,7 @@ export default function DoctorLayout({ children }: { children: React.ReactNode }
         } else {
             router.push('/login?role=doctor');
         }
+        setIsSessionLoading(false);
     }
   }, [router]);
 
@@ -151,6 +154,14 @@ export default function DoctorLayout({ children }: { children: React.ReactNode }
       return `Dr. ${names[names.length - 1][0]}`;
     }
     return `Dr. ${name.substring(0, 1)}`;
+  }
+
+  if (isSessionLoading) {
+    return (
+        <div className="flex h-screen w-full items-center justify-center">
+            <Skeleton className="h-screen w-full" />
+        </div>
+    );
   }
 
   return (
