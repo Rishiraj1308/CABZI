@@ -41,6 +41,8 @@ export default function BookAppointmentPage() {
     setTime('');
   };
   
+  const { toast } = useToast();
+
   const handleBookingConfirmation = () => {
       toast({
           title: "Appointment Requested!",
@@ -65,7 +67,7 @@ export default function BookAppointmentPage() {
              <>
                 <CardHeader>
                     <CardTitle>Step 1: Find Your Doctor</CardTitle>
-                    <CardDescription>Search by doctor&apos;s name or specialization.</CardDescription>
+                    <CardDescription>Search by doctor's name or specialization.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                     <div className="relative">
