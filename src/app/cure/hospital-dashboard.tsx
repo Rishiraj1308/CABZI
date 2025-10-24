@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
-import { Ambulance, Siren, Waves, Settings, BedDouble, Phone, Navigation, UserCheck, Users, Minus, MoreHorizontal, Trash2, ListChecks, PlusCircle, User as UserIcon } from 'lucide-react'
+import { Ambulance, Siren, Waves, Settings, BedDouble, Phone, Navigation, UserCheck, Users, Minus, MoreHorizontal, Trash2, ListChecks, PlusCircle, User as UserIcon, BarChart, Clock, Activity, Users as UsersIcon } from 'lucide-react'
 import { AlertDialog, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogCancel, AlertDialogAction, AlertDialogTrigger } from '@/components/ui/alert-dialog'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription, DialogFooter } from '@/components/ui/dialog'
 import { useToast } from '@/hooks/use-toast'
@@ -35,6 +35,19 @@ const LiveMap = dynamic(() => import('@/components/live-map'), {
     ssr: false,
     loading: () => <div className="w-full h-full bg-muted flex items-center justify-center"><p>Loading Map...</p></div>
 });
+
+const StatCard = ({ title, value, icon: Icon, description }: { title: string, value: string, icon: React.ElementType, description: string }) => (
+    <Card>
+        <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium">{title}</CardTitle>
+            <Icon className="w-4 h-4 text-muted-foreground"/>
+        </CardHeader>
+        <CardContent>
+            <div className="text-2xl font-bold">{value}</div>
+            <p className="text-xs text-muted-foreground">{description}</p>
+        </CardContent>
+    </Card>
+);
 
 interface AmbulanceVehicle {
     id: string;
@@ -102,33 +115,23 @@ export default function HospitalMissionControl() {
     const [isMounted, setIsMounted] = useState(false);
     const [hospitalData, setHospitalData] = useState<HospitalData | null>(null);
     const [fleet, setFleet] = useState<AmbulanceVehicle[]>([]);
-    const [drivers, setDrivers] = useState<AmbulanceDriver[]>([]);
     const [incomingRequests, setIncomingRequests] = useState<EmergencyRequest[]>([]);
     const [ongoingCase, setOngoingCase] = useState<OngoingCase | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isOnline, setIsOnline] = useState(false);
     const { toast } = useToast();
-    const [checklistItems, setChecklistItems] = useState<ChecklistItem[]>([]);
-    const [newChecklistItem, setNewChecklistItem] = useState('');
-    const [selectedDriver, setSelectedDriver] = useState<AmbulanceDriver | null>(null);
-    const [isDriverDetailsOpen, setIsDriverDetailsOpen] = useState(false);
     const db = useDb();
 
     // Bed Management State
     const [totalBeds, setTotalBeds] = useState(0);
     const [bedsOccupied, setBedsOccupied] = useState(0);
 
-    // Add Ambulance/Driver Form State
-    const [isAddAmbulanceOpen, setIsAddAmbulanceOpen] = useState(false);
-    const [newAmbulanceName, setNewAmbulanceName] = useState('');
-    const [newAmbulanceType, setNewAmbulanceType] = useState<'BLS' | 'ALS' | 'Cardiac' | ''>('');
-    const [newAmbulanceDriverId, setNewAmbulanceDriverId] = useState('');
-    const [newRcNumber, setNewRcNumber] = useState('');
-    
-    const [isAddDriverOpen, setIsAddDriverOpen] = useState(false);
-    
-    const [generatedDriverCreds, setGeneratedDriverCreds] = useState<{ id: string, pass: string } | null>(null);
-    const [isCredsDialogOpen, setIsCredsDialogOpen] = useState(false);
+    // Analytics State
+    const [analytics, setAnalytics] = useState({
+        totalCases: 0,
+        avgResponseTime: 0,
+        fleetUtilization: 0
+    });
     
     const watchIdRef = useRef<number | null>(null);
 
@@ -197,6 +200,12 @@ export default function HospitalMissionControl() {
                 setIsOnline(data.isOnline || false);
             }
         });
+
+        const fleetRef = collection(db, `ambulances/${partnerId}/fleet`);
+        const unsubFleet = onSnapshot(fleetRef, (snapshot) => {
+            const fleetData = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as AmbulanceVehicle));
+            setFleet(fleetData);
+        });
         
         const allCasesQuery = query(collection(db, "emergencyCases"), where("assignedPartner.id", "==", partnerId), orderBy("createdAt", "desc"));
         const unsubAllCases = onSnapshot(allCasesQuery, (snapshot) => {
@@ -214,10 +223,37 @@ export default function HospitalMissionControl() {
             setIncomingRequests(requestsData);
         });
         
+        const fetchAnalytics = async () => {
+            const casesQuery = query(collection(db, 'emergencyCases'), where('assignedPartner.id', '==', partnerId), where('status', '==', 'completed'));
+            const snapshot = await getDocs(casesQuery);
+            const cases = snapshot.docs.map(d => d.data());
+            
+            const totalCases = cases.length;
+            const totalResponseTime = cases.reduce((acc, c) => {
+                const acceptedTime = (c.acceptedAt || c.createdAt)?.toDate();
+                const createdTime = c.createdAt.toDate();
+                if (acceptedTime && createdTime) {
+                    return acc + (acceptedTime.getTime() - createdTime.getTime());
+                }
+                return acc;
+            }, 0);
+
+            const avgResponseTime = totalCases > 0 ? (totalResponseTime / totalCases) / 1000 / 60 : 0;
+            
+            const fleetSnapshot = await getDocs(collection(db, `ambulances/${partnerId}/fleet`));
+            const totalAmbulances = fleetSnapshot.size;
+            const onDutyAmbulances = fleetSnapshot.docs.filter(d => d.data().status === 'On-Duty').length;
+            const fleetUtilization = totalAmbulances > 0 ? (onDutyAmbulances / totalAmbulances) * 100 : 0;
+
+            setAnalytics({ totalCases, avgResponseTime, fleetUtilization });
+        };
+
+        fetchAnalytics();
         setIsLoading(false);
 
         return () => {
             unsubHospital();
+            unsubFleet();
             unsubAllCases();
             unsubRequests();
             if (watchIdRef.current) navigator.geolocation.clearWatch(watchIdRef.current);
@@ -385,6 +421,13 @@ export default function HospitalMissionControl() {
                         <Button size="sm" onClick={handleBedStatusUpdate}>Update</Button>
                     </CardContent>
                 </Card>
+                
+                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <StatCard title="Total Cases" value={`${analytics.totalCases}`} icon={Activity} description="This month"/>
+                    <StatCard title="Avg. Response" value={`${analytics.avgResponseTime.toFixed(1)} min`} icon={Clock} description="This month"/>
+                    <StatCard title="Fleet Utilization" value={`${analytics.fleetUtilization.toFixed(0)}%`} icon={UsersIcon} description="Currently on-duty"/>
+                </div>
+
                 <Card className={cn("transition-all", ongoingCase && 'opacity-30')}>
                     <CardHeader className="flex flex-row items-center justify-between">
                         <CardTitle className="flex items-center gap-2"><Waves className="w-5 h-5 text-primary" />Action Feed</CardTitle>
