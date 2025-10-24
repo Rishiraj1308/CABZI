@@ -17,7 +17,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import dynamic from 'next/dynamic'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Progress } from '@/components/ui/progress'
+import React from 'react' // Import React
 
+// Correctly handle forwardRef with next/dynamic
 const LiveMap = dynamic(() => import('@/components/live-map'), { 
     ssr: false,
     loading: () => <Skeleton className="w-full h-full bg-muted" />
