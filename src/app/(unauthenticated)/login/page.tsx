@@ -78,7 +78,7 @@ export default function LoginPage() {
 
   const [step, setStep] = useState<'login' | 'details' | 'otp'>('login');
   
-  const [identifier, setIdentifier] = useState(searchParams.get('email') || '');
+  const [identifier, setIdentifier] = useState(searchParams.get('phone') || '');
   const [inputType, setInputType] = useState<'email' | 'phone' | 'partnerId' | 'none'>('none');
   
   const [password, setPassword] = useState('')
@@ -102,7 +102,7 @@ export default function LoginPage() {
       setInputType('email');
     } else if (/^\d{1,10}$/.test(identifier)) {
       setInputType('phone');
-    } else if (identifier.startsWith('CZD') || identifier.startsWith('CZA') || identifier.startsWith('CZR')) {
+    } else if (identifier.startsWith('CZD') || identifier.startsWith('CZA') || identifier.startsWith('CZR') || identifier.startsWith('CZC')) {
         setInputType('partnerId');
     }
      else {
@@ -151,17 +151,15 @@ export default function LoginPage() {
         : [...userCollections, ...partnerCollections];
     
     let searchIdentifier: string | undefined;
-    let identifierField: 'email' | 'phone' | 'partnerId' = 'email';
-
-    if (inputType === 'partnerId') {
+    
+    if (roleFromQuery === 'cure' && !identifier.includes('@')) {
+      searchIdentifier = identifier;
+    } else if (inputType === 'partnerId') {
         searchIdentifier = identifier;
-        identifierField = 'partnerId';
     } else if (user.email) {
         searchIdentifier = user.email;
-        identifierField = 'email';
     } else if (user.phoneNumber) {
         searchIdentifier = user.phoneNumber.replace('+91', '');
-        identifierField = 'phone';
     }
     
     if (!searchIdentifier) return false;
@@ -196,7 +194,9 @@ export default function LoginPage() {
                 phone: userData.phone, 
                 email: userData.email,
                 name: userData.name,
-                partnerId: userData.partnerId,
+                // For CURE partners, the doc ID is the partnerId. For others, it's a field.
+                partnerId: role === 'cure' ? userDoc.id : userData.partnerId,
+                id: userDoc.id, // Storing document ID for doctor/ambulance lookups
             };
 
             if (role === 'doctor' || role === 'ambulance') {
@@ -235,7 +235,10 @@ export default function LoginPage() {
     e.preventDefault();
     setIsLoading(true);
 
-    if (inputType === 'email') {
+    if (roleFromQuery === 'cure') {
+      await findAndSetSession({ uid: '', email: '', phoneNumber: identifier });
+    }
+    else if (inputType === 'email') {
       await handleEmailSubmit();
     } else if (inputType === 'phone') {
       await handlePhoneSubmit();
@@ -410,7 +413,7 @@ export default function LoginPage() {
             <div className="space-y-4">
                 <form onSubmit={handleIdentifierSubmit} className="space-y-4">
                      <div className="space-y-2">
-                        <Label htmlFor="identifier">{isPartnerIdLogin ? 'Partner ID' : 'Email or Phone Number'}</Label>
+                        <Label htmlFor="identifier">{isPartnerIdLogin ? (roleFromQuery === 'cure' ? 'Registered Phone' : 'Partner ID') : 'Email or Phone Number'}</Label>
                         {inputType === 'phone' && !isPartnerIdLogin ? (
                              <div className="flex items-center gap-0 rounded-md border border-input focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2">
                                 <span className="pl-3 text-muted-foreground text-sm">+91</span>
@@ -432,7 +435,7 @@ export default function LoginPage() {
                                 id="identifier" 
                                 name="identifier" 
                                 type="text" 
-                                placeholder={isPartnerIdLogin ? 'e.g., CZD12345' : 'name@example.com or 1234567890'} 
+                                placeholder={isPartnerIdLogin ? (roleFromQuery === 'cure' ? 'e.g., 9876543210' : 'e.g., CZD12345') : 'name@example.com or 1234567890'} 
                                 required 
                                 value={identifier} 
                                 onChange={(e) => setIdentifier(e.target.value)} 
@@ -441,14 +444,14 @@ export default function LoginPage() {
                         )}
                     </div>
 
-                    {(inputType === 'email' || isPartnerIdLogin) && (
+                    {(inputType === 'email' || isPartnerIdLogin || roleFromQuery === 'cure') && (
                         <div className="space-y-2">
                             <Label htmlFor="password">Password</Label>
                             <Input id="password" name="password" type="password" placeholder="••••••••" required value={password} onChange={(e) => setPassword(e.target.value)} disabled={isLoading} />
                         </div>
                     )}
                     
-                    <Button type="submit" className="w-full" disabled={isLoading || inputType === 'none'}>
+                    <Button type="submit" className="w-full" disabled={isLoading || (inputType === 'none' && roleFromQuery !== 'cure')}>
                          {isLoading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Please wait...</> : (inputType === 'phone' ? 'Send OTP' : 'Continue')}
                     </Button>
                 </form>
@@ -547,9 +550,9 @@ export default function LoginPage() {
                 </Link>
               </div>
               <CardTitle className="text-2xl mt-4">{getPageTitle()}</CardTitle>
-              <div className="text-sm text-muted-foreground">
+              <CardDescription>
                 <AnimatePresence mode="wait">
-                    <motion.div
+                    <motion.p
                         key={step + roleFromQuery}
                         initial={{ opacity: 0, y: -10 }}
                         animate={{ opacity: 1, y: 0 }}
@@ -557,9 +560,9 @@ export default function LoginPage() {
                         transition={{ duration: 0.2 }}
                     >
                        {getPageDescription()}
-                    </motion.div>
+                    </motion.p>
                 </AnimatePresence>
-              </div>
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <AnimatePresence mode="wait">
