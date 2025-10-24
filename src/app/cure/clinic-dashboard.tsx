@@ -9,7 +9,7 @@ import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useDb } from '@/firebase/client-provider';
-import { collection, query, where, onSnapshot, Timestamp } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, Timestamp, orderBy } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 
 const StatCard = ({ title, value, icon: Icon, isLoading }: { title: string, value: string, icon: React.ElementType, isLoading?: boolean }) => (
@@ -27,6 +27,7 @@ const StatCard = ({ title, value, icon: Icon, isLoading }: { title: string, valu
 interface Appointment {
     id: string;
     patientName: string;
+    appointmentDate: Timestamp;
     appointmentTime: string;
     status: 'Pending' | 'Confirmed' | 'In Queue' | 'Completed' | 'Cancelled';
 }
@@ -57,22 +58,23 @@ const ClinicDashboard = () => {
             setIsLoading(false);
             return;
         }
-
-        const today = new Date();
-        const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 0, 0, 0);
-        const endOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59);
-
-        // Fetch today's appointments
+        
+        // Fetch all pending and confirmed appointments, not just for today
         const apptQuery = query(
             collection(db, 'appointments'),
             where('hospitalId', '==', partnerId),
-            where('appointmentDate', '>=', Timestamp.fromDate(startOfToday)),
-            where('appointmentDate', '<=', Timestamp.fromDate(endOfToday))
+            where('status', 'in', ['Pending', 'Confirmed', 'In Queue']),
+            orderBy('appointmentDate', 'asc')
         );
         const unsubAppts = onSnapshot(apptQuery, (snapshot) => {
             const apptsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Appointment));
             setAppointments(apptsData);
-            setStats(prev => ({...prev, todayAppointments: apptsData.length}));
+            
+            // Calculate stats for today only
+            const today = new Date();
+            const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 0, 0, 0);
+            const todayAppointmentsCount = apptsData.filter(a => a.appointmentDate.toDate() >= startOfToday).length;
+            setStats(prev => ({...prev, todayAppointments: todayAppointmentsCount}));
         });
         
         // Fetch doctors for the roster
@@ -107,24 +109,27 @@ const ClinicDashboard = () => {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <Card className="lg:col-span-2">
                     <CardHeader>
-                        <CardTitle>Today&apos;s Appointment Queue</CardTitle>
+                        <CardTitle>Upcoming Appointment Queue</CardTitle>
                     </CardHeader>
                     <CardContent>
-                       <div className="space-y-3">
+                       <div className="space-y-3 max-h-96 overflow-y-auto pr-2">
                            {isLoading ? (
                                 Array.from({length: 3}).map((_, i) => <Skeleton key={i} className="h-16 w-full" />)
                            ) : appointments.length > 0 ? (
                                appointments.map(appt => (
                                    <div key={appt.id} className="flex items-center gap-4 p-3 rounded-lg bg-muted/50">
                                        <Avatar className="h-9 w-9"><AvatarFallback>{appt.patientName.substring(0,1)}</AvatarFallback></Avatar>
-                                       <div className="flex-1 font-medium">{appt.patientName}</div>
+                                       <div className="flex-1">
+                                            <p className="font-semibold">{appt.patientName}</p>
+                                            <p className="text-xs text-muted-foreground">{appt.appointmentDate.toDate().toLocaleDateString()}</p>
+                                       </div>
                                        <div className="text-sm text-muted-foreground">{appt.appointmentTime}</div>
                                        <Badge variant={appt.status === 'In Queue' ? 'default' : 'secondary'}>{appt.status}</Badge>
                                        <Button variant="outline" size="sm">Check-in</Button>
                                    </div>
                                ))
                            ) : (
-                                <div className="text-center py-10 text-muted-foreground">No appointments for today.</div>
+                                <div className="text-center py-10 text-muted-foreground">No new appointment requests.</div>
                            )}
                        </div>
                     </CardContent>
