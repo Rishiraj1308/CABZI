@@ -12,7 +12,7 @@ import Link from 'next/link'
 import BrandLogo from '@/components/brand-logo'
 import { db } from '@/lib/firebase'
 import { collection, addDoc, serverTimestamp, GeoPoint, query, where, getDocs, limit } from "firebase/firestore";
-import { ArrowLeft, PlusCircle, Trash2 } from 'lucide-react'
+import { ArrowLeft } from 'lucide-react'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Progress } from '@/components/ui/progress'
 import { Textarea } from '@/components/ui/textarea'
@@ -26,18 +26,12 @@ const LiveMap = dynamic(() => import('@/components/live-map'), {
     forwardRef: true
 } as any);
 
-const doctorSpecializations = [
-  'Cardiology', 'Neurology', 'Orthopedics', 'Pediatrics', 'Oncology', 
-  'Gastroenterology', 'General Physician', 'Dermatology', 'ENT Specialist'
-];
-
-
 export default function CureOnboardingPage() {
     const { toast } = useToast()
     const router = useRouter()
     const [isLoading, setIsLoading] = useState(false)
     const [currentStep, setCurrentStep] = useState(1);
-    const totalSteps = 5;
+    const totalSteps = 4; // Updated from 5 to 4
     const mapRef = useRef<any>(null);
 
     const [formData, setFormData] = useState({
@@ -64,10 +58,6 @@ export default function CureOnboardingPage() {
         agreedToTerms: false,
         location: null as { lat: number, lon: number } | null,
     });
-    
-    const [doctors, setDoctors] = useState([
-        { fullName: '', qualifications: '', specialization: '', regNumber: '', experience: '', consultationFee: '' }
-    ]);
 
     useEffect(() => {
         if (currentStep === 1 && mapRef.current) {
@@ -83,21 +73,6 @@ export default function CureOnboardingPage() {
     
     const handleSelectChange = (name: keyof typeof formData, value: string) => {
         setFormData(prev => ({...prev, [name]: value}));
-    }
-    
-    const handleDoctorChange = (index: number, field: string, value: string) => {
-        const newDoctors = [...doctors];
-        (newDoctors[index] as any)[field] = value;
-        setDoctors(newDoctors);
-    }
-    
-    const addDoctor = () => {
-        setDoctors([...doctors, { fullName: '', qualifications: '', specialization: '', regNumber: '', experience: '', consultationFee: '' }]);
-    }
-
-    const removeDoctor = (index: number) => {
-        const newDoctors = doctors.filter((_, i) => i !== index);
-        setDoctors(newDoctors);
     }
     
     const handleNextStep = () => {
@@ -155,9 +130,8 @@ export default function CureOnboardingPage() {
             
             await addDoc(collection(db, "ambulances"), {
                 ...restOfData,
-                doctors: doctors,
                 location: new GeoPoint(location!.lat, location!.lon),
-                businessType: formData.clinicType, // Save clinic type as businessType
+                businessType: formData.clinicType,
                 name: formData.clinicName,
                 phone: formData.clinicPhone,
                 type: 'cure',
@@ -228,38 +202,7 @@ export default function CureOnboardingPage() {
                          <div className="space-y-2"><Label>Upload Owner ID Proof (Aadhaar, PAN, etc.)</Label><div className="flex items-center justify-center w-full p-6 border-2 border-dashed rounded-lg text-center text-muted-foreground"><p>Upload will be enabled after verification.</p></div></div>
                     </div>
                 );
-            case 3: // Doctor Details
-                return (
-                    <div className="space-y-4">
-                        {doctors.map((doctor, index) => (
-                            <Card key={index} className="p-4 bg-muted/30">
-                                <div className="flex justify-between items-center mb-2">
-                                    <h4 className="font-semibold">Doctor {index + 1}</h4>
-                                    {index > 0 && <Button variant="destructive" size="icon" onClick={() => removeDoctor(index)}><Trash2 className="w-4 h-4"/></Button>}
-                                </div>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                     <div className="space-y-1"><Label>Full Name*</Label><Input name="fullName" value={doctor.fullName} onChange={e => handleDoctorChange(index, e.target.name, e.target.value)} required/></div>
-                                     <div className="space-y-1"><Label>Qualifications*</Label><Input name="qualifications" placeholder="MBBS, MD" value={doctor.qualifications} onChange={e => handleDoctorChange(index, e.target.name, e.target.value)} required/></div>
-                                     <div className="space-y-1"><Label>Specialization*</Label>
-                                        <Select name="specialization" required onValueChange={(value) => handleDoctorChange(index, 'specialization', value)} value={doctor.specialization}>
-                                            <SelectTrigger><SelectValue placeholder="Select Specialization"/></SelectTrigger>
-                                            <SelectContent>
-                                                {doctorSpecializations.map(spec => (
-                                                    <SelectItem key={spec} value={spec}>{spec}</SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                     </div>
-                                     <div className="space-y-1"><Label>Medical Registration No.*</Label><Input name="regNumber" value={doctor.regNumber} onChange={e => handleDoctorChange(index, e.target.name, e.target.value)} required/></div>
-                                     <div className="space-y-1"><Label>Years of Experience*</Label><Input name="experience" type="number" value={doctor.experience} onChange={e => handleDoctorChange(index, e.target.name, e.target.value)} required/></div>
-                                     <div className="space-y-1"><Label>Consultation Fees (Optional)</Label><Input name="consultationFee" type="number" placeholder="e.g., 800" value={doctor.consultationFee} onChange={e => handleDoctorChange(index, e.target.name, e.target.value)} /></div>
-                                </div>
-                            </Card>
-                        ))}
-                         <Button type="button" variant="outline" onClick={addDoctor} className="w-full mt-4"><PlusCircle className="mr-2 h-4 w-4"/> Add Another Doctor</Button>
-                    </div>
-                );
-            case 4: // Licenses
+            case 3: // Licenses (Previously step 4)
                 return (
                     <div className="space-y-6">
                         {formData.clinicType !== 'Clinic' && (
@@ -270,7 +213,7 @@ export default function CureOnboardingPage() {
                         <div className="space-y-2"><Label>Upload Registration Document</Label><div className="flex items-center justify-center w-full p-6 border-2 border-dashed rounded-lg text-center text-muted-foreground"><p>Upload will be enabled after verification.</p></div></div>
                     </div>
                 );
-            case 5: // Operational Info
+            case 4: // Operational Info (Previously step 5)
                 return (
                      <div className="space-y-6">
                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -297,7 +240,7 @@ export default function CureOnboardingPage() {
         }
     }
 
-    const stepTitles = ["Facility Details", "Owner Info", "Doctor Details", "Licenses", "Operational Info"];
+    const stepTitles = ["Facility Details", "Owner Info", "Licenses", "Operational Info"];
 
     return (
         <div className="flex min-h-screen items-center justify-center p-4 bg-muted/40">
