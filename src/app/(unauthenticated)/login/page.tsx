@@ -78,7 +78,7 @@ export default function LoginPage() {
 
   const [step, setStep] = useState<'login' | 'details' | 'otp'>('login');
   
-  const [identifier, setIdentifier] = useState(searchParams.get('phone') || '');
+  const [identifier, setIdentifier] = useState(searchParams.get('email') || '');
   const [inputType, setInputType] = useState<'email' | 'phone' | 'partnerId' | 'none'>('none');
   
   const [password, setPassword] = useState('')
@@ -162,9 +162,6 @@ export default function LoginPage() {
     } else if (user.phoneNumber) {
         searchIdentifier = user.phoneNumber.replace('+91', '');
         identifierField = 'phone';
-    } else if (inputType === 'phone' && identifier) {
-        searchIdentifier = identifier;
-        identifierField = 'phone';
     }
     
     if (!searchIdentifier) return false;
@@ -188,8 +185,8 @@ export default function LoginPage() {
                 continue; 
             }
             
-            // Password check for partnerId or email logins
-            if ((inputType === 'partnerId' || inputType === 'email') && userData.password !== password) {
+            // Password check for partnerId logins
+            if (inputType === 'partnerId' && userData.password !== password) {
                 toast({ variant: 'destructive', title: 'Incorrect Password' });
                 return false;
             }
@@ -238,12 +235,34 @@ export default function LoginPage() {
     e.preventDefault();
     setIsLoading(true);
 
-    if (inputType === 'phone') {
+    if (inputType === 'email') {
+      await handleEmailSubmit();
+    } else if (inputType === 'phone') {
       await handlePhoneSubmit();
-    } else {
-      await findAndSetSession({ uid: '', email: identifier, phoneNumber: '' });
+    } else if (inputType === 'partnerId') {
+      await findAndSetSession({ uid: '', email: '', phoneNumber: '' });
     }
     setIsLoading(false);
+  }
+
+  const handleEmailSubmit = async () => {
+    if (!auth || !db) return;
+    try {
+      const userCredential = await signInWithEmailAndPassword(auth, identifier, password);
+      await findAndSetSession(userCredential.user);
+    } catch (error: any) {
+      if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential') {
+        if(roleFromQuery === 'user') {
+            setStep('details');
+        } else {
+            toast({ variant: 'destructive', title: 'Partner Not Found', description: 'This account does not exist. Please onboard first from the Partner Hub.' });
+        }
+      } else if (error.code === 'auth/wrong-password') {
+        toast({ variant: 'destructive', title: 'Incorrect Password', description: 'Please check your password and try again.' });
+      } else {
+        toast({ variant: 'destructive', title: 'Login Failed', description: error.message });
+      }
+    }
   }
 
   const handlePhoneSubmit = async () => {
@@ -289,22 +308,15 @@ export default function LoginPage() {
       try {
           let user = auth.currentUser;
 
-          if (!user && inputType === 'email') {
-              user = (await createUserWithEmailAndPassword(auth, identifier, password)).user;
-          }
-
           if (!user) {
-              toast({ variant: 'destructive', title: 'Authentication Error', description: 'User session not found. Please try logging in again.' });
-              setIsLoading(false);
-              setStep('login');
-              return;
+              user = (await createUserWithEmailAndPassword(auth, identifier, password)).user;
           }
 
           const newUserRef = doc(db, "users", user.uid);
           await setDoc(newUserRef, {
               name,
-              email: user.email || (inputType === 'email' ? identifier : null),
-              phone: user.phoneNumber ? user.phoneNumber.replace('+91','') : (inputType === 'phone' ? identifier : null),
+              email: user.email || identifier,
+              phone: user.phoneNumber ? user.phoneNumber.replace('+91','') : identifier,
               gender,
               role: 'user', 
               createdAt: serverTimestamp(),
@@ -391,27 +403,45 @@ export default function LoginPage() {
     }
 
     if (step === 'login') {
-        const isPartnerFlow = ['driver', 'mechanic', 'cure', 'doctor', 'ambulance'].includes(roleFromQuery);
+        const isPartnerIdLogin = inputType === 'partnerId' || ['doctor', 'ambulance'].includes(roleFromQuery);
         
         return (
           <motion.div key="login" variants={formVariants}>
             <div className="space-y-4">
                 <form onSubmit={handleIdentifierSubmit} className="space-y-4">
                      <div className="space-y-2">
-                        <Label htmlFor="identifier">{isPartnerFlow ? "Partner ID, Email, or Phone" : 'Email or Phone Number'}</Label>
-                        <Input 
-                            id="identifier" 
-                            name="identifier" 
-                            type="text" 
-                            placeholder={isPartnerFlow ? "Enter your credential" : "name@example.com or phone"} 
-                            required 
-                            value={identifier} 
-                            onChange={(e) => setIdentifier(e.target.value)} 
-                            disabled={isLoading} 
-                        />
+                        <Label htmlFor="identifier">{isPartnerIdLogin ? 'Partner ID' : 'Email or Phone Number'}</Label>
+                        {inputType === 'phone' && !isPartnerIdLogin ? (
+                             <div className="flex items-center gap-0 rounded-md border border-input focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2">
+                                <span className="pl-3 text-muted-foreground text-sm">+91</span>
+                                <Input 
+                                    id="identifier" 
+                                    name="identifier" 
+                                    type="tel" 
+                                    maxLength={10}
+                                    placeholder="12345 67890" 
+                                    required 
+                                    value={identifier} 
+                                    onChange={(e) => setIdentifier(e.target.value.replace(/[^0-9]/g, ''))} 
+                                    disabled={isLoading} 
+                                    className="border-0 h-9 focus-visible:ring-0 focus-visible:ring-offset-0 flex-1"
+                                />
+                             </div>
+                        ) : (
+                             <Input 
+                                id="identifier" 
+                                name="identifier" 
+                                type="text" 
+                                placeholder={isPartnerIdLogin ? 'e.g., CZD12345' : 'name@example.com or 1234567890'} 
+                                required 
+                                value={identifier} 
+                                onChange={(e) => setIdentifier(e.target.value)} 
+                                disabled={isLoading} 
+                            />
+                        )}
                     </div>
 
-                    {(inputType === 'email' || inputType === 'partnerId') && (
+                    {(inputType === 'email' || isPartnerIdLogin) && (
                         <div className="space-y-2">
                             <Label htmlFor="password">Password</Label>
                             <Input id="password" name="password" type="password" placeholder="••••••••" required value={password} onChange={(e) => setPassword(e.target.value)} disabled={isLoading} />
@@ -519,7 +549,7 @@ export default function LoginPage() {
               <CardTitle className="text-2xl mt-4">{getPageTitle()}</CardTitle>
               <CardDescription>
                 <AnimatePresence mode="wait">
-                    <motion.p
+                    <motion.div
                         key={step + roleFromQuery}
                         initial={{ opacity: 0, y: -10 }}
                         animate={{ opacity: 1, y: 0 }}
@@ -527,7 +557,7 @@ export default function LoginPage() {
                         transition={{ duration: 0.2 }}
                     >
                        {getPageDescription()}
-                    </motion.p>
+                    </motion.div>
                 </AnimatePresence>
               </CardDescription>
             </CardHeader>
