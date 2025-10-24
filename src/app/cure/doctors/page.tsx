@@ -532,7 +532,7 @@ const handleAddDoctor = async (event: React.FormEvent<HTMLFormElement>) => {
                                 </div>
 
                                 <div className="space-y-4">
-                                  <h3 className="text-lg font-semibold border-b pb-2">Verification & Consultation</h3>
+                                  <h3 className="text-lg font-semibold border-b pb-2">Verification &amp; Consultation</h3>
                                   <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
                                       <div className="space-y-2"><Label>Medical Registration No.</Label><Input name="medicalRegNo" required value={newDoctorData.medicalRegNo} onChange={e => handleFormChange('medicalRegNo', e.target.value)} /></div>
                                       <div className="space-y-2"><Label>Registration Council</Label><Input name="regCouncil" placeholder="e.g., Delhi Medical Council" required value={newDoctorData.regCouncil} onChange={e => handleFormChange('regCouncil', e.target.value)} /></div>
@@ -725,3 +725,5 @@ const handleAddDoctor = async (event: React.FormEvent<HTMLFormElement>) => {
     </div>
   )
 }
+
+    
