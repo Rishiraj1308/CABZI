@@ -242,7 +242,7 @@ export default function DoctorDashboardPage() {
                             <AlertTriangle className="h-4 w-4 text-amber-500" />
                             <AlertTitle>Under Development</AlertTitle>
                             <AlertDescription>
-                                This feature is coming soon and will be powered by Genkit AI.
+                               This advanced AI feature is currently under development.
                             </AlertDescription>
                         </Alert>
                         <ul className="text-sm text-muted-foreground list-disc pl-5 space-y-1">
