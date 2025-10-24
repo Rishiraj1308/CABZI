@@ -17,6 +17,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Progress } from '@/components/ui/progress'
 import { Textarea } from '@/components/ui/textarea'
 import { Checkbox } from '@/components/ui/checkbox'
+import dynamic from 'next/dynamic'
+import { Skeleton } from '@/components/ui/skeleton'
+
+const LiveMap = dynamic(() => import('@/components/live-map'), {
+    ssr: false,
+    loading: () => <Skeleton className="w-full h-[200px]" />,
+    forwardRef: true
+} as any);
 
 
 export default function CureOnboardingPage() {
@@ -25,6 +33,7 @@ export default function CureOnboardingPage() {
     const [isLoading, setIsLoading] = useState(false)
     const [currentStep, setCurrentStep] = useState(1);
     const totalSteps = 5;
+    const mapRef = useRef<any>(null);
 
     const [formData, setFormData] = useState({
         clinicName: '',
@@ -48,11 +57,19 @@ export default function CureOnboardingPage() {
         bankAccountNumber: '',
         bankIfscCode: '',
         agreedToTerms: false,
+        location: null as { lat: number, lon: number } | null,
     });
     
     const [doctors, setDoctors] = useState([
         { fullName: '', qualifications: '', regNumber: '', experience: '', consultationFee: '' }
     ]);
+
+    useEffect(() => {
+        if (currentStep === 1 && mapRef.current) {
+            mapRef.current.locate();
+        }
+    }, [currentStep]);
+
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
@@ -85,12 +102,32 @@ export default function CureOnboardingPage() {
     };
 
     const handlePrevStep = () => setCurrentStep(prev => prev - 1);
+    
+    const handleLocationSelect = async () => {
+        if (mapRef.current) {
+            const center = mapRef.current.getCenter();
+            if (center) {
+                const address = await mapRef.current.getAddress(center.lat, center.lng);
+                setFormData(prev => ({ 
+                    ...prev, 
+                    address: address || 'Could not fetch address', 
+                    location: { lat: center.lat, lon: center.lng } 
+                }));
+                toast({ title: "Location Confirmed!", description: address });
+            }
+        }
+    };
+
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         
         if(!formData.agreedToTerms) {
             toast({ variant: 'destructive', title: "Agreement Required", description: "You must agree to the terms and conditions to proceed." });
+            return;
+        }
+         if (!formData.location) {
+            toast({ variant: 'destructive', title: 'Location Required', description: 'Please confirm your facility location on the map.' });
             return;
         }
 
@@ -103,6 +140,7 @@ export default function CureOnboardingPage() {
         }
 
         try {
+            const { location, ...restOfData } = formData;
             const q = query(collection(db, "ambulances"), where("clinicPhone", "==", formData.clinicPhone), limit(1));
             const querySnapshot = await getDocs(q);
             if (!querySnapshot.empty) {
@@ -112,8 +150,12 @@ export default function CureOnboardingPage() {
             }
             
             await addDoc(collection(db, "ambulances"), {
-                ...formData,
+                ...restOfData,
                 doctors: doctors,
+                location: new GeoPoint(location!.lat, location!.lon),
+                businessType: formData.clinicType, // Save clinic type as businessType
+                name: formData.clinicName,
+                phone: formData.clinicPhone,
                 type: 'cure',
                 status: 'pending_verification',
                 isOnline: false,
@@ -142,15 +184,20 @@ export default function CureOnboardingPage() {
                 return (
                     <div className="space-y-6">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div className="space-y-2"><Label htmlFor="clinicName">Clinic Name*</Label><Input id="clinicName" name="clinicName" value={formData.clinicName} onChange={handleInputChange} required /></div>
-                            <div className="space-y-2"><Label htmlFor="clinicType">Clinic Type*</Label><Select name="clinicType" required onValueChange={v => handleSelectChange('clinicType', v)} value={formData.clinicType}><SelectTrigger><SelectValue placeholder="Select type"/></SelectTrigger><SelectContent><SelectItem value="General">General</SelectItem><SelectItem value="Specialist">Specialist</SelectItem><SelectItem value="Diagnostic">Diagnostic</SelectItem><SelectItem value="Multi-specialty">Multi-specialty</SelectItem></SelectContent></Select></div>
-                            <div className="space-y-2 md:col-span-2"><Label htmlFor="address">Full Address*</Label><Textarea id="address" name="address" value={formData.address} onChange={handleInputChange} required /></div>
-                            <div className="space-y-2"><Label htmlFor="landmark">Landmark / Area</Label><Input id="landmark" name="landmark" value={formData.landmark} onChange={handleInputChange} /></div>
-                            <div className="space-y-2"><Label htmlFor="clinicPhone">Clinic Contact Number*</Label><Input id="clinicPhone" name="clinicPhone" type="tel" value={formData.clinicPhone} onChange={handleInputChange} required /></div>
-                            <div className="space-y-2"><Label htmlFor="email">Email ID (Optional)</Label><Input id="email" name="email" type="email" value={formData.email} onChange={handleInputChange} /></div>
-                            <div className="space-y-2"><Label htmlFor="website">Website / Social Media (Optional)</Label><Input id="website" name="website" value={formData.website} onChange={handleInputChange} /></div>
+                            <div className="space-y-2"><Label htmlFor="clinicName">Clinic / Hospital Name*</Label><Input id="clinicName" name="clinicName" value={formData.clinicName} onChange={handleInputChange} required /></div>
+                            <div className="space-y-2"><Label htmlFor="clinicType">Facility Type*</Label><Select name="clinicType" required onValueChange={v => handleSelectChange('clinicType', v)} value={formData.clinicType}><SelectTrigger><SelectValue placeholder="Select type"/></SelectTrigger><SelectContent><SelectItem value="Clinic">Clinic</SelectItem><SelectItem value="Specialist Clinic">Specialist Clinic</SelectItem><SelectItem value="Diagnostic Center">Diagnostic Center</SelectItem><SelectItem value="Private Hospital">Private Hospital</SelectItem><SelectItem value="Government Hospital">Government Hospital</SelectItem></SelectContent></Select></div>
+                            <div className="space-y-2"><Label htmlFor="clinicPhone">Contact Number*</Label><Input id="clinicPhone" name="clinicPhone" type="tel" value={formData.clinicPhone} onChange={handleInputChange} required /></div>
+                            <div className="space-y-2"><Label htmlFor="email">Email ID</Label><Input id="email" name="email" type="email" value={formData.email} onChange={handleInputChange} /></div>
                         </div>
-                        <div className="space-y-2"><Label>Upload Clinic Photos</Label><div className="flex items-center justify-center w-full p-6 border-2 border-dashed rounded-lg text-center text-muted-foreground"><UploadCloud className="w-8 h-8 mx-auto mb-2"/><p>Upload button will be enabled after verification.</p></div></div>
+                        <div className="space-y-2">
+                            <Label>Set Facility Location*</Label>
+                            <CardDescription>Drag the map to pin your exact location.</CardDescription>
+                            <div className="h-48 w-full rounded-md overflow-hidden border">
+                                <LiveMap ref={mapRef} onLocationFound={(addr, coords) => setFormData(prev => ({ ...prev, address: addr, location: coords }))} />
+                            </div>
+                            <Button type="button" className="w-full" onClick={handleLocationSelect}>Confirm My Location on Map</Button>
+                            {formData.address && <p className="text-sm text-green-600 font-medium text-center">{formData.address}</p>}
+                        </div>
                     </div>
                 );
             case 2: // Owner Details
@@ -189,10 +236,12 @@ export default function CureOnboardingPage() {
             case 4: // Licenses
                 return (
                     <div className="space-y-6">
-                        <div className="space-y-2"><Label htmlFor="clinicRegNo">Clinic Registration Number*</Label><Input id="clinicRegNo" name="clinicRegNo" value={formData.clinicRegNo} onChange={handleInputChange} required /></div>
+                        {formData.clinicType !== 'Clinic' && (
+                             <div className="space-y-2"><Label htmlFor="clinicRegNo">Facility Registration Number*</Label><Input id="clinicRegNo" name="clinicRegNo" value={formData.clinicRegNo} onChange={handleInputChange} required /></div>
+                        )}
                         <div className="space-y-2"><Label htmlFor="issuingAuthority">Issuing Authority*</Label><Input id="issuingAuthority" name="issuingAuthority" placeholder="e.g., Delhi Medical Council" value={formData.issuingAuthority} onChange={handleInputChange} required /></div>
                         <div className="space-y-2"><Label htmlFor="gstNumber">GST Number (if applicable)</Label><Input id="gstNumber" name="gstNumber" value={formData.gstNumber} onChange={handleInputChange} /></div>
-                        <div className="space-y-2"><Label>Upload Clinic Registration Document</Label><div className="flex items-center justify-center w-full p-6 border-2 border-dashed rounded-lg text-center text-muted-foreground"><p>Upload will be enabled after verification.</p></div></div>
+                        <div className="space-y-2"><Label>Upload Registration Document</Label><div className="flex items-center justify-center w-full p-6 border-2 border-dashed rounded-lg text-center text-muted-foreground"><p>Upload will be enabled after verification.</p></div></div>
                     </div>
                 );
             case 5: // Operational Info
@@ -222,7 +271,7 @@ export default function CureOnboardingPage() {
         }
     }
 
-    const stepTitles = ["Clinic Details", "Owner Info", "Doctor Details", "Licenses", "Operational Info"];
+    const stepTitles = ["Facility Details", "Owner Info", "Doctor Details", "Licenses", "Operational Info"];
 
     return (
         <div className="flex min-h-screen items-center justify-center p-4 bg-muted/40">
