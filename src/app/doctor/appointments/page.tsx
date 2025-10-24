@@ -14,7 +14,7 @@ import { collection, query, where, onSnapshot, Timestamp, orderBy } from 'fireba
 import { useToast } from '@/hooks/use-toast'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle, AlertDialogFooter } from '@/components/ui/alert-dialog'
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger, AlertDialogFooter } from '@/components/ui/alert-dialog'
 import { Label } from '@/components/ui/label'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Calendar } from '@/components/ui/calendar'
@@ -98,7 +98,7 @@ export default function DoctorAppointmentsPage() {
     }
     const newDateTime = new Date(newDate);
     const [hours, minutes] = newTime.split(/[: ]/);
-    newDateTime.setHours(newTime.includes('PM') ? parseInt(hours, 10) + 12 : parseInt(hours, 10), parseInt(minutes, 10), 0);
+    newDateTime.setHours(newTime.includes('PM') ? parseInt(hours, 10) + 12 : parseInt(minutes, 10), parseInt(minutes, 10), 0);
 
     setAppointments(prev => prev.map(appt => 
       appt.id === selectedAppointment.id 
