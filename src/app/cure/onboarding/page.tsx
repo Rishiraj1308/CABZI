@@ -144,24 +144,25 @@ export default function CureOnboardingPage() {
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="space-y-2">
-                                <Label htmlFor="hospitalRegNo">Hospital Registration Certificate No.</Label>
+                                <Label htmlFor="hospitalRegNo">Registration Certificate No.</Label>
                                 <Input id="hospitalRegNo" value={formData.hospitalRegNo} onChange={e => handleInputChange('hospitalRegNo', e.target.value)} required />
                             </div>
                             <div className="space-y-2">
-                                <Label htmlFor="hospitalType">Hospital Category</Label>
+                                <Label htmlFor="hospitalType">Facility Type</Label>
                                 <Select value={formData.hospitalType} onValueChange={(v) => handleInputChange('hospitalType', v)} required>
-                                    <SelectTrigger id="hospitalType"><SelectValue placeholder="Select category" /></SelectTrigger>
+                                    <SelectTrigger id="hospitalType"><SelectValue placeholder="Select type" /></SelectTrigger>
                                     <SelectContent>
+                                        <SelectItem value="Clinic">Clinic</SelectItem>
+                                        <SelectItem value="Specialty Clinic">Specialty Clinic</SelectItem>
                                         <SelectItem value="Private Hospital">Private Hospital</SelectItem>
                                         <SelectItem value="Govt Hospital">Government Hospital</SelectItem>
-                                        <SelectItem value="Specialty Clinic">Specialty Clinic</SelectItem>
                                         <SelectItem value="Trust Hospital">Trust Hospital</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
                         </div>
                          <div className="space-y-2">
-                            <Label htmlFor="address">Set Your Hospital Location</Label>
+                            <Label htmlFor="address">Set Your Facility Location</Label>
                              <div className="h-64 w-full rounded-md overflow-hidden border">
                                 <LiveMap onLocationFound={(addr, coords) => handleInputChange('location', { address: addr, coords })} />
                             </div>
@@ -196,7 +197,8 @@ export default function CureOnboardingPage() {
                          <div className="space-y-2">
                            <Label>Required Documents (Upload will be enabled after verification)</Label>
                            <ul className="text-sm text-muted-foreground list-disc pl-5 space-y-1">
-                               <li>Fire &amp; Safety Certificate</li>
+                               <li>Facility Registration Certificate</li>
+                               <li>Fire &amp; Safety Certificate (if applicable)</li>
                                <li>Ambulance RC Book &amp; Fitness Certificate for all vehicles</li>
                                <li>Driver&apos;s License for all ambulance drivers</li>
                            </ul>
@@ -207,7 +209,7 @@ export default function CureOnboardingPage() {
                 return (
                      <div className="space-y-4">
                         <Card><CardContent className="p-4">
-                            <p className="text-sm text-muted-foreground">Hospital Name</p>
+                            <p className="text-sm text-muted-foreground">Facility Name</p>
                             <p className="font-semibold">{formData.hospitalName}</p>
                         </CardContent></Card>
                          <Card><CardContent className="p-4">
@@ -231,7 +233,7 @@ export default function CureOnboardingPage() {
                     <div className="mx-auto"><BrandLogo className="text-5xl justify-center" /></div>
                     <CardTitle className="text-3xl mt-4">Cure Partner Onboarding</CardTitle>
                     <CardDescription>
-                       Join our life-saving network. Please provide your hospital&apos;s details.
+                       Join our life-saving network. Please provide your facility&apos;s details.
                     </CardDescription>
                      <div className="flex items-center gap-4 pt-4 justify-center">
                         <Progress value={(currentStep / totalSteps) * 100} className="w-1/2 mx-auto" />
@@ -256,3 +258,4 @@ export default function CureOnboardingPage() {
         </div>
     );
 }
+
