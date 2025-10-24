@@ -52,6 +52,7 @@ const LiveMap = forwardRef<any, LiveMapProps>((props, ref) => {
                     if (mapInstanceRef.current && locateControlRef.current) {
                         const onFound = (e: any) => {
                             const { lat, lng } = e.latlng;
+                             mapInstanceRef.current?.flyTo([lat, lng], 16); // Zoom in on location found
                             getAddress(lat, lng).then(address => {
                                 if (address) {
                                     const result = { address, coords: { lat, lon: lng } };
@@ -479,3 +480,4 @@ const LiveMap = forwardRef<any, LiveMapProps>((props, ref) => {
 
 LiveMap.displayName = 'LiveMap';
 export default LiveMap;
+
