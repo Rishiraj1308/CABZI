@@ -8,7 +8,7 @@ import { onSnapshot, doc } from 'firebase/firestore'
 import { Skeleton } from '@/components/ui/skeleton'
 import HospitalMissionControl from './hospital-dashboard'
 import ClinicDashboard from './clinic-dashboard'
-import { Card, CardContent, CardHeader } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 
 
 export default function CureDashboardPage() {
@@ -31,7 +31,8 @@ export default function CureDashboardPage() {
                     if (docSnap.exists()) {
                         const data = docSnap.data();
                         // Make logic more robust: default to hospital unless explicitly 'clinic'
-                        const type = data.businessType?.toLowerCase() || 'hospital'; // Default to 'hospital'
+                        const type = data.businessType?.toLowerCase() || 'hospital';
+                        
                         if (type.includes('clinic')) {
                             setFacilityType('clinic');
                         } else {
