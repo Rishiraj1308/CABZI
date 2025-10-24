@@ -145,8 +145,11 @@ export default function CureOnboardingPage() {
                 return;
             }
             
+            const partnerId = `CZC-${formData.clinicPhone.slice(-4)}${Math.floor(10 + Math.random() * 90)}`;
+
             await addDoc(collection(db, "ambulances"), {
                 ...restOfData,
+                partnerId: partnerId,
                 services: selectedServices,
                 location: new GeoPoint(location!.lat, location!.lon),
                 businessType: formData.clinicType,
@@ -323,3 +326,5 @@ export default function CureOnboardingPage() {
         </div>
     );
 }
+
+    
