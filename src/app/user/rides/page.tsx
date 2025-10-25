@@ -1,4 +1,3 @@
-
 'use client'
 
 import React, { useState, useEffect, useMemo } from 'react'
@@ -9,7 +8,7 @@ import { collection, query, where, orderBy, onSnapshot, Timestamp } from 'fireba
 import { useToast } from '@/hooks/use-toast'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Badge } from '@/components/ui/badge'
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 
@@ -137,6 +136,16 @@ export default function MyActivityPage() {
     if (lowerStatus.includes('confirmed') || lowerStatus.includes('accepted') || lowerStatus.includes('transit')) return <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200">{status}</Badge>;
     return <Badge variant="secondary">{status}</Badge>;
   };
+  
+    const DetailRow = ({ icon: Icon, label, value, valueClass, isMono }: { icon: React.ElementType, label: string, value: string | React.ReactNode, valueClass?: string, isMono?: boolean }) => (
+        <div className="flex items-start">
+            <div className="w-2/5 flex items-center text-muted-foreground gap-2">
+                <Icon className="w-4 h-4" />
+                <span>{label}</span>
+            </div>
+            <div className={`w-3/5 font-medium text-right ${valueClass} ${isMono ? 'font-mono' : ''}`}>{value}</div>
+        </div>
+    );
 
   const renderDialogContent = () => {
     if (!selectedActivity) return null;
@@ -145,53 +154,60 @@ export default function MyActivityPage() {
       case 'Ride':
         return (
           <>
-            <div className="flex items-center gap-4">
-              <Avatar className="w-16 h-16"><AvatarImage src="https://placehold.co/100x100.png" data-ai-hint="driver portrait" /><AvatarFallback>{selectedActivity.driverName?.substring(0, 2)}</AvatarFallback></Avatar>
-              <div>
-                <DialogTitle>Ride with {selectedActivity.driverName}</DialogTitle>
-                <DialogDescription>{selectedActivity.vehicle}</DialogDescription>
-              </div>
-            </div>
+            <DialogHeader>
+                <div className="flex items-center gap-4">
+                    <Avatar className="w-16 h-16"><AvatarImage src="https://placehold.co/100x100.png" data-ai-hint="driver portrait" /><AvatarFallback>{selectedActivity.driverName?.substring(0, 2)}</AvatarFallback></Avatar>
+                    <div>
+                        <DialogTitle className="text-2xl">Ride with {selectedActivity.driverName}</DialogTitle>
+                        <DialogDescription>{selectedActivity.vehicle}</DialogDescription>
+                    </div>
+                </div>
+            </DialogHeader>
             <div className="space-y-4 text-sm py-4 border-t mt-4">
-              <div className="flex justify-between"><span>Pickup:</span><span className="font-medium text-right">{selectedActivity.pickupAddress}</span></div>
-              <div className="flex justify-between"><span>Drop:</span><span className="font-medium text-right">{selectedActivity.destinationAddress}</span></div>
-              <div className="flex justify-between"><span>Date:</span><span className="font-medium">{selectedActivity.date.toLocaleString()}</span></div>
-              <div className="flex justify-between"><span>Status:</span>{getStatusBadge(selectedActivity.status)}</div>
-              <div className="flex justify-between"><span>OTP:</span><span className="font-mono font-bold text-lg">{selectedActivity.otp}</span></div>
-              <div className="flex justify-between text-lg font-bold"><span>Fare:</span><span>₹{selectedActivity.fare?.toFixed(2)}</span></div>
+              <DetailRow icon={MapPin} label="Pickup" value={selectedActivity.pickupAddress || 'N/A'} />
+              <DetailRow icon={MapPin} label="Drop" value={selectedActivity.destinationAddress || 'N/A'} />
+              <DetailRow icon={Clock} label="Date" value={selectedActivity.date.toLocaleString()} />
+              <DetailRow icon={History} label="Status" value={getStatusBadge(selectedActivity.status)} />
+              <DetailRow icon={KeyRound} label="OTP" value={selectedActivity.otp || 'N/A'} isMono valueClass="text-lg" />
+              <div className="border-t my-2"></div>
+              <DetailRow icon={IndianRupee} label="Fare" value={`₹${selectedActivity.fare?.toFixed(2) || '0.00'}`} valueClass="text-xl font-bold text-primary" />
             </div>
           </>
         );
       case 'Appointment':
          return (
           <>
-            <div className="flex items-center gap-4">
-               <Avatar className="w-16 h-16"><AvatarImage src="https://placehold.co/100x100.png" data-ai-hint="doctor portrait"/><AvatarFallback>{selectedActivity.doctorName?.substring(3, 5)}</AvatarFallback></Avatar>
-               <div>
-                  <DialogTitle>Appointment: {selectedActivity.doctorName}</DialogTitle>
-                  <DialogDescription>{selectedActivity.hospitalName}</DialogDescription>
-               </div>
-            </div>
+            <DialogHeader>
+              <div className="flex items-center gap-4">
+                 <Avatar className="w-16 h-16"><AvatarImage src="https://placehold.co/100x100.png" data-ai-hint="doctor portrait"/><AvatarFallback>{selectedActivity.doctorName?.substring(3, 5)}</AvatarFallback></Avatar>
+                 <div>
+                    <DialogTitle className="text-2xl">{selectedActivity.doctorName}</DialogTitle>
+                    <DialogDescription>{selectedActivity.hospitalName}</DialogDescription>
+                 </div>
+              </div>
+            </DialogHeader>
              <div className="space-y-4 text-sm py-4 border-t mt-4">
-              <div className="flex justify-between"><span>Date:</span><span className="font-medium">{selectedActivity.appointmentDate?.toDate().toLocaleString()}</span></div>
-              <div className="flex justify-between"><span>Status:</span>{getStatusBadge(selectedActivity.status)}</div>
+                <DetailRow icon={Clock} label="Date & Time" value={selectedActivity.appointmentDate?.toDate().toLocaleString() || 'N/A'} />
+                <DetailRow icon={History} label="Status" value={getStatusBadge(selectedActivity.status)} />
             </div>
           </>
         );
       case 'Emergency':
          return (
            <>
-            <div className="flex items-center gap-4">
-               <div className="p-3 bg-red-100 rounded-full"><Ambulance className="w-8 h-8 text-red-600"/></div>
-               <div>
-                  <DialogTitle>SOS Case: {selectedActivity.caseId}</DialogTitle>
-                  <DialogDescription>Emergency request details.</DialogDescription>
-               </div>
-            </div>
+             <DialogHeader>
+                <div className="flex items-center gap-4">
+                   <div className="p-3 bg-red-100 rounded-full"><Ambulance className="w-8 h-8 text-red-600"/></div>
+                   <div>
+                      <DialogTitle className="text-2xl">SOS Case: {selectedActivity.caseId}</DialogTitle>
+                      <DialogDescription>Emergency request details.</DialogDescription>
+                   </div>
+                </div>
+            </DialogHeader>
              <div className="space-y-4 text-sm py-4 border-t mt-4">
-              <div className="flex justify-between"><span>Date:</span><span className="font-medium">{selectedActivity.date.toLocaleString()}</span></div>
-              <div className="flex justify-between"><span>Assigned Partner:</span><span className="font-medium">{selectedActivity.assignedPartnerName || 'N/A'}</span></div>
-              <div className="flex justify-between"><span>Status:</span>{getStatusBadge(selectedActivity.status)}</div>
+                <DetailRow icon={Clock} label="Date" value={selectedActivity.date.toLocaleString()} />
+                <DetailRow icon={User} label="Assigned Partner" value={selectedActivity.assignedPartnerName || 'N/A'} />
+                <DetailRow icon={History} label="Status" value={getStatusBadge(selectedActivity.status)} />
             </div>
           </>
         );
@@ -241,8 +257,11 @@ export default function MyActivityPage() {
                     </Card>
                 )}
             </div>
-            <DialogContent>
+            <DialogContent className="max-w-md">
               {renderDialogContent()}
+               <DialogFooter>
+                  <Button variant="outline" onClick={() => setSelectedActivity(null)}>Close</Button>
+               </DialogFooter>
             </DialogContent>
         </Dialog>
     </div>
