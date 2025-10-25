@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Button } from '@/components/ui/button';
 import {
     Calendar as CalendarIcon, Stethoscope, Clock, Search, ArrowLeft,
-    IndianRupee, MapPin, Video, Building, X, Baby, Thermometer, Bone, BrainCircuit, Heart, Ear, Layers, SlidersHorizontal, HeartPulse, ShieldCheck, Eye, Smile, User, UserCheck, Droplets, AlertTriangle
+    IndianRupee, MapPin, Video, Building, X, Layers, BrainCircuit, Heart, Ear, HeartPulse, UserCheck, Droplets, Thermometer, Bone, Baby, Eye, Smile, AlertTriangle, PersonStanding, HeartHandshake
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -27,6 +27,7 @@ import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle, SheetDescri
 import { AnimatePresence, motion } from 'framer-motion';
 import { Carousel, CarouselContent, CarouselItem } from '@/components/ui/carousel';
 import { Badge } from '@/components/ui/badge';
+import { SlidersHorizontal } from 'lucide-react';
 
 const timeSlots = [
   '09:00 AM', '10:00 AM', '11:00 AM', '12:00 PM', '02:00 PM', '03:00 PM', '04:00 PM'
@@ -60,10 +61,10 @@ const symptomCategories = [
     { name: 'ENT', icon: Ear, specializations: ['ENT Specialist'] },
     { name: 'Eye Problems', icon: Eye, specializations: ['Ophthalmology'] },
     { name: 'Dental Issues', icon: Smile, specializations: ['Dentist'] },
-    { name: 'Mental Wellness', icon: User, specializations: ['Psychiatry', 'Psychology'] },
-    { name: "Women's Health", icon: User, specializations: ['Gynecology'] },
-    { name: 'Diabetes Care', icon: Droplets, specializations: ['Endocrinology', 'General Physician'] },
+    { name: 'Mental Wellness', icon: HeartHandshake, specializations: ['Psychiatry', 'Psychology'] },
+    { name: "Women's Health", icon: PersonStanding, specializations: ['Gynecology'] },
     { name: 'General Checkup', icon: UserCheck, specializations: ['General Physician'] },
+    { name: 'Diabetes Care', icon: Droplets, specializations: ['Endocrinology', 'General Physician'] },
 ];
 
 export default function BookAppointmentPage() {
@@ -382,4 +383,4 @@ export default function BookAppointmentPage() {
   )
 }
 
-    
+```
