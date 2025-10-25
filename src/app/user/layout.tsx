@@ -1,3 +1,4 @@
+
 'use client'
 
 import React, { useState, useEffect } from 'react'
@@ -78,7 +79,7 @@ export default function UserLayout({
   }, [user, isUserLoading, router]);
 
   useEffect(() => {
-    const sessionData = localStorage.getItem('cabzi-session');
+    const sessionData = localStorage.getItem('curocity-session');
     if (sessionData) {
       setSession(JSON.parse(sessionData));
     }
@@ -91,7 +92,7 @@ export default function UserLayout({
       updateDoc(userDocRef, { isOnline: false, currentLocation: null });
     }
     auth.signOut().then(() => {
-      localStorage.removeItem('cabzi-session');
+      localStorage.removeItem('curocity-session');
       router.push('/login');
     });
   };

@@ -37,7 +37,7 @@ const serviceCards = [
         title: 'Book Appointment',
         description: 'Consult with doctors at partner hospitals.',
         icon: Calendar,
-        href: '/user/appointments',
+        href: '/user/book-appointment',
         color: 'text-blue-500',
         category: 'Health & Safety'
     },
