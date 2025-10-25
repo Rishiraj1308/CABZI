@@ -1,12 +1,10 @@
 
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import MyActivityPage from '@/app/user/activity/page'
 
-// This page is now a wrapper around the new MyActivityPage
-// to maintain the old URL structure while using the new component.
+// This page is now a simple redirect to the unified activity page.
 export default function UserRidesPage() {
     const router = useRouter();
 

@@ -147,7 +147,7 @@ export default function MyActivityPage() {
                 ))
             ) : (
                 <Card className="h-48 flex items-center justify-center">
-                    <p className="text-muted-foreground">You don&apos;t have any activity yet.</p>
+                    <p className="text-muted-foreground">You don't have any activity yet.</p>
                 </Card>
             )}
         </div>
