@@ -6,12 +6,12 @@ import { useParams } from 'next/navigation';
 import { useFirebase } from '@/firebase/client-provider';
 import { doc, getDoc, updateDoc, collection, addDoc, onSnapshot, setDoc, query, orderBy, Timestamp } from 'firebase/firestore';
 import { Button } from './ui/button';
-import { PhoneOff, Mic, MicOff, Video, VideoOff, Send, MessageSquare } from 'lucide-react';
+import { PhoneOff, Mic, MicOff, Video, VideoOff, Send, MessageSquare, User } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
 import { Input } from './ui/input';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from './ui/sheet';
-import { Avatar, AvatarFallback } from './ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { cn } from '@/lib/utils';
 
 // Polyfill for WebRTC
@@ -42,6 +42,8 @@ export default function VideoCall() {
   const [chatInput, setChatInput] = useState('');
   const [isSending, setIsSending] = useState(false);
   const [callDuration, setCallDuration] = useState(0);
+  const [participants, setParticipants] = useState({ patient: 'Patient', doctor: 'Doctor' });
+
 
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
@@ -56,6 +58,20 @@ export default function VideoCall() {
 
   useEffect(() => {
     if (!db || !user || !callId) return;
+
+    // Fetch participant names
+    const fetchParticipantNames = async () => {
+        const callDocRef = doc(db, 'calls', callId);
+        const callSnap = await getDoc(callDocRef);
+        if(callSnap.exists()){
+            const callData = callSnap.data();
+            // Assuming callData contains patientId and doctorId
+            // You would fetch the names from your users/doctors collections
+            // For now, we'll use placeholder names based on who initiated the call
+            setParticipants({ patient: 'Patient Name', doctor: 'Dr. Name' });
+        }
+    }
+    fetchParticipantNames();
 
     const setupWebRTC = async () => {
       pc.current = new RTCPeerConnection(servers);
@@ -156,12 +172,29 @@ export default function VideoCall() {
   }, [callId, db, user, toast]);
 
   const hangUp = () => {
-    pc.current?.close();
+    if (pc.current) {
+        pc.current.getSenders().forEach(sender => {
+            if (sender.track) {
+                sender.track.stop();
+            }
+        });
+        pc.current.close();
+    }
+
+    if (localVideoRef.current && localVideoRef.current.srcObject) {
+        (localVideoRef.current.srcObject as MediaStream).getTracks().forEach(track => track.stop());
+    }
+
+    if (remoteVideoRef.current && remoteVideoRef.current.srcObject) {
+        (remoteVideoRef.current.srcObject as MediaStream).getTracks().forEach(track => track.stop());
+    }
+
     setCallStatus('Call Ended');
     if (timerIntervalRef.current) {
       clearInterval(timerIntervalRef.current);
     }
   };
+
 
   const toggleMute = () => {
     if (localVideoRef.current && localVideoRef.current.srcObject) {
@@ -205,29 +238,75 @@ export default function VideoCall() {
   }
 
   return (
-    <div className="w-full h-screen bg-black text-white flex flex-col relative">
-      <div className="absolute top-4 left-4 z-10 bg-black/50 p-2 rounded-lg text-sm font-medium">
+    <div className="w-full h-screen bg-gray-900 text-white flex flex-col relative">
+      {/* Status Bar */}
+      <div className="absolute top-4 left-4 z-20 bg-black/50 p-2 rounded-lg text-sm font-medium flex items-center gap-2">
+        <span className={cn("w-2 h-2 rounded-full", callStatus === 'Connected' ? 'bg-green-500 animate-pulse' : 'bg-yellow-500')}/>
         {callStatus} {callStatus === 'Connected' && `(${formatTime(callDuration)})`}
       </div>
-      <div className="flex-1 relative">
+
+      {/* Participant Info */}
+       <div className="absolute top-4 right-4 z-20 space-y-2 text-right">
+            <div className="bg-black/50 p-2 rounded-lg">
+                <p className="text-xs text-gray-300">Patient</p>
+                <p className="font-semibold">{participants.patient}</p>
+            </div>
+            <div className="bg-black/50 p-2 rounded-lg">
+                <p className="text-xs text-gray-300">Doctor</p>
+                <p className="font-semibold">{participants.doctor}</p>
+            </div>
+       </div>
+
+      {/* Main Video Area */}
+      <div className="flex-1 relative overflow-hidden">
         <video ref={remoteVideoRef} autoPlay playsInline className="w-full h-full object-cover" />
-        <div className="absolute top-4 right-4 w-40 h-56 rounded-lg overflow-hidden border-2 border-gray-600">
+        <AnimatePresence>
+            {callStatus !== 'Connected' && (
+                <motion.div 
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="absolute inset-0 bg-black/70 flex flex-col items-center justify-center text-center"
+                >
+                    <User className="w-16 h-16 text-gray-400 mb-4"/>
+                    <p className="text-2xl font-bold">Connecting to {participants.doctor}...</p>
+                    <p className="text-gray-400">Please wait while we establish a secure connection.</p>
+                </motion.div>
+            )}
+        </AnimatePresence>
+
+        {/* Local Video Preview */}
+         <motion.div 
+            drag 
+            dragConstraints={{ top: -20, left: -20, right: 20, bottom: 20 }}
+            className="absolute top-20 right-4 w-40 h-56 rounded-lg overflow-hidden border-2 border-gray-600 shadow-2xl cursor-grab active:cursor-grabbing"
+        >
            <video ref={localVideoRef} autoPlay playsInline muted className="w-full h-full object-cover" />
-        </div>
+           {isVideoOff && (
+                <div className="absolute inset-0 bg-black/70 flex items-center justify-center">
+                    <VideoOff className="w-10 h-10 text-white" />
+                </div>
+           )}
+        </motion.div>
       </div>
-      <div className="absolute bottom-0 left-0 right-0 p-4 z-10">
-        <Card className="max-w-lg mx-auto bg-black/50 backdrop-blur-sm border-white/20">
-          <CardContent className="p-4 flex justify-center items-center gap-2">
-             <Button variant="outline" size="icon" className="bg-transparent text-white hover:bg-white/10 w-14 h-14 rounded-full" onClick={toggleMute}>
+
+      {/* Controls Bar */}
+      <div className="absolute bottom-0 left-0 right-0 p-4 z-20">
+        <Card className="max-w-lg mx-auto bg-black/50 backdrop-blur-md border-white/20">
+          <CardContent className="p-4 flex justify-center items-center gap-4">
+             <Button variant="ghost" className="w-16 h-16 rounded-full flex flex-col items-center gap-1 text-white hover:bg-white/10 hover:text-white" onClick={toggleMute}>
                 {isMuted ? <MicOff className="h-6 w-6"/> : <Mic className="h-6 w-6"/>}
+                <span className="text-xs">Mute</span>
             </Button>
-            <Button variant="outline" size="icon" className="bg-transparent text-white hover:bg-white/10 w-14 h-14 rounded-full" onClick={toggleVideo}>
+            <Button variant="ghost" className="w-16 h-16 rounded-full flex flex-col items-center gap-1 text-white hover:bg-white/10 hover:text-white" onClick={toggleVideo}>
                  {isVideoOff ? <VideoOff className="h-6 w-6"/> : <Video className="h-6 w-6"/>}
+                 <span className="text-xs">Stop Video</span>
             </Button>
              <Sheet open={isChatOpen} onOpenChange={setIsChatOpen}>
                 <SheetTrigger asChild>
-                    <Button variant="outline" size="icon" className="bg-transparent text-white hover:bg-white/10 w-14 h-14 rounded-full">
+                    <Button variant="ghost" className="w-16 h-16 rounded-full flex flex-col items-center gap-1 text-white hover:bg-white/10 hover:text-white">
                         <MessageSquare className="h-6 w-6"/>
+                        <span className="text-xs">Chat</span>
                     </Button>
                 </SheetTrigger>
                 <SheetContent>
