@@ -55,7 +55,7 @@ const cprData = [
     value: 'bank',
     icon: Landmark,
     title: 'Empowerment with Bank',
-    description: "We are a FinTech company at heart. Our 'Cabzi Bank' offers partners instant loans, savings, and financial security, creating a loyal and happy fleet.",
+    description: "We are a FinTech company at heart. Our 'Curocity Bank' offers partners instant loans, savings, and financial security, creating a loyal and happy fleet.",
     color: 'bg-green-500/10',
     textColor: 'text-green-600'
   },
@@ -81,7 +81,7 @@ const journeySteps = [
     {
         icon: IndianRupee,
         title: "4. Seamless Payment",
-        description: "Pay with ease using UPI, cash, or the integrated Cabzi Wallet at the end of your trip."
+        description: "Pay with ease using UPI, cash, or the integrated Curocity Wallet at the end of your trip."
     }
 ]
 
@@ -174,7 +174,7 @@ export default function HomePage() {
                 </Card>
                  <Card className="flex items-center p-2 gap-3 bg-pink-100/50 dark:bg-pink-900/20 border-pink-500/50 ring-2 ring-pink-500">
                     <HeartHandshake className="w-8 h-8 text-pink-500"/>
-                    <div className="flex-1"><p className="font-semibold">Cabzi Pink</p><p className="text-xs text-pink-600/80 dark:text-pink-400/80">For women, by women</p></div>
+                    <div className="flex-1"><p className="font-semibold">Curocity Pink</p><p className="text-xs text-pink-600/80 dark:text-pink-400/80">For women, by women</p></div>
                     <div className="text-right"><p className="font-bold">₹215</p><p className="text-xs flex items-center gap-1"><Clock className="w-3 h-3"/> 5 min</p></div>
                 </Card>
                 <Card className="flex items-center p-2 gap-3 bg-muted">
@@ -337,7 +337,7 @@ export default function HomePage() {
                             variants={itemVariants}
                             className="mx-auto lg:mx-0 mt-6 max-w-xl text-lg text-muted-foreground"
                         >
-                            Cabzi is more than a ride. It&apos;s a promise of fair fares for riders, 0% commission for partners, and an integrated safety network that looks out for you on every trip.
+                            Curocity is more than a ride. It's a promise of fair fares for riders, 0% commission for partners, and an integrated safety network that looks out for you on every trip.
                         </motion.p>
                         <motion.div 
                             variants={itemVariants}
@@ -420,7 +420,7 @@ export default function HomePage() {
                             The CPR Ecosystem: One App, Complete Peace of Mind
                         </h2>
                         <p className="mt-4 text-lg text-muted-foreground">
-                           Cabzi isn&apos;t just an app; it&apos;s a unified platform for urban safety and mobility, built on four powerful pillars.
+                           Curocity isn't just an app; it's a unified platform for urban safety and mobility, built on four powerful pillars.
                         </p>
                     </div>
                      <div className="mt-16 grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-4">
@@ -443,9 +443,9 @@ export default function HomePage() {
             
              <section className="py-20 md:py-24">
                 <div className="container text-center">
-                    <h2 className="text-3xl font-bold tracking-tight sm:text-4xl font-headline">The Cabzi Advantage</h2>
+                    <h2 className="text-3xl font-bold tracking-tight sm:text-4xl font-headline">The Curocity Advantage</h2>
                     <p className="mt-4 text-lg text-muted-foreground max-w-3xl mx-auto">
-                        We&apos;ve rebuilt the system from the ground up to create a win-win ecosystem for everyone involved.
+                        We've rebuilt the system from the ground up to create a win-win ecosystem for everyone involved.
                     </p>
                     <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-8 text-left">
                         <Card>
@@ -467,7 +467,7 @@ export default function HomePage() {
                             </CardHeader>
                              <CardContent className="space-y-3">
                                 <p className="flex items-start gap-2"><CheckCircle className="w-5 h-5 text-green-500 mt-0.5 shrink-0" /> <span><span className="font-semibold">Just ONE Monthly Recharge:</span> No commission cuts. If you earn ₹1000, you keep ₹1000.</span></p>
-                                <p className="flex items-start gap-2"><CheckCircle className="w-5 h-5 text-green-500 mt-0.5 shrink-0" /> <span><span className="font-semibold">True Financial Security:</span> Access instant loans and high-interest savings via Cabzi Bank.</span></p>
+                                <p className="flex items-start gap-2"><CheckCircle className="w-5 h-5 text-green-500 mt-0.5 shrink-0" /> <span><span className="font-semibold">True Financial Security:</span> Access instant loans and high-interest savings via Curocity Bank.</span></p>
                                 <p className="flex items-start gap-2"><CheckCircle className="w-5 h-5 text-green-500 mt-0.5 shrink-0" /> <span><span className="font-semibold">Accident & Vehicle Insurance:</span> Stay protected on and off the road with our insurance plans.</span></p>
                                 <p className="flex items-start gap-2"><CheckCircle className="w-5 h-5 text-green-500 mt-0.5 shrink-0" /> <span><span className="font-semibold">Respect & Dignity:</span> You are our partner, not a number. We are committed to your growth and well-being.</span></p>
                                 <p className="flex items-start gap-2"><CheckCircle className="w-5 h-5 text-green-500 mt-0.5 shrink-0" /> <span><span className="font-semibold">AI Earnings Coach:</span> Get smart, personalized tips in your app to maximize your daily income.</span></p>
@@ -494,7 +494,7 @@ export default function HomePage() {
                 <div className="container">
                     <div className="mx-auto max-w-3xl text-center">
                         <h2 className="text-3xl font-bold tracking-tight sm:text-4xl font-headline">
-                           Your Journey with Cabzi
+                           Your Journey with Curocity
                         </h2>
                         <p className="mt-4 text-lg text-muted-foreground">
                            A simple, safe, and transparent experience from start to finish.
@@ -539,7 +539,7 @@ export default function HomePage() {
                 <div className="container text-center">
                     <h2 className="text-3xl font-bold tracking-tight sm:text-4xl font-headline">Join Our Driver-First Revolution</h2>
                     <p className="mt-4 text-lg text-muted-foreground max-w-2xl mx-auto">
-                        Are you a driver, mechanic, or hospital administrator? Partner with Cabzi and be part of a fairer, more profitable ecosystem.
+                        Are you a driver, mechanic, or hospital administrator? Partner with Curocity and be part of a fairer, more profitable ecosystem.
                     </p>
                     <div className="mt-8">
                         <Button size="lg" asChild>
@@ -556,7 +556,7 @@ export default function HomePage() {
             <div className="container flex flex-col items-center justify-between gap-4 md:h-24 md:flex-row">
               <div className="flex items-center gap-2">
                  <p className="text-center text-sm leading-loose text-muted-foreground md:text-left">
-                    Built by Team Cabzi. All rights reserved. &copy; {new Date().getFullYear()}
+                    Built by Team Curocity. All rights reserved. &copy; {new Date().getFullYear()}
                   </p>
                   <Link href="/admin-login" legacyBehavior>
                     <a className="text-muted-foreground hover:text-primary transition-colors">
