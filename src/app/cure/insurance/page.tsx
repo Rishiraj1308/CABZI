@@ -1,4 +1,3 @@
-
 'use client'
 
 import { useState, useEffect } from 'react'
@@ -6,13 +5,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { ShieldCheck, Search, FileText, MoreHorizontal } from 'lucide-react'
+import { ShieldCheck, Search, FileText, MoreHorizontal, CheckCircle, Clock, FileSearch, Handshake } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { toast } from '@/hooks/use-toast'
+import { cn } from '@/lib/utils'
 
-type ClaimStatus = 'Pending Verification' | 'Approved' | 'Rejected' | 'Query Raised';
+type ClaimStatus = 'Pending Verification' | 'Verified' | 'Claim Submitted' | 'Under Review' | 'Settled' | 'Rejected' | 'Query Raised';
+
 
 interface Claim {
     id: string;
@@ -26,12 +27,50 @@ interface Claim {
 }
 
 const mockClaims: Claim[] = [
-    { id: 'CLAIM001', patientName: 'Rohan Sharma', caseId: 'CASE-EMG-123', policyNumber: 'HDFCERG-123456', insurer: 'HDFC Ergo', claimAmount: 45000, status: 'Pending Verification', submittedOn: '2024-09-04' },
-    { id: 'CLAIM002', patientName: 'Priya Verma', caseId: 'CASE-EMG-121', policyNumber: 'ICICILOM-789012', insurer: 'ICICI Lombard', claimAmount: 120000, status: 'Approved', submittedOn: '2024-09-03' },
-    { id: 'CLAIM003', patientName: 'Amit Singh', caseId: 'CASE-EMG-119', policyNumber: 'BAJAJ-ALL-345678', insurer: 'Bajaj Allianz', claimAmount: 75000, status: 'Query Raised', submittedOn: '2024-09-02' },
+    { id: 'CLAIM001', patientName: 'Rohan Sharma', caseId: 'CASE-EMG-123', policyNumber: 'HDFCERG-123456', insurer: 'HDFC Ergo', claimAmount: 45000, status: 'Claim Submitted', submittedOn: '2024-09-04' },
+    { id: 'CLAIM002', patientName: 'Priya Verma', caseId: 'CASE-EMG-121', policyNumber: 'ICICILOM-789012', insurer: 'ICICI Lombard', claimAmount: 120000, status: 'Settled', submittedOn: '2024-09-03' },
+    { id: 'CLAIM003', patientName: 'Amit Singh', caseId: 'CASE-EMG-119', policyNumber: 'BAJAJ-ALL-345678', insurer: 'Bajaj Allianz', claimAmount: 75000, status: 'Under Review', submittedOn: '2024-09-02' },
     { id: 'CLAIM004', patientName: 'Sunita Menon', caseId: 'CASE-EMG-115', policyNumber: 'STAR-HEALTH-901234', insurer: 'Star Health', claimAmount: 32000, status: 'Rejected', submittedOn: '2024-09-01' },
+    { id: 'CLAIM005', patientName: 'Ankit Jha', caseId: 'CASE-EMG-112', policyNumber: 'RELIGARE-567890', insurer: 'Religare', claimAmount: 89000, status: 'Pending Verification', submittedOn: '2024-09-05' },
 ];
 
+const progressSteps: ClaimStatus[] = ['Pending Verification', 'Verified', 'Claim Submitted', 'Under Review', 'Settled'];
+
+const ClaimProgressBar = ({ currentStatus }: { currentStatus: ClaimStatus }) => {
+    const currentIndex = progressSteps.indexOf(currentStatus);
+
+    return (
+        <div className="flex items-center w-full">
+            {progressSteps.map((step, index) => {
+                const isCompleted = currentIndex >= index;
+                const isCurrent = currentIndex === index;
+
+                return (
+                    <React.Fragment key={step}>
+                        <div className="flex flex-col items-center">
+                            <div className={cn(
+                                "w-8 h-8 rounded-full flex items-center justify-center transition-all",
+                                isCompleted ? "bg-primary text-primary-foreground" : "bg-muted border-2"
+                            )}>
+                                {isCompleted ? <CheckCircle className="w-5 h-5" /> : <div className="w-2 h-2 bg-border rounded-full"></div>}
+                            </div>
+                            <p className={cn(
+                                "text-xs mt-2 text-center",
+                                isCurrent ? "font-bold text-primary" : "text-muted-foreground"
+                            )}>{step}</p>
+                        </div>
+                        {index < progressSteps.length - 1 && (
+                            <div className={cn(
+                                "flex-1 h-1 transition-all",
+                                isCompleted ? "bg-primary" : "bg-border"
+                            )}></div>
+                        )}
+                    </React.Fragment>
+                );
+            })}
+        </div>
+    );
+};
 
 export default function InsurancePage() {
     const [claims, setClaims] = useState<Claim[]>([]);
@@ -54,12 +93,16 @@ export default function InsurancePage() {
 
     const getStatusBadge = (status: ClaimStatus) => {
         switch (status) {
-            case 'Approved':
+            case 'Settled':
+            case 'Verified':
                 return <Badge className="bg-green-100 text-green-800">{status}</Badge>;
             case 'Pending Verification':
                 return <Badge className="bg-yellow-100 text-yellow-800">{status}</Badge>;
-            case 'Query Raised':
+            case 'Claim Submitted':
+            case 'Under Review':
                 return <Badge className="bg-blue-100 text-blue-800">{status}</Badge>;
+            case 'Query Raised':
+                 return <Badge className="bg-orange-100 text-orange-800">{status}</Badge>;
             case 'Rejected':
                 return <Badge variant="destructive">{status}</Badge>;
         }
@@ -73,7 +116,18 @@ export default function InsurancePage() {
             title: "Claim Status Updated",
             description: `Claim ${claimId} has been marked as ${status}.`
         });
-        setSelectedClaim(null);
+        setSelectedClaim(prev => prev ? { ...prev, status } : null);
+    }
+
+    const getNextAction = (status: ClaimStatus): { label: string, nextStatus: ClaimStatus } | null => {
+        const currentIndex = progressSteps.indexOf(status);
+        if (currentIndex >= 0 && currentIndex < progressSteps.length - 1) {
+            return {
+                label: `Mark as '${progressSteps[currentIndex + 1]}'`,
+                nextStatus: progressSteps[currentIndex + 1]
+            };
+        }
+        return null;
     }
 
 
@@ -141,27 +195,37 @@ export default function InsurancePage() {
                                            <Dialog onOpenChange={(open) => !open && setSelectedClaim(null)}>
                                                 <DialogTrigger asChild>
                                                     <Button variant="outline" size="sm" onClick={() => setSelectedClaim(claim)}>
-                                                        <FileText className="mr-2 h-3.5 w-3.5"/> Manage Claim
+                                                        <FileText className="mr-2 h-3.5 w-3.5"/> Manage
                                                     </Button>
                                                 </DialogTrigger>
-                                                <DialogContent className="sm:max-w-md">
+                                                <DialogContent className="sm:max-w-2xl">
                                                     <DialogHeader>
                                                         <DialogTitle>Manage Claim: {selectedClaim?.id}</DialogTitle>
                                                         <DialogDescription>
                                                            Update the status for {selectedClaim?.patientName}'s claim based on communication from the insurer.
                                                         </DialogDescription>
                                                     </DialogHeader>
-                                                    <div className="space-y-4 py-4 text-sm">
-                                                         <div className="flex justify-between"><span>Patient Name:</span> <span className="font-semibold">{selectedClaim?.patientName}</span></div>
-                                                         <div className="flex justify-between"><span>Insurer:</span> <span className="font-semibold">{selectedClaim?.insurer}</span></div>
-                                                         <div className="flex justify-between"><span>Policy Number:</span> <span className="font-mono">{selectedClaim?.policyNumber}</span></div>
-                                                         <div className="flex justify-between"><span>Submitted On:</span> <span className="font-semibold">{selectedClaim?.submittedOn}</span></div>
-                                                         <div className="flex justify-between items-center text-lg font-bold border-t pt-2 mt-2"><span>Claim Amount:</span> <span className="text-primary">₹{selectedClaim?.claimAmount.toLocaleString()}</span></div>
+                                                    <div className="space-y-6 py-4">
+                                                        <ClaimProgressBar currentStatus={selectedClaim?.status || 'Pending Verification'} />
+                                                        <div className="grid grid-cols-2 gap-4 text-sm pt-4">
+                                                            <div><p className="text-muted-foreground">Patient Name:</p> <p className="font-semibold">{selectedClaim?.patientName}</p></div>
+                                                            <div><p className="text-muted-foreground">Insurer:</p> <p className="font-semibold">{selectedClaim?.insurer}</p></div>
+                                                            <div><p className="text-muted-foreground">Policy Number:</p> <p className="font-mono">{selectedClaim?.policyNumber}</p></div>
+                                                            <div><p className="text-muted-foreground">Submitted On:</p> <p className="font-semibold">{selectedClaim?.submittedOn}</p></div>
+                                                        </div>
+                                                         <div className="flex justify-between items-center text-lg font-bold border-t pt-4 mt-4"><span>Claim Amount:</span> <span className="text-primary">₹{selectedClaim?.claimAmount.toLocaleString()}</span></div>
                                                     </div>
-                                                    <DialogFooter className="grid grid-cols-1 gap-2">
-                                                        <Button variant="secondary" onClick={() => selectedClaim && handleUpdateStatus(selectedClaim.id, 'Query Raised')}>Mark as 'Query Raised'</Button>
-                                                        <Button variant="destructive" onClick={() => selectedClaim && handleUpdateStatus(selectedClaim.id, 'Rejected')}>Mark as Rejected</Button>
-                                                        <Button onClick={() => selectedClaim && handleUpdateStatus(selectedClaim.id, 'Approved')} className="bg-green-600 hover:bg-green-700">Mark as Approved</Button>
+                                                    <DialogFooter className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                                                        {(() => {
+                                                            const nextAction = getNextAction(selectedClaim?.status || 'Pending Verification');
+                                                            return (
+                                                                <>
+                                                                    {nextAction && <Button className="w-full" onClick={() => selectedClaim && handleUpdateStatus(selectedClaim.id, nextAction.nextStatus)}>{nextAction.label}</Button>}
+                                                                    <Button className="w-full" variant="secondary" onClick={() => selectedClaim && handleUpdateStatus(selectedClaim.id, 'Query Raised')}>Mark as 'Query Raised'</Button>
+                                                                    <Button className="w-full" variant="destructive" onClick={() => selectedClaim && handleUpdateStatus(selectedClaim.id, 'Rejected')}>Mark as Rejected</Button>
+                                                                </>
+                                                            );
+                                                        })()}
                                                     </DialogFooter>
                                                 </DialogContent>
                                             </Dialog>
