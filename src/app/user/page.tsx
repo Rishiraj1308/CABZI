@@ -3,7 +3,7 @@
 
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Car, Wrench, Ambulance, Calendar } from 'lucide-react';
+import { Car, Wrench, Ambulance, Calendar, FlaskConical } from 'lucide-react';
 import Link from 'next/link';
 import { MotionDiv } from '@/components/ui/motion-div';
 import { useToast } from '@/hooks/use-toast';
@@ -39,6 +39,14 @@ const serviceCards = [
         icon: Calendar,
         href: '/user/book-appointment',
         color: 'text-blue-500',
+        category: 'Health & Safety'
+    },
+    {
+        title: 'Lab Tests',
+        description: 'Book tests from certified labs.',
+        icon: FlaskConical,
+        href: '#',
+        color: 'text-purple-500',
         category: 'Health & Safety'
     },
 ];
