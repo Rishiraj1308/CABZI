@@ -56,7 +56,7 @@ const symptomCategories = [
     { name: 'Bone/Joint Pain', icon: Bone, specializations: ['Orthopedics'] },
     { name: 'Headache', icon: BrainCircuit, specializations: ['General Physician', 'Neurology'] },
     { name: 'Skin Issues', icon: Layers, specializations: ['Dermatology'] },
-    { name: 'Heart/Chest', icon: Heart, specializations: ['Cardiology', 'General Physician'] },
+    { name: 'Heart/Chest', icon: HeartPulse, specializations: ['Cardiology', 'General Physician'] },
     { name: 'Child Health', icon: Baby, specializations: ['Pediatrics'] },
     { name: 'ENT', icon: Ear, specializations: ['ENT Specialist'] },
     { name: 'Eye Problems', icon: Eye, specializations: ['Ophthalmology'] },
@@ -382,5 +382,3 @@ export default function BookAppointmentPage() {
     </div>
   )
 }
-
-```
