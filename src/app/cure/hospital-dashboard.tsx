@@ -112,7 +112,7 @@ interface HospitalData {
     location?: GeoPoint;
 }
 
-export default function HospitalMissionControl() {
+export default function HospitalMissionControl({ renderChecklistManagement }: { renderChecklistManagement: () => React.ReactNode }) {
     const [isMounted, setIsMounted] = useState(false);
     const [hospitalData, setHospitalData] = useState<HospitalData | null>(null);
     const [fleet, setFleet] = useState<AmbulanceVehicle[]>([]);
@@ -126,7 +126,7 @@ export default function HospitalMissionControl() {
     // Bed Management State
     const [totalBeds, setTotalBeds] = useState(0);
     const [bedsOccupied, setBedsOccupied] = useState(0);
-
+    
     // Analytics State
     const [analytics, setAnalytics] = useState({
         totalCases: 0,
@@ -478,9 +478,8 @@ export default function HospitalMissionControl() {
                         </CardContent>
                     </Card>
                 )}
+                 {renderChecklistManagement()}
             </div>
         </div>
     )
 }
-
-    
