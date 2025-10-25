@@ -31,11 +31,12 @@ export default function MyActivityPage() {
 
   useEffect(() => {
     if (!db || !user) {
-        setIsLoading(false);
+        if (!user && !db) {
+           setIsLoading(false);
+        }
         return;
     }
     
-    // We'll use the user's UID for a more reliable join.
     const userId = user.uid;
 
     const queries = [
