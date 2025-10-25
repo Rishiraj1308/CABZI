@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Button } from '@/components/ui/button';
 import {
     Calendar as CalendarIcon, Stethoscope, Clock, Search, ArrowLeft,
-    IndianRupee, MapPin, Video, Building, X, Layers, BrainCircuit, Heart, Ear, HeartPulse, UserCheck, Droplets, Thermometer, Bone, Baby, Eye, Smile, AlertTriangle, PersonStanding, HeartHandshake
+    IndianRupee, MapPin, Video, Building, X, Layers, BrainCircuit, Heart, Ear, HeartPulse, UserCheck, Droplets, Thermometer, Bone, Baby, Eye, Smile, AlertTriangle, PersonStanding, HeartHandshake, Sparkles
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -28,6 +28,9 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { Carousel, CarouselContent, CarouselItem } from '@/components/ui/carousel';
 import { Badge } from '@/components/ui/badge';
 import { SlidersHorizontal } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
+import { suggestSpecialization } from '@/ai/flows/symptom-checker-flow';
+
 
 const timeSlots = [
   '09:00 AM', '10:00 AM', '11:00 AM', '12:00 PM', '02:00 PM', '03:00 PM', '04:00 PM'
@@ -80,6 +83,11 @@ export default function BookAppointmentPage() {
   const [priceRange, setPriceRange] = useState([2000]);
   const [genderFilter, setGenderFilter] = useState('any');
   const [isFilterSheetOpen, setIsFilterSheetOpen] = useState(false);
+
+  // AI Symptom Checker State
+  const [symptomInput, setSymptomInput] = useState('');
+  const [aiSuggestion, setAiSuggestion] = useState<string | null>(null);
+  const [isSuggesting, setIsSuggesting] = useState(false);
 
   // Booking State
   const [selectedDoctor, setSelectedDoctor] = useState<Doctor | null>(null);
@@ -172,7 +180,14 @@ export default function BookAppointmentPage() {
     return doctors
       .filter(d => {
         const lowercasedQuery = searchQuery.toLowerCase();
-        const symptomMatch = selectedSymptom ? symptomCategories.find(s => s.name === selectedSymptom)?.specializations.includes(d.specialization) : true;
+        
+        let specializationMatch = true;
+        if(aiSuggestion) {
+            specializationMatch = d.specialization.toLowerCase().includes(aiSuggestion.toLowerCase());
+        } else if (selectedSymptom) {
+             specializationMatch = symptomCategories.find(s => s.name === selectedSymptom)?.specializations.includes(d.specialization) ?? true;
+        }
+
         const searchMatch = searchQuery ? 
             d.name.toLowerCase().includes(lowercasedQuery) || 
             d.specialization.toLowerCase().includes(lowercasedQuery) ||
@@ -181,7 +196,8 @@ export default function BookAppointmentPage() {
         const priceMatch = d.consultationFee <= priceRange[0];
         const genderMatch = genderFilter === 'any' || d.gender === genderFilter;
         const availabilityMatch = availabilityFilter === 'any' || (availabilityFilter === 'today' && (d.availability?.availableToday ?? Math.random() > 0.3)) || (availabilityFilter === 'tomorrow' && (d.availability?.availableTomorrow ?? Math.random() > 0.5));
-        return symptomMatch && searchMatch && priceMatch && genderMatch && availabilityMatch;
+        
+        return specializationMatch && searchMatch && priceMatch && genderMatch && availabilityMatch;
       })
       .sort((a, b) => {
         switch (sortBy) {
@@ -194,7 +210,7 @@ export default function BookAppointmentPage() {
             return 0;
         }
       });
-  }, [doctors, searchQuery, selectedSymptom, sortBy, priceRange, genderFilter, availabilityFilter]);
+  }, [doctors, searchQuery, selectedSymptom, aiSuggestion, sortBy, priceRange, genderFilter, availabilityFilter]);
 
   const resetBookingState = () => { setDate(new Date()); setTime(''); setConsultationType(''); setSelectedDoctor(null); };
   
@@ -232,6 +248,26 @@ export default function BookAppointmentPage() {
     }
   };
 
+  const handleSymptomCheck = async () => {
+    if (!symptomInput.trim()) {
+        toast({ variant: 'destructive', title: 'Please enter your symptoms' });
+        return;
+    }
+    setIsSuggesting(true);
+    setAiSuggestion(null);
+    try {
+        const result = await suggestSpecialization({ symptoms: symptomInput });
+        setAiSuggestion(result.specialization);
+        toast({ title: 'AI Suggestion', description: `We recommend seeing a ${result.specialization}. Results have been filtered.` });
+    } catch (error) {
+        console.error('AI suggestion failed:', error);
+        toast({ variant: 'destructive', title: 'AI Suggestion Failed' });
+    } finally {
+        setIsSuggesting(false);
+    }
+  };
+
+
   const containerVariants = { hidden: { opacity: 0 }, visible: { opacity: 1, transition: { staggerChildren: 0.05 } } };
   const itemVariants = { hidden: { y: 20, opacity: 0 }, visible: { y: 0, opacity: 1 } };
   
@@ -253,18 +289,42 @@ export default function BookAppointmentPage() {
     <div className="p-4 md:p-6 space-y-8">
       <div className="text-center max-w-2xl mx-auto">
           <CardTitle className="text-3xl md:text-4xl font-extrabold tracking-tight">Find the Right Care, Instantly.</CardTitle>
-          <CardDescription className="text-lg mt-2">Search by doctor, specialization, or symptom.</CardDescription>
-          <div className="relative mt-6 max-w-xl mx-auto">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-              <Input
-                placeholder="e.g., 'Dr. Sharma', 'Cardiology', or 'Max Hospital'"
-                className="pl-12 h-14 text-lg rounded-full"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-          </div>
+          <CardDescription className="text-lg mt-2">Search by doctor, specialization, or try our new AI Symptom Checker.</CardDescription>
       </div>
-       <div className="space-y-4">
+
+       <Card className="bg-gradient-to-r from-primary/10 via-background to-background border-primary/20">
+        <CardHeader>
+            <CardTitle className="flex items-center gap-2"><Sparkles className="w-6 h-6 text-primary"/> Smart Symptom Checker</CardTitle>
+            <CardDescription>Not sure which doctor to see? Describe your symptoms, and our AI will suggest a specialization.</CardDescription>
+        </CardHeader>
+        <CardContent>
+            <div className="grid gap-4">
+                <Textarea 
+                    placeholder="e.g., 'I have a sharp pain in my chest when I breathe, and my left arm feels numb...'"
+                    className="bg-background"
+                    rows={3}
+                    value={symptomInput}
+                    onChange={(e) => setSymptomInput(e.target.value)}
+                />
+                 <Button onClick={handleSymptomCheck} disabled={isSuggesting || !symptomInput.trim()}>
+                    {isSuggesting ? 'Analyzing...' : 'Get AI Suggestion'}
+                </Button>
+            </div>
+             {aiSuggestion && (
+                <div className="mt-4 p-3 rounded-lg bg-primary/10 text-primary flex items-center gap-3">
+                    <BrainCircuit className="w-5 h-5"/>
+                    <div>
+                        <p className="font-semibold">AI Recommendation: <span className="font-bold">{aiSuggestion}</span></p>
+                        <p className="text-xs">We&apos;ve automatically filtered the results for you.</p>
+                    </div>
+                     <Button variant="ghost" size="icon" className="ml-auto" onClick={() => setAiSuggestion(null)}><X className="w-4 h-4"/></Button>
+                </div>
+             )}
+        </CardContent>
+      </Card>
+
+
+      <div className="space-y-4">
           <Label className="font-semibold text-lg">Or Start by Symptom</Label>
           <Carousel opts={{ align: "start", loop: false, skipSnaps: true }} className="w-full">
               <CarouselContent className="-ml-2">
@@ -316,7 +376,6 @@ export default function BookAppointmentPage() {
                                   <div className="flex-1">
                                       <p className="font-bold text-xl flex items-center gap-2">Dr. {doctor.name} 
                                         {doctor.gender === 'female' && <PersonStanding className="w-5 h-5 text-pink-500" title="Female doctor available"/>}
-                                        {doctor.gender === 'male' && <PersonStanding className="w-5 h-5 text-blue-500" title="Male doctor available"/>}
                                       </p>
                                       <p className="font-semibold text-primary">{doctor.specialization}</p>
                                       <p className="text-sm text-muted-foreground">{doctor.experience} years | {doctor.qualifications}</p>
@@ -368,5 +427,3 @@ export default function BookAppointmentPage() {
     </div>
   )
 }
-
-    
