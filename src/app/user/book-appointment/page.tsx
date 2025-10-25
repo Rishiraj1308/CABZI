@@ -1,23 +1,23 @@
 
 'use client'
 
-import React, { useState, useEffect } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Calendar as CalendarIcon, Stethoscope, Clock, Search, ArrowLeft, IndianRupee } from 'lucide-react'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Calendar } from '@/components/ui/calendar'
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { format } from 'date-fns'
-import { cn } from '@/lib/utils'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { useToast } from '@/hooks/use-toast'
-import Link from 'next/link'
-import { useDb, useFirebase } from '@/firebase/client-provider'
-import { collection, collectionGroup, getDocs, query, where, addDoc, serverTimestamp } from 'firebase/firestore'
-import { Skeleton } from '@/components/ui/skeleton'
-import type { ClientSession } from '@/lib/types'
+import React, { useState, useEffect } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Calendar as CalendarIcon, Stethoscope, Clock, Search, ArrowLeft, IndianRupee } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { useToast } from '@/hooks/use-toast';
+import Link from 'next/link';
+import { useDb, useFirebase } from '@/firebase/client-provider';
+import { collection, collectionGroup, getDocs, query, where, addDoc, serverTimestamp, getDoc, doc } from 'firebase/firestore';
+import { Skeleton } from '@/components/ui/skeleton';
+import type { ClientSession } from '@/lib/types';
 
 const timeSlots = [
   '09:00 AM', '10:00 AM', '11:00 AM', '12:00 PM', '02:00 PM', '03:00 PM', '04:00 PM'
@@ -51,15 +51,21 @@ export default function BookAppointmentPage() {
   const [session, setSession] = useState<ClientSession | null>(null);
 
   useEffect(() => {
-    if (user) {
-        setSession({
-            userId: user.uid,
-            name: user.displayName || 'User',
-            phone: user.phoneNumber || '',
-            gender: 'other', // This should be fetched from user profile
+    if (user && db) {
+        const userDocRef = doc(db, 'users', user.uid);
+        getDoc(userDocRef).then(docSnap => {
+            if (docSnap.exists()) {
+                const userData = docSnap.data();
+                setSession({
+                    userId: user.uid,
+                    name: userData.name,
+                    phone: userData.phone,
+                    gender: userData.gender
+                });
+            }
         });
     }
-  }, [user]);
+  }, [user, db]);
 
   useEffect(() => {
     const fetchVerifiedDoctors = async () => {
@@ -129,36 +135,47 @@ export default function BookAppointmentPage() {
       }
 
       setIsBooking(true);
-      const appointmentDateTime = new Date(date);
-      const [hours, minutes] = time.split(/[: ]/);
-      appointmentDateTime.setHours(time.includes('PM') && parseInt(hours, 10) !== 12 ? parseInt(hours, 10) + 12 : parseInt(hours, 10), parseInt(minutes, 10));
-
-      const newAppointment = {
-          patientId: session.userId,
-          patientName: session.name,
-          patientPhone: session.phone,
-          hospitalId: selectedDoctor.hospitalId,
-          hospitalName: selectedDoctor.hospitalName,
-          doctorId: selectedDoctor.id,
-          doctorName: `Dr. ${selectedDoctor.name}`,
-          department: selectedDoctor.specialization,
-          appointmentDate: appointmentDateTime,
-          appointmentTime: time,
-          status: 'Pending',
-          createdAt: serverTimestamp()
-      };
-
+      
       try {
-          await addDoc(collection(db, 'appointments'), newAppointment);
-          toast({
-              title: "Appointment Requested!",
-              description: `Your request for Dr. ${selectedDoctor?.name} has been sent. You will be notified upon confirmation.`,
-              className: 'bg-green-600 border-green-600 text-white'
-          });
-          resetFlow();
+        // Step 1: Fetch user data from Firestore
+        const userDoc = await getDoc(doc(db, "users", session.userId));
+        if (!userDoc.exists()) {
+            throw new Error("User profile not found. Cannot book appointment.");
+        }
+        const userData = userDoc.data();
+
+        const appointmentDateTime = new Date(date);
+        const [hours, minutes] = time.split(/[: ]/);
+        appointmentDateTime.setHours(time.includes('PM') && parseInt(hours, 10) !== 12 ? parseInt(hours, 10) + 12 : parseInt(hours, 10), parseInt(minutes, 10));
+
+        // Step 2: Create appointment object with actual user info
+        const newAppointment = {
+            patientId: session.userId,
+            patientName: userData.name, // ✅ actual name from Firestore
+            patientPhone: userData.phone, // ✅ actual phone from Firestore
+            hospitalId: selectedDoctor.hospitalId,
+            hospitalName: selectedDoctor.hospitalName,
+            doctorId: selectedDoctor.id,
+            doctorName: `Dr. ${selectedDoctor.name}`,
+            department: selectedDoctor.specialization,
+            appointmentDate: appointmentDateTime,
+            appointmentTime: time,
+            status: 'Pending',
+            createdAt: serverTimestamp()
+        };
+
+        await addDoc(collection(db, 'appointments'), newAppointment);
+        
+        toast({
+            title: "Appointment Requested!",
+            description: `Your request for Dr. ${selectedDoctor?.name} has been sent. You will be notified upon confirmation.`,
+            className: 'bg-green-600 border-green-600 text-white'
+        });
+        resetFlow();
+
       } catch(error) {
           console.error("Failed to book appointment:", error);
-          toast({ variant: 'destructive', title: 'Booking Failed', description: 'There was an issue sending your request.' });
+          toast({ variant: 'destructive', title: 'Booking Failed', description: (error as Error).message || 'There was an issue sending your request.' });
           setIsBooking(false);
       }
   }
