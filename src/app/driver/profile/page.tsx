@@ -11,11 +11,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { CheckCircle, QrCode, Download, KeyRound } from 'lucide-react'
 import DriverIdCard from '@/components/driver-id-card'
 import { db, auth } from '@/lib/firebase'
-import { collection, query, where, onSnapshot } from 'firebase/firestore'
-import { Skeleton } from '@/components/ui/skeleton'
+import { collection, query, where, getDocs, onSnapshot } from 'firebase/firestore'
+import { Skeleton } from './ui/skeleton'
 import { useToast } from '@/hooks/use-toast'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger, } from "@/components/ui/alert-dialog"
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger, } from "@/components/ui/alert-dialog"
 import { cn } from '@/lib/utils'
 import { signInWithPhoneNumber, RecaptchaVerifier, type ConfirmationResult } from 'firebase/auth'
 
@@ -65,7 +65,7 @@ export default function ProfilePage() {
                             setPartnerData({
                               ...data,
                               upiId: data.upiId || `${data.phone}@curocity`,
-                              qrCodeUrl: data.qrCodeUrl || `https://placehold.co/300x300.png?text=Curocity+UPI`
+                              qrCodeUrl: data.qrCodeUrl || `https://placehold.co/300x300/FBBF24/1E293B?text=CurocityUPI`
                             } as PartnerData);
                         }
                         setIsLoading(false);
@@ -416,4 +416,5 @@ export default function ProfilePage() {
           </Card>
       </div>
   );
-}
+
+    
