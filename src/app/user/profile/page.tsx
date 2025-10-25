@@ -36,7 +36,7 @@ export default function UserProfilePage() {
     const { toast } = useToast();
 
     useEffect(() => {
-        const session = localStorage.getItem('cabzi-session');
+        const session = localStorage.getItem('curocity-session');
         if (session) {
             const { name, phone } = JSON.parse(session);
             // In a real app, you'd fetch the photoUrl from your database
@@ -46,7 +46,7 @@ export default function UserProfilePage() {
     }, []);
 
     const handleLogout = () => {
-        localStorage.removeItem('cabzi-session');
+        localStorage.removeItem('curocity-session');
         toast({
             title: 'Logged Out',
             description: 'You have been successfully logged out.'
@@ -174,5 +174,3 @@ export default function UserProfilePage() {
         </div>
     )
 }
-
-    
