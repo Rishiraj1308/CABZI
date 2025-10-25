@@ -17,7 +17,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Home, Briefcase, Settings, FileText, User, LogOut, Camera, Shield, Wallet, CreditCard, PlusCircle, Activity, ArrowRight, Loader2 } from 'lucide-react'
+import { Home, Briefcase, Settings, FileText, User, LogOut, Camera, Shield, Wallet, CreditCard, PlusCircle, Activity, ArrowRight, Loader2, HeartPulse, Droplets } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useToast } from '@/hooks/use-toast'
 import {
@@ -35,6 +35,7 @@ import { useFirebase } from '@/firebase/client-provider'
 import { doc, getDoc, collection, query, where, getDocs, Timestamp, updateDoc } from 'firebase/firestore'
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage'
 import { Separator } from '@/components/ui/separator'
+import { Textarea } from '@/components/ui/textarea'
 
 interface UserProfileData {
     name: string;
@@ -42,6 +43,15 @@ interface UserProfileData {
     email: string;
     photoURL?: string;
     createdAt?: Timestamp;
+    healthProfile?: {
+        bloodGroup: string;
+        allergies: string;
+        conditions: string;
+    };
+    insurance?: {
+        provider: string;
+        policyNumber: string;
+    }
 }
 
 interface Ride {
@@ -57,7 +67,12 @@ export default function UserProfilePage() {
     const [rides, setRides] = useState<Ride[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isUploading, setIsUploading] = useState(false);
+    const [isSavingHealthInfo, setIsSavingHealthInfo] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
+
+    // State for the new fields
+    const [healthProfile, setHealthProfile] = useState({ bloodGroup: '', allergies: '', conditions: '' });
+    const [insurance, setInsurance] = useState({ provider: '', policyNumber: '' });
 
     useEffect(() => {
         if (isUserLoading) return;
@@ -74,9 +89,11 @@ export default function UserProfilePage() {
                 const docSnap = await getDoc(userDocRef);
 
                 if (docSnap.exists()) {
-                    setProfileData(docSnap.data() as UserProfileData);
+                    const data = docSnap.data() as UserProfileData;
+                    setProfileData(data);
+                    if (data.healthProfile) setHealthProfile(data.healthProfile);
+                    if (data.insurance) setInsurance(data.insurance);
                 } else {
-                    // Fallback to auth data if firestore doc is missing
                     setProfileData({
                         name: user.displayName || 'User',
                         phone: user.phoneNumber || '',
@@ -145,6 +162,24 @@ export default function UserProfilePage() {
             setIsUploading(false);
         }
     };
+    
+    const handleSaveHealthInfo = async () => {
+        if (!user || !db) return;
+        setIsSavingHealthInfo(true);
+        try {
+            const userDocRef = doc(db, 'users', user.uid);
+            await updateDoc(userDocRef, {
+                healthProfile,
+                insurance,
+            });
+            toast({ title: 'Health Info Saved', description: 'Your vital information has been updated.', className: 'bg-green-600 text-white' });
+        } catch (error) {
+            console.error("Error saving health info:", error);
+            toast({ variant: 'destructive', title: 'Save Failed', description: 'Could not update your health profile.' });
+        } finally {
+            setIsSavingHealthInfo(false);
+        }
+    }
 
 
     const getInitials = (name: string | null | undefined) => {
@@ -257,6 +292,46 @@ export default function UserProfilePage() {
                 </CardFooter>
             </Card>
 
+             <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-lg"><HeartPulse className="w-5 h-5 text-destructive"/> Health &amp; Insurance</CardTitle>
+                    <CardDescription>This information is critical for emergencies and will be shared with CURE partners when you use the SOS feature.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                     <div className="grid md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="blood-group" className="flex items-center gap-1.5"><Droplets className="w-4 h-4"/>Blood Group</Label>
+                            <Input id="blood-group" placeholder="e.g., O+" value={healthProfile.bloodGroup} onChange={(e) => setHealthProfile(prev => ({...prev, bloodGroup: e.target.value}))}/>
+                        </div>
+                         <div className="space-y-2">
+                            <Label htmlFor="allergies">Known Allergies</Label>
+                            <Input id="allergies" placeholder="e.g., Peanuts, Penicillin" value={healthProfile.allergies} onChange={(e) => setHealthProfile(prev => ({...prev, allergies: e.target.value}))}/>
+                        </div>
+                     </div>
+                     <div className="space-y-2">
+                        <Label htmlFor="conditions">Pre-existing Medical Conditions</Label>
+                        <Textarea id="conditions" placeholder="e.g., Asthma, Diabetes, Hypertension" value={healthProfile.conditions} onChange={(e) => setHealthProfile(prev => ({...prev, conditions: e.target.value}))}/>
+                    </div>
+                    <Separator />
+                     <div className="grid md:grid-cols-2 gap-4">
+                         <div className="space-y-2">
+                            <Label htmlFor="insurance-provider">Insurance Provider</Label>
+                            <Input id="insurance-provider" placeholder="e.g., HDFC Ergo, Star Health" value={insurance.provider} onChange={(e) => setInsurance(prev => ({...prev, provider: e.target.value}))}/>
+                        </div>
+                         <div className="space-y-2">
+                            <Label htmlFor="policy-number">Policy Number</Label>
+                            <Input id="policy-number" placeholder="e.g., P123456789" value={insurance.policyNumber} onChange={(e) => setInsurance(prev => ({...prev, policyNumber: e.target.value}))}/>
+                        </div>
+                     </div>
+                </CardContent>
+                <CardFooter>
+                    <Button onClick={handleSaveHealthInfo} disabled={isSavingHealthInfo}>
+                        {isSavingHealthInfo ? <Loader2 className="w-4 h-4 animate-spin mr-2"/> : <Shield className="w-4 h-4 mr-2"/>}
+                        Save Health Info
+                    </Button>
+                </CardFooter>
+            </Card>
+
             <Card>
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2"><Shield className="w-5 h-5"/> Emergency Contact</CardTitle>
@@ -264,7 +339,7 @@ export default function UserProfilePage() {
                 </CardHeader>
                 <CardContent>
                     <div className="flex items-center gap-4">
-                        <Input placeholder="Enter contact's name & number" />
+                        <Input placeholder="Enter contact's name &amp; number" />
                         <Button><PlusCircle className="w-4 h-4 mr-2"/> Add Contact</Button>
                     </div>
                 </CardContent>
@@ -290,7 +365,7 @@ export default function UserProfilePage() {
             
              <Card>
                 <CardHeader>
-                    <CardTitle>Settings & Legal</CardTitle>
+                    <CardTitle>Settings &amp; Legal</CardTitle>
                 </CardHeader>
                 <CardContent>
                     <div className="space-y-4">
