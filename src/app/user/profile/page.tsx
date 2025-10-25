@@ -1,3 +1,4 @@
+
 'use client'
 
 import * as React from "react"
@@ -5,11 +6,18 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+  CardFooter,
+} from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Home, Briefcase, Settings, FileText, User, LogOut, Camera, Shield, Wallet, CreditCard, PlusCircle, Activity, Car, IndianRupee } from 'lucide-react'
+import { Home, Briefcase, Settings, FileText, User, LogOut, Camera, Shield, Wallet, CreditCard, PlusCircle, Activity, ArrowRight } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useToast } from '@/hooks/use-toast'
 import {
@@ -65,6 +73,7 @@ export default function UserProfilePage() {
                 if (docSnap.exists()) {
                     setProfileData(docSnap.data() as UserProfileData);
                 } else {
+                    // Fallback to auth data if firestore doc is missing
                     setProfileData({
                         name: user.displayName || 'User',
                         phone: user.phoneNumber || '',
