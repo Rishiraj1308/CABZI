@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import {
     Calendar as CalendarIcon, Stethoscope, Clock, Search, ArrowLeft,
     IndianRupee, MapPin, HeartPulse, SlidersHorizontal, Filter, SortAsc,
-    Video, Building, X, Baby, Thermometer, Bone, BrainCircuit, Heart, Ear, Sparkles, Layers, Activity
+    Video, Building, X, Baby, Thermometer, Bone, BrainCircuit, Heart, Ear, Layers
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -50,7 +50,7 @@ interface Doctor {
 
 const symptomCategories = [
     { name: 'Fever/Cold', icon: Thermometer, specializations: ['General Physician', 'Pediatrics'] },
-    { name: 'Stomach Ache', icon: Activity, specializations: ['Gastroenterology', 'General Physician'] },
+    { name: 'Stomach Ache', icon: HeartPulse, specializations: ['Gastroenterology', 'General Physician'] },
     { name: 'Bone/Joint Pain', icon: Bone, specializations: ['Orthopedics'] },
     { name: 'Headache', icon: BrainCircuit, specializations: ['General Physician', 'Neurology'] },
     { name: 'Skin Issues', icon: Layers, specializations: ['Dermatology'] },
