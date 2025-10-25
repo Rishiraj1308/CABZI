@@ -142,8 +142,8 @@ export default function DoctorDashboardPage() {
   return (
     <div className="space-y-6">
        <div>
-        <h2 className="text-3xl font-bold tracking-tight">Doctor&apos;s Dashboard</h2>
-        <p className="text-muted-foreground">Welcome back, Doctor. Here&apos;s your snapshot for today.</p>
+        <h2 className="text-3xl font-bold tracking-tight">Doctor's Dashboard</h2>
+        <p className="text-muted-foreground">Welcome back, Doctor. Here's your snapshot for today.</p>
       </div>
       
       <MotionDiv variants={containerVariants} initial="hidden" animate="visible" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -157,7 +157,7 @@ export default function DoctorDashboardPage() {
             <div className="lg:col-span-2 space-y-6">
                  <Card>
                     <CardHeader>
-                        <CardTitle>Today&apos;s Patient Queue</CardTitle>
+                        <CardTitle>Today's Patient Queue</CardTitle>
                         <CardDescription>A real-time queue of your appointments for today.</CardDescription>
                     </CardHeader>
                     <CardContent>
@@ -205,7 +205,7 @@ export default function DoctorDashboardPage() {
                                                         <div key={index} className="relative">
                                                             <div className="absolute top-0 left-9 -translate-x-1/2 w-4 h-4 bg-primary rounded-full border-4 border-background"></div>
                                                             <div className="pl-12">
-                                                                <Card><CardHeader className="pb-3"><CardTitle className="text-lg">{visit.reason}</CardTitle><CardDescription className="flex items-center gap-2"><Calendar className="w-3 h-3"/> {visit.date}</CardDescription></CardHeader><CardContent className="space-y-3"><div><h4 className="font-semibold text-xs mb-1">Doctor&apos;s Notes</h4><p className="text-xs text-muted-foreground bg-muted p-2 rounded-md">{visit.notes}</p></div><div className="flex gap-2">{visit.report && <Button variant="outline" size="sm" className="h-7" onClick={() => handleQuickAction('view_report')}><FileSpreadsheet className="w-3 h-3 mr-2"/>{visit.report}</Button>}{visit.prescription && <Button variant="outline" size="sm" className="h-7" onClick={() => handleQuickAction('view_prescription')}><ClipboardPlus className="w-3 h-3 mr-2"/>{visit.prescription}</Button>}</div></CardContent></Card>
+                                                                <Card><CardHeader className="pb-3"><CardTitle className="text-lg">{visit.reason}</CardTitle><CardDescription className="flex items-center gap-2"><Calendar className="w-3 h-3"/> {visit.date}</CardDescription></CardHeader><CardContent className="space-y-3"><div><h4 className="font-semibold text-xs mb-1">Doctor's Notes</h4><p className="text-xs text-muted-foreground bg-muted p-2 rounded-md">{visit.notes}</p></div><div className="flex gap-2">{visit.report && <Button variant="outline" size="sm" className="h-7" onClick={() => handleQuickAction('view_report')}><FileSpreadsheet className="w-3 h-3 mr-2"/>{visit.report}</Button>}{visit.prescription && <Button variant="outline" size="sm" className="h-7" onClick={() => handleQuickAction('view_prescription')}><ClipboardPlus className="w-3 h-3 mr-2"/>{visit.prescription}</Button>}</div></CardContent></Card>
                                                             </div>
                                                         </div>
                                                     ))}
