@@ -4,7 +4,7 @@
 import React, { createContext, useContext, useEffect, useState, useMemo, type ReactNode } from 'react';
 import { initializeApp, getApps, getApp, type FirebaseApp } from 'firebase/app';
 import { getAuth, type Auth, onAuthStateChanged, type User } from 'firebase/auth';
-import { getFirestore, type Firestore } from 'firebase/firestore';
+import { getFirestore, type Firestore, enableIndexedDbPersistence } from 'firebase/firestore';
 import { getFunctions, type Functions } from 'firebase/functions';
 import { getMessaging, type Messaging } from 'firebase/messaging';
 import { firebaseConfig } from './config';
@@ -46,6 +46,16 @@ export function FirebaseProviderClient({ children }: { children: ReactNode }) {
     const dbInstance = getFirestore(app); 
     const functionsInstance = getFunctions(app);
     
+    // Enable offline persistence for Firestore
+    enableIndexedDbPersistence(dbInstance)
+      .catch((err) => {
+        if (err.code == 'failed-precondition') {
+          console.warn('Firestore Persistence could not be enabled: Multiple tabs open?');
+        } else if (err.code == 'unimplemented') {
+          console.warn('Firestore Persistence could not be enabled: Browser does not support it.');
+        }
+      });
+
     let messagingInstance: Messaging | null = null;
     if (typeof window !== 'undefined' && 'Notification' in window) {
       try {
