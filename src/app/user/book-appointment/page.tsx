@@ -39,15 +39,18 @@ interface Doctor {
 }
 
 const symptomCategories = [
-    { name: 'Fever / Cold', specializations: ['General Physician'] },
-    { name: 'Headache / Migraine', specializations: ['General Physician', 'Neurology'] },
+    { name: 'Fever / Cold / Cough', specializations: ['General Physician', 'Pediatrics'] },
     { name: 'Stomach Ache / Digestion', specializations: ['Gastroenterology', 'General Physician'] },
     { name: 'Bone / Joint Pain', specializations: ['Orthopedics'] },
+    { name: 'Headache / Migraine', specializations: ['General Physician', 'Neurology'] },
     { name: 'Skin Rashes / Allergy', specializations: ['Dermatology'] },
-    { name: 'Heart / Chest Pain', specializations: ['Cardiology'] },
+    { name: 'Heart / Chest Pain', specializations: ['Cardiology', 'General Physician'] },
     { name: 'Child Health Issue', specializations: ['Pediatrics'] },
-    { name: 'Ear, Nose, Throat', specializations: ['ENT Specialist'] },
-    { name: 'Cancer Related Inquiry', specializations: ['Oncology'] },
+    { name: 'ENT Issues', specializations: ['ENT Specialist'] },
+    { name: 'Back Pain', specializations: ['Orthopedics', 'Neurology'] },
+    { name: 'Acne / Pimples', specializations: ['Dermatology'] },
+    { name: 'Acidity / Gas', specializations: ['Gastroenterology'] },
+    { name: 'Cancer Inquiry', specializations: ['Oncology'] },
 ];
 
 export default function BookAppointmentPage() {
