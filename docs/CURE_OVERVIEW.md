@@ -1,3 +1,4 @@
+
 # Curocity CURE: The Partner Workflow & Technical Architecture
 
 This document provides a comprehensive overview of the **Curocity CURE** ecosystem, designed for our hospital and clinic partners. It details the end-to-end workflow, from initial onboarding to managing live emergency cases, daily operations, and the underlying technology that powers it all.
