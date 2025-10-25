@@ -41,36 +41,38 @@ export function FirebaseProviderClient({ children }: { children: ReactNode }) {
   const [isUserLoading, setIsUserLoading] = useState(true);
 
   useEffect(() => {
-    const setupFirebase = async () => {
-      const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
-      const authInstance = getAuth(app);
-      
-      // Use the modern API for Firestore with multi-tab persistence
-      const dbInstance = initializeFirestore(app, {
-        localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
-      });
+    // This effect runs only once to initialize all Firebase services.
+    const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+    const authInstance = getAuth(app);
+    const functionsInstance = getFunctions(app);
 
-      const functionsInstance = getFunctions(app);
-      
-      let messagingInstance: Messaging | null = null;
-      if (typeof window !== 'undefined' && 'Notification' in window) {
-        try {
-          messagingInstance = getMessaging(app);
-        } catch (e) {
-          console.warn('Firebase Messaging not supported in this environment.');
-        }
+    // Correctly initialize Firestore with persistence only once.
+    // We try to get it first, and if it fails, we initialize it.
+    let dbInstance;
+    try {
+        dbInstance = getFirestore(app);
+    } catch (e) {
+        dbInstance = initializeFirestore(app, {
+            localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
+        });
+    }
+
+    let messagingInstance: Messaging | null = null;
+    if (typeof window !== 'undefined' && 'Notification' in window) {
+      try {
+        messagingInstance = getMessaging(app);
+      } catch (e) {
+        console.warn('Firebase Messaging not supported in this environment.');
       }
-      
-      setServices({
-          firebaseApp: app,
-          auth: authInstance,
-          db: dbInstance,
-          functions: functionsInstance,
-          messaging: messagingInstance,
-      });
-    };
+    }
     
-    setupFirebase();
+    setServices({
+        firebaseApp: app,
+        auth: authInstance,
+        db: dbInstance,
+        functions: functionsInstance,
+        messaging: messagingInstance,
+    });
   }, []);
 
   useEffect(() => {
