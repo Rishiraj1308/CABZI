@@ -4,7 +4,7 @@
 import React, { useState, useEffect } from 'react'
 import { Toaster } from "@/components/ui/toaster";
 import { Button } from '@/components/ui/button';
-import { Home, History, Menu, LogOut, Heart, Gift, PanelLeft, Landmark, Sun, Moon, Settings, User, Calendar, Car } from 'lucide-react';
+import { Home, History, Menu, LogOut, Heart, Gift, PanelLeft, Landmark, Sun, Moon, Settings, User, Calendar, Car, MapPin } from 'lucide-react';
 import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
@@ -33,8 +33,6 @@ import { doc, updateDoc } from 'firebase/firestore';
 const navItems = [
     { href: '/user', label: 'Services', icon: Home, comingSoon: false },
     { href: '/user/activity', label: 'My Activity', icon: History, comingSoon: false },
-    { href: '/user/wallet', label: 'Curocity Bank', icon: Landmark, comingSoon: false },
-    { href: '/user/offers', label: 'Offers', icon: Gift, comingSoon: true },
     { href: '/user/profile', label: 'Profile', icon: User, comingSoon: false },
 ]
 
@@ -56,6 +54,52 @@ function ThemeToggle() {
         </DropdownMenuContent>
       </DropdownMenu>
     )
+}
+
+function LocationDisplay() {
+  const [location, setLocation] = useState('Locating...');
+
+  useEffect(() => {
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+            async (position) => {
+                const { latitude, longitude } = position.coords;
+                try {
+                    const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`);
+                    if (!response.ok) {
+                        setLocation('Location not found');
+                        return;
+                    }
+                    const data = await response.json();
+                    const address = data.address;
+                    const city = address.city || address.town || address.village;
+                    const state = address.state;
+                    if (city && state) {
+                        setLocation(`${city}, ${state}`);
+                    } else {
+                        setLocation(data.display_name.split(',').slice(0, 3).join(', '));
+                    }
+                } catch (error) {
+                    setLocation('Location not found');
+                }
+            }, 
+            () => {
+                // Gracefully handle location denial
+                setLocation('Location Unavailable');
+            },
+            { timeout: 10000 }
+        );
+    } else {
+        setLocation('Geolocation not supported');
+    }
+  }, []);
+  
+  return (
+    <div className="flex items-center gap-2">
+      <MapPin className="w-4 h-4 text-muted-foreground"/>
+      <span className="text-sm font-medium text-muted-foreground truncate">{location}</span>
+    </div>
+  )
 }
 
 export default function RiderLayout({
