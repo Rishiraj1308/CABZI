@@ -1,4 +1,3 @@
-
 'use client'
 
 import React, { useState, useEffect, useMemo } from 'react'
@@ -8,6 +7,7 @@ import { useFirebase } from '@/firebase/client-provider'
 import { collection, query, where, orderBy, onSnapshot, Timestamp } from 'firebase/firestore'
 import { useToast } from '@/hooks/use-toast'
 import { Skeleton } from '@/components/ui/skeleton'
+import { Badge } from '@/components/ui/badge'
 
 type ActivityStatus = 'Completed' | 'Cancelled' | 'Pending' | 'Confirmed' | string;
 
@@ -112,8 +112,8 @@ export default function MyActivityPage() {
     const lowerStatus = status.toLowerCase();
     if (lowerStatus.includes('completed')) return <Badge className="bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-200">{status}</Badge>;
     if (lowerStatus.includes('cancel')) return <Badge variant="destructive">{status}</Badge>;
-    if (lowerStatus.includes('pending')) return <Badge className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-200">{status}</Badge>;
-    if (lowerStatus.includes('confirmed')) return <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200">{status}</Badge>;
+    if (lowerStatus.includes('pending') || lowerStatus.includes('searching')) return <Badge className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-200">{status}</Badge>;
+    if (lowerStatus.includes('confirmed') || lowerStatus.includes('accepted') || lowerStatus.includes('transit')) return <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200">{status}</Badge>;
     return <Badge variant="secondary">{status}</Badge>;
   };
 
@@ -144,7 +144,7 @@ export default function MyActivityPage() {
                         </div>
                         <div className="flex flex-col items-end gap-1">
                              {getStatusBadge(item.status)}
-                             {item.fare && <p className="font-bold text-lg">~₹{item.fare?.toFixed(0)}</p>}
+                             {item.fare != null && <p className="font-bold text-lg">~₹{item.fare?.toFixed(0)}</p>}
                         </div>
                     </CardContent>
                 </Card>
