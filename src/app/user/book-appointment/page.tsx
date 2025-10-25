@@ -223,6 +223,20 @@ export default function BookAppointmentPage() {
       }
   }
 
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+        opacity: 1,
+        transition: { staggerChildren: 0.05 }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { y: 20, opacity: 0 },
+    visible: { y: 0, opacity: 1, transition: { type: 'spring', stiffness: 100 } }
+  };
+
+
   const renderStep = () => {
     switch (step) {
       case 1:
@@ -249,25 +263,35 @@ export default function BookAppointmentPage() {
               </div>
               <div className="space-y-2">
                 <Label className="font-semibold">Or select a common symptom:</Label>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <motion.div 
+                    className="grid grid-cols-2 md:grid-cols-4 gap-3"
+                    variants={containerVariants}
+                    initial="hidden"
+                    animate="visible"
+                >
                   {symptomCategories.map((symptom) => {
                     const Icon = symptom.icon
                     return (
-                        <Card
-                        key={symptom.name}
-                        className="p-4 flex flex-col items-center justify-center gap-2 cursor-pointer hover:ring-2 hover:ring-primary transition-all text-center"
-                        onClick={() => {
-                            setSelectedSymptom(symptom.name);
-                            setSearchQuery('');
-                            setStep(2);
-                        }}
+                        <motion.div
+                            key={symptom.name}
+                            variants={itemVariants}
+                            whileHover={{ y: -4, transition: { type: 'spring', stiffness: 300 } }}
                         >
-                          <Icon className="w-8 h-8" />
-                          <p className="text-sm font-medium">{symptom.name}</p>
-                        </Card>
+                            <Card
+                                className="p-4 flex flex-col items-center justify-center gap-2 cursor-pointer hover:ring-2 hover:ring-primary transition-all text-center h-full"
+                                onClick={() => {
+                                    setSelectedSymptom(symptom.name);
+                                    setSearchQuery('');
+                                    setStep(2);
+                                }}
+                            >
+                                <Icon className="w-8 h-8" />
+                                <p className="text-sm font-medium">{symptom.name}</p>
+                            </Card>
+                        </motion.div>
                     )
                   })}
-                </div>
+                </motion.div>
               </div>
             </CardContent>
           </motion.div>
@@ -307,21 +331,29 @@ export default function BookAppointmentPage() {
             <CardContent className="space-y-3 max-h-[70vh] overflow-y-auto">
                 {isLoading ? Array.from({length:3}).map((_,i) => <Skeleton key={i} className="h-28 w-full"/>)
                   : filteredAndSortedDoctors.length > 0 ? (
-                      filteredAndSortedDoctors.map(doctor => (
-                        <Card key={doctor.id} className="p-4 flex gap-4 items-center cursor-pointer hover:bg-muted" onClick={() => { setSelectedDoctor(doctor); setStep(3); }}>
-                            <Avatar className="w-16 h-16 border-2 border-primary"><AvatarImage src={doctor.photoUrl || `https://i.pravatar.cc/150?u=${doctor.id}`} alt={doctor.name} /><AvatarFallback>{doctor.name.substring(0,2)}</AvatarFallback></Avatar>
-                            <div className="flex-1">
-                                <p className="font-bold text-lg">Dr. {doctor.name}</p>
-                                <p className="font-semibold text-primary">{doctor.specialization}</p>
-                                <p className="text-sm text-muted-foreground">{doctor.qualifications}</p>
-                                <p className="text-xs text-muted-foreground">{doctor.hospitalName}</p>
-                            </div>
-                            <div className="text-right flex flex-col items-end gap-1">
-                                <p className="font-bold text-xl">₹{doctor.consultationFee}</p>
-                                {doctor.distance != null && (<Badge variant="outline"><MapPin className="w-3 h-3 mr-1"/>{doctor.distance.toFixed(1)} km</Badge>)}
-                            </div>
-                        </Card>
-                      ))
+                    <motion.div variants={containerVariants} initial="hidden" animate="visible" className="space-y-3">
+                      {filteredAndSortedDoctors.map(doctor => (
+                          <motion.div
+                            key={doctor.id}
+                            variants={itemVariants}
+                            whileHover={{ scale: 1.02, transition: { type: 'spring', stiffness: 400, damping: 10 } }}
+                          >
+                            <Card className="p-4 flex gap-4 items-center cursor-pointer hover:bg-muted" onClick={() => { setSelectedDoctor(doctor); setStep(3); }}>
+                                <Avatar className="w-16 h-16 border-2 border-primary"><AvatarImage src={doctor.photoUrl || `https://i.pravatar.cc/150?u=${doctor.id}`} alt={doctor.name} /><AvatarFallback>{doctor.name.substring(0,2)}</AvatarFallback></Avatar>
+                                <div className="flex-1">
+                                    <p className="font-bold text-lg">Dr. {doctor.name}</p>
+                                    <p className="font-semibold text-primary">{doctor.specialization}</p>
+                                    <p className="text-sm text-muted-foreground">{doctor.qualifications}</p>
+                                    <p className="text-xs text-muted-foreground">{doctor.hospitalName}</p>
+                                </div>
+                                <div className="text-right flex flex-col items-end gap-1">
+                                    <p className="font-bold text-xl">₹{doctor.consultationFee}</p>
+                                    {doctor.distance != null && (<Badge variant="outline"><MapPin className="w-3 h-3 mr-1"/>{doctor.distance.toFixed(1)} km</Badge>)}
+                                </div>
+                            </Card>
+                          </motion.div>
+                      ))}
+                    </motion.div>
                   ) : (<div className="text-center py-12"><p>No doctors found matching your criteria.</p></div>)
                 }
             </CardContent>
