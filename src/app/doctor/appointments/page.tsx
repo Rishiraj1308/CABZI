@@ -1,4 +1,3 @@
-
 'use client'
 
 import { useState, useEffect, useMemo } from 'react'
@@ -6,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
-import { Search, Calendar as CalendarIcon, Settings } from 'lucide-react'
+import { Search, Calendar as CalendarIcon, Settings, Building, Video } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useDb } from '@/firebase/client-provider'
@@ -31,6 +30,7 @@ interface Appointment {
     isRecurring: boolean;
     doctorName: string;
     department: string;
+    consultationType?: 'in-clinic' | 'video';
 }
 
 export default function DoctorAppointmentsPage() {
@@ -49,7 +49,7 @@ export default function DoctorAppointmentsPage() {
     useEffect(() => {
         if (!db) return;
 
-        const session = localStorage.getItem('cabzi-doctor-session');
+        const session = localStorage.getItem('curocity-doctor-session');
         if (!session) {
             setIsLoading(false);
             toast({ variant: 'destructive', title: 'Not Authenticated' });
@@ -155,6 +155,13 @@ export default function DoctorAppointmentsPage() {
         }
     }
 
+    const getTypeContent = (type?: 'in-clinic' | 'video') => {
+        if (type === 'video') {
+            return <div className="flex items-center gap-1 text-sm"><Video className="w-4 h-4 text-purple-500" /> Video</div>;
+        }
+        return <div className="flex items-center gap-1 text-sm"><Building className="w-4 h-4 text-blue-500" /> In-Clinic</div>;
+    }
+
     return (
       <div className="space-y-6">
         <div>
@@ -202,8 +209,8 @@ export default function DoctorAppointmentsPage() {
                         <TableRow>
                             <TableHead>Patient</TableHead>
                             <TableHead>Date & Time</TableHead>
-                            <TableHead>Status</TableHead>
                             <TableHead>Type</TableHead>
+                            <TableHead>Status</TableHead>
                             <TableHead className="text-right">Actions</TableHead>
                         </TableRow>
                     </TableHeader>
@@ -213,8 +220,8 @@ export default function DoctorAppointmentsPage() {
                                 <TableRow key={i}>
                                     <TableCell><Skeleton className="h-5 w-32" /></TableCell>
                                     <TableCell><Skeleton className="h-5 w-36" /></TableCell>
-                                    <TableCell><Skeleton className="h-6 w-24 rounded-full" /></TableCell>
                                     <TableCell><Skeleton className="h-5 w-20" /></TableCell>
+                                    <TableCell><Skeleton className="h-6 w-24 rounded-full" /></TableCell>
                                     <TableCell className="text-right"><Skeleton className="h-8 w-8 ml-auto rounded-full" /></TableCell>
                                 </TableRow>
                             ))
@@ -226,10 +233,8 @@ export default function DoctorAppointmentsPage() {
                                         <div>{appt.appointmentDate.toDate().toLocaleDateString()}</div>
                                         <div className="text-xs text-muted-foreground">{appt.appointmentTime}</div>
                                     </TableCell>
+                                    <TableCell>{getTypeContent(appt.consultationType)}</TableCell>
                                     <TableCell>{getStatusBadge(appt.status)}</TableCell>
-                                    <TableCell>
-                                        {appt.isRecurring ? <Badge variant="secondary">Recurring</Badge> : 'One-time'}
-                                    </TableCell>
                                     <TableCell className="text-right">
                                        <Dialog open={isManageAppointmentOpen && selectedAppointment?.id === appt.id} onOpenChange={(open) => {
                                             if (!open) {
