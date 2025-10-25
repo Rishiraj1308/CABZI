@@ -17,7 +17,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Home, Briefcase, Settings, FileText, User, LogOut, Camera, Shield, Wallet, CreditCard, PlusCircle, Activity, ArrowRight, Loader2, HeartPulse, Droplets, Car } from 'lucide-react'
+import { Home, Briefcase, Settings, FileText, User, LogOut, Camera, Shield, Wallet, CreditCard, PlusCircle, Activity, ArrowRight, Loader2, HeartPulse, Droplets, Car, IndianRupee } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useToast } from '@/hooks/use-toast'
 import {
@@ -378,3 +378,5 @@ export default function UserProfilePage() {
         </div>
     )
 }
+
+    
