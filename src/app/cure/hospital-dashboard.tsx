@@ -259,7 +259,7 @@ export default function HospitalMissionControl({ renderChecklistManagement }: { 
             unsubRequests();
             if (watchIdRef.current) navigator.geolocation.clearWatch(watchIdRef.current);
         };
-    }, [toast, db]);
+    }, [db]);
     
 
     const handleOnlineStatusChange = async (checked: boolean) => {
