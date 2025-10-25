@@ -1,8 +1,9 @@
-
 'use client'
 
+import * as React from "react"
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -229,6 +230,19 @@ export default function UserProfilePage() {
                          <Button variant="outline" size="sm">Remove</Button>
                     </div>
                      <Button variant="outline" className="w-full mt-2"><PlusCircle className="w-4 h-4 mr-2"/> Add New Payment Method</Button>
+                </CardContent>
+            </Card>
+            
+             <Card>
+                <CardHeader>
+                    <CardTitle>Settings & Legal</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <div className="flex flex-col gap-2">
+                        <Button variant="ghost" className="w-full justify-start gap-2"><Settings className="w-5 h-5"/> Account Settings</Button>
+                        <Button asChild variant="ghost" className="w-full justify-start gap-2"><Link href="/terms"><FileText className="w-5 h-5"/> Terms of Service</Link></Button>
+                        <Button asChild variant="ghost" className="w-full justify-start gap-2"><Link href="/privacy"><FileText className="w-5 h-5"/> Privacy Policy</Link></Button>
+                    </div>
                 </CardContent>
             </Card>
 
