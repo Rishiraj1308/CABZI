@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import {
     Calendar as CalendarIcon, Stethoscope, Clock, Search, ArrowLeft,
     IndianRupee, MapPin, HeartPulse, SlidersHorizontal, Filter, SortAsc,
-    Video, Building, X, Baby, Thermometer, Bone, BrainCircuit, Heart, Ear, Sparkles
+    Video, Building, X, Baby, Thermometer, Bone, BrainCircuit, Heart, Ear, Sparkles, Layers, Activity
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -50,10 +50,10 @@ interface Doctor {
 
 const symptomCategories = [
     { name: 'Fever/Cold', icon: Thermometer, specializations: ['General Physician', 'Pediatrics'] },
-    { name: 'Stomach Ache', icon: HeartPulse, specializations: ['Gastroenterology', 'General Physician'] },
+    { name: 'Stomach Ache', icon: Activity, specializations: ['Gastroenterology', 'General Physician'] },
     { name: 'Bone/Joint Pain', icon: Bone, specializations: ['Orthopedics'] },
     { name: 'Headache', icon: BrainCircuit, specializations: ['General Physician', 'Neurology'] },
-    { name: 'Skin Issues', icon: Sparkles, specializations: ['Dermatology'] },
+    { name: 'Skin Issues', icon: Layers, specializations: ['Dermatology'] },
     { name: 'Heart/Chest', icon: Heart, specializations: ['Cardiology', 'General Physician'] },
     { name: 'Child Health', icon: Baby, specializations: ['Pediatrics'] },
     { name: 'ENT', icon: Ear, specializations: ['ENT Specialist'] },
@@ -237,7 +237,7 @@ export default function BookAppointmentPage() {
 
   const itemVariants = {
     hidden: { y: 20, opacity: 0 },
-    visible: { y: 0, opacity: 1, transition: { type: 'spring', stiffness: 100 } }
+    visible: { y: 0, opacity: 1, transition: { type: 'spring', stiffness: 100 }}
   };
 
 
@@ -255,7 +255,7 @@ export default function BookAppointmentPage() {
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                 <Input
                   id="doctor-search"
-                  placeholder="Search doctors, specialization, or symptoms..."
+                  placeholder="Search doctors, clinics, hospitals, or specialization..."
                   className="pl-12 h-12 text-lg"
                   value={searchQuery}
                   onChange={(e) => {
