@@ -26,6 +26,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle, SheetDescription, SheetFooter } from '@/components/ui/sheet';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Carousel, CarouselContent, CarouselItem } from '@/components/ui/carousel';
+import { Badge } from '@/components/ui/badge';
 
 const timeSlots = [
   '09:00 AM', '10:00 AM', '11:00 AM', '12:00 PM', '02:00 PM', '03:00 PM', '04:00 PM'
@@ -296,7 +297,11 @@ export default function BookAppointmentPage() {
                     </div>
                      <Sheet open={isFilterSheetOpen} onOpenChange={setIsFilterSheetOpen}>
                         <SheetTrigger asChild><Button variant="outline" size="icon"><SlidersHorizontal className="h-4 w-4"/></Button></SheetTrigger>
-                        <SheetContent><SheetHeader><SheetTitle>Filter & Sort</SheetTitle><SheetDescription>Refine your search.</SheetDescription></SheetHeader>
+                        <SheetContent>
+                            <SheetHeader>
+                                <SheetTitle>Filter & Sort</SheetTitle>
+                                <SheetDescription>Refine your search to find the perfect doctor.</SheetDescription>
+                            </SheetHeader>
                             <div className="py-4 space-y-6">
                                 <div className="space-y-2"><Label>Sort By</Label><Select value={sortBy} onValueChange={setSortBy}><SelectTrigger><SelectValue/></SelectTrigger><SelectContent><SelectItem value="distance">Distance</SelectItem><SelectItem value="price">Price</SelectItem><SelectItem value="experience">Experience</SelectItem></SelectContent></Select></div>
                                 <div className="space-y-2"><Label>Availability</Label><Select value={availabilityFilter} onValueChange={setAvailabilityFilter}><SelectTrigger><SelectValue/></SelectTrigger><SelectContent><SelectItem value="any">Any</SelectItem><SelectItem value="today">Today</SelectItem><SelectItem value="tomorrow">Tomorrow</SelectItem></SelectContent></Select></div>
