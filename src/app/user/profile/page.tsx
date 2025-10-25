@@ -1,3 +1,4 @@
+
 'use client'
 
 import * as React from "react"
@@ -193,6 +194,37 @@ export default function UserProfilePage() {
                     </div>
                 </CardContent>
             </Card>
+            
+             <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2"><Wallet className="w-5 h-5"/> Curocity Wallet</CardTitle>
+                </CardHeader>
+                <CardContent className="flex items-center justify-between p-4 rounded-lg bg-muted">
+                    <div>
+                        <p className="text-sm text-muted-foreground">Available Balance</p>
+                        <p className="text-2xl font-bold">₹1,250.75</p>
+                    </div>
+                    <Button><PlusCircle className="mr-2 h-4 w-4"/>Add Money</Button>
+                </CardContent>
+            </Card>
+
+            <Card>
+                <CardHeader>
+                    <CardTitle>Saved Locations</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    <div className="flex items-center gap-4">
+                        <Home className="w-5 h-5 text-muted-foreground"/>
+                        <Input placeholder="Add Home address" />
+                        <Button variant="outline">Save</Button>
+                    </div>
+                     <div className="flex items-center gap-4">
+                        <Briefcase className="w-5 h-5 text-muted-foreground"/>
+                        <Input placeholder="Add Work address" />
+                        <Button variant="outline">Save</Button>
+                    </div>
+                </CardContent>
+            </Card>
 
             <Card>
                 <CardHeader>
@@ -209,7 +241,7 @@ export default function UserProfilePage() {
             
              <Card>
                 <CardHeader>
-                    <CardTitle className="flex items-center gap-2"><Wallet className="w-5 h-5"/> Payment Methods</CardTitle>
+                    <CardTitle className="flex items-center gap-2"><CreditCard className="w-5 h-5"/> Payment Methods</CardTitle>
                      <CardDescription>Manage your saved payment options for quick and easy checkout.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-3">
