@@ -12,7 +12,7 @@ import { CheckCircle, QrCode, Download, KeyRound } from 'lucide-react'
 import DriverIdCard from '@/components/driver-id-card'
 import { db, auth } from '@/lib/firebase'
 import { collection, query, where, onSnapshot } from 'firebase/firestore'
-import { Skeleton } from './ui/skeleton'
+import { Skeleton } from '@/components/ui/skeleton'
 import { useToast } from '@/hooks/use-toast'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger, } from "@/components/ui/alert-dialog"
@@ -45,35 +45,44 @@ export default function ProfilePage() {
     const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
 
     useEffect(() => {
-        if (typeof window !== 'undefined' && db) {
-            const session = localStorage.getItem('cabzi-session');
-            const storedPin = localStorage.getItem('cabzi-user-pin');
-            if (storedPin) {
-                setIsPinSet(true);
-            }
-            
-            if (session) {
-                const { phone } = JSON.parse(session);
-                const partnersRef = collection(db, "partners");
-                const q = query(partnersRef, where("phone", "==", phone));
+        const fetchProfileData = () => {
+            if (typeof window !== 'undefined' && db) {
+                const session = localStorage.getItem('curocity-session');
+                const storedPin = localStorage.getItem('curocity-user-pin');
+                if (storedPin) {
+                    setIsPinSet(true);
+                }
                 
-                const unsubscribe = onSnapshot(q, (querySnapshot) => {
-                    if (!querySnapshot.empty) {
-                        const doc = querySnapshot.docs[0];
-                        const data = doc.data();
-                        setPartnerData({
-                          ...data,
-                          upiId: data.upiId || `${data.phone}@cabzi`,
-                          qrCodeUrl: data.qrCodeUrl || `https://placehold.co/300x300.png?text=Cabzi+UPI`
-                        } as PartnerData);
-                    }
-                    setIsLoading(false);
-                });
-                
-                return () => unsubscribe();
+                if (session) {
+                    const { phone } = JSON.parse(session);
+                    const partnersRef = collection(db, "partners");
+                    const q = query(partnersRef, where("phone", "==", phone));
+                    
+                    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+                        if (!querySnapshot.empty) {
+                            const doc = querySnapshot.docs[0];
+                            const data = doc.data();
+                            setPartnerData({
+                              ...data,
+                              upiId: data.upiId || `${data.phone}@curocity`,
+                              qrCodeUrl: data.qrCodeUrl || `https://placehold.co/300x300.png?text=Curocity+UPI`
+                            } as PartnerData);
+                        }
+                        setIsLoading(false);
+                    });
+                    
+                    return unsubscribe;
+                } else {
+                     setIsLoading(false);
+                }
             } else {
                  setIsLoading(false);
             }
+        };
+
+        const unsubscribe = fetchProfileData();
+        return () => {
+            if (unsubscribe) unsubscribe();
         }
     }, [toast, db]);
 
@@ -96,7 +105,7 @@ export default function ProfilePage() {
             const a = document.createElement('a');
             a.style.display = 'none';
             a.href = url;
-            a.download = `cabzi-upi-qr-${partnerData.phone}.png`;
+            a.download = `curocity-upi-qr-${partnerData.phone}.png`;
             
             document.body.appendChild(a);
             a.click();
@@ -106,7 +115,7 @@ export default function ProfilePage() {
             
             toast({
                 title: 'Download Started',
-                description: 'Your Cabzi UPI QR Code is being downloaded.',
+                description: 'Your Curocity UPI QR Code is being downloaded.',
             });
 
         } catch (error) {
@@ -127,7 +136,6 @@ export default function ProfilePage() {
         setOtp('');
     }
     
-    // Correctly set initial step when dialog opens
     const handlePinDialogChange = (open: boolean) => {
         setIsPinDialogOpen(open);
         if (open) {
@@ -136,7 +144,7 @@ export default function ProfilePage() {
     }
 
     const handlePinSubmit = async () => {
-        const storedPin = localStorage.getItem('cabzi-user-pin');
+        const storedPin = localStorage.getItem('curocity-user-pin');
         
         if (pinStep === 0) {
             if (oldPin === storedPin) {
@@ -174,7 +182,7 @@ export default function ProfilePage() {
             return;
         }
 
-        localStorage.setItem('cabzi-user-pin', newPin);
+        localStorage.setItem('curocity-user-pin', newPin);
         toast({ title: 'PIN Set Successfully!', description: 'Your new UPI PIN has been set.', className: 'bg-green-600 text-white border-green-600' });
         setIsPinSet(true);
         setIsPinDialogOpen(false);
@@ -259,7 +267,7 @@ export default function ProfilePage() {
                                     </DialogTitle>
                                     <DialogDescription>
                                         {pinStep === 0 && 'For your security, please enter your old 4-digit PIN to continue.'}
-                                        {pinStep === 1 && 'Please enter a new 4-digit PIN for your Cabzi Bank account.'}
+                                        {pinStep === 1 && 'Please enter a new 4-digit PIN for your Curocity Bank account.'}
                                         {pinStep === 2 && 'Please re-enter the 4-digit PIN to confirm.'}
                                         {pinStep === 3 && 'Enter the OTP sent to your registered mobile number.'}
                                     </DialogDescription>
@@ -351,7 +359,7 @@ export default function ProfilePage() {
                             <QrCode className="w-6 h-6 text-primary"/>
                             <CardTitle>Payment Details</CardTitle>
                         </div>
-                        <CardDescription>This QR code is linked to your Cabzi Bank account for receiving payments.</CardDescription>
+                        <CardDescription>This QR code is linked to your Curocity Bank account for receiving payments.</CardDescription>
                     </CardHeader>
                     <CardContent className="flex flex-col items-center gap-4">
                         {isLoading ? <Skeleton className="h-48 w-48 rounded-lg"/> : (

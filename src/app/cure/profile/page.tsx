@@ -1,7 +1,7 @@
 
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -15,6 +15,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog"
+import type { Timestamp } from 'firebase/firestore'
 
 interface CurePartnerData {
     id: string;
@@ -49,8 +50,8 @@ export default function CureProfilePage() {
     useEffect(() => {
         const fetchProfile = async () => {
             if (typeof window !== 'undefined' && db) {
-                const session = localStorage.getItem('cabzi-cure-session');
-                const storedPin = localStorage.getItem('cabzi-user-pin');
+                const session = localStorage.getItem('curocity-cure-session');
+                const storedPin = localStorage.getItem('curocity-user-pin');
                 if (storedPin) {
                     setIsPinSet(true);
                 }
@@ -78,6 +79,8 @@ export default function CureProfilePage() {
                 } else {
                      setIsLoading(false);
                 }
+            } else {
+                 setIsLoading(false);
             }
         };
         fetchProfile();
@@ -107,7 +110,7 @@ export default function CureProfilePage() {
     }
 
     const handlePinSubmit = () => {
-        const storedPin = localStorage.getItem('cabzi-user-pin');
+        const storedPin = localStorage.getItem('curocity-user-pin');
         
         if (pinStep === 0) {
             if (oldPin === storedPin) {
@@ -133,7 +136,7 @@ export default function CureProfilePage() {
             return;
         }
 
-        localStorage.setItem('cabzi-user-pin', newPin);
+        localStorage.setItem('curocity-user-pin', newPin);
         toast({ title: 'PIN Set Successfully!', className: 'bg-green-600 text-white border-green-600' });
         setIsPinSet(true);
         setIsPinDialogOpen(false);

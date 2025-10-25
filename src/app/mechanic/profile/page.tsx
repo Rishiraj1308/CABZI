@@ -46,8 +46,8 @@ export default function ResQProfilePage() {
     useEffect(() => {
         const fetchProfile = async () => {
             if (typeof window !== 'undefined' && db) {
-                const session = localStorage.getItem('cabzi-resq-session');
-                const storedPin = localStorage.getItem('cabzi-user-pin');
+                const session = localStorage.getItem('curocity-resq-session');
+                const storedPin = localStorage.getItem('curocity-user-pin');
                 if (storedPin) {
                     setIsPinSet(true);
                 }
@@ -69,10 +69,10 @@ export default function ResQProfilePage() {
                         setIsLoading(false);
                     }
                 } else {
-                     setIsLoading(false); // FIX: Ensure loading is stopped if session is not found
+                     setIsLoading(false);
                 }
             } else {
-                setIsLoading(false); // FIX: Ensure loading is stopped if db is not ready
+                setIsLoading(false);
             }
         };
         fetchProfile();
@@ -100,7 +100,7 @@ export default function ResQProfilePage() {
     }
 
     const handlePinSubmit = async () => {
-        const storedPin = localStorage.getItem('cabzi-user-pin');
+        const storedPin = localStorage.getItem('curocity-user-pin');
         
         if (pinStep === 0) {
             if (oldPin === storedPin) {
@@ -138,7 +138,7 @@ export default function ResQProfilePage() {
             return;
         }
 
-        localStorage.setItem('cabzi-user-pin', newPin);
+        localStorage.setItem('curocity-user-pin', newPin);
         toast({ title: 'PIN Set Successfully!', description: 'Your new UPI PIN has been set.', className: 'bg-green-600 text-white border-green-600' });
         setIsPinSet(true);
         setIsPinDialogOpen(false);
@@ -237,7 +237,7 @@ export default function ResQProfilePage() {
                               </DialogTitle>
                               <DialogDescription>
                                   {pinStep === 0 && 'For your security, please enter your old 4-digit PIN to continue.'}
-                                  {pinStep === 1 && 'Please enter a new 4-digit PIN for your Cabzi Bank account.'}
+                                  {pinStep === 1 && 'Please enter a new 4-digit PIN for your Curocity Bank account.'}
                                   {pinStep === 2 && 'Please re-enter the 4-digit PIN to confirm.'}
                                   {pinStep === 3 && 'Enter the OTP sent to your registered mobile number.'}
                               </DialogDescription>
@@ -296,7 +296,7 @@ export default function ResQProfilePage() {
                       <Wrench className="w-5 h-5 text-primary"/>
                       <CardTitle>My Services</CardTitle>
                   </div>
-                  <CardDescription>The list of services you currently offer on the Cabzi platform.</CardDescription>
+                  <CardDescription>The list of services you currently offer on the Curocity platform.</CardDescription>
               </CardHeader>
               <CardContent>
                   <div className="flex flex-wrap gap-2">
