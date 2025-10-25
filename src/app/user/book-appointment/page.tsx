@@ -1,3 +1,4 @@
+
 'use client'
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -110,10 +111,10 @@ export default function BookAppointmentPage() {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => setUserLocation({ lat: position.coords.latitude, lon: position.coords.longitude }),
-        () => toast({ variant: 'destructive', title: "Location Error", description: "Could not get your location. Distances won't be shown." })
+        () => console.warn("Could not get user location. Distances will not be calculated.")
       );
     }
-  }, [toast]);
+  }, []);
   
   const getDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
     if ((lat1 === lat2) && (lon1 === lon2)) return 0;
