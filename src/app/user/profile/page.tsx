@@ -17,7 +17,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Home, Briefcase, Settings, FileText, User, LogOut, Camera, Shield, Wallet, CreditCard, PlusCircle, Activity, ArrowRight } from 'lucide-react'
+import { Home, Briefcase, Settings, FileText, User, LogOut, Camera, Shield, Wallet, CreditCard, PlusCircle, Activity, ArrowRight, Loader2 } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useToast } from '@/hooks/use-toast'
 import {
@@ -50,7 +50,7 @@ interface Ride {
 }
 
 export default function UserProfilePage() {
-    const { user, isUserLoading, auth, db } = useFirebase();
+    const { user, isUserLoading, auth, db, firebaseApp } = useFirebase();
     const router = useRouter();
     const { toast } = useToast();
     const [profileData, setProfileData] = useState<UserProfileData | null>(null);
@@ -117,12 +117,12 @@ export default function UserProfilePage() {
     }
     
     const handlePhotoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-        if (!event.target.files || event.target.files.length === 0 || !user || !db) {
+        if (!event.target.files || event.target.files.length === 0 || !user || !db || !firebaseApp) {
             return;
         }
 
         const file = event.target.files[0];
-        const storage = getStorage();
+        const storage = getStorage(firebaseApp);
         const storageRef = ref(storage, `profile-pictures/${user.uid}`);
 
         setIsUploading(true);
@@ -223,7 +223,7 @@ export default function UserProfilePage() {
                             onClick={() => fileInputRef.current?.click()}
                             disabled={isUploading}
                          >
-                            <Camera className="w-4 h-4"/>
+                            {isUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Camera className="w-4 h-4"/>}
                             <span className="sr-only">Change photo</span>
                         </Button>
                     </div>
