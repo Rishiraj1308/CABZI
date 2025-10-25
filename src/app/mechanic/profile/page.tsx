@@ -69,8 +69,10 @@ export default function ResQProfilePage() {
                         setIsLoading(false);
                     }
                 } else {
-                     setIsLoading(false);
+                     setIsLoading(false); // FIX: Ensure loading is stopped if session is not found
                 }
+            } else {
+                setIsLoading(false); // FIX: Ensure loading is stopped if db is not ready
             }
         };
         fetchProfile();
