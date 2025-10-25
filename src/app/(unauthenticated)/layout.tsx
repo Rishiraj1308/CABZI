@@ -15,51 +15,55 @@ export default function UnauthenticatedLayout({
 }) {
   const router = useRouter();
   const pathname = usePathname();
-  const [isMounted, setIsMounted] = useState(false);
   const [showChildren, setShowChildren] = useState(false);
 
   useEffect(() => {
-    setIsMounted(true);
-    
-    // Check for a primary session first
+    // This effect runs only once on the client side after the component mounts.
     const primarySession = localStorage.getItem('curocity-session');
+    let redirected = false;
+
     if (primarySession) {
         try {
             const { role } = JSON.parse(primarySession);
             if (role) {
                  if (role === 'admin') router.replace('/admin');
                  else router.replace(`/${role}`);
-                 return;
+                 redirected = true;
             }
         } catch (e) {
             localStorage.removeItem('curocity-session');
         }
     }
     
-    // If no primary session, check for other partner sessions
-    const partnerSessionKeys = ['curocity-resq-session', 'curocity-cure-session', 'curocity-ambulance-session', 'curocity-doctor-session'];
-    for (const key of partnerSessionKeys) {
-        const session = localStorage.getItem(key);
-        if (session) {
-            try {
-                const { role } = JSON.parse(session);
-                if (role) {
-                    router.replace(`/${role}`);
-                    return;
+    if (!redirected) {
+        const partnerSessionKeys = ['curocity-resq-session', 'curocity-cure-session', 'curocity-ambulance-session', 'curocity-doctor-session'];
+        for (const key of partnerSessionKeys) {
+            const session = localStorage.getItem(key);
+            if (session) {
+                try {
+                    const { role } = JSON.parse(session);
+                    if (role) {
+                        router.replace(`/${role}`);
+                        redirected = true;
+                        break; 
+                    }
+                } catch (e) {
+                    localStorage.removeItem(key);
                 }
-            } catch (e) {
-                localStorage.removeItem(key);
             }
         }
     }
     
-    // If no valid session is found, show the login/onboarding page.
-    setShowChildren(true);
-
-  }, [router]);
+    // If no valid session is found and no redirection happened, show the page content.
+    if (!redirected) {
+        setShowChildren(true);
+    }
+  // By removing `router` from the dependency array, we ensure this logic runs only once.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   
-  if (!isMounted || !showChildren) {
-    return null; // Render nothing until redirection logic completes or decides to show children.
+  if (!showChildren) {
+    return null; // Render nothing until redirection logic completes.
   }
 
   return (
