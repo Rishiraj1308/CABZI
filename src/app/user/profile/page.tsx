@@ -1,4 +1,3 @@
-
 'use client'
 
 import * as React from "react"
@@ -10,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Home, Briefcase, Settings, FileText, User, LogOut, Camera, Shield, Wallet, CreditCard, PlusCircle, Activity } from 'lucide-react'
+import { Home, Briefcase, Settings, FileText, User, LogOut, Camera, Shield, Wallet, CreditCard, PlusCircle, Activity, Car, IndianRupee } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useToast } from '@/hooks/use-toast'
 import {
@@ -193,6 +192,13 @@ export default function UserProfilePage() {
                         <p className="text-sm text-muted-foreground">Total Spend</p>
                     </div>
                 </CardContent>
+                 <CardFooter>
+                    <Button asChild variant="outline" className="w-full">
+                        <Link href="/user/activity">
+                            View All Activity <ArrowRight className="ml-2 w-4 h-4" />
+                        </Link>
+                    </Button>
+                </CardFooter>
             </Card>
             
              <Card>
@@ -205,24 +211,6 @@ export default function UserProfilePage() {
                         <p className="text-2xl font-bold">₹1,250.75</p>
                     </div>
                     <Button><PlusCircle className="mr-2 h-4 w-4"/>Add Money</Button>
-                </CardContent>
-            </Card>
-
-            <Card>
-                <CardHeader>
-                    <CardTitle>Saved Locations</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                    <div className="flex items-center gap-4">
-                        <Home className="w-5 h-5 text-muted-foreground"/>
-                        <Input placeholder="Add Home address" />
-                        <Button variant="outline">Save</Button>
-                    </div>
-                     <div className="flex items-center gap-4">
-                        <Briefcase className="w-5 h-5 text-muted-foreground"/>
-                        <Input placeholder="Add Work address" />
-                        <Button variant="outline">Save</Button>
-                    </div>
                 </CardContent>
             </Card>
 
@@ -270,10 +258,26 @@ export default function UserProfilePage() {
                     <CardTitle>Settings & Legal</CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <div className="flex flex-col gap-2">
-                        <Button variant="ghost" className="w-full justify-start gap-2"><Settings className="w-5 h-5"/> Account Settings</Button>
-                        <Button asChild variant="ghost" className="w-full justify-start gap-2"><Link href="/terms"><FileText className="w-5 h-5"/> Terms of Service</Link></Button>
-                        <Button asChild variant="ghost" className="w-full justify-start gap-2"><Link href="/privacy"><FileText className="w-5 h-5"/> Privacy Policy</Link></Button>
+                    <div className="space-y-4">
+                        <div>
+                             <Label>Saved Locations</Label>
+                             <div className="space-y-2 mt-2">
+                                <div className="flex items-center gap-4">
+                                    <Home className="w-5 h-5 text-muted-foreground"/>
+                                    <Input placeholder="Add Home address" />
+                                </div>
+                                 <div className="flex items-center gap-4">
+                                    <Briefcase className="w-5 h-5 text-muted-foreground"/>
+                                    <Input placeholder="Add Work address" />
+                                </div>
+                            </div>
+                        </div>
+                        <Separator />
+                        <div className="flex flex-col gap-2">
+                            <Button variant="ghost" className="w-full justify-start gap-2"><Settings className="w-5 h-5"/> Account Settings</Button>
+                            <Button asChild variant="ghost" className="w-full justify-start gap-2"><Link href="/terms"><FileText className="w-5 h-5"/> Terms of Service</Link></Button>
+                            <Button asChild variant="ghost" className="w-full justify-start gap-2"><Link href="/privacy"><FileText className="w-5 h-5"/> Privacy Policy</Link></Button>
+                        </div>
                     </div>
                 </CardContent>
             </Card>
