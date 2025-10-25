@@ -1,4 +1,3 @@
-
 'use client'
 
 import React, { useState, useEffect } from 'react';
@@ -49,16 +48,22 @@ const ClinicDashboard = () => {
     const { toast } = useToast();
 
     useEffect(() => {
-        if (!db) return;
-        const session = localStorage.getItem('cabzi-cure-session');
-        if (!session) {
+        if (!db) {
             setIsLoading(false);
+            return;
+        }
+
+        const session = localStorage.getItem('curocity-cure-session');
+        if (!session) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Session not found. Please log in again.' });
+            setIsLoading(false); // Ensure loading is stopped
             return;
         };
 
         const { partnerId } = JSON.parse(session);
         if (!partnerId) {
-            setIsLoading(false);
+            toast({ variant: 'destructive', title: 'Error', description: 'Partner ID is missing from session.' });
+            setIsLoading(false); // Ensure loading is stopped
             return;
         }
         
@@ -88,7 +93,7 @@ const ClinicDashboard = () => {
             setDoctors(doctorsData);
         });
 
-        setIsLoading(false);
+        setIsLoading(false); // Stop loading after setting up listeners
 
         return () => {
             unsubAppts();
