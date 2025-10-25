@@ -286,6 +286,27 @@ export default function UserProfilePage() {
                 <div className="lg:col-span-2 space-y-6">
                     <Card>
                         <CardHeader>
+                            <CardTitle className="flex items-center gap-2 text-lg"><Shield className="w-5 h-5 text-green-600"/> Emergency Contacts</CardTitle>
+                            <CardDescription>Add trusted contacts to notify during an SOS. This is a vital part of our CURE safety net.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-3">
+                            {/* Mocked Contact */}
+                            <div className="p-3 rounded-lg border flex items-center gap-3">
+                                <User className="w-5 h-5 text-muted-foreground"/>
+                                <div className="flex-1">
+                                    <p className="font-semibold">Abhishek Sharma</p>
+                                    <p className="text-xs text-muted-foreground">Father</p>
+                                </div>
+                                <Button variant="ghost" size="sm">Remove</Button>
+                            </div>
+                            <Button variant="outline" className="w-full border-dashed">
+                               <PlusCircle className="w-4 h-4 mr-2"/> Add Contact
+                            </Button>
+                        </CardContent>
+                    </Card>
+
+                    <Card>
+                        <CardHeader>
                             <CardTitle className="flex items-center gap-2 text-lg"><HeartPulse className="w-5 h-5 text-destructive"/> Health &amp; Insurance</CardTitle>
                             <CardDescription>This information is critical for emergencies and will be shared with CURE partners when you use the SOS feature.</CardDescription>
                         </CardHeader>
@@ -378,5 +399,3 @@ export default function UserProfilePage() {
         </div>
     )
 }
-
-    
