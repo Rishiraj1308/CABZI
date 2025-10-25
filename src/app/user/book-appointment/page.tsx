@@ -331,9 +331,7 @@ export default function BookAppointmentPage() {
                                 <div className="flex-1">
                                     <p className="font-bold text-lg">Dr. {doctor.name}</p>
                                     <p className="font-semibold text-primary">{doctor.specialization}</p>
-                                    <p className="text-sm text-muted-foreground">{doctor.qualifications}</p>
-                                    <p className="text-sm text-muted-foreground flex items-center gap-1 mt-1"><Building className="w-3 h-3"/>{doctor.hospitalName}</p>
-                                    <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1"><MapPin className="w-3 h-3"/>{doctor.distance?.toFixed(1) || '...'} km away</p>
+                                    <p className="text-sm text-muted-foreground">{doctor.hospitalName}</p>
                                 </div>
                                 <p className="font-bold text-lg">₹{doctor.consultationFee}</p>
                             </Card>
@@ -382,5 +380,3 @@ export default function BookAppointmentPage() {
     </div>
   )
 }
-
-    
