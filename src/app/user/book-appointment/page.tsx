@@ -290,7 +290,21 @@ export default function BookAppointmentPage() {
               <div className="lg:hidden"><Sheet open={isFilterSheetOpen} onOpenChange={setIsFilterSheetOpen}><SheetTrigger asChild><Button variant="outline"><SlidersHorizontal className="mr-2 h-4 w-4"/>Filter</Button></SheetTrigger><SheetContent><SheetHeader><SheetTitle>Filters</SheetTitle></SheetHeader><div className="p-4"><FilterPanel /></div></SheetContent></Sheet></div>
           </div>
           <div className="space-y-4">
-              {isLoading ? Array.from({length:3}).map((_,i) => <Skeleton key={i} className="h-40 w-full"/>)
+              {isLoading ? Array.from({length:3}).map((_,i) => (
+                <Card key={i} className="p-4 flex gap-4 items-start w-full">
+                    <Skeleton className="w-24 h-24 rounded-full"/>
+                    <div className="flex-1 space-y-2">
+                        <Skeleton className="h-6 w-1/2"/>
+                        <Skeleton className="h-4 w-1/3"/>
+                        <Skeleton className="h-4 w-3/4"/>
+                        <Skeleton className="h-4 w-1/4"/>
+                    </div>
+                     <div className="flex flex-col items-end justify-between h-full">
+                        <Skeleton className="h-6 w-16"/>
+                        <Skeleton className="h-9 w-24"/>
+                    </div>
+                </Card>
+              ))
                 : filteredAndSortedDoctors.length > 0 ? (
                   <motion.div variants={containerVariants} initial="hidden" animate="visible" className="space-y-4">
                     {filteredAndSortedDoctors.map(doctor => (
@@ -301,8 +315,8 @@ export default function BookAppointmentPage() {
                                   <Avatar className="w-24 h-24"><AvatarImage src={doctor.photoUrl || `https://i.pravatar.cc/150?u=${doctor.id}`} /><AvatarFallback>{doctor.name.substring(0,2)}</AvatarFallback></Avatar>
                                   <div className="flex-1">
                                       <p className="font-bold text-xl flex items-center gap-2">Dr. {doctor.name} 
-                                        {doctor.gender === 'female' && <PersonStanding className="w-5 h-5 text-pink-500" />}
-                                        {doctor.gender === 'male' && <PersonStanding className="w-5 h-5 text-blue-500" />}
+                                        {doctor.gender === 'female' && <PersonStanding className="w-5 h-5 text-pink-500" title="Female doctor available"/>}
+                                        {doctor.gender === 'male' && <PersonStanding className="w-5 h-5 text-blue-500" title="Male doctor available"/>}
                                       </p>
                                       <p className="font-semibold text-primary">{doctor.specialization}</p>
                                       <p className="text-sm text-muted-foreground">{doctor.experience} years | {doctor.qualifications}</p>
@@ -354,3 +368,5 @@ export default function BookAppointmentPage() {
     </div>
   )
 }
+
+    
