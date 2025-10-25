@@ -9,8 +9,10 @@ import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useDb } from '@/firebase/client-provider';
-import { collection, query, where, onSnapshot, Timestamp, orderBy } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, Timestamp, orderBy, getDocs } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useToast } from '@/hooks/use-toast';
+import { endOfDay, startOfDay } from 'date-fns';
 
 const StatCard = ({ title, value, icon: Icon, isLoading }: { title: string, value: string, icon: React.ElementType, isLoading?: boolean }) => (
     <Card>
@@ -44,6 +46,7 @@ const ClinicDashboard = () => {
     const [stats, setStats] = useState({ todayAppointments: 0, newPatients: 0 });
     const [isLoading, setIsLoading] = useState(true);
     const db = useDb();
+    const { toast } = useToast();
 
     useEffect(() => {
         if (!db) return;
@@ -60,20 +63,23 @@ const ClinicDashboard = () => {
         }
         
         const today = new Date();
-        const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+        const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 0, 0, 0);
+        const endOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59);
 
         const apptQuery = query(
             collection(db, 'appointments'),
             where('hospitalId', '==', partnerId),
-            where('status', 'in', ['Pending', 'Confirmed', 'In Queue']),
+            where('appointmentDate', '>=', startOfToday),
+            where('appointmentDate', '<=', endOfToday),
             orderBy('appointmentDate', 'asc')
         );
         const unsubAppts = onSnapshot(apptQuery, (snapshot) => {
             const apptsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Appointment));
             setAppointments(apptsData);
-            
-            const todayAppointmentsCount = apptsData.filter(a => a.appointmentDate.toDate() >= startOfToday).length;
-            setStats(prev => ({...prev, todayAppointments: todayAppointmentsCount}));
+            setStats(prev => ({...prev, todayAppointments: apptsData.length}));
+        }, (error) => {
+            console.error("Error fetching appointments: ", error);
+            toast({ variant: 'destructive', title: "Error", description: 'Could not fetch appointments.' });
         });
         
         const doctorsQuery = query(collection(db, `ambulances/${partnerId}/doctors`));
@@ -89,7 +95,7 @@ const ClinicDashboard = () => {
             unsubDoctors();
         };
 
-    }, [db]);
+    }, [db, toast]);
 
     return (
         <div className="space-y-6">

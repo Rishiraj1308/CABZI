@@ -82,23 +82,6 @@ interface Appointment {
   isRecurring?: boolean;
 }
 
-const mockSchedule = {
-    'Dr. Ramesh Sharma': {
-        '09:00': { patient: 'Anjali Mehra', status: 'Confirmed' },
-        '11:00': { patient: 'Priya Singh', status: 'Pending' },
-        '14:00': { patient: 'Vikram Rathore', status: 'Confirmed' },
-    },
-    'Dr. Priya Gupta': {
-        '10:00': { patient: 'Suresh Raina', status: 'Confirmed' },
-        '14:00': { patient: 'Rajesh Verma', status: 'Confirmed' },
-    },
-     'Dr. Alok Verma': {
-        '10:00': { patient: 'Anita Desai', status: 'Completed' },
-        '11:00': null, // Available slot
-        '12:00': { patient: 'Karan Malhotra', status: 'Confirmed' },
-    },
-};
-
 const timeSlots = ['09:00 AM', '10:00 AM', '11:00 AM', '12:00 PM', '02:00 PM', '03:00 PM', '04:00 PM'];
 
 
@@ -748,5 +731,3 @@ const handleAddDoctor = async (event: React.FormEvent<HTMLFormElement>) => {
     </div>
   )
 }
-
-    
