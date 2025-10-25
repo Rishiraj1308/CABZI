@@ -8,9 +8,6 @@ export default function PrivacyPolicyPage() {
     return (
         <div className="min-h-screen bg-muted/40 p-4 md:p-8">
             <div className="max-w-4xl mx-auto">
-                 <Button asChild variant="outline" size="sm" className="mb-4">
-                    <Link href="/"><ArrowLeft className="mr-2 h-4 w-4" /> Back to Home</Link>
-                </Button>
                 <Card>
                     <CardHeader>
                         <CardTitle className="text-3xl">Privacy Policy</CardTitle>
@@ -18,7 +15,7 @@ export default function PrivacyPolicyPage() {
                     </CardHeader>
                     <CardContent className="prose dark:prose-invert max-w-none">
                         <p>
-                            Welcome to Cabzi. We are committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our web application.
+                            Welcome to Curocity. We are committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our web application.
                         </p>
 
                         <h2>1. Information We Collect</h2>
@@ -64,7 +61,7 @@ export default function PrivacyPolicyPage() {
                         </p>
 
                         <h2>5. Contact Us</h2>
-                        <p>If you have questions or comments about this Privacy Policy, please contact us at: <a href="mailto:support@cabzi.com">support@cabzi.com</a></p>
+                        <p>If you have questions or comments about this Privacy Policy, please contact us at: <a href="mailto:support@curocity.com">support@curocity.com</a></p>
                     </CardContent>
                 </Card>
             </div>

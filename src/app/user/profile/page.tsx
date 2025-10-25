@@ -22,45 +22,33 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
+import { useFirebase } from '@/firebase/client-provider'
 
-interface UserProfile {
-    name: string;
-    phone: string;
-    photoUrl?: string;
-}
 
 export default function UserProfilePage() {
-    const [profile, setProfile] = useState<UserProfile | null>(null);
-    const [isLoading, setIsLoading] = useState(true);
+    const { user, isUserLoading, auth } = useFirebase();
     const router = useRouter();
     const { toast } = useToast();
 
-    useEffect(() => {
-        const session = localStorage.getItem('curocity-session');
-        if (session) {
-            const { name, phone } = JSON.parse(session);
-            // In a real app, you'd fetch the photoUrl from your database
-            setProfile({ name, phone, photoUrl: `https://placehold.co/100x100.png` });
-        }
-        setIsLoading(false);
-    }, []);
-
     const handleLogout = () => {
-        localStorage.removeItem('curocity-session');
-        toast({
-            title: 'Logged Out',
-            description: 'You have been successfully logged out.'
+        if (!auth) return;
+        auth.signOut().then(() => {
+            localStorage.removeItem('curocity-session');
+            toast({
+                title: 'Logged Out',
+                description: 'You have been successfully logged out.'
+            });
+            router.push('/');
         });
-        router.push('/');
     }
 
-    const getInitials = (name: string) => {
+    const getInitials = (name: string | null | undefined) => {
         if (!name) return 'U';
         const names = name.split(' ');
         return names.length > 1 ? names[0][0] + names[1][0] : name.substring(0, 2);
     }
     
-    if (isLoading) {
+    if (isUserLoading) {
         return (
             <div className="p-4 md:p-6 space-y-6">
                  <Skeleton className="h-10 w-48" />
@@ -83,10 +71,15 @@ export default function UserProfilePage() {
             </div>
         )
     }
+    
+    if (!user) {
+        // This should ideally not be reached if the layout handles redirection properly
+        return <p>Please log in to view your profile.</p>
+    }
 
     return (
         <div className="p-4 md:p-6 space-y-6">
-            <div className="animate-fade-in pl-16">
+            <div className="animate-fade-in pl-16 md:pl-0">
                 <h2 className="text-3xl font-bold tracking-tight flex items-center gap-2">
                     My Profile
                 </h2>
@@ -97,8 +90,8 @@ export default function UserProfilePage() {
                 <CardHeader className="items-center text-center">
                     <div className="relative">
                         <Avatar className="w-24 h-24 border-4 border-primary">
-                            <AvatarImage src={profile?.photoUrl} alt={profile?.name} data-ai-hint="customer portrait" />
-                            <AvatarFallback className="text-3xl">{getInitials(profile?.name || '').toUpperCase()}</AvatarFallback>
+                            <AvatarImage src={user.photoURL || 'https://placehold.co/100x100.png'} alt={user.displayName || ''} data-ai-hint="customer portrait" />
+                            <AvatarFallback className="text-3xl">{getInitials(user.displayName).toUpperCase()}</AvatarFallback>
                         </Avatar>
                         <Button variant="outline" size="icon" className="absolute -bottom-2 -right-2 rounded-full h-8 w-8 bg-background">
                             <Camera className="w-4 h-4"/>
@@ -106,8 +99,8 @@ export default function UserProfilePage() {
                         </Button>
                     </div>
                     <div className="pt-2">
-                        <CardTitle className="text-2xl">{profile?.name}</CardTitle>
-                        <CardDescription>+91 {profile?.phone}</CardDescription>
+                        <CardTitle className="text-2xl">{user.displayName}</CardTitle>
+                        <CardDescription>{user.phoneNumber ? `+${user.phoneNumber}` : user.email}</CardDescription>
                     </div>
                 </CardHeader>
             </Card>
@@ -137,8 +130,8 @@ export default function UserProfilePage() {
                 <CardContent>
                     <div className="flex flex-col gap-2">
                         <Button variant="ghost" className="w-full justify-start gap-2"><Settings className="w-5 h-5"/> Account Settings</Button>
-                        <Button variant="ghost" className="w-full justify-start gap-2"><FileText className="w-5 h-5"/> Terms of Service</Button>
-                        <Button variant="ghost" className="w-full justify-start gap-2"><FileText className="w-5 h-5"/> Privacy Policy</Button>
+                        <Button asChild variant="ghost" className="w-full justify-start gap-2"><Link href="/terms"><FileText className="w-5 h-5"/> Terms of Service</Link></Button>
+                        <Button asChild variant="ghost" className="w-full justify-start gap-2"><Link href="/privacy"><FileText className="w-5 h-5"/> Privacy Policy</Link></Button>
                     </div>
                 </CardContent>
             </Card>

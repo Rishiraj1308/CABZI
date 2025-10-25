@@ -8,9 +8,6 @@ export default function TermsOfServicePage() {
     return (
         <div className="min-h-screen bg-muted/40 p-4 md:p-8">
             <div className="max-w-4xl mx-auto">
-                <Button asChild variant="outline" size="sm" className="mb-4">
-                    <Link href="/"><ArrowLeft className="mr-2 h-4 w-4" /> Back to Home</Link>
-                </Button>
                 <Card>
                     <CardHeader>
                         <CardTitle className="text-3xl">Terms of Service</CardTitle>
@@ -29,7 +26,7 @@ export default function TermsOfServicePage() {
                         
                         <h2>3. Partner (Driver/Mechanic) Obligations</h2>
                         <p>
-                           Partners agree to maintain their vehicles in a safe and clean condition. They must possess a valid driver&apos;s license and all necessary permits required by law. Partners are independent contractors and not employees of Cabzi.
+                           Partners agree to maintain their vehicles in a safe and clean condition. They must possess a valid driver&apos;s license and all necessary permits required by law. Partners are independent contractors and not employees of Curocity.
                         </p>
 
                         <h2>4. Rider Obligations</h2>
@@ -44,7 +41,7 @@ export default function TermsOfServicePage() {
 
                         <h2>6. Limitation of Liability</h2>
                         <p>
-                            In no event shall Cabzi, nor its directors, employees, partners, agents, suppliers, or affiliates, be liable for any indirect, incidental, special, consequential or punitive damages, including without limitation, loss of profits, data, use, goodwill, or other intangible losses, resulting from your access to or use of or inability to access or use the Service.
+                            In no event shall Curocity, nor its directors, employees, partners, agents, suppliers, or affiliates, be liable for any indirect, incidental, special, consequential or punitive damages, including without limitation, loss of profits, data, use, goodwill, or other intangible losses, resulting from your access to or use of or inability to access or use the Service.
                         </p>
                         
                          <h2>7. Governing Law</h2>
@@ -58,7 +55,7 @@ export default function TermsOfServicePage() {
                         </p>
 
                         <h2>9. Contact Us</h2>
-                        <p>If you have any questions about these Terms, please contact us at: <a href="mailto:support@cabzi.com">support@cabzi.com</a></p>
+                        <p>If you have any questions about these Terms, please contact us at: <a href="mailto:support@curocity.com">support@curocity.com</a></p>
                     </CardContent>
                 </Card>
             </div>
