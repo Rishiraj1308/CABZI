@@ -250,7 +250,7 @@ export default function BookAppointmentPage() {
                 : filteredAndSortedDoctors.length > 0 ? (
                   <MotionDiv variants={containerVariants} initial="hidden" animate="visible" className="space-y-4">
                     {filteredAndSortedDoctors.map(doctor => (
-                        <motion.div key={doctor.id} variants={itemVariants}>
+                        <MotionDiv key={doctor.id} variants={itemVariants}>
                             <Card className="p-4 flex gap-4 items-start w-full text-left">
                                 <Avatar className="w-24 h-24"><AvatarImage src={doctor.photoUrl || `https://i.pravatar.cc/150?u=${doctor.id}`} /><AvatarFallback>{doctor.name.substring(0,2)}</AvatarFallback></Avatar>
                                 <div className="flex-1">
@@ -274,7 +274,7 @@ export default function BookAppointmentPage() {
                                     </Button>
                                 </div>
                             </Card>
-                        </motion.div>
+                        </MotionDiv>
                     ))}
                   </MotionDiv>
                 ) : (<Card className="col-span-full text-center p-12 flex flex-col items-center">
