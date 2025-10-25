@@ -64,6 +64,12 @@ export default function DoctorProfilePage() {
     const [consultationType, setConsultationType] = useState<'in-clinic' | 'video' | ''>('');
     const [session, setSession] = useState<ClientSession | null>(null);
 
+    const overallRating = useMemo(() => {
+        if (mockReviews.length === 0) return 'N/A';
+        const avg = mockReviews.reduce((sum, r) => sum + r.rating, 0) / mockReviews.length;
+        return avg.toFixed(1);
+    }, []);
+
     useEffect(() => {
         if (user && db) {
             getDoc(doc(db, 'users', user.uid)).then(docSnap => {
@@ -170,11 +176,6 @@ export default function DoctorProfilePage() {
     if (!doctor) {
         return <div className="p-8 text-center">Doctor not found.</div>
     }
-
-    const overallRating = useMemo(() => {
-        const avg = mockReviews.reduce((sum, r) => sum + r.rating, 0) / mockReviews.length;
-        return avg.toFixed(1);
-    }, []);
 
     return (
         <div className="max-w-4xl mx-auto p-4 md:p-6 lg:p-8 space-y-6">
