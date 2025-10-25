@@ -300,11 +300,17 @@ export default function BookAppointmentPage() {
                               <Card className="p-4 flex gap-4 items-start cursor-pointer hover:bg-muted w-full text-left" onClick={() => setSelectedDoctor(doctor)}>
                                   <Avatar className="w-24 h-24"><AvatarImage src={doctor.photoUrl || `https://i.pravatar.cc/150?u=${doctor.id}`} /><AvatarFallback>{doctor.name.substring(0,2)}</AvatarFallback></Avatar>
                                   <div className="flex-1">
-                                      <p className="font-bold text-xl">Dr. {doctor.name}</p>
+                                      <p className="font-bold text-xl flex items-center gap-2">Dr. {doctor.name} 
+                                        {doctor.gender === 'female' && <PersonStanding className="w-5 h-5 text-pink-500" />}
+                                        {doctor.gender === 'male' && <PersonStanding className="w-5 h-5 text-blue-500" />}
+                                      </p>
                                       <p className="font-semibold text-primary">{doctor.specialization}</p>
                                       <p className="text-sm text-muted-foreground">{doctor.experience} years | {doctor.qualifications}</p>
                                       <div className="text-sm text-muted-foreground mt-2 flex items-center gap-2"><Building className="w-4 h-4"/> {doctor.hospitalName}</div>
                                       {doctor.distance != null && (<div className="text-sm text-muted-foreground flex items-center gap-2"><MapPin className="w-4 h-4"/>{doctor.distance.toFixed(1)} km away</div>)}
+                                      <div className="mt-2">
+                                        {(doctor.availability?.availableToday ?? Math.random() > 0.3) && <Badge variant="secondary" className="bg-green-100 text-green-800">Available Today</Badge>}
+                                      </div>
                                   </div>
                                   <div className="flex flex-col items-end justify-between h-full">
                                     <p className="font-bold text-lg">₹{doctor.consultationFee}</p>
@@ -313,9 +319,14 @@ export default function BookAppointmentPage() {
                               </Card>
                             </SheetTrigger>
                             <SheetContent>
-                               <SheetHeader>
-                                  <SheetTitle className="text-2xl">Book with Dr. {doctor.name}</SheetTitle>
-                                  <SheetDescription>{doctor.specialization} at {doctor.hospitalName}</SheetDescription>
+                               <SheetHeader className="text-left">
+                                  <div className="flex items-center gap-4">
+                                    <Avatar className="w-16 h-16"><AvatarImage src={doctor.photoUrl || `https://i.pravatar.cc/150?u=${doctor.id}`} /><AvatarFallback>{doctor.name.substring(0,2)}</AvatarFallback></Avatar>
+                                    <div>
+                                      <SheetTitle className="text-2xl">Book with Dr. {doctor.name}</SheetTitle>
+                                      <SheetDescription>{doctor.specialization} at {doctor.hospitalName}</SheetDescription>
+                                    </div>
+                                  </div>
                               </SheetHeader>
                               <div className="space-y-6 py-4">
                                 <div className="p-3 rounded-lg border bg-muted/50 flex justify-between items-center"><span className="font-semibold">Consultation Fee</span><span className="font-bold text-lg text-primary">₹{doctor.consultationFee}</span></div>
@@ -331,7 +342,11 @@ export default function BookAppointmentPage() {
                         </motion.div>
                     ))}
                   </motion.div>
-                ) : (<Card className="col-span-full text-center p-12"><p className="text-muted-foreground">No doctors found matching your filters. Try adjusting your search.</p></Card>)
+                ) : (<Card className="col-span-full text-center p-12 flex flex-col items-center">
+                    <Search className="w-16 h-16 text-muted-foreground mb-4"/>
+                    <p className="font-bold text-lg">No Doctors Found</p>
+                    <p className="text-muted-foreground">Try adjusting your filters or search terms to find the right doctor for you.</p>
+                </Card>)
               }
           </div>
         </div>
