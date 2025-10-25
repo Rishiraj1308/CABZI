@@ -1,3 +1,4 @@
+
 'use client'
 
 import { useState, useEffect, useMemo } from 'react'
@@ -19,6 +20,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar'
 import { format } from 'date-fns'
 import { cn } from '@/lib/utils'
+import { useRouter } from 'next/navigation'
 
 interface Appointment {
     id: string;
@@ -40,6 +42,7 @@ export default function DoctorAppointmentsPage() {
     const [statusFilter, setStatusFilter] = useState('All');
     const { toast } = useToast()
     const db = useDb()
+    const router = useRouter();
     const [isManageAppointmentOpen, setIsManageAppointmentOpen] = useState(false);
     const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
     const [newDate, setNewDate] = useState<Date | undefined>(new Date());
@@ -127,7 +130,12 @@ export default function DoctorAppointmentsPage() {
     }
     const newDateTime = new Date(newDate);
     const [hours, minutes] = newTime.split(/[: ]/);
-    newDateTime.setHours(newTime.includes('PM') ? parseInt(hours, 10) + 12 : parseInt(minutes, 10), parseInt(minutes, 10), 0);
+    const parsedHours = parseInt(hours, 10);
+    const parsedMinutes = parseInt(minutes, 10);
+    let finalHours = parsedHours;
+    if (newTime.includes('PM') && parsedHours !== 12) finalHours += 12;
+    if (newTime.includes('AM') && parsedHours === 12) finalHours = 0;
+    newDateTime.setHours(finalHours, parsedMinutes, 0, 0);
 
     const apptRef = doc(db, 'appointments', selectedAppointment.id);
     try {
@@ -277,7 +285,12 @@ export default function DoctorAppointmentsPage() {
                                                     </div>
                                                     <Button className="w-full mt-4" onClick={handleRescheduleSubmit}>Confirm Reschedule</Button>
                                                 </div>
-                                                <DialogFooter className="border-t pt-4 space-y-2 sm:space-y-0">
+                                                <DialogFooter className="border-t pt-4 space-y-2 sm:space-y-0 flex-col sm:flex-row sm:justify-end sm:space-x-2">
+                                                     {selectedAppointment?.status === 'Confirmed' && selectedAppointment?.consultationType === 'video' && (
+                                                        <Button className="w-full" variant="secondary" onClick={() => router.push(`/video-call/${selectedAppointment.id}`)}>
+                                                            <Video className="w-4 h-4 mr-2" /> Start Video Call
+                                                        </Button>
+                                                    )}
                                                      {selectedAppointment && selectedAppointment.status === 'Pending' && <Button className="w-full" onClick={() => handleAppointmentAction(selectedAppointment.id, 'confirm')}>Confirm Appointment</Button>}
                                                      {selectedAppointment && selectedAppointment.status === 'Confirmed' && <Button className="w-full" variant="secondary" onClick={() => handleAppointmentAction(selectedAppointment.id, 'check-in')}>Check-in Patient</Button>}
                                                      <AlertDialog>
