@@ -40,64 +40,67 @@ export function FirebaseProviderClient({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isUserLoading, setIsUserLoading] = useState(true);
 
-  const setupFirebase = useCallback(async () => {
-    const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
-    const authInstance = getAuth(app);
-    const dbInstance = getFirestore(app);
-    const functionsInstance = getFunctions(app);
+  useEffect(() => {
+    const setupFirebase = async () => {
+      const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+      const authInstance = getAuth(app);
+      const dbInstance = getFirestore(app);
+      const functionsInstance = getFunctions(app);
 
-    try {
-        await enableIndexedDbPersistence(dbInstance);
-    } catch (err: any) {
-        if (err.code === 'failed-precondition') {
-            console.warn('Firestore Persistence could not be enabled: Multiple tabs open?');
-        } else if (err.code === 'unimplemented') {
-            console.warn('Firestore Persistence could not be enabled: Browser does not support it.');
-        }
-    }
-    
-    let messagingInstance: Messaging | null = null;
-    if (typeof window !== 'undefined' && 'Notification' in window) {
       try {
-        messagingInstance = getMessaging(app);
-      } catch (e) {
-        console.warn('Firebase Messaging not supported in this environment.');
+          await enableIndexedDbPersistence(dbInstance);
+      } catch (err: any) {
+          if (err.code === 'failed-precondition') {
+              console.warn('Firestore Persistence could not be enabled: Multiple tabs open?');
+          } else if (err.code === 'unimplemented') {
+              console.warn('Firestore Persistence could not be enabled: Browser does not support it.');
+          }
       }
-    }
+      
+      let messagingInstance: Messaging | null = null;
+      if (typeof window !== 'undefined' && 'Notification' in window) {
+        try {
+          messagingInstance = getMessaging(app);
+        } catch (e) {
+          console.warn('Firebase Messaging not supported in this environment.');
+        }
+      }
+      
+      setServices({
+          firebaseApp: app,
+          auth: authInstance,
+          db: dbInstance,
+          functions: functionsInstance,
+          messaging: messagingInstance,
+      });
+    };
     
-    return {
-        firebaseApp: app,
-        auth: authInstance,
-        db: dbInstance,
-        functions: functionsInstance,
-        messaging: messagingInstance,
-    }
+    setupFirebase();
   }, []);
 
   useEffect(() => {
-    
-    setupFirebase().then(firebaseServices => {
-        setServices(firebaseServices);
-        
-        if (firebaseServices.auth) {
-            const unsubscribe = onAuthStateChanged(firebaseServices.auth, (user) => {
-              setUser(user);
-              setIsUserLoading(false);
-            });
+    if (services.auth) {
+        const unsubscribe = onAuthStateChanged(services.auth, (user) => {
+          setUser(user);
+          setIsUserLoading(false);
+        });
 
-            return () => unsubscribe();
-        } else {
-            setIsUserLoading(false);
-        }
-    });
-
-  }, [setupFirebase]);
+        return () => unsubscribe();
+    } else {
+        setIsUserLoading(false); // No auth service, so not loading user
+    }
+  }, [services.auth]);
 
   const memoizedValue = useMemo(() => ({
     ...services,
     user,
     isUserLoading,
   }), [services, user, isUserLoading]);
+
+  // Do not render children until Firebase services are initialized
+  if (!services.firebaseApp) {
+    return null; // Or a full-page loader
+  }
 
   return (
     <FirebaseContext.Provider value={memoizedValue}>
