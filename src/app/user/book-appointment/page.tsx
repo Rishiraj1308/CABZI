@@ -1,11 +1,12 @@
+
 'use client'
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
-    Calendar as CalendarIcon, Stethoscope, Clock, Search, ArrowLeft,
-    IndianRupee, MapPin, Video, Building, X, Layers, BrainCircuit, Heart, Ear, HeartPulse, UserCheck, Droplets, Thermometer, Bone, Baby, Eye, Smile, AlertTriangle, PersonStanding, HeartHandshake, Sparkles
+    Calendar as CalendarIcon, Stethoscope, Clock, Search, ArrowRight,
+    IndianRupee, MapPin, Building, Bone, Baby, Eye, Smile, AlertTriangle, PersonStanding, HeartHandshake, Sparkles, Layers, BrainCircuit, HeartPulse, UserCheck, Droplets, Thermometer
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -23,15 +24,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Slider } from '@/components/ui/slider';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle, SheetDescription, SheetFooter } from '@/components/ui/sheet';
-import { AnimatePresence, motion } from 'framer-motion';
+import { MotionDiv } from '@/components/ui/motion-div';
 import { Carousel, CarouselContent, CarouselItem } from '@/components/ui/carousel';
 import { Badge } from '@/components/ui/badge';
 import { SlidersHorizontal } from 'lucide-react';
+import Link from 'next/link';
 
-
-const timeSlots = [
-  '09:00 AM', '10:00 AM', '11:00 AM', '12:00 PM', '02:00 PM', '03:00 PM', '04:00 PM'
-]
 
 interface Doctor {
     id: string;
@@ -71,7 +69,6 @@ const symptomCategories = [
 export default function BookAppointmentPage() {
   const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isBooking, setIsBooking] = useState(false);
   
   // Search & Filter State
   const [searchQuery, setSearchQuery] = useState('');
@@ -82,15 +79,8 @@ export default function BookAppointmentPage() {
   const [genderFilter, setGenderFilter] = useState('any');
   const [isFilterSheetOpen, setIsFilterSheetOpen] = useState(false);
 
-  // Booking State
-  const [selectedDoctor, setSelectedDoctor] = useState<Doctor | null>(null);
-  const [date, setDate] = useState<Date | undefined>(new Date());
-  const [time, setTime] = useState('');
-  const [consultationType, setConsultationType] = useState<'in-clinic' | 'video' | ''>('');
-  
   const { toast } = useToast();
-  const { user, db } = useFirebase();
-  const [session, setSession] = useState<ClientSession | null>(null);
+  const { db } = useFirebase();
   const [userLocation, setUserLocation] = useState<{ lat: number, lon: number } | null>(null);
 
   useEffect(() => {
@@ -102,17 +92,6 @@ export default function BookAppointmentPage() {
     }
   }, [toast]);
   
-  useEffect(() => {
-    if (user && db) {
-        getDoc(doc(db, 'users', user.uid)).then(docSnap => {
-            if (docSnap.exists()) {
-                const userData = docSnap.data();
-                setSession({ userId: user.uid, name: userData.name, phone: userData.phone, gender: userData.gender });
-            }
-        });
-    }
-  }, [user, db]);
-
   const getDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
     if ((lat1 === lat2) && (lon1 === lon2)) return 0;
     const R = 6371; // km
@@ -202,41 +181,6 @@ export default function BookAppointmentPage() {
       });
   }, [doctors, searchQuery, selectedSymptom, sortBy, priceRange, genderFilter, availabilityFilter]);
 
-  const resetBookingState = () => { setDate(new Date()); setTime(''); setConsultationType(''); setSelectedDoctor(null); };
-  
-  const handleBookingConfirmation = async () => {
-    if (!selectedDoctor || !session || !db || !date || !time || !consultationType) { toast({ variant: 'destructive', title: 'Error', description: 'Missing required information to book.' }); return; }
-    setIsBooking(true);
-    try {
-      const userDoc = await getDoc(doc(db, "users", session.userId));
-      if (!userDoc.exists()) throw new Error("User profile not found. Cannot book appointment.");
-      const userData = userDoc.data();
-      const appointmentDateTime = new Date(date);
-      const [hours, minutes] = time.split(/[: ]/);
-      const parsedHours = parseInt(hours, 10);
-      const parsedMinutes = parseInt(minutes, 10);
-      let finalHours = parsedHours;
-      if (time.includes('PM') && parsedHours !== 12) finalHours += 12;
-      if (time.includes('AM') && parsedHours === 12) finalHours = 0;
-      appointmentDateTime.setHours(finalHours, parsedMinutes, 0, 0);
-      await addDoc(collection(db, 'appointments'), {
-          patientId: session.userId, patientName: userData.name, patientPhone: userData.phone,
-          hospitalId: selectedDoctor.hospitalId, hospitalName: selectedDoctor.hospitalName,
-          doctorId: selectedDoctor.id, doctorName: `Dr. ${selectedDoctor.name}`,
-          department: selectedDoctor.specialization, appointmentDate: appointmentDateTime,
-          appointmentTime: time, 
-          consultationType: consultationType,
-          status: 'Pending', createdAt: serverTimestamp()
-      });
-      toast({ title: "Appointment Requested!", description: `Your request for Dr. ${selectedDoctor?.name} has been sent. You will be notified upon confirmation.`, className: 'bg-green-600 border-green-600 text-white' });
-      resetBookingState();
-    } catch(error) {
-        console.error("Failed to book appointment:", error);
-        toast({ variant: 'destructive', title: 'Booking Failed', description: (error as Error).message || 'There was an issue sending your request.' });
-    } finally {
-        setIsBooking(false);
-    }
-  };
 
   const containerVariants = { hidden: { opacity: 0 }, visible: { opacity: 1, transition: { staggerChildren: 0.05 } } };
   const itemVariants = { hidden: { y: 20, opacity: 0 }, visible: { y: 0, opacity: 1 } };
@@ -304,55 +248,35 @@ export default function BookAppointmentPage() {
                 </Card>
               ))
                 : filteredAndSortedDoctors.length > 0 ? (
-                  <motion.div variants={containerVariants} initial="hidden" animate="visible" className="space-y-4">
+                  <MotionDiv variants={containerVariants} initial="hidden" animate="visible" className="space-y-4">
                     {filteredAndSortedDoctors.map(doctor => (
                         <motion.div key={doctor.id} variants={itemVariants}>
-                          <Sheet open={selectedDoctor?.id === doctor.id} onOpenChange={(open) => !open && resetBookingState()}>
-                            <SheetTrigger asChild>
-                              <Card className="p-4 flex gap-4 items-start cursor-pointer hover:bg-muted w-full text-left" onClick={() => setSelectedDoctor(doctor)}>
-                                  <Avatar className="w-24 h-24"><AvatarImage src={doctor.photoUrl || `https://i.pravatar.cc/150?u=${doctor.id}`} /><AvatarFallback>{doctor.name.substring(0,2)}</AvatarFallback></Avatar>
-                                  <div className="flex-1">
-                                      <p className="font-bold text-xl flex items-center gap-2">Dr. {doctor.name} 
-                                        {doctor.gender === 'female' && <PersonStanding className="w-5 h-5 text-pink-500" title="Female doctor available"/>}
-                                      </p>
-                                      <p className="font-semibold text-primary">{doctor.specialization}</p>
-                                      <p className="text-sm text-muted-foreground">{doctor.experience} years | {doctor.qualifications}</p>
-                                      <div className="text-sm text-muted-foreground mt-2 flex items-center gap-2"><Building className="w-4 h-4"/> {doctor.hospitalName}</div>
-                                      {doctor.distance != null && (<div className="text-sm text-muted-foreground flex items-center gap-2"><MapPin className="w-4 h-4"/>{doctor.distance.toFixed(1)} km away</div>)}
-                                      <div className="mt-2">
-                                        {(doctor.availability?.availableToday ?? Math.random() > 0.3) && <Badge variant="secondary" className="bg-green-100 text-green-800">Available Today</Badge>}
-                                      </div>
-                                  </div>
-                                  <div className="flex flex-col items-end justify-between h-full">
-                                    <p className="font-bold text-lg">₹{doctor.consultationFee}</p>
-                                    <Button size="sm">Book Now</Button>
-                                  </div>
-                              </Card>
-                            </SheetTrigger>
-                            <SheetContent>
-                               <SheetHeader className="text-left">
-                                  <div className="flex items-center gap-4">
-                                    <Avatar className="w-16 h-16"><AvatarImage src={doctor.photoUrl || `https://i.pravatar.cc/150?u=${doctor.id}`} /><AvatarFallback>{doctor.name.substring(0,2)}</AvatarFallback></Avatar>
-                                    <div>
-                                      <SheetTitle className="text-2xl">Book with Dr. {doctor.name}</SheetTitle>
-                                      <SheetDescription>{doctor.specialization} at {doctor.hospitalName}</SheetDescription>
+                            <Card className="p-4 flex gap-4 items-start w-full text-left">
+                                <Avatar className="w-24 h-24"><AvatarImage src={doctor.photoUrl || `https://i.pravatar.cc/150?u=${doctor.id}`} /><AvatarFallback>{doctor.name.substring(0,2)}</AvatarFallback></Avatar>
+                                <div className="flex-1">
+                                    <p className="font-bold text-xl flex items-center gap-2">Dr. {doctor.name} 
+                                      {doctor.gender === 'female' && <PersonStanding className="w-5 h-5 text-pink-500" title="Female doctor available"/>}
+                                    </p>
+                                    <p className="font-semibold text-primary">{doctor.specialization}</p>
+                                    <p className="text-sm text-muted-foreground">{doctor.experience} years | {doctor.qualifications}</p>
+                                    <div className="text-sm text-muted-foreground mt-2 flex items-center gap-2"><Building className="w-4 h-4"/> {doctor.hospitalName}</div>
+                                    {doctor.distance != null && (<div className="text-sm text-muted-foreground flex items-center gap-2"><MapPin className="w-4 h-4"/>{doctor.distance.toFixed(1)} km away</div>)}
+                                    <div className="mt-2">
+                                      {(doctor.availability?.availableToday ?? Math.random() > 0.3) && <Badge variant="secondary" className="bg-green-100 text-green-800">Available Today</Badge>}
                                     </div>
-                                  </div>
-                              </SheetHeader>
-                              <div className="space-y-6 py-4">
-                                <div className="p-3 rounded-lg border bg-muted/50 flex justify-between items-center"><span className="font-semibold">Consultation Fee</span><span className="font-bold text-lg text-primary">₹{doctor.consultationFee}</span></div>
-                                <div className="space-y-3"><Label className="font-semibold">1. Select Consultation Type</Label><RadioGroup onValueChange={(v) => setConsultationType(v as any)} value={consultationType} className="grid grid-cols-2 gap-4"><div><RadioGroupItem value="in-clinic" id="in-clinic" className="peer sr-only" /><Label htmlFor="in-clinic" className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary"><Building className="mb-3 h-6 w-6" /> In-Clinic</Label></div><div><RadioGroupItem value="video" id="video" className="peer sr-only" /><Label htmlFor="video" className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary"><Video className="mb-3 h-6 w-6" /> Video</Label></div></RadioGroup></div>
-                                <div className="space-y-2"><Label className="font-semibold">2. Select Appointment Date</Label><Popover><PopoverTrigger asChild><Button variant={"outline"} className={cn("w-full justify-start text-left font-normal", !date && "text-muted-foreground")}><CalendarIcon className="mr-2 h-4 w-4" />{date ? format(date, "PPP") : <span>Pick a date</span>}</Button></PopoverTrigger><PopoverContent className="w-auto p-0"><Calendar mode="single" selected={date} onSelect={setDate} initialFocus disabled={(d) => d < new Date(new Date().setDate(new Date().getDate() - 1))}/></PopoverContent></Popover></div>
-                                <div className="space-y-2"><Label className="font-semibold">3. Select Available Time Slot</Label><div className="grid grid-cols-3 gap-2">{timeSlots.map(slot => (<Button key={slot} variant={time === slot ? 'default' : 'outline'} onClick={() => setTime(slot)}>{slot}</Button>))}</div></div>
-                              </div>
-                              <SheetFooter className="absolute bottom-0 left-0 right-0 p-4 border-t bg-background">
-                                <Button className="w-full" size="lg" onClick={handleBookingConfirmation} disabled={!date || !time || isBooking || !consultationType}>{isBooking ? 'Requesting...' : 'Confirm Appointment'}</Button>
-                              </SheetFooter>
-                            </SheetContent>
-                          </Sheet>
+                                </div>
+                                <div className="flex flex-col items-end justify-between h-full">
+                                  <p className="font-bold text-lg">₹{doctor.consultationFee}</p>
+                                   <Button asChild size="sm">
+                                      <Link href={`/user/doctor/${doctor.hospitalId}/${doctor.id}`}>
+                                        View Profile <ArrowRight className="ml-2 w-4 h-4"/>
+                                      </Link>
+                                    </Button>
+                                </div>
+                            </Card>
                         </motion.div>
                     ))}
-                  </motion.div>
+                  </MotionDiv>
                 ) : (<Card className="col-span-full text-center p-12 flex flex-col items-center">
                     <Search className="w-16 h-16 text-muted-foreground mb-4"/>
                     <p className="font-bold text-lg">No Doctors Found</p>
