@@ -237,11 +237,39 @@ export const emergencyCaseUpdater = onDocumentUpdated('emergencyCases/{caseId}',
 
     const dataBefore = snapshot.before.data();
     const dataAfter = snapshot.after.data();
+    const caseId = event.params.caseId;
+    
+    const logRef = db.collection('emergencyCases').doc(caseId).collection('logs');
+    let logMessage = '';
 
-    // If a hospital rejects the case (by adding their ID to rejectedBy), re-run dispatch.
-    if (dataAfter.status === 'pending' && dataAfter.rejectedBy?.length > dataBefore.rejectedBy?.length) {
-        console.log(`Re-dispatching emergency case: ${event.params.caseId} due to rejection.`);
-        await handleEmergencyDispatch(dataAfter, event.params.caseId);
+    // Logic for Status Change Logging
+    if (dataBefore.status !== dataAfter.status) {
+        const actor = dataAfter.status.includes('_by_') ? dataAfter.status.split('_by_')[1] : 'system';
+        logMessage = `Status changed from ${dataBefore.status} to ${dataAfter.status} by ${actor}.`;
+    }
+
+    // Logic for Rejection Logging
+    const rejectedBefore = dataBefore.rejectedBy || [];
+    const rejectedAfter = dataAfter.rejectedBy || [];
+    if (rejectedAfter.length > rejectedBefore.length) {
+        const newRejectorId = rejectedAfter.find((id: string) => !rejectedBefore.includes(id));
+        logMessage = `Case rejected by partner ${newRejectorId}. Re-dispatching.`;
+    }
+    
+    if (logMessage) {
+        await logRef.add({
+            timestamp: serverTimestamp(),
+            message: logMessage,
+            dataBefore,
+            dataAfter
+        });
+    }
+
+
+    // Logic for Re-dispatching
+    if (dataAfter.status === 'pending' && rejectedAfter.length > rejectedBefore.length) {
+        console.log(`Re-dispatching emergency case: ${caseId} due to rejection.`);
+        await handleEmergencyDispatch(dataAfter, caseId);
     }
 });
 
@@ -422,3 +450,5 @@ export const simulateHighDemand = onCall(async (request) => {
 
     return { success: true, message: `High demand alert triggered for ${zoneName}.` };
 });
+
+    
