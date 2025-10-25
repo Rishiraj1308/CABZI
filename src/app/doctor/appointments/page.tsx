@@ -1,4 +1,3 @@
-
 'use client'
 
 import { useState, useEffect, useMemo } from 'react'
@@ -298,7 +297,10 @@ export default function DoctorAppointmentsPage() {
                                                             <Button variant="destructive" className="w-full">Cancel Appointment</Button>
                                                         </AlertDialogTrigger>
                                                          <AlertDialogContent>
-                                                            <AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle><AlertDialogDescription>This action will cancel the appointment for {selectedAppointment?.patientName}.</AlertDialogDescription></AlertDialogHeader>
+                                                            <AlertDialogHeader>
+                                                              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                                              <AlertDialogDescription>This action will cancel the appointment for {selectedAppointment?.patientName}. This cannot be undone.</AlertDialogDescription>
+                                                            </AlertDialogHeader>
                                                             <AlertDialogFooter>
                                                                 <AlertDialogCancel>Go Back</AlertDialogCancel>
                                                                 <AlertDialogAction onClick={() => selectedAppointment && handleAppointmentAction(selectedAppointment.id, 'cancel')} className="bg-destructive hover:bg-destructive/90">Yes, Cancel</AlertDialogAction>
