@@ -29,6 +29,7 @@ import { useFirebase } from '@/firebase/client-provider'
 import { doc, updateDoc, serverTimestamp, GeoPoint } from 'firebase/firestore'
 import { MotionDiv } from '@/components/ui/motion-div'
 import { errorEmitter, FirestorePermissionError } from '@/lib/error-handling';
+import { Skeleton } from '@/components/ui/skeleton'
 
 const navItems = [
   { href: '/mechanic', label: 'Dashboard', icon: LayoutDashboard },
@@ -85,6 +86,7 @@ export default function MechanicLayout({ children }: { children: React.ReactNode
   const [userName, setUserName] = useState('');
   const { db, auth } = useFirebase();
   const mechanicDocRef = useRef<any>(null);
+  const [isSessionLoading, setIsSessionLoading] = useState(true);
 
   useEffect(() => {
     let watchId: number | undefined;
@@ -108,6 +110,11 @@ export default function MechanicLayout({ children }: { children: React.ReactNode
         return R * c; // in metres
     }
 
+    if (pathname === '/mechanic/onboarding' || pathname === '/garage/onboarding') {
+      setIsSessionLoading(false);
+      return;
+    }
+
     const sessionString = localStorage.getItem('cabzi-resq-session');
     if (sessionString && db) {
         try {
@@ -119,6 +126,7 @@ export default function MechanicLayout({ children }: { children: React.ReactNode
 
             setUserName(sessionData.name);
             mechanicDocRef.current = doc(db, 'mechanics', sessionData.partnerId);
+            setIsSessionLoading(false);
 
             updateDoc(mechanicDocRef.current, { isAvailable: true, lastOnline: serverTimestamp() })
             .catch(error => {
@@ -166,7 +174,7 @@ export default function MechanicLayout({ children }: { children: React.ReactNode
             localStorage.removeItem('cabzi-resq-session');
             router.push('/login?role=driver');
         }
-    } else if (pathname !== '/mechanic/onboarding' && pathname !== '/garage/onboarding') {
+    } else {
         router.push('/login?role=driver');
     }
     
@@ -211,6 +219,23 @@ export default function MechanicLayout({ children }: { children: React.ReactNode
         <Toaster />
       </>
     )
+  }
+
+  if (isSessionLoading) {
+    return (
+      <div className="flex h-screen w-full flex-col">
+        <header className="flex h-16 items-center gap-4 border-b bg-background px-4 md:px-6">
+          <Skeleton className="h-10 w-28" />
+          <div className="ml-auto flex items-center gap-4">
+            <Skeleton className="h-10 w-10 rounded-full" />
+            <Skeleton className="h-10 w-10 rounded-full" />
+          </div>
+        </header>
+        <main className="flex-1 p-6">
+          <Skeleton className="h-full w-full" />
+        </main>
+      </div>
+    );
   }
 
   const getInitials = (name: string) => {

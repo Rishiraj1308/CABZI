@@ -123,7 +123,6 @@ export default function DoctorLayout({ children }: { children: React.ReactNode }
                 const sessionData = JSON.parse(sessionString);
                 setUserName(sessionData.name);
                 setHospitalId(sessionData.hospitalId);
-                // Correctly use the document ID from session
                 setDoctorId(sessionData.id); 
             } catch (error) {
                 console.error("Failed to parse session, redirecting", error);
@@ -147,6 +146,14 @@ export default function DoctorLayout({ children }: { children: React.ReactNode }
     router.push('/');
   }
 
+  if (isSessionLoading) {
+    return (
+        <div className="flex h-screen w-full items-center justify-center">
+            <Skeleton className="h-screen w-full" />
+        </div>
+    );
+  }
+
   const getInitials = (name: string) => {
     if (!name) return 'Dr';
     const names = name.split(' ');
@@ -156,17 +163,8 @@ export default function DoctorLayout({ children }: { children: React.ReactNode }
     return `Dr. ${name.substring(0, 1)}`;
   }
 
-  if (isSessionLoading) {
-    return (
-        <div className="flex h-screen w-full items-center justify-center">
-            <Skeleton className="h-screen w-full" />
-        </div>
-    );
-  }
-
   return (
     <div className="flex min-h-screen w-full bg-muted/40">
-        {/* --- DESKTOP SIDEBAR --- */}
         <aside className="hidden w-20 flex-col items-center border-r bg-background sm:flex">
             <div className="flex h-16 items-center justify-center border-b">
                  <Link href="/doctor"><BrandLogo hideText /></Link>
@@ -195,7 +193,6 @@ export default function DoctorLayout({ children }: { children: React.ReactNode }
         </aside>
 
         <div className="flex flex-col sm:gap-4 sm:py-4 sm:pl-14 flex-1">
-            {/* --- MOBILE & MAIN HEADER --- */}
             <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6">
                 <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
                     <SheetTrigger asChild>

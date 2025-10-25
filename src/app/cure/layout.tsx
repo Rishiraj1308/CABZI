@@ -18,6 +18,7 @@ import { useTheme } from 'next-themes'
 import { useFirebase } from '@/firebase/client-provider'
 import { doc, updateDoc, onSnapshot } from 'firebase/firestore'
 import { MotionDiv } from '@/components/ui/motion-div'
+import { Skeleton } from '@/components/ui/skeleton'
 
 function ThemeToggle() {
     const { setTheme } = useTheme()
@@ -46,9 +47,13 @@ export default function CureLayout({ children }: { children: React.ReactNode }) 
   const [session, setSession] = useState<any>(null);
   const { db, auth } = useFirebase();
   const [navItems, setNavItems] = useState<any[]>([]);
+  const [isSessionLoading, setIsSessionLoading] = useState(true);
 
   useEffect(() => {
-    if (pathname === '/cure/onboarding') return;
+    if (pathname === '/cure/onboarding') {
+      setIsSessionLoading(false);
+      return;
+    }
     if (typeof window !== 'undefined') {
         const sessionString = localStorage.getItem('cabzi-cure-session');
         if (sessionString) {
@@ -87,6 +92,7 @@ export default function CureLayout({ children }: { children: React.ReactNode }) 
                             }
                         }
                     });
+                    setIsSessionLoading(false);
                     return () => unsub();
                 }
 
@@ -147,6 +153,23 @@ export default function CureLayout({ children }: { children: React.ReactNode }) 
         <Toaster />
       </>
     )
+  }
+
+  if (isSessionLoading) {
+    return (
+      <div className="flex h-screen w-full flex-col">
+        <header className="flex h-16 items-center gap-4 border-b bg-background px-4 md:px-6">
+          <Skeleton className="h-10 w-28" />
+          <div className="ml-auto flex items-center gap-4">
+            <Skeleton className="h-10 w-10 rounded-full" />
+            <Skeleton className="h-10 w-10 rounded-full" />
+          </div>
+        </header>
+        <main className="flex-1 p-6">
+          <Skeleton className="h-full w-full" />
+        </main>
+      </div>
+    );
   }
 
   const getInitials = (name: string) => {

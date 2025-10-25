@@ -31,6 +31,7 @@ import { Badge } from '@/components/ui/badge'
 import { MotionDiv } from '@/components/ui/motion-div'
 import { errorEmitter, FirestorePermissionError } from '@/lib/error-handling';
 import { NotificationsProvider, useNotifications } from '@/context/NotificationContext';
+import { Skeleton } from '@/components/ui/skeleton'
 
 
 const navItems = [
@@ -93,12 +94,14 @@ function DriverLayoutContent({ children }: { children: React.ReactNode }) {
   const [isPinkPartner, setIsPinkPartner] = useState(false);
   const { theme, setTheme } = useTheme();
   const { db, auth } = useFirebase();
+  const [isSessionLoading, setIsSessionLoading] = useState(true);
   
   const partnerDocRef = useRef<any>(null);
   
   useEffect(() => {
     setIsMounted(true);
     if (pathname === '/driver/onboarding') {
+      setIsSessionLoading(false);
       return;
     }
 
@@ -116,6 +119,7 @@ function DriverLayoutContent({ children }: { children: React.ReactNode }) {
         }
         setUserName(name);
         partnerDocRef.current = doc(db, 'partners', partnerId);
+        setIsSessionLoading(false);
     } catch (e) {
         localStorage.removeItem('curocity-session');
         router.push('/login?role=driver');
@@ -137,7 +141,7 @@ function DriverLayoutContent({ children }: { children: React.ReactNode }) {
     const unsubscribe = onSnapshot(partnerDocRef.current, (docSnap) => {
       if(docSnap.exists()){
           const data = docSnap.data();
-          const partnerIsPink = data.isCurocityPinkPartner || false;
+          const partnerIsPink = data.isCabziPinkPartner || false;
           setIsPinkPartner(partnerIsPink);
 
           if (partnerIsPink) {
@@ -233,7 +237,7 @@ function DriverLayoutContent({ children }: { children: React.ReactNode }) {
     });
     router.push('/');
   }
-
+  
   if (pathname === '/driver/onboarding') {
     return (
       <>
@@ -243,8 +247,21 @@ function DriverLayoutContent({ children }: { children: React.ReactNode }) {
     )
   }
   
-  if (!isMounted) {
-    return null;
+  if (isSessionLoading || !isMounted) {
+     return (
+      <div className="flex h-screen w-full flex-col">
+        <header className="flex h-16 items-center gap-4 border-b bg-background px-4 md:px-6">
+          <Skeleton className="h-10 w-28" />
+          <div className="ml-auto flex items-center gap-4">
+            <Skeleton className="h-10 w-10 rounded-full" />
+            <Skeleton className="h-10 w-10 rounded-full" />
+          </div>
+        </header>
+        <main className="flex-1 p-6">
+          <Skeleton className="h-full w-full" />
+        </main>
+      </div>
+    );
   }
 
   const getInitials = (name: string) => {
