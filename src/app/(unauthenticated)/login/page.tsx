@@ -22,12 +22,12 @@ import { AnimatePresence, motion } from 'framer-motion'
 
 // This now matches the team page data for consistent roles
 const MOCK_ADMIN_USERS = [
-    { id: 'owner@cabzi.com', password: 'password123', name: 'Platform Owner', role: 'Platform Owner' },
-    { id: 'cofounder@cabzi.com', password: 'password123', name: 'Co-founder', role: 'Co-founder' },
-    { id: 'manager@cabzi.com', password: 'password123', name: 'Alok Singh', role: 'Manager' },
-    { id: 'support@cabzi.com', password: 'password123', name: 'Priya Sharma', role: 'Support Staff' },
-    { id: 'intern@cabzi.com', password: 'password123', name: 'Rahul Verma', role: 'Tech Intern' },
-    { id: 'ai.support@cabzi.com', password: 'password123', name: 'AI Assistant', role: 'AI Assistant' },
+    { id: 'owner@curocity.com', password: 'password123', name: 'Platform Owner', role: 'Platform Owner' },
+    { id: 'cofounder@curocity.com', password: 'password123', name: 'Co-founder', role: 'Co-founder' },
+    { id: 'manager@curocity.com', password: 'password123', name: 'Alok Singh', role: 'Manager' },
+    { id: 'support@curocity.com', password: 'password123', name: 'Priya Sharma', role: 'Support Staff' },
+    { id: 'intern@curocity.com', password: 'password123', name: 'Rahul Verma', role: 'Tech Intern' },
+    { id: 'ai.support@curocity.com', password: 'password123', name: 'AI Assistant', role: 'AI Assistant' },
 ];
 
 function LanguageToggle() {
@@ -118,7 +118,7 @@ export default function LoginPage() {
 
       setTimeout(() => {
         if (user) {
-            localStorage.setItem('cabzi-session', JSON.stringify({ role: 'admin', phone: '', name: user.name, adminRole: user.role }));
+            localStorage.setItem('curocity-session', JSON.stringify({ role: 'admin', phone: '', name: user.name, adminRole: user.role }));
             toast({ title: "Login Successful", description: `Welcome, ${user.role}!`});
             router.push('/admin');
         } else {
@@ -201,13 +201,13 @@ export default function LoginPage() {
                 }
             }
 
-            let localStorageKey = 'cabzi-session';
+            let localStorageKey = 'curocity-session';
             let redirectPath = `/${role}`;
             
-            if (role === 'mechanic') localStorageKey = 'cabzi-resq-session';
-            if (role === 'cure') localStorageKey = 'cabzi-cure-session';
-            if (role === 'ambulance') localStorageKey = 'cabzi-ambulance-session';
-            if (role === 'doctor') localStorageKey = 'cabzi-doctor-session';
+            if (role === 'mechanic') localStorageKey = 'curocity-resq-session';
+            if (role === 'cure') localStorageKey = 'curocity-cure-session';
+            if (role === 'ambulance') localStorageKey = 'curocity-ambulance-session';
+            if (role === 'doctor') localStorageKey = 'curocity-doctor-session';
             
             localStorage.setItem(localStorageKey, JSON.stringify(sessionData));
             
@@ -323,8 +323,8 @@ export default function LoginPage() {
               isOnline: false,
           });
   
-          localStorage.setItem('cabzi-session', JSON.stringify({ role: 'user', email: user.email, name, gender, userId: user.uid }));
-          toast({ title: "Account Created!", description: "Welcome to Cabzi! Redirecting...", className: "bg-green-600 text-white border-green-600" });
+          localStorage.setItem('curocity-session', JSON.stringify({ role: 'user', email: user.email, name, gender, userId: user.uid }));
+          toast({ title: "Account Created!", description: "Welcome to Curocity! Redirecting...", className: "bg-green-600 text-white border-green-600" });
           router.push('/user');
   
       } catch (error: any) {
@@ -388,7 +388,7 @@ export default function LoginPage() {
           <form onSubmit={handleAdminLogin} className="space-y-4">
               <div className="space-y-2">
                   <Label htmlFor="adminId">Admin ID</Label>
-                  <Input id="adminId" name="adminId" type="email" placeholder="owner@cabzi.com" required value={adminId} onChange={(e) => setAdminId(e.target.value)} disabled={isLoading} />
+                  <Input id="adminId" name="adminId" type="email" placeholder="owner@curocity.com" required value={adminId} onChange={(e) => setAdminId(e.target.value)} disabled={isLoading} />
               </div>
               <div className="space-y-2">
                   <Label htmlFor="adminPassword">Password</Label>
@@ -549,15 +549,16 @@ export default function LoginPage() {
               <CardTitle className="text-2xl mt-4">{getPageTitle()}</CardTitle>
               <CardDescription>
                 <AnimatePresence mode="wait">
-                    <motion.p
+                    <motion.span
                         key={step + roleFromQuery}
                         initial={{ opacity: 0, y: -10 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: 10 }}
                         transition={{ duration: 0.2 }}
+                        className="block"
                     >
                        {getPageDescription()}
-                    </motion.p>
+                    </motion.span>
                 </AnimatePresence>
               </CardDescription>
             </CardHeader>
