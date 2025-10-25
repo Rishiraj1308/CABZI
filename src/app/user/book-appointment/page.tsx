@@ -170,7 +170,7 @@ export default function BookAppointmentPage() {
     };
 
     fetchVerifiedDoctors();
-  }, [db, toast, userLocation]);
+  }, [db, userLocation, toast]);
 
   const filteredAndSortedDoctors = useMemo(() => {
     return doctors
