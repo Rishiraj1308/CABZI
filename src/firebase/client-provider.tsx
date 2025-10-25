@@ -1,10 +1,10 @@
 
 'use client';
 
-import React, { createContext, useContext, useEffect, useState, useMemo, useCallback, type ReactNode } from 'react';
+import React, { createContext, useContext, useEffect, useState, useMemo, type ReactNode } from 'react';
 import { initializeApp, getApps, getApp, type FirebaseApp } from 'firebase/app';
 import { getAuth, type Auth, onAuthStateChanged, type User } from 'firebase/auth';
-import { getFirestore, type Firestore, enableIndexedDbPersistence } from 'firebase/firestore';
+import { getFirestore, type Firestore, initializeFirestore, persistentLocalCache, persistentMultipleTabManager } from 'firebase/firestore';
 import { getFunctions, type Functions } from 'firebase/functions';
 import { getMessaging, type Messaging } from 'firebase/messaging';
 import { firebaseConfig } from './config';
@@ -44,18 +44,13 @@ export function FirebaseProviderClient({ children }: { children: ReactNode }) {
     const setupFirebase = async () => {
       const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
       const authInstance = getAuth(app);
-      const dbInstance = getFirestore(app);
-      const functionsInstance = getFunctions(app);
+      
+      // Use the modern API for Firestore with multi-tab persistence
+      const dbInstance = initializeFirestore(app, {
+        localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
+      });
 
-      try {
-          await enableIndexedDbPersistence(dbInstance);
-      } catch (err: any) {
-          if (err.code === 'failed-precondition') {
-              console.warn('Firestore Persistence could not be enabled: Multiple tabs open?');
-          } else if (err.code === 'unimplemented') {
-              console.warn('Firestore Persistence could not be enabled: Browser does not support it.');
-          }
-      }
+      const functionsInstance = getFunctions(app);
       
       let messagingInstance: Messaging | null = null;
       if (typeof window !== 'undefined' && 'Notification' in window) {
