@@ -15,9 +15,12 @@ export default function UnauthenticatedLayout({
 }) {
   const router = useRouter();
   const pathname = usePathname();
+  const [isMounted, setIsMounted] = useState(false);
   const [showChildren, setShowChildren] = useState(false);
 
   useEffect(() => {
+    setIsMounted(true);
+    
     // Check for a primary session first
     const primarySession = localStorage.getItem('curocity-session');
     if (primarySession) {
@@ -55,7 +58,7 @@ export default function UnauthenticatedLayout({
 
   }, [router]);
   
-  if (!showChildren) {
+  if (!isMounted || !showChildren) {
     return null; // Render nothing until redirection logic completes or decides to show children.
   }
 
