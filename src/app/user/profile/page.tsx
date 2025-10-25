@@ -1,7 +1,8 @@
+
 'use client'
 
 import * as React from "react"
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
@@ -31,7 +32,8 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { useFirebase } from '@/firebase/client-provider'
-import { doc, getDoc, collection, query, where, getDocs, Timestamp } from 'firebase/firestore'
+import { doc, getDoc, collection, query, where, getDocs, Timestamp, updateDoc } from 'firebase/firestore'
+import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage'
 import { Separator } from '@/components/ui/separator'
 
 interface UserProfileData {
@@ -54,6 +56,8 @@ export default function UserProfilePage() {
     const [profileData, setProfileData] = useState<UserProfileData | null>(null);
     const [rides, setRides] = useState<Ride[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [isUploading, setIsUploading] = useState(false);
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
         if (isUserLoading) return;
@@ -111,6 +115,37 @@ export default function UserProfilePage() {
             router.push('/');
         });
     }
+    
+    const handlePhotoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        if (!event.target.files || event.target.files.length === 0 || !user || !db) {
+            return;
+        }
+
+        const file = event.target.files[0];
+        const storage = getStorage();
+        const storageRef = ref(storage, `profile-pictures/${user.uid}`);
+
+        setIsUploading(true);
+        toast({ title: 'Uploading photo...', description: 'Please wait.' });
+
+        try {
+            const snapshot = await uploadBytes(storageRef, file);
+            const downloadURL = await getDownloadURL(snapshot.ref);
+
+            const userDocRef = doc(db, 'users', user.uid);
+            await updateDoc(userDocRef, { photoURL: downloadURL });
+            
+            setProfileData(prev => prev ? { ...prev, photoURL: downloadURL } : null);
+
+            toast({ title: 'Success!', description: 'Your profile picture has been updated.', className: 'bg-green-600 text-white' });
+        } catch (error) {
+            console.error("Error uploading photo:", error);
+            toast({ variant: 'destructive', title: 'Upload Failed', description: 'Could not upload your new photo.' });
+        } finally {
+            setIsUploading(false);
+        }
+    };
+
 
     const getInitials = (name: string | null | undefined) => {
         if (!name) return 'U';
@@ -174,7 +209,20 @@ export default function UserProfilePage() {
                             <AvatarImage src={profileData.photoURL || 'https://placehold.co/100x100.png'} alt={profileData.name || ''} data-ai-hint="customer portrait" />
                             <AvatarFallback className="text-3xl">{getInitials(profileData.name).toUpperCase()}</AvatarFallback>
                         </Avatar>
-                        <Button variant="outline" size="icon" className="absolute -bottom-2 -right-2 rounded-full h-8 w-8 bg-background">
+                        <input
+                            type="file"
+                            ref={fileInputRef}
+                            onChange={handlePhotoUpload}
+                            accept="image/png, image/jpeg"
+                            className="hidden"
+                        />
+                         <Button 
+                            variant="outline" 
+                            size="icon" 
+                            className="absolute -bottom-2 -right-2 rounded-full h-8 w-8 bg-background"
+                            onClick={() => fileInputRef.current?.click()}
+                            disabled={isUploading}
+                         >
                             <Camera className="w-4 h-4"/>
                             <span className="sr-only">Change photo</span>
                         </Button>
@@ -233,14 +281,6 @@ export default function UserProfilePage() {
                         <div className="flex-1">
                             <p className="font-semibold">HDFC Bank Credit Card</p>
                             <p className="text-sm text-muted-foreground">**** **** **** 1234</p>
-                        </div>
-                         <Button variant="outline" size="sm">Remove</Button>
-                    </div>
-                     <div className="flex items-center p-3 rounded-lg border">
-                        <Wallet className="w-6 h-6 mr-4 text-muted-foreground"/>
-                        <div className="flex-1">
-                            <p className="font-semibold">UPI</p>
-                            <p className="text-sm text-muted-foreground">user@okicici</p>
                         </div>
                          <Button variant="outline" size="sm">Remove</Button>
                     </div>
