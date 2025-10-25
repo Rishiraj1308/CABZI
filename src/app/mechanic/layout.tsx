@@ -34,7 +34,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 const navItems = [
   { href: '/mechanic', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/mechanic/jobs', label: 'My Jobs', icon: History },
-  { href: '/mechanic/wallet', label: 'Cabzi Bank', icon: Landmark },
+  { href: '/mechanic/wallet', label: 'Curocity Bank', icon: Landmark },
   { href: '/mechanic/profile', label: 'Profile', icon: User },
 ]
 
@@ -115,7 +115,7 @@ export default function MechanicLayout({ children }: { children: React.ReactNode
       return;
     }
 
-    const sessionString = localStorage.getItem('cabzi-resq-session');
+    const sessionString = localStorage.getItem('curocity-resq-session');
     if (sessionString && db) {
         try {
             const sessionData = JSON.parse(sessionString);
@@ -126,7 +126,7 @@ export default function MechanicLayout({ children }: { children: React.ReactNode
 
             setUserName(sessionData.name);
             mechanicDocRef.current = doc(db, 'mechanics', sessionData.partnerId);
-            setIsSessionLoading(false);
+             setIsSessionLoading(false);
 
             updateDoc(mechanicDocRef.current, { isAvailable: true, lastOnline: serverTimestamp() })
             .catch(error => {
@@ -171,7 +171,7 @@ export default function MechanicLayout({ children }: { children: React.ReactNode
             }
         } catch (error) {
             console.error("Failed to parse session, redirecting", error);
-            localStorage.removeItem('cabzi-resq-session');
+            localStorage.removeItem('curocity-resq-session');
             router.push('/login?role=driver');
         }
     } else {
@@ -204,7 +204,7 @@ export default function MechanicLayout({ children }: { children: React.ReactNode
         }
     }
     if (auth) auth.signOut();
-    localStorage.removeItem('cabzi-resq-session');
+    localStorage.removeItem('curocity-resq-session');
     toast({
         title: 'Logged Out',
         description: 'You have been successfully logged out.'

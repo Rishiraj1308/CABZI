@@ -38,9 +38,10 @@ function AmbulanceNav() {
             'flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary md:p-0',
             pathname === item.href && 'text-primary'
           )}
-          legacyBehavior>
-          <item.icon className="h-4 w-4 md:hidden" />
-          {item.label}
+          passHref
+        >
+            <item.icon className="h-4 w-4 md:hidden" />
+            {item.label}
         </Link>
       ))}
     </nav>
@@ -76,13 +77,13 @@ export default function AmbulanceLayout({ children }: { children: React.ReactNod
   
   useEffect(() => {
     if (typeof window !== 'undefined') {
-        const sessionString = localStorage.getItem('cabzi-ambulance-session');
+        const sessionString = localStorage.getItem('curocity-ambulance-session');
         if (sessionString) {
             try {
                 setUserName(JSON.parse(sessionString).name);
             } catch (error) {
                 console.error("Failed to parse session, redirecting", error);
-                localStorage.removeItem('cabzi-ambulance-session');
+                localStorage.removeItem('curocity-ambulance-session');
                 router.push('/login?role=driver');
             }
         } else {
@@ -93,7 +94,7 @@ export default function AmbulanceLayout({ children }: { children: React.ReactNod
   }, [router]);
 
   const handleLogout = async () => {
-    const sessionString = localStorage.getItem('cabzi-ambulance-session');
+    const sessionString = localStorage.getItem('curocity-ambulance-session');
     if(sessionString && db) {
         try {
             const { partnerId } = JSON.parse(sessionString);
@@ -110,7 +111,7 @@ export default function AmbulanceLayout({ children }: { children: React.ReactNod
         }
     }
     if (auth) auth.signOut();
-    localStorage.removeItem('cabzi-ambulance-session');
+    localStorage.removeItem('curocity-ambulance-session');
     toast({
         title: 'Logged Out',
         description: 'You have been successfully logged out.'
@@ -151,7 +152,8 @@ export default function AmbulanceLayout({ children }: { children: React.ReactNod
            <Link
              href="#"
              className="flex items-center gap-2 text-lg font-semibold md:text-base"
-             legacyBehavior>
+             passHref
+            >
              <BrandLogo />
              <span className="ml-2 text-xs font-semibold px-2 py-1 rounded-full bg-red-500/20 text-red-600">Ambulance</span>
            </Link>
@@ -171,7 +173,7 @@ export default function AmbulanceLayout({ children }: { children: React.ReactNod
            </SheetTrigger>
            <SheetContent side="left" className="p-0">
               <div className="flex h-16 items-center border-b px-6">
-                 <Link href="/" className="flex items-center gap-2 font-semibold" legacyBehavior>
+                 <Link href="/" className="flex items-center gap-2 font-semibold">
                    <BrandLogo />
                    <span className="ml-2 text-xs font-semibold px-2 py-1 rounded-full bg-red-500/20 text-red-600">Ambulance</span>
                  </Link>

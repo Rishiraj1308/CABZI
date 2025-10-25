@@ -117,7 +117,7 @@ export default function DoctorLayout({ children }: { children: React.ReactNode }
   
   useEffect(() => {
     if (typeof window !== 'undefined') {
-        const sessionString = localStorage.getItem('cabzi-doctor-session');
+        const sessionString = localStorage.getItem('curocity-doctor-session');
         if (sessionString) {
             try {
                 const sessionData = JSON.parse(sessionString);
@@ -126,19 +126,19 @@ export default function DoctorLayout({ children }: { children: React.ReactNode }
                 setDoctorId(sessionData.id); 
             } catch (error) {
                 console.error("Failed to parse session, redirecting", error);
-                localStorage.removeItem('cabzi-doctor-session');
+                localStorage.removeItem('curocity-doctor-session');
                 router.push('/login?role=doctor');
             }
         } else {
             router.push('/login?role=doctor');
         }
-        setIsSessionLoading(false);
     }
+    setIsSessionLoading(false);
   }, [router]);
 
   const handleLogout = async () => {
     if (auth) auth.signOut();
-    localStorage.removeItem('cabzi-doctor-session');
+    localStorage.removeItem('curocity-doctor-session');
     toast({
         title: 'Logged Out',
         description: 'You have been successfully logged out.'

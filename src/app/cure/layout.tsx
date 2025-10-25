@@ -54,8 +54,9 @@ export default function CureLayout({ children }: { children: React.ReactNode }) 
       setIsSessionLoading(false);
       return;
     }
+    
     if (typeof window !== 'undefined') {
-        const sessionString = localStorage.getItem('cabzi-cure-session');
+        const sessionString = localStorage.getItem('curocity-cure-session');
         if (sessionString) {
             try {
                 const sessionData = JSON.parse(sessionString);
@@ -94,11 +95,13 @@ export default function CureLayout({ children }: { children: React.ReactNode }) 
                     });
                     setIsSessionLoading(false);
                     return () => unsub();
+                } else {
+                    setIsSessionLoading(false);
                 }
 
             } catch (error) {
                 console.error("Failed to parse session, redirecting", error);
-                localStorage.removeItem('cabzi-cure-session');
+                localStorage.removeItem('curocity-cure-session');
                 router.push('/login?role=driver');
             }
         } else {
@@ -117,7 +120,7 @@ export default function CureLayout({ children }: { children: React.ReactNode }) 
         }
     }
     if (auth) auth.signOut();
-    localStorage.removeItem('cabzi-cure-session');
+    localStorage.removeItem('curocity-cure-session');
     toast({
         title: 'Logged Out',
         description: 'You have been successfully logged out.'

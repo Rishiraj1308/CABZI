@@ -111,32 +111,35 @@ function DriverLayoutContent({ children }: { children: React.ReactNode }) {
         return;
     }
 
+    let sessionData;
     try {
-        const { name, partnerId, role } = JSON.parse(session);
-        if(!role || role !== 'driver' || !partnerId) {
+        sessionData = JSON.parse(session);
+        if(!sessionData.role || sessionData.role !== 'driver' || !sessionData.partnerId) {
             router.push('/login?role=driver');
             return;
         }
-        setUserName(name);
-        partnerDocRef.current = doc(db, 'partners', partnerId);
-        setIsSessionLoading(false);
+        setUserName(sessionData.name);
+        partnerDocRef.current = doc(db, 'partners', sessionData.partnerId);
     } catch (e) {
         localStorage.removeItem('curocity-session');
         router.push('/login?role=driver');
         return;
+    } finally {
+        setIsSessionLoading(false);
     }
 
-    if (partnerDocRef.current) {
-        updateDoc(partnerDocRef.current, { isOnline: true, lastSeen: serverTimestamp() })
-         .catch(error => {
-            const permissionError = new FirestorePermissionError({
-                path: partnerDocRef.current.path,
-                operation: 'update',
-                requestResourceData: { isOnline: true }
-            });
-            errorEmitter.emit('permission-error', permissionError);
+    if (!partnerDocRef.current) return;
+
+    updateDoc(partnerDocRef.current, { isOnline: true, lastSeen: serverTimestamp() })
+     .catch(error => {
+        const permissionError = new FirestorePermissionError({
+            path: partnerDocRef.current.path,
+            operation: 'update',
+            requestResourceData: { isOnline: true }
         });
-    }
+        errorEmitter.emit('permission-error', permissionError);
+    });
+    
 
     const unsubscribe = onSnapshot(partnerDocRef.current, (docSnap) => {
       if(docSnap.exists()){
