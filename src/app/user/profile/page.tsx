@@ -24,12 +24,52 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { useFirebase } from '@/firebase/client-provider'
+import { doc, getDoc } from 'firebase/firestore'
 
+interface UserProfileData {
+    name: string;
+    phone: string;
+    email: string;
+    photoURL?: string;
+}
 
 export default function UserProfilePage() {
-    const { user, isUserLoading, auth } = useFirebase();
+    const { user, isUserLoading, auth, db } = useFirebase();
     const router = useRouter();
     const { toast } = useToast();
+    const [profileData, setProfileData] = useState<UserProfileData | null>(null);
+    const [isLoadingProfile, setIsLoadingProfile] = useState(true);
+
+    useEffect(() => {
+        if (isUserLoading) return;
+        if (!user || !db) {
+            router.push('/login?role=user');
+            return;
+        }
+
+        const fetchProfileData = async () => {
+            setIsLoadingProfile(true);
+            const userDocRef = doc(db, 'users', user.uid);
+            const docSnap = await getDoc(userDocRef);
+
+            if (docSnap.exists()) {
+                setProfileData(docSnap.data() as UserProfileData);
+            } else {
+                 // Fallback to auth data if firestore doc is missing
+                setProfileData({
+                    name: user.displayName || 'User',
+                    phone: user.phoneNumber || '',
+                    email: user.email || '',
+                    photoURL: user.photoURL || undefined
+                });
+            }
+            setIsLoadingProfile(false);
+        }
+
+        fetchProfileData();
+
+    }, [user, isUserLoading, db, router]);
+
 
     const handleLogout = () => {
         if (!auth) return;
@@ -49,7 +89,7 @@ export default function UserProfilePage() {
         return names.length > 1 ? names[0][0] + names[1][0] : name.substring(0, 2);
     }
     
-    if (isUserLoading) {
+    if (isUserLoading || isLoadingProfile) {
         return (
             <div className="p-4 md:p-6 space-y-6">
                  <Skeleton className="h-10 w-48" />
@@ -73,9 +113,8 @@ export default function UserProfilePage() {
         )
     }
     
-    if (!user) {
-        // This should ideally not be reached if the layout handles redirection properly
-        return <p>Please log in to view your profile.</p>
+    if (!user || !profileData) {
+        return <p className="p-8 text-center">Please log in to view your profile.</p>
     }
 
     return (
@@ -91,8 +130,8 @@ export default function UserProfilePage() {
                 <CardHeader className="items-center text-center">
                     <div className="relative">
                         <Avatar className="w-24 h-24 border-4 border-primary">
-                            <AvatarImage src={user.photoURL || 'https://placehold.co/100x100.png'} alt={user.displayName || ''} data-ai-hint="customer portrait" />
-                            <AvatarFallback className="text-3xl">{getInitials(user.displayName).toUpperCase()}</AvatarFallback>
+                            <AvatarImage src={profileData.photoURL || 'https://placehold.co/100x100.png'} alt={profileData.name || ''} data-ai-hint="customer portrait" />
+                            <AvatarFallback className="text-3xl">{getInitials(profileData.name).toUpperCase()}</AvatarFallback>
                         </Avatar>
                         <Button variant="outline" size="icon" className="absolute -bottom-2 -right-2 rounded-full h-8 w-8 bg-background">
                             <Camera className="w-4 h-4"/>
@@ -100,8 +139,8 @@ export default function UserProfilePage() {
                         </Button>
                     </div>
                     <div className="pt-2">
-                        <CardTitle className="text-2xl">{user.displayName}</CardTitle>
-                        <CardDescription>{user.phoneNumber ? `+${user.phoneNumber}` : user.email}</CardDescription>
+                        <CardTitle className="text-2xl">{profileData.name}</CardTitle>
+                        <CardDescription>{profileData.phone ? `+91 ${profileData.phone}` : profileData.email}</CardDescription>
                     </div>
                 </CardHeader>
             </Card>
