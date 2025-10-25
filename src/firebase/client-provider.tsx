@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { createContext, useContext, useEffect, useState, useMemo, type ReactNode } from 'react';
+import React, { createContext, useContext, useEffect, useState, useMemo, useCallback, type ReactNode } from 'react';
 import { initializeApp, getApps, getApp, type FirebaseApp } from 'firebase/app';
 import { getAuth, type Auth, onAuthStateChanged, type User } from 'firebase/auth';
 import { getFirestore, type Firestore, enableIndexedDbPersistence } from 'firebase/firestore';
@@ -79,12 +79,16 @@ export function FirebaseProviderClient({ children }: { children: ReactNode }) {
     setupFirebase().then(firebaseServices => {
         setServices(firebaseServices);
         
-        const unsubscribe = onAuthStateChanged(firebaseServices.auth, (user) => {
-          setUser(user);
-          setIsUserLoading(false);
-        });
+        if (firebaseServices.auth) {
+            const unsubscribe = onAuthStateChanged(firebaseServices.auth, (user) => {
+              setUser(user);
+              setIsUserLoading(false);
+            });
 
-        return () => unsubscribe();
+            return () => unsubscribe();
+        } else {
+            setIsUserLoading(false);
+        }
     });
 
   }, [setupFirebase]);
