@@ -20,7 +20,7 @@ import type { ClientSession } from '@/lib/types';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Slider } from '@/components/ui/slider';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle, SheetDescription, SheetFooter } from '@/components/ui/sheet';
 import { AnimatePresence, motion } from 'framer-motion';
 
 const timeSlots = [
@@ -284,19 +284,19 @@ export default function BookAppointmentPage() {
                             <Button variant="outline" size="icon" className="ml-auto"><SlidersHorizontal className="h-4 w-4"/></Button>
                         </SheetTrigger>
                         <SheetContent>
-                            <DialogHeader>
-                                <DialogTitle>Filter & Sort</DialogTitle>
-                                <DialogDescription>Refine your search to find the perfect doctor.</DialogDescription>
-                            </DialogHeader>
+                            <SheetHeader>
+                                <SheetTitle>Filter & Sort</SheetTitle>
+                                <SheetDescription>Refine your search to find the perfect doctor.</SheetDescription>
+                            </SheetHeader>
                             <div className="py-4 space-y-6">
                                 <div className="space-y-2"><Label>Sort By</Label><Select value={sortBy} onValueChange={setSortBy}><SelectTrigger><SelectValue/></SelectTrigger><SelectContent><SelectItem value="distance">Distance: Nearest First</SelectItem><SelectItem value="price">Price: Low to High</SelectItem><SelectItem value="experience">Experience: High to Low</SelectItem></SelectContent></Select></div>
                                 <div className="space-y-2"><Label>Availability</Label><Select value={availabilityFilter} onValueChange={setAvailabilityFilter}><SelectTrigger><SelectValue/></SelectTrigger><SelectContent><SelectItem value="any">Any</SelectItem><SelectItem value="today">Today</SelectItem><SelectItem value="tomorrow">Tomorrow</SelectItem></SelectContent></Select></div>
                                 <div className="space-y-2"><Label>Max Fee: ₹{priceRange[0]}</Label><Slider value={priceRange} onValueChange={setPriceRange} max={2000} step={100}/></div>
                                 <div className="space-y-2"><Label>Gender</Label><RadioGroup value={genderFilter} onValueChange={setGenderFilter} className="flex gap-4 items-center pt-2"><RadioGroupItem value="any" id="g-any"/><Label htmlFor="g-any">Any</Label><RadioGroupItem value="male" id="g-male"/><Label htmlFor="g-male">Male</Label><RadioGroupItem value="female" id="g-female"/><Label htmlFor="g-female">Female</Label></RadioGroup></div>
                             </div>
-                            <DialogFooter>
+                            <SheetFooter>
                                 <Button onClick={() => setIsFilterSheetOpen(false)}>Apply Filters</Button>
-                            </DialogFooter>
+                            </SheetFooter>
                         </SheetContent>
                     </Sheet>
                 </div>
