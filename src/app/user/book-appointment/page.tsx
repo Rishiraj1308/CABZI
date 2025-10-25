@@ -1,7 +1,7 @@
 
 'use client'
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
@@ -126,51 +126,51 @@ export default function BookAppointmentPage() {
     return R * c; 
   };
 
-  useEffect(() => {
-    const fetchVerifiedDoctors = async () => {
-      if (!db) { setIsLoading(false); return; }
-      setIsLoading(true);
-      try {
-          const doctorsQuery = query(collectionGroup(db, 'doctors'), where('docStatus', '==', 'Verified'));
-          const snapshot = await getDocs(doctorsQuery);
-          const doctorsList: Doctor[] = [];
-          
-          const hospitalIds = snapshot.docs.map(doc => doc.ref.parent.parent?.id).filter(Boolean) as string[];
-          const uniqueHospitalIds = [...new Set(hospitalIds)];
-          let hospitalData: Record<string, {name: string, location?: GeoPoint}> = {};
+  const fetchVerifiedDoctors = useCallback(async () => {
+    if (!db) { setIsLoading(false); return; }
+    setIsLoading(true);
+    try {
+        const doctorsQuery = query(collectionGroup(db, 'doctors'), where('docStatus', '==', 'Verified'));
+        const snapshot = await getDocs(doctorsQuery);
+        const doctorsList: Doctor[] = [];
+        
+        const hospitalIds = snapshot.docs.map(doc => doc.ref.parent.parent?.id).filter(Boolean) as string[];
+        const uniqueHospitalIds = [...new Set(hospitalIds)];
+        let hospitalData: Record<string, {name: string, location?: GeoPoint}> = {};
 
-          if (uniqueHospitalIds.length > 0) {
-               const hospitalsQuery = query(collection(db, 'ambulances'), where('__name__', 'in', uniqueHospitalIds));
-               const hospitalsSnap = await getDocs(hospitalsQuery);
-               hospitalsSnap.forEach(doc => {
-                  hospitalData[doc.id] = { name: doc.data().name, location: doc.data().location };
-               });
-          }
+        if (uniqueHospitalIds.length > 0) {
+             const hospitalsQuery = query(collection(db, 'ambulances'), where('__name__', 'in', uniqueHospitalIds));
+             const hospitalsSnap = await getDocs(hospitalsQuery);
+             hospitalsSnap.forEach(doc => {
+                hospitalData[doc.id] = { name: doc.data().name, location: doc.data().location };
+             });
+        }
 
-          snapshot.forEach(doc => {
-              const hospitalId = doc.ref.parent.parent?.id;
-              if(hospitalId && hospitalData[hospitalId]) {
-                  const docData = doc.data();
-                  let distance = null;
-                  const hospitalLoc = hospitalData[hospitalId]?.location;
-                  if (userLocation && hospitalLoc) {
-                      distance = getDistance(userLocation.lat, userLocation.lon, hospitalLoc.latitude, hospitalLoc.longitude);
-                  }
-                  doctorsList.push({ id: doc.id, ...docData, hospitalId, hospitalName: hospitalData[hospitalId].name, hospitalLocation: hospitalData[hospitalId].location, distance } as Doctor);
-              }
-          });
-          
-          setDoctors(doctorsList);
-      } catch (error) {
-          console.error("Error fetching verified doctors:", error);
-          toast({ variant: 'destructive', title: 'Failed to load doctors' });
-      } finally {
-          setIsLoading(false);
-      }
-    };
-
-    fetchVerifiedDoctors();
+        snapshot.forEach(doc => {
+            const hospitalId = doc.ref.parent.parent?.id;
+            if(hospitalId && hospitalData[hospitalId]) {
+                const docData = doc.data();
+                let distance = null;
+                const hospitalLoc = hospitalData[hospitalId]?.location;
+                if (userLocation && hospitalLoc) {
+                    distance = getDistance(userLocation.lat, userLocation.lon, hospitalLoc.latitude, hospitalLoc.longitude);
+                }
+                doctorsList.push({ id: doc.id, ...docData, hospitalId, hospitalName: hospitalData[hospitalId].name, hospitalLocation: hospitalData[hospitalId].location, distance } as Doctor);
+            }
+        });
+        
+        setDoctors(doctorsList);
+    } catch (error) {
+        console.error("Error fetching verified doctors:", error);
+        toast({ variant: 'destructive', title: 'Failed to load doctors' });
+    } finally {
+        setIsLoading(false);
+    }
   }, [db, userLocation, toast]);
+  
+  useEffect(() => {
+    fetchVerifiedDoctors();
+  }, [fetchVerifiedDoctors]);
 
   const filteredAndSortedDoctors = useMemo(() => {
     return doctors
