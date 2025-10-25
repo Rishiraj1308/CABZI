@@ -46,6 +46,8 @@ const symptomCategories = [
     { name: 'Skin Rashes / Allergy', specializations: ['Dermatology'] },
     { name: 'Heart / Chest Pain', specializations: ['Cardiology'] },
     { name: 'Child Health Issue', specializations: ['Pediatrics'] },
+    { name: 'Ear, Nose, Throat', specializations: ['ENT Specialist'] },
+    { name: 'Cancer Related Inquiry', specializations: ['Oncology'] },
 ];
 
 export default function BookAppointmentPage() {
