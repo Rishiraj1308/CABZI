@@ -1,3 +1,4 @@
+
 'use client'
 
 import React, { useState, useEffect, useRef, useMemo } from 'react'
@@ -391,7 +392,12 @@ export default function HospitalMissionControl() {
     return (
         <div className="grid lg:grid-cols-3 gap-6 items-start h-full">
             <div className="lg:col-span-2 space-y-6">
-                <div className="h-[calc(100vh-8rem)] rounded-lg overflow-hidden border">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <StatCard title="Active Emergencies" value={ongoingCase ? '1' : '0'} icon={Siren} description="Currently handled cases"/>
+                    <StatCard title="Available ER Beds" value={`${availableBeds}`} icon={BedDouble} description="Real-time bed count"/>
+                    <StatCard title="Avg. Response Time" value={`${analytics.avgResponseTime.toFixed(1)} min`} icon={Clock} description="Today's average"/>
+                </div>
+                <div className="h-[calc(100vh-14rem)] rounded-lg overflow-hidden border">
                    <LiveMap activePartners={mapFleet} riderLocation={patientLocation} driverLocation={activeAmbulanceLocation} />
                </div>
             </div>
@@ -421,12 +427,6 @@ export default function HospitalMissionControl() {
                         <Button size="sm" onClick={handleBedStatusUpdate}>Update</Button>
                     </CardContent>
                 </Card>
-                
-                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <StatCard title="Total Cases" value={`${analytics.totalCases}`} icon={Activity} description="This month"/>
-                    <StatCard title="Avg. Response" value={`${analytics.avgResponseTime.toFixed(1)} min`} icon={Clock} description="This month"/>
-                    <StatCard title="Fleet Utilization" value={`${analytics.fleetUtilization.toFixed(0)}%`} icon={UsersIcon} description="Currently on-duty"/>
-                </div>
 
                 <Card className={cn("transition-all", ongoingCase && 'opacity-30')}>
                     <CardHeader className="flex flex-row items-center justify-between">
@@ -482,3 +482,5 @@ export default function HospitalMissionControl() {
         </div>
     )
 }
+
+    
