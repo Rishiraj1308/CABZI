@@ -1,4 +1,3 @@
-
 'use client'
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -28,8 +27,6 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { Carousel, CarouselContent, CarouselItem } from '@/components/ui/carousel';
 import { Badge } from '@/components/ui/badge';
 import { SlidersHorizontal } from 'lucide-react';
-import { Textarea } from '@/components/ui/textarea';
-import { suggestSpecialization } from '@/ai/flows/symptom-checker-flow';
 
 
 const timeSlots = [
@@ -70,6 +67,7 @@ const symptomCategories = [
     { name: 'Diabetes Care', icon: Droplets, specializations: ['Endocrinology', 'General Physician'] },
 ];
 
+
 export default function BookAppointmentPage() {
   const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -83,11 +81,6 @@ export default function BookAppointmentPage() {
   const [priceRange, setPriceRange] = useState([2000]);
   const [genderFilter, setGenderFilter] = useState('any');
   const [isFilterSheetOpen, setIsFilterSheetOpen] = useState(false);
-
-  // AI Symptom Checker State
-  const [symptomInput, setSymptomInput] = useState('');
-  const [aiSuggestion, setAiSuggestion] = useState<string | null>(null);
-  const [isSuggesting, setIsSuggesting] = useState(false);
 
   // Booking State
   const [selectedDoctor, setSelectedDoctor] = useState<Doctor | null>(null);
@@ -181,12 +174,9 @@ export default function BookAppointmentPage() {
       .filter(d => {
         const lowercasedQuery = searchQuery.toLowerCase();
         
-        let specializationMatch = true;
-        if(aiSuggestion) {
-            specializationMatch = d.specialization.toLowerCase().includes(aiSuggestion.toLowerCase());
-        } else if (selectedSymptom) {
-             specializationMatch = symptomCategories.find(s => s.name === selectedSymptom)?.specializations.includes(d.specialization) ?? true;
-        }
+        const specializationMatch = selectedSymptom
+            ? symptomCategories.find(s => s.name === selectedSymptom)?.specializations.includes(d.specialization) ?? true
+            : true;
 
         const searchMatch = searchQuery ? 
             d.name.toLowerCase().includes(lowercasedQuery) || 
@@ -210,7 +200,7 @@ export default function BookAppointmentPage() {
             return 0;
         }
       });
-  }, [doctors, searchQuery, selectedSymptom, aiSuggestion, sortBy, priceRange, genderFilter, availabilityFilter]);
+  }, [doctors, searchQuery, selectedSymptom, sortBy, priceRange, genderFilter, availabilityFilter]);
 
   const resetBookingState = () => { setDate(new Date()); setTime(''); setConsultationType(''); setSelectedDoctor(null); };
   
@@ -248,26 +238,6 @@ export default function BookAppointmentPage() {
     }
   };
 
-  const handleSymptomCheck = async () => {
-    if (!symptomInput.trim()) {
-        toast({ variant: 'destructive', title: 'Please enter your symptoms' });
-        return;
-    }
-    setIsSuggesting(true);
-    setAiSuggestion(null);
-    try {
-        const result = await suggestSpecialization({ symptoms: symptomInput });
-        setAiSuggestion(result.specialization);
-        toast({ title: 'AI Suggestion', description: `We recommend seeing a ${result.specialization}. Results have been filtered.` });
-    } catch (error) {
-        console.error('AI suggestion failed:', error);
-        toast({ variant: 'destructive', title: 'AI Suggestion Failed' });
-    } finally {
-        setIsSuggesting(false);
-    }
-  };
-
-
   const containerVariants = { hidden: { opacity: 0 }, visible: { opacity: 1, transition: { staggerChildren: 0.05 } } };
   const itemVariants = { hidden: { y: 20, opacity: 0 }, visible: { y: 0, opacity: 1 } };
   
@@ -289,43 +259,11 @@ export default function BookAppointmentPage() {
     <div className="p-4 md:p-6 space-y-8">
       <div className="text-center max-w-2xl mx-auto">
           <CardTitle className="text-3xl md:text-4xl font-extrabold tracking-tight">Find the Right Care, Instantly.</CardTitle>
-          <CardDescription className="text-lg mt-2">Search by doctor, specialization, or try our new AI Symptom Checker.</CardDescription>
+          <CardDescription className="text-lg mt-2">Search by doctor, specialization, or symptoms.</CardDescription>
       </div>
 
-       <Card className="bg-gradient-to-r from-primary/10 via-background to-background border-primary/20">
-        <CardHeader>
-            <CardTitle className="flex items-center gap-2"><Sparkles className="w-6 h-6 text-primary"/> Smart Symptom Checker</CardTitle>
-            <CardDescription>Not sure which doctor to see? Describe your symptoms, and our AI will suggest a specialization.</CardDescription>
-        </CardHeader>
-        <CardContent>
-            <div className="grid gap-4">
-                <Textarea 
-                    placeholder="e.g., 'I have a sharp pain in my chest when I breathe, and my left arm feels numb...'"
-                    className="bg-background"
-                    rows={3}
-                    value={symptomInput}
-                    onChange={(e) => setSymptomInput(e.target.value)}
-                />
-                 <Button onClick={handleSymptomCheck} disabled={isSuggesting || !symptomInput.trim()}>
-                    {isSuggesting ? 'Analyzing...' : 'Get AI Suggestion'}
-                </Button>
-            </div>
-             {aiSuggestion && (
-                <div className="mt-4 p-3 rounded-lg bg-primary/10 text-primary flex items-center gap-3">
-                    <BrainCircuit className="w-5 h-5"/>
-                    <div>
-                        <p className="font-semibold">AI Recommendation: <span className="font-bold">{aiSuggestion}</span></p>
-                        <p className="text-xs">We&apos;ve automatically filtered the results for you.</p>
-                    </div>
-                     <Button variant="ghost" size="icon" className="ml-auto" onClick={() => setAiSuggestion(null)}><X className="w-4 h-4"/></Button>
-                </div>
-             )}
-        </CardContent>
-      </Card>
-
-
       <div className="space-y-4">
-          <Label className="font-semibold text-lg">Or Start by Symptom</Label>
+          <Label className="font-semibold text-lg">Start by Symptom</Label>
           <Carousel opts={{ align: "start", loop: false, skipSnaps: true }} className="w-full">
               <CarouselContent className="-ml-2">
                   {symptomCategories.map((symptom, i) => (
