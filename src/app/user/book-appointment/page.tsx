@@ -4,7 +4,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Calendar as CalendarIcon, Stethoscope, Clock, Search, ArrowLeft, IndianRupee } from 'lucide-react';
+import { Calendar as CalendarIcon, Stethoscope, Clock, Search, ArrowLeft, IndianRupee, MapPin } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Calendar } from '@/components/ui/calendar';
@@ -15,7 +15,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
 import { useDb, useFirebase } from '@/firebase/client-provider';
-import { collection, collectionGroup, getDocs, query, where, addDoc, serverTimestamp, getDoc, doc } from 'firebase/firestore';
+import { collection, collectionGroup, getDocs, query, where, addDoc, serverTimestamp, getDoc, doc, GeoPoint } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { ClientSession } from '@/lib/types';
 
@@ -23,17 +23,19 @@ const timeSlots = [
   '09:00 AM', '10:00 AM', '11:00 AM', '12:00 PM', '02:00 PM', '03:00 PM', '04:00 PM'
 ]
 
-interface Doctor { 
-    id: string; 
-    name: string; 
-    specialization: string; 
-    qualifications: string; 
-    experience: string; 
-    photoUrl?: string; 
+interface Doctor {
+    id: string;
+    name: string;
+    specialization: string;
+    qualifications: string;
+    experience: string;
+    photoUrl?: string;
     consultationFee: number;
     docStatus?: 'Verified' | 'Pending' | 'Awaiting Final Approval' | 'Rejected';
-    hospitalId: string; // Add hospitalId to know where to send the request
+    hospitalId: string;
     hospitalName: string;
+    hospitalLocation?: GeoPoint; // Added for distance calculation
+    distance?: number | null; // To store calculated distance
 }
 
 
@@ -49,7 +51,25 @@ export default function BookAppointmentPage() {
   const { toast } = useToast();
   const { user, db } = useFirebase();
   const [session, setSession] = useState<ClientSession | null>(null);
+  const [userLocation, setUserLocation] = useState<{ lat: number, lon: number } | null>(null);
 
+  useEffect(() => {
+    // Get user's current location
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setUserLocation({
+            lat: position.coords.latitude,
+            lon: position.coords.longitude,
+          });
+        },
+        () => {
+          toast({ variant: 'destructive', title: "Location Error", description: "Could not get your location. Distances won't be shown." });
+        }
+      );
+    }
+  }, [toast]);
+  
   useEffect(() => {
     if (user && db) {
         const userDocRef = doc(db, 'users', user.uid);
@@ -67,6 +87,18 @@ export default function BookAppointmentPage() {
     }
   }, [user, db]);
 
+    const getDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
+        if ((lat1 === lat2) && (lon1 === lon2)) {
+            return 0;
+        }
+        const R = 6371; // Radius of the earth in km
+        const dLat = (lat2 - lat1) * Math.PI / 180;
+        const dLon = (lon2 - lon1) * Math.PI / 180;
+        const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return R * c; // Distance in km
+    };
+
   useEffect(() => {
     const fetchVerifiedDoctors = async () => {
         if (!db) {
@@ -79,30 +111,52 @@ export default function BookAppointmentPage() {
             const snapshot = await getDocs(doctorsQuery);
             const doctorsList: Doctor[] = [];
             
-            // Fetch hospital names
             const hospitalIds = snapshot.docs.map(doc => doc.ref.parent.parent?.id).filter(Boolean) as string[];
             const uniqueHospitalIds = [...new Set(hospitalIds)];
-            let hospitalNames: Record<string, string> = {};
+            let hospitalData: Record<string, {name: string, location?: GeoPoint}> = {};
 
             if (uniqueHospitalIds.length > 0) {
                  const hospitalsQuery = query(collection(db, 'ambulances'), where('__name__', 'in', uniqueHospitalIds));
                  const hospitalsSnap = await getDocs(hospitalsQuery);
                  hospitalsSnap.forEach(doc => {
-                    hospitalNames[doc.id] = doc.data().name;
+                    hospitalData[doc.id] = {
+                        name: doc.data().name,
+                        location: doc.data().location,
+                    };
                  });
             }
 
             snapshot.forEach(doc => {
                 const hospitalId = doc.ref.parent.parent?.id;
-                if(hospitalId) {
+                if(hospitalId && hospitalData[hospitalId]) {
+                    const docData = doc.data();
+                    let distance = null;
+                    const hospitalLoc = hospitalData[hospitalId]?.location;
+                    if (userLocation && hospitalLoc) {
+                        distance = getDistance(userLocation.lat, userLocation.lon, hospitalLoc.latitude, hospitalLoc.longitude);
+                    }
+
                     doctorsList.push({ 
                         id: doc.id, 
-                        ...doc.data(),
+                        ...docData,
                         hospitalId: hospitalId,
-                        hospitalName: hospitalNames[hospitalId] || 'Unknown Hospital'
+                        hospitalName: hospitalData[hospitalId].name,
+                        hospitalLocation: hospitalData[hospitalId].location,
+                        distance: distance
                     } as Doctor);
                 }
             });
+            
+            // Sort by distance if available
+            doctorsList.sort((a, b) => {
+                if (a.distance != null && b.distance != null) {
+                    return a.distance - b.distance;
+                }
+                if (a.distance != null) return -1;
+                if (b.distance != null) return 1;
+                return a.name.localeCompare(b.name);
+            });
+
             setDoctors(doctorsList);
         } catch (error) {
             console.error("Error fetching verified doctors:", error);
@@ -116,8 +170,9 @@ export default function BookAppointmentPage() {
         }
     };
 
+    // Re-fetch if user location becomes available
     fetchVerifiedDoctors();
-  }, [db, toast]);
+  }, [db, toast, userLocation]);
 
 
   const resetFlow = () => {
@@ -137,7 +192,6 @@ export default function BookAppointmentPage() {
       setIsBooking(true);
       
       try {
-        // Step 1: Fetch user data from Firestore
         const userDoc = await getDoc(doc(db, "users", session.userId));
         if (!userDoc.exists()) {
             throw new Error("User profile not found. Cannot book appointment.");
@@ -148,11 +202,10 @@ export default function BookAppointmentPage() {
         const [hours, minutes] = time.split(/[: ]/);
         appointmentDateTime.setHours(time.includes('PM') && parseInt(hours, 10) !== 12 ? parseInt(hours, 10) + 12 : parseInt(hours, 10), parseInt(minutes, 10));
 
-        // Step 2: Create appointment object with actual user info
         const newAppointment = {
             patientId: session.userId,
-            patientName: userData.name, // ✅ actual name from Firestore
-            patientPhone: userData.phone, // ✅ actual phone from Firestore
+            patientName: userData.name,
+            patientPhone: userData.phone,
             hospitalId: selectedDoctor.hospitalId,
             hospitalName: selectedDoctor.hospitalName,
             doctorId: selectedDoctor.id,
@@ -209,7 +262,7 @@ export default function BookAppointmentPage() {
                     </div>
                     <div className="space-y-2 max-h-96 overflow-y-auto pr-2">
                        {isLoading ? (
-                           Array.from({length: 3}).map((_, i) => <Skeleton key={i} className="h-20 w-full" />)
+                           Array.from({length: 3}).map((_, i) => <Skeleton key={i} className="h-24 w-full" />)
                        ) : filteredDoctors.length > 0 ? (
                            filteredDoctors.map(doctor => (
                                <Card key={doctor.id} className="p-3 flex items-center gap-3 cursor-pointer hover:bg-muted" onClick={() => { setSelectedDoctor(doctor); setStep(2); }}>
@@ -220,10 +273,16 @@ export default function BookAppointmentPage() {
                                     <div className="flex-1">
                                         <p className="font-bold">Dr. {doctor.name}</p>
                                         <p className="text-sm text-muted-foreground">{doctor.specialization} &bull; {doctor.qualifications}</p>
+                                        <p className="text-xs text-muted-foreground">{doctor.hospitalName}</p>
                                     </div>
-                                    <div className="text-right">
+                                    <div className="text-right flex flex-col items-end">
                                         <p className="font-bold text-lg text-primary flex items-center justify-end"><IndianRupee className="w-4 h-4" />{doctor.consultationFee}</p>
-                                        <p className="text-xs text-muted-foreground">Fee</p>
+                                        {doctor.distance != null && (
+                                            <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
+                                                <MapPin className="w-3 h-3"/>
+                                                {doctor.distance.toFixed(1)} km away
+                                            </div>
+                                        )}
                                     </div>
                                </Card>
                            ))
