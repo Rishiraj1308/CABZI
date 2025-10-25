@@ -1,7 +1,7 @@
 
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -75,7 +75,7 @@ export default function ProfilePage() {
                  setIsLoading(false);
             }
         }
-    }, []);
+    }, [toast, db]);
 
     const handleDownloadQR = async () => {
         if (!partnerData?.qrCodeUrl) {
