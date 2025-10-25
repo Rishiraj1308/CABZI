@@ -1,4 +1,3 @@
-
 'use server';
 /**
  * @fileOverview An AI flow to analyze user-described symptoms and suggest a medical specialization.
@@ -9,7 +8,7 @@
  */
 
 import { ai } from '@/ai/genkit';
-import { z } from 'genkit';
+import { z } from 'zod';
 
 const SymptomCheckerInputSchema = z.object({
   symptoms: z.string().describe('A plain text description of the user\'s medical symptoms.'),
