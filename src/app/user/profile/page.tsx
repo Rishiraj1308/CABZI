@@ -1,4 +1,3 @@
-
 'use client'
 
 import * as React from "react"
@@ -208,19 +207,6 @@ export default function UserProfilePage() {
                         </Link>
                     </Button>
                 </CardFooter>
-            </Card>
-            
-             <Card>
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2"><Wallet className="w-5 h-5"/> Curocity Wallet</CardTitle>
-                </CardHeader>
-                <CardContent className="flex items-center justify-between p-4 rounded-lg bg-muted">
-                    <div>
-                        <p className="text-sm text-muted-foreground">Available Balance</p>
-                        <p className="text-2xl font-bold">₹1,250.75</p>
-                    </div>
-                    <Button><PlusCircle className="mr-2 h-4 w-4"/>Add Money</Button>
-                </CardContent>
             </Card>
 
             <Card>
