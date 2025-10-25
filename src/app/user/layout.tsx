@@ -4,7 +4,7 @@
 import React, { useState, useEffect } from 'react'
 import { Toaster } from "@/components/ui/toaster";
 import { Button } from '@/components/ui/button';
-import { Home, History, Menu, LogOut, Heart, Gift, PanelLeft, Landmark, Sun, Moon, Settings, User, Calendar, Car } from 'lucide-react';
+import { Home, History, Menu, LogOut, Heart, Gift, PanelLeft, Landmark, Sun, Moon, Settings, User, Calendar, Car, MapPin } from 'lucide-react';
 import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
@@ -56,6 +56,39 @@ function ThemeToggle() {
     )
 }
 
+function LocationDisplay() {
+  const [location, setLocation] = useState('Locating...');
+
+  useEffect(() => {
+    navigator.geolocation.getCurrentPosition(async (position) => {
+      const { latitude, longitude } = position.coords;
+      try {
+        const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`);
+        const data = await response.json();
+        const address = data.address;
+        const city = address.city || address.town || address.village;
+        const state = address.state;
+        if (city && state) {
+          setLocation(`${city}, ${state}`);
+        } else {
+          setLocation(data.display_name.split(',').slice(0, 3).join(', '));
+        }
+      } catch (error) {
+        setLocation('Location not found');
+      }
+    }, () => {
+      setLocation('Location access denied');
+    });
+  }, []);
+  
+  return (
+    <div className="flex items-center gap-2">
+      <MapPin className="w-4 h-4 text-muted-foreground"/>
+      <span className="text-sm font-medium text-muted-foreground truncate">{location}</span>
+    </div>
+  )
+}
+
 export default function UserLayout({
   children,
 }: {
@@ -79,7 +112,7 @@ export default function UserLayout({
 
   const handleLogout = () => {
     if (!auth) return;
-    if (user && db) {
+    if (user?.uid && db) {
       const userDocRef = doc(db, 'users', user.uid);
       updateDoc(userDocRef, { isOnline: false, currentLocation: null });
     }
@@ -89,8 +122,8 @@ export default function UserLayout({
     });
   };
 
-  const getInitials = (name: string) => {
-    if (!name) return 'U';
+  const getInitials = (name: string | null | undefined) => {
+    if (!name) return 'R';
     const names = name.split(' ');
     return names.length > 1 ? names[0][0] + names[1][0] : name.substring(0, 2);
   }
@@ -102,9 +135,14 @@ export default function UserLayout({
   return (
     <div className="flex h-screen w-full flex-col aurora-background">
        <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background/80 backdrop-blur-sm px-4 md:px-6">
-        <Link href="/user">
-          <BrandLogo />
-        </Link>
+        <div className="flex items-center gap-4">
+            <Link href="/user">
+              <BrandLogo />
+            </Link>
+            <div className="hidden md:block">
+                <LocationDisplay />
+            </div>
+        </div>
         <div className="flex w-full items-center gap-4 md:ml-auto md:gap-2 lg:gap-4 justify-end">
             <ThemeToggle />
             <DropdownMenu>
@@ -112,7 +150,7 @@ export default function UserLayout({
                 <Button variant="secondary" size="icon" className="rounded-full">
                   <Avatar className="h-8 w-8">
                     <AvatarImage src={user?.photoURL || 'https://placehold.co/100x100.png'} alt={user?.displayName || 'User'} data-ai-hint="customer portrait" />
-                    <AvatarFallback>{getInitials(user?.displayName || '').toUpperCase()}</AvatarFallback>
+                    <AvatarFallback>{getInitials(user?.displayName).toUpperCase()}</AvatarFallback>
                   </Avatar>
                   <span className="sr-only">Toggle user menu</span>
                 </Button>
