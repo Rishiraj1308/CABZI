@@ -80,8 +80,8 @@ export default function UserDashboard() {
     return (
         <div className="p-4 md:p-6 space-y-8">
              <div className="animate-fade-in text-center md:text-left">
-                <h2 className="text-3xl font-bold tracking-tight">Your everyday super-app.</h2>
-                <p className="text-muted-foreground">How can we help you today? Choose a service to get started.</p>
+                <h2 className="text-3xl font-bold tracking-tight">How can we help you today?</h2>
+                <p className="text-muted-foreground">Choose a service to get started.</p>
             </div>
             
             <MotionDiv 
