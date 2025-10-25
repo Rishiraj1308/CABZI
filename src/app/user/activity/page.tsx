@@ -8,6 +8,7 @@ import { useFirebase } from '@/firebase/client-provider'
 import { collection, query, where, orderBy, onSnapshot, Timestamp } from 'firebase/firestore'
 import { useToast } from '@/hooks/use-toast'
 import { Skeleton } from '@/components/ui/skeleton'
+import { Badge } from '@/components/ui/badge'
 
 type ActivityStatus = 'Completed' | 'Cancelled' | 'Pending' | 'Confirmed' | string;
 
@@ -35,26 +36,21 @@ export default function MyActivityPage() {
         return;
     }
     
-    const userPhone = user.phoneNumber?.replace('+91', '');
-    if (!userPhone) {
-        toast({ variant: 'destructive', title: "Authentication Error", description: "Could not verify your user details." });
-        setIsLoading(false);
-        return;
-    }
+    // We'll use the user's UID for a more reliable join.
+    const userId = user.uid;
 
     const queries = [
-        query(collection(db, 'rides'), where('riderId', '==', user.uid), orderBy('createdAt', 'desc')),
-        query(collection(db, 'appointments'), where('patientId', '==', user.uid), orderBy('createdAt', 'desc')),
-        query(collection(db, 'emergencyCases'), where('riderId', '==', user.uid), orderBy('createdAt', 'desc'))
+        query(collection(db, 'rides'), where('riderId', '==', userId), orderBy('createdAt', 'desc')),
+        query(collection(db, 'appointments'), where('patientId', '==', userId), orderBy('createdAt', 'desc')),
+        query(collection(db, 'emergencyCases'), where('riderId', '==', userId), orderBy('createdAt', 'desc'))
     ];
-
-    const unsubscribes = queries.map((q, index) => {
+    
+    const unsubs = queries.map((q, index) => {
         return onSnapshot(q, (querySnapshot) => {
-            let newActivities: ActivityItem[] = [];
-            querySnapshot.forEach((doc) => {
+            const newActivities: ActivityItem[] = querySnapshot.docs.map(doc => {
                 const data = doc.data();
                 if (index === 0) { // Rides
-                    newActivities.push({
+                    return {
                         id: doc.id,
                         type: 'Ride',
                         title: `Ride to ${data.destination?.address || 'destination'}`,
@@ -64,9 +60,9 @@ export default function MyActivityPage() {
                         fare: data.fare,
                         icon: Car,
                         color: 'text-primary'
-                    });
+                    };
                 } else if (index === 1) { // Appointments
-                    newActivities.push({
+                    return {
                         id: doc.id,
                         type: 'Appointment',
                         title: `Appointment with ${data.doctorName}`,
@@ -75,9 +71,9 @@ export default function MyActivityPage() {
                         status: data.status,
                         icon: Calendar,
                         color: 'text-blue-500'
-                    });
-                } else if (index === 2) { // Emergency Cases
-                     newActivities.push({
+                    };
+                } else { // Emergency Cases
+                     return {
                         id: doc.id,
                         type: 'Emergency',
                         title: `SOS Case: ${data.caseId}`,
@@ -86,34 +82,34 @@ export default function MyActivityPage() {
                         status: data.status.charAt(0).toUpperCase() + data.status.slice(1).replace(/_/g, ' '),
                         icon: Ambulance,
                         color: 'text-red-500'
-                    });
+                    };
                 }
             });
-            
-             setActivities(prev => {
-                // Filter out old activities of the same type and merge new ones
-                const otherActivities = prev.filter(act => act.type !== newActivities[0]?.type);
-                return [...otherActivities, ...newActivities].sort((a, b) => b.date.getTime() - a.date.getTime());
+
+            setActivities(prev => {
+                const typeToUpdate = index === 0 ? 'Ride' : index === 1 ? 'Appointment' : 'Emergency';
+                const otherActivities = prev.filter(act => act.type !== typeToUpdate);
+                const all = [...otherActivities, ...newActivities].sort((a, b) => b.date.getTime() - a.date.getTime());
+                return all;
             });
-            
+
         }, (error) => {
             console.error("Error fetching activity:", error);
             toast({ variant: 'destructive', title: "Error", description: "Could not load part of your activity history."});
         });
     });
-    
-    // Once all listeners are set up, loading is complete.
-    setIsLoading(false);
 
-    return () => unsubscribes.forEach(unsub => unsub());
+    setIsLoading(false);
+    return () => unsubs.forEach(unsub => unsub());
+
   }, [db, user, toast]);
 
   const getStatusBadge = (status: ActivityStatus) => {
     const lowerStatus = status.toLowerCase();
     if (lowerStatus.includes('completed')) return <Badge className="bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-200">{status}</Badge>;
     if (lowerStatus.includes('cancel')) return <Badge variant="destructive">{status}</Badge>;
-    if (lowerStatus.includes('pending')) return <Badge className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-200">{status}</Badge>;
-    if (lowerStatus.includes('confirmed')) return <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200">{status}</Badge>;
+    if (lowerStatus.includes('pending') || lowerStatus.includes('searching')) return <Badge className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-200">{status}</Badge>;
+    if (lowerStatus.includes('confirmed') || lowerStatus.includes('accepted') || lowerStatus.includes('transit')) return <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200">{status}</Badge>;
     return <Badge variant="secondary">{status}</Badge>;
   };
 
@@ -144,7 +140,7 @@ export default function MyActivityPage() {
                         </div>
                         <div className="flex flex-col items-end gap-1">
                              {getStatusBadge(item.status)}
-                             {item.fare && <p className="font-bold text-lg">~₹{item.fare?.toFixed(0)}</p>}
+                             {item.fare != null && <p className="font-bold text-lg">~₹{item.fare?.toFixed(0)}</p>}
                         </div>
                     </CardContent>
                 </Card>

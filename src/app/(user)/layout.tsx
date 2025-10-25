@@ -32,8 +32,7 @@ import { doc, updateDoc } from 'firebase/firestore';
 
 const navItems = [
     { href: '/user', label: 'Services', icon: Home, comingSoon: false },
-    { href: '/user/appointments', label: 'Appointments', icon: Calendar, comingSoon: false },
-    { href: '/user/rides', label: 'My Rides', icon: History, comingSoon: false },
+    { href: '/user/activity', label: 'My Activity', icon: History, comingSoon: false },
     { href: '/user/profile', label: 'Profile', icon: User, comingSoon: false },
 ]
 
@@ -157,7 +156,7 @@ export default function UserLayout({
           {children}
       </main>
        <nav className="fixed bottom-0 left-0 right-0 z-10 border-t bg-background/80 backdrop-blur-sm md:hidden">
-        <div className="mx-auto grid h-16 max-w-lg grid-cols-4 items-center px-4">
+        <div className="mx-auto grid h-16 max-w-lg grid-cols-3 items-center px-4">
           {navItems.map((item) => (
             <Link key={item.href} href={item.href} legacyBehavior>
               <a className={cn(
