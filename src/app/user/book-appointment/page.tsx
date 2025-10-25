@@ -6,8 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Button } from '@/components/ui/button';
 import {
     Calendar as CalendarIcon, Stethoscope, Clock, Search, ArrowLeft,
-    IndianRupee, MapPin, HeartPulse, SlidersHorizontal, Filter, SortAsc,
-    Video, Building, X, Baby, Thermometer, Bone, BrainCircuit, Heart, Ear, Layers
+    IndianRupee, MapPin, Video, Building, X, Baby, Thermometer, Bone, BrainCircuit, Heart, Ear, Layers, SlidersHorizontal, Filter, SortAsc, HeartPulse, Activity
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -50,11 +49,11 @@ interface Doctor {
 
 const symptomCategories = [
     { name: 'Fever/Cold', icon: Thermometer, specializations: ['General Physician', 'Pediatrics'] },
-    { name: 'Stomach Ache', icon: HeartPulse, specializations: ['Gastroenterology', 'General Physician'] },
+    { name: 'Stomach Ache', icon: Activity, specializations: ['Gastroenterology', 'General Physician'] },
     { name: 'Bone/Joint Pain', icon: Bone, specializations: ['Orthopedics'] },
     { name: 'Headache', icon: BrainCircuit, specializations: ['General Physician', 'Neurology'] },
     { name: 'Skin Issues', icon: Layers, specializations: ['Dermatology'] },
-    { name: 'Heart/Chest', icon: Heart, specializations: ['Cardiology', 'General Physician'] },
+    { name: 'Heart/Chest', icon: HeartPulse, specializations: ['Cardiology', 'General Physician'] },
     { name: 'Child Health', icon: Baby, specializations: ['Pediatrics'] },
     { name: 'ENT', icon: Ear, specializations: ['ENT Specialist'] },
 ];
