@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { useFirebase } from '@/firebase/client-provider';
 import { doc, updateDoc } from 'firebase/firestore';
+import { Skeleton } from '@/components/ui/skeleton';
 
 
 const navItems = [
@@ -142,9 +143,26 @@ export default function UserLayout({
   }
 
   if (!isMounted || isUserLoading) {
-    return null; // Or a loading spinner
+    // Show a full-page skeleton loader to prevent blank screens
+    return (
+      <div className="flex h-screen w-full flex-col">
+        <header className="flex h-16 items-center gap-4 border-b bg-background px-4 md:px-6">
+          <Skeleton className="h-10 w-28" />
+          <div className="ml-auto flex items-center gap-4">
+            <Skeleton className="h-10 w-10 rounded-full" />
+            <Skeleton className="h-10 w-10 rounded-full" />
+          </div>
+        </header>
+        <main className="flex-1 p-6">
+          <Skeleton className="h-full w-full" />
+        </main>
+      </div>
+    );
   }
   
+  // If user is not logged in after check, don't render the layout
+  if(!user) return null;
+
   return (
     <div className="flex h-screen w-full flex-col aurora-background">
        <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background/80 backdrop-blur-sm px-4 md:px-6">
