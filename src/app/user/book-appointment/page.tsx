@@ -4,7 +4,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Calendar as CalendarIcon, Stethoscope, Clock, Search, ArrowLeft, IndianRupee, MapPin } from 'lucide-react';
+import { Calendar as CalendarIcon, Stethoscope, Clock, Search, ArrowLeft, IndianRupee, MapPin, HeartPulse } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Calendar } from '@/components/ui/calendar';
@@ -38,6 +38,15 @@ interface Doctor {
     distance?: number | null; // To store calculated distance
 }
 
+const symptomCategories = [
+    { name: 'Fever / Cold', specializations: ['General Physician'] },
+    { name: 'Headache / Migraine', specializations: ['General Physician', 'Neurology'] },
+    { name: 'Stomach Ache / Digestion', specializations: ['Gastroenterology', 'General Physician'] },
+    { name: 'Bone / Joint Pain', specializations: ['Orthopedics'] },
+    { name: 'Skin Rashes / Allergy', specializations: ['Dermatology'] },
+    { name: 'Heart / Chest Pain', specializations: ['Cardiology'] },
+    { name: 'Child Health Issue', specializations: ['Pediatrics'] },
+];
 
 export default function BookAppointmentPage() {
   const [step, setStep] = useState(1);
@@ -45,6 +54,7 @@ export default function BookAppointmentPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isBooking, setIsBooking] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedSymptom, setSelectedSymptom] = useState<string | null>(null);
   const [selectedDoctor, setSelectedDoctor] = useState<Doctor | null>(null);
   const [date, setDate] = useState<Date | undefined>(new Date());
   const [time, setTime] = useState('');
@@ -147,7 +157,6 @@ export default function BookAppointmentPage() {
                 }
             });
             
-            // Sort by distance if available
             doctorsList.sort((a, b) => {
                 if (a.distance != null && b.distance != null) {
                     return a.distance - b.distance;
@@ -170,7 +179,6 @@ export default function BookAppointmentPage() {
         }
     };
 
-    // Re-fetch if user location becomes available
     fetchVerifiedDoctors();
   }, [db, toast, userLocation]);
 
@@ -200,7 +208,18 @@ export default function BookAppointmentPage() {
 
         const appointmentDateTime = new Date(date);
         const [hours, minutes] = time.split(/[: ]/);
-        appointmentDateTime.setHours(time.includes('PM') && parseInt(hours, 10) !== 12 ? parseInt(hours, 10) + 12 : parseInt(hours, 10), parseInt(minutes, 10));
+        const parsedHours = parseInt(hours, 10);
+        const parsedMinutes = parseInt(minutes, 10);
+        
+        let finalHours = parsedHours;
+        if (time.includes('PM') && parsedHours !== 12) {
+            finalHours += 12;
+        }
+        if (time.includes('AM') && parsedHours === 12) { // Handle 12 AM case
+            finalHours = 0;
+        }
+
+        appointmentDateTime.setHours(finalHours, parsedMinutes, 0, 0);
 
         const newAppointment = {
             patientId: session.userId,
@@ -233,10 +252,17 @@ export default function BookAppointmentPage() {
       }
   }
   
-  const filteredDoctors = doctors.filter(d => 
-    d.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-    d.specialization.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredDoctors = doctors.filter(d => {
+    const symptomMatch = selectedSymptom 
+        ? symptomCategories.find(s => s.name === selectedSymptom)?.specializations.includes(d.specialization) 
+        : true;
+    
+    const searchMatch = searchQuery 
+        ? d.name.toLowerCase().includes(searchQuery.toLowerCase()) || d.specialization.toLowerCase().includes(searchQuery.toLowerCase())
+        : true;
+        
+    return symptomMatch && searchMatch;
+  });
 
   return (
     <div className="p-4 md:p-6 space-y-6">
@@ -248,17 +274,32 @@ export default function BookAppointmentPage() {
         <p className="text-muted-foreground">Find and book appointments with top doctors seamlessly.</p>
       </div>
 
-      <Card className="max-w-2xl mx-auto">
+      <Card className="max-w-4xl mx-auto">
         {step === 1 && (
              <>
                 <CardHeader>
                     <CardTitle>Step 1: Find Your Doctor</CardTitle>
-                    <CardDescription>Search by doctor's name or specialization.</CardDescription>
+                    <CardDescription>Search by doctor, specialization, or common symptoms.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
+                     <div className="space-y-2">
+                        <Label htmlFor="symptom-search" className="font-semibold">Search by Symptoms</Label>
+                         <div className="flex flex-wrap gap-2">
+                            {symptomCategories.map(symptom => (
+                                <Button 
+                                    key={symptom.name}
+                                    variant={selectedSymptom === symptom.name ? 'default' : 'outline'}
+                                    size="sm"
+                                    onClick={() => setSelectedSymptom(prev => prev === symptom.name ? null : symptom.name)}
+                                >
+                                    {symptom.name}
+                                </Button>
+                            ))}
+                        </div>
+                    </div>
                     <div className="relative">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                        <Input id="doctor-search" placeholder="e.g., Cardiology or Dr. Sharma" className="pl-10" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+                        <Input id="doctor-search" placeholder="Or search by doctor name or specialization..." className="pl-10" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
                     </div>
                     <div className="space-y-2 max-h-96 overflow-y-auto pr-2">
                        {isLoading ? (
@@ -288,7 +329,7 @@ export default function BookAppointmentPage() {
                            ))
                        ) : (
                            <div className="text-center py-10 text-muted-foreground">
-                               <p>No doctors found matching your search.</p>
+                               <p>No doctors found matching your criteria.</p>
                            </div>
                        )}
                     </div>
