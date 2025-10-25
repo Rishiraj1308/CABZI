@@ -1,3 +1,4 @@
+
 'use client'
 
 import React, { useState, useEffect } from 'react'
@@ -59,25 +60,38 @@ function LocationDisplay() {
   const [location, setLocation] = useState('Locating...');
 
   useEffect(() => {
-    navigator.geolocation.getCurrentPosition(async (position) => {
-      const { latitude, longitude } = position.coords;
-      try {
-        const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`);
-        const data = await response.json();
-        const address = data.address;
-        const city = address.city || address.town || address.village;
-        const state = address.state;
-        if (city && state) {
-          setLocation(`${city}, ${state}`);
-        } else {
-          setLocation(data.display_name.split(',').slice(0, 3).join(', '));
-        }
-      } catch (error) {
-        setLocation('Location not found');
-      }
-    }, () => {
-      setLocation('Location access denied');
-    });
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+            async (position) => {
+                const { latitude, longitude } = position.coords;
+                try {
+                    const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`);
+                    if (!response.ok) {
+                        setLocation('Location not found');
+                        return;
+                    }
+                    const data = await response.json();
+                    const address = data.address;
+                    const city = address.city || address.town || address.village;
+                    const state = address.state;
+                    if (city && state) {
+                        setLocation(`${city}, ${state}`);
+                    } else {
+                        setLocation(data.display_name.split(',').slice(0, 3).join(', '));
+                    }
+                } catch (error) {
+                    setLocation('Location not found');
+                }
+            }, 
+            () => {
+                // Gracefully handle location denial
+                setLocation('Location Unavailable');
+            },
+            { timeout: 10000 }
+        );
+    } else {
+        setLocation('Geolocation not supported');
+    }
   }, []);
   
   return (
@@ -104,25 +118,25 @@ export default function UserLayout({
     setIsMounted(true);
     if (!isUserLoading && !user) {
       if (window.location.pathname.startsWith('/user')) {
-        router.push('/login');
+        router.push('/login?role=user');
       }
     }
   }, [user, isUserLoading, router]);
 
   const handleLogout = () => {
     if (!auth) return;
-    if (user && db) {
+    if (user?.uid && db) {
       const userDocRef = doc(db, 'users', user.uid);
       updateDoc(userDocRef, { isOnline: false, currentLocation: null });
     }
     auth.signOut().then(() => {
       localStorage.removeItem('curocity-session');
-      router.push('/login');
+      router.push('/login?role=user');
     });
   };
 
   const getInitials = (name: string | null | undefined) => {
-    if (!name) return 'U';
+    if (!name) return 'R';
     const names = name.split(' ');
     return names.length > 1 ? names[0][0] + names[1][0] : name.substring(0, 2);
   }
