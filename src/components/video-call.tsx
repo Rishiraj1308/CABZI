@@ -3,11 +3,15 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { useFirebase } from '@/firebase/client-provider';
-import { doc, getDoc, updateDoc, collection, addDoc, onSnapshot, setDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, collection, addDoc, onSnapshot, setDoc, query, orderBy, Timestamp } from 'firebase/firestore';
 import { Button } from './ui/button';
-import { PhoneOff, Mic, MicOff, Video, VideoOff } from 'lucide-react';
+import { PhoneOff, Mic, MicOff, Video, VideoOff, Send, MessageSquare } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
+import { Input } from './ui/input';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from './ui/sheet';
+import { Avatar, AvatarFallback } from './ui/avatar';
+import { cn } from '@/lib/utils';
 
 // Polyfill for WebRTC
 import 'webrtc-adapter';
@@ -21,10 +25,21 @@ const servers = {
   iceCandidatePoolSize: 10,
 };
 
+interface ChatMessage {
+    id: string;
+    text: string;
+    senderId: string;
+    timestamp: Timestamp;
+}
+
 export default function VideoCall() {
   const [isMuted, setIsMuted] = useState(false);
   const [isVideoOff, setIsVideoOff] = useState(false);
   const [callStatus, setCallStatus] = useState('Connecting...');
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  const [chatInput, setChatInput] = useState('');
+  const [isSending, setIsSending] = useState(false);
 
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
@@ -75,10 +90,10 @@ export default function VideoCall() {
         type: offerDescription.type,
       };
 
-      await setDoc(callDoc, { offer });
+      await setDoc(callDoc, { offer }, { merge: true });
 
       // Listen for answer
-      onSnapshot(callDoc, (snapshot) => {
+      const unsubCall = onSnapshot(callDoc, (snapshot) => {
         const data = snapshot.data();
         if (!pc.current?.currentRemoteDescription && data?.answer) {
           const answerDescription = new RTCSessionDescription(data.answer);
@@ -87,7 +102,7 @@ export default function VideoCall() {
       });
 
       // Listen for ICE candidates
-      onSnapshot(answerCandidates, (snapshot) => {
+      const unsubAnswerCandidates = onSnapshot(answerCandidates, (snapshot) => {
         snapshot.docChanges().forEach((change) => {
           if (change.type === 'added') {
             const candidate = new RTCIceCandidate(change.doc.data());
@@ -95,23 +110,38 @@ export default function VideoCall() {
           }
         });
       });
+      
+      // Listen for Chat Messages
+      const messagesRef = collection(db, 'calls', callId, 'messages');
+      const q = query(messagesRef, orderBy('timestamp', 'asc'));
+      const unsubMessages = onSnapshot(q, (snapshot) => {
+        const messages = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ChatMessage));
+        setChatMessages(messages);
+      });
+
+      return () => {
+          unsubCall();
+          unsubAnswerCandidates();
+          unsubMessages();
+      }
     };
 
-    setupWebRTC().catch(e => {
+    const cleanup = setupWebRTC().catch(e => {
         console.error("WebRTC Setup failed:", e)
         toast({variant: 'destructive', title: "Video Call Failed", description: "Could not initialize video call. Please check camera/microphone permissions."})
     });
 
     return () => {
+        cleanup.then(unsub => {
+            if(unsub) unsub();
+        });
         pc.current?.close();
     };
   }, [callId, db, user, toast]);
 
   const hangUp = () => {
     pc.current?.close();
-    // Redirect or update call status in Firestore
     setCallStatus('Call Ended');
-    // window.close(); // or router.push(...)
   };
 
   const toggleMute = () => {
@@ -130,6 +160,25 @@ export default function VideoCall() {
     }
   };
 
+  const handleSendMessage = async () => {
+    if (!chatInput.trim() || !user || !db || !callId) return;
+    setIsSending(true);
+    const messagesRef = collection(db, 'calls', callId, 'messages');
+    try {
+      await addDoc(messagesRef, {
+        text: chatInput,
+        senderId: user.uid,
+        timestamp: serverTimestamp(),
+      });
+      setChatInput('');
+    } catch (error) {
+      console.error('Error sending message:', error);
+      toast({ variant: 'destructive', title: 'Message Failed' });
+    } finally {
+      setIsSending(false);
+    }
+  };
+
   return (
     <div className="w-full h-screen bg-black text-white flex flex-col relative">
       <div className="flex-1 relative">
@@ -140,13 +189,41 @@ export default function VideoCall() {
       </div>
       <div className="absolute bottom-0 left-0 right-0 p-4 z-10">
         <Card className="max-w-lg mx-auto bg-black/50 backdrop-blur-sm border-white/20">
-          <CardContent className="p-4 flex justify-center items-center gap-4">
-             <Button variant="outline" size="icon" className="bg-transparent text-white hover:bg-white/10 w-16 h-16 rounded-full" onClick={toggleMute}>
+          <CardContent className="p-4 flex justify-center items-center gap-2">
+             <Button variant="outline" size="icon" className="bg-transparent text-white hover:bg-white/10 w-14 h-14 rounded-full" onClick={toggleMute}>
                 {isMuted ? <MicOff className="h-6 w-6"/> : <Mic className="h-6 w-6"/>}
             </Button>
-            <Button variant="outline" size="icon" className="bg-transparent text-white hover:bg-white/10 w-16 h-16 rounded-full" onClick={toggleVideo}>
+            <Button variant="outline" size="icon" className="bg-transparent text-white hover:bg-white/10 w-14 h-14 rounded-full" onClick={toggleVideo}>
                  {isVideoOff ? <VideoOff className="h-6 w-6"/> : <Video className="h-6 w-6"/>}
             </Button>
+             <Sheet open={isChatOpen} onOpenChange={setIsChatOpen}>
+                <SheetTrigger asChild>
+                    <Button variant="outline" size="icon" className="bg-transparent text-white hover:bg-white/10 w-14 h-14 rounded-full">
+                        <MessageSquare className="h-6 w-6"/>
+                    </Button>
+                </SheetTrigger>
+                <SheetContent>
+                    <SheetHeader>
+                        <SheetTitle>Consultation Chat</SheetTitle>
+                    </SheetHeader>
+                    <div className="h-full flex flex-col pt-4">
+                        <div className="flex-1 overflow-y-auto space-y-4 pr-2">
+                            {chatMessages.map(msg => (
+                                <div key={msg.id} className={cn("flex items-end gap-2", msg.senderId === user?.uid ? "justify-end" : "justify-start")}>
+                                     {msg.senderId !== user?.uid && <Avatar className="w-6 h-6"><AvatarFallback>Dr</AvatarFallback></Avatar>}
+                                     <div className={cn("max-w-[75%] p-2 px-3 rounded-2xl text-sm", msg.senderId === user?.uid ? 'bg-primary text-primary-foreground rounded-br-none' : 'bg-muted text-foreground rounded-bl-none')}>
+                                        {msg.text}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                        <div className="mt-4 flex gap-2">
+                           <Input value={chatInput} onChange={(e) => setChatInput(e.target.value)} onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()} placeholder="Type a message..."/>
+                           <Button onClick={handleSendMessage} disabled={isSending}><Send className="w-4 h-4"/></Button>
+                        </div>
+                    </div>
+                </SheetContent>
+            </Sheet>
             <Button variant="destructive" size="icon" className="w-16 h-16 rounded-full" onClick={hangUp}>
               <PhoneOff className="h-6 w-6" />
             </Button>
