@@ -4,7 +4,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Calendar as CalendarIcon, Stethoscope, Clock, Search, ArrowLeft, IndianRupee, MapPin, HeartPulse, SlidersHorizontal, Filter, SortAsc } from 'lucide-react';
+import { Calendar as CalendarIcon, Stethoscope, Clock, Search, ArrowLeft, IndianRupee, MapPin, HeartPulse, SlidersHorizontal, Filter, SortAsc, Video, Building } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Calendar } from '@/components/ui/calendar';
@@ -67,6 +67,7 @@ export default function BookAppointmentPage() {
   const [selectedDoctor, setSelectedDoctor] = useState<Doctor | null>(null);
   const [date, setDate] = useState<Date | undefined>(new Date());
   const [time, setTime] = useState('');
+  const [consultationType, setConsultationType] = useState<'in-clinic' | 'video' | ''>('');
   const { toast } = useToast();
   const { user, db } = useFirebase();
   const [session, setSession] = useState<ClientSession | null>(null);
@@ -187,10 +188,10 @@ export default function BookAppointmentPage() {
   }, [doctors, searchQuery, selectedSymptom, sortBy, priceRange, genderFilter, availabilityFilter]);
 
 
-  const resetFlow = () => { setStep(1); setSelectedDoctor(null); setDate(new Date()); setTime(''); setIsBooking(false); };
+  const resetFlow = () => { setStep(1); setSelectedDoctor(null); setDate(new Date()); setTime(''); setConsultationType(''); setIsBooking(false); };
   
   const handleBookingConfirmation = async () => {
-      if (!selectedDoctor || !session || !db || !date || !time) { toast({ variant: 'destructive', title: 'Error', description: 'Missing required information to book.' }); return; }
+      if (!selectedDoctor || !session || !db || !date || !time || !consultationType) { toast({ variant: 'destructive', title: 'Error', description: 'Missing required information to book.' }); return; }
       setIsBooking(true);
       try {
         const userDoc = await getDoc(doc(db, "users", session.userId));
@@ -209,7 +210,9 @@ export default function BookAppointmentPage() {
             hospitalId: selectedDoctor.hospitalId, hospitalName: selectedDoctor.hospitalName,
             doctorId: selectedDoctor.id, doctorName: `Dr. ${selectedDoctor.name}`,
             department: selectedDoctor.specialization, appointmentDate: appointmentDateTime,
-            appointmentTime: time, status: 'Pending', createdAt: serverTimestamp()
+            appointmentTime: time, 
+            consultationType: consultationType,
+            status: 'Pending', createdAt: serverTimestamp()
         });
         toast({ title: "Appointment Requested!", description: `Your request for Dr. ${selectedDoctor?.name} has been sent. You will be notified upon confirmation.`, className: 'bg-green-600 border-green-600 text-white' });
         resetFlow();
@@ -285,6 +288,25 @@ export default function BookAppointmentPage() {
                 </CardHeader>
                  <CardContent className="space-y-6">
                     <div className="p-3 rounded-lg border bg-muted/50 flex justify-between items-center"><span className="font-semibold">Consultation Fee</span><span className="font-bold text-lg text-primary">₹{selectedDoctor.consultationFee}</span></div>
+                    
+                    <div className="space-y-3">
+                      <Label className="font-semibold">Select Consultation Type</Label>
+                      <RadioGroup onValueChange={(v) => setConsultationType(v as any)} value={consultationType} className="grid grid-cols-2 gap-4">
+                          <div>
+                              <RadioGroupItem value="in-clinic" id="in-clinic" className="peer sr-only" />
+                              <Label htmlFor="in-clinic" className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary">
+                                  <Building className="mb-3 h-6 w-6" /> In-Clinic
+                              </Label>
+                          </div>
+                           <div>
+                              <RadioGroupItem value="video" id="video" className="peer sr-only" />
+                              <Label htmlFor="video" className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary">
+                                  <Video className="mb-3 h-6 w-6" /> Video
+                              </Label>
+                          </div>
+                      </RadioGroup>
+                    </div>
+
                     <div className="space-y-2">
                         <Label>Select Appointment Date</Label>
                         <Popover>
@@ -303,7 +325,7 @@ export default function BookAppointmentPage() {
                     </div>
                  </CardContent>
                  <CardFooter>
-                     <Button className="w-full" onClick={handleBookingConfirmation} disabled={!date || !time || isBooking}>{isBooking ? 'Requesting...' : 'Request Appointment'}</Button>
+                     <Button className="w-full" onClick={handleBookingConfirmation} disabled={!date || !time || isBooking || !consultationType}>{isBooking ? 'Requesting...' : 'Request Appointment'}</Button>
                  </CardFooter>
             </>
         )}
