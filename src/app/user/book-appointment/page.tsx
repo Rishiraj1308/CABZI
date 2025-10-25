@@ -269,7 +269,7 @@ export default function BookAppointmentPage() {
       </div>
 
       <div className="space-y-4">
-          <Label className="font-semibold text-lg">Start by Symptom</Label>
+          <Label className="font-semibold text-lg">Search by Common Symptoms</Label>
           <Carousel opts={{ align: "start", loop: false, skipSnaps: true }} className="w-full">
               <CarouselContent className="-ml-2">
                   {symptomCategories.map((symptom, i) => (
