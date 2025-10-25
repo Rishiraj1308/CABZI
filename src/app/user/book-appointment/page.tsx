@@ -157,8 +157,13 @@ export default function BookAppointmentPage() {
   const filteredAndSortedDoctors = useMemo(() => {
     return doctors
       .filter(d => {
+        const lowercasedQuery = searchQuery.toLowerCase();
         const symptomMatch = selectedSymptom ? symptomCategories.find(s => s.name === selectedSymptom)?.specializations.includes(d.specialization) : true;
-        const searchMatch = searchQuery ? d.name.toLowerCase().includes(searchQuery.toLowerCase()) || d.specialization.toLowerCase().includes(searchQuery.toLowerCase()) : true;
+        const searchMatch = searchQuery ? 
+            d.name.toLowerCase().includes(lowercasedQuery) || 
+            d.specialization.toLowerCase().includes(lowercasedQuery) ||
+            d.hospitalName.toLowerCase().includes(lowercasedQuery)
+            : true;
         const priceMatch = d.consultationFee <= priceRange[0];
         const genderMatch = genderFilter === 'any' || d.gender === genderFilter;
         // Mock availability filter
@@ -237,7 +242,7 @@ export default function BookAppointmentPage() {
                         <Label className="font-semibold">Search by Symptoms</Label>
                          <div className="flex flex-wrap gap-2">{symptomCategories.map(symptom => (<Button key={symptom.name} variant={selectedSymptom === symptom.name ? 'default' : 'outline'} size="sm" onClick={() => setSelectedSymptom(prev => prev === symptom.name ? null : symptom.name)}>{symptom.name}</Button>))}</div>
                     </div>
-                    <div className="relative"><Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><Input id="doctor-search" placeholder="Or search by doctor name or specialization..." className="pl-10" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} /></div>
+                    <div className="relative"><Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><Input id="doctor-search" placeholder="Search doctors, clinics, hospitals, or specialization..." className="pl-10" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} /></div>
                     
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4 pt-4 border-t">
                         <div className="space-y-2"><Label>Sort By</Label><Select value={sortBy} onValueChange={setSortBy}><SelectTrigger><SelectValue/></SelectTrigger><SelectContent><SelectItem value="distance">Distance: Nearest First</SelectItem><SelectItem value="price">Price: Low to High</SelectItem><SelectItem value="experience">Experience: High to Low</SelectItem></SelectContent></Select></div>
