@@ -7,6 +7,7 @@ import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FirebaseProviderClient } from '@/firebase/client-provider';
 
+// This layout now checks for a single, unified session and redirects if found.
 export default function UnauthenticatedLayout({
   children,
 }: {
@@ -14,27 +15,38 @@ export default function UnauthenticatedLayout({
 }) {
   const router = useRouter();
   const pathname = usePathname();
-  const [isMounted, setIsMounted] = useState(false);
   const [showChildren, setShowChildren] = useState(false);
 
   useEffect(() => {
-    setIsMounted(true);
-    
-    const session = localStorage.getItem('cabzi-session');
-
-    if (session) {
+    // Check for a primary session first
+    const primarySession = localStorage.getItem('curocity-session');
+    if (primarySession) {
         try {
-            const { role } = JSON.parse(session);
-            
-            // Redirect based on the primary role
+            const { role } = JSON.parse(primarySession);
             if (role) {
                  if (role === 'admin') router.replace('/admin');
-                 else router.replace(`/${role}`); // For user, driver, mechanic, cure, etc.
-                 return; // Stop further execution to prevent rendering login page
+                 else router.replace(`/${role}`);
+                 return;
             }
         } catch (e) {
-            // Corrupt session, remove it and allow login page to show.
-            localStorage.removeItem('cabzi-session');
+            localStorage.removeItem('curocity-session');
+        }
+    }
+    
+    // If no primary session, check for other partner sessions
+    const partnerSessionKeys = ['curocity-resq-session', 'curocity-cure-session', 'curocity-ambulance-session', 'curocity-doctor-session'];
+    for (const key of partnerSessionKeys) {
+        const session = localStorage.getItem(key);
+        if (session) {
+            try {
+                const { role } = JSON.parse(session);
+                if (role) {
+                    router.replace(`/${role}`);
+                    return;
+                }
+            } catch (e) {
+                localStorage.removeItem(key);
+            }
         }
     }
     
@@ -43,7 +55,7 @@ export default function UnauthenticatedLayout({
 
   }, [router]);
   
-  if (!isMounted || !showChildren) {
+  if (!showChildren) {
     return null; // Render nothing until redirection logic completes or decides to show children.
   }
 
