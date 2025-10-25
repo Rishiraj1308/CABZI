@@ -15,13 +15,15 @@ export default function UnauthenticatedLayout({
 }) {
   const router = useRouter();
   const pathname = usePathname();
+  const [isMounted, setIsMounted] = useState(false);
   const [showChildren, setShowChildren] = useState(false);
 
   useEffect(() => {
-    // This effect runs only once on the client side after the component mounts.
-    const primarySession = localStorage.getItem('curocity-session');
+    setIsMounted(true);
     let redirected = false;
-
+    
+    // Check for a primary session first
+    const primarySession = localStorage.getItem('curocity-session');
     if (primarySession) {
         try {
             const { role } = JSON.parse(primarySession);
@@ -35,6 +37,7 @@ export default function UnauthenticatedLayout({
         }
     }
     
+    // If no primary session, check for other partner sessions
     if (!redirected) {
         const partnerSessionKeys = ['curocity-resq-session', 'curocity-cure-session', 'curocity-ambulance-session', 'curocity-doctor-session'];
         for (const key of partnerSessionKeys) {
@@ -58,12 +61,13 @@ export default function UnauthenticatedLayout({
     if (!redirected) {
         setShowChildren(true);
     }
+
   // By removing `router` from the dependency array, we ensure this logic runs only once.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   
-  if (!showChildren) {
-    return null; // Render nothing until redirection logic completes.
+  if (!isMounted || !showChildren) {
+    return null; // Render nothing until redirection logic completes or decides to show children.
   }
 
   return (
