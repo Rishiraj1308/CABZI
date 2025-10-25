@@ -2,14 +2,13 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Home, Briefcase, Settings, FileText, User, LogOut, Camera } from 'lucide-react'
+import { Home, Briefcase, Settings, FileText, User, LogOut, Camera, Shield, Wallet, CreditCard, PlusCircle, Activity } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useToast } from '@/hooks/use-toast'
 import {
@@ -24,13 +23,20 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { useFirebase } from '@/firebase/client-provider'
-import { doc, getDoc } from 'firebase/firestore'
+import { doc, getDoc, collection, query, where, getDocs, Timestamp } from 'firebase/firestore'
+import { Separator } from '@/components/ui/separator'
 
 interface UserProfileData {
     name: string;
     phone: string;
     email: string;
     photoURL?: string;
+    createdAt?: Timestamp;
+}
+
+interface Ride {
+    fare?: number;
+    status: string;
 }
 
 export default function UserProfilePage() {
@@ -38,7 +44,8 @@ export default function UserProfilePage() {
     const router = useRouter();
     const { toast } = useToast();
     const [profileData, setProfileData] = useState<UserProfileData | null>(null);
-    const [isLoadingProfile, setIsLoadingProfile] = useState(true);
+    const [rides, setRides] = useState<Ride[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
         if (isUserLoading) return;
@@ -47,28 +54,41 @@ export default function UserProfilePage() {
             return;
         }
 
-        const fetchProfileData = async () => {
-            setIsLoadingProfile(true);
-            const userDocRef = doc(db, 'users', user.uid);
-            const docSnap = await getDoc(userDocRef);
+        const fetchProfileAndRides = async () => {
+            setIsLoading(true);
+            try {
+                // Fetch profile
+                const userDocRef = doc(db, 'users', user.uid);
+                const docSnap = await getDoc(userDocRef);
 
-            if (docSnap.exists()) {
-                setProfileData(docSnap.data() as UserProfileData);
-            } else {
-                 // Fallback to auth data if firestore doc is missing
-                setProfileData({
-                    name: user.displayName || 'User',
-                    phone: user.phoneNumber || '',
-                    email: user.email || '',
-                    photoURL: user.photoURL || undefined
-                });
+                if (docSnap.exists()) {
+                    setProfileData(docSnap.data() as UserProfileData);
+                } else {
+                    setProfileData({
+                        name: user.displayName || 'User',
+                        phone: user.phoneNumber || '',
+                        email: user.email || '',
+                        photoURL: user.photoURL || undefined
+                    });
+                }
+                
+                // Fetch rides
+                const ridesQuery = query(collection(db, 'rides'), where('riderId', '==', user.uid));
+                const ridesSnapshot = await getDocs(ridesQuery);
+                const ridesData: Ride[] = ridesSnapshot.docs.map(doc => doc.data() as Ride);
+                setRides(ridesData);
+
+            } catch (error) {
+                console.error("Error fetching user data:", error);
+                toast({ variant: "destructive", title: "Error", description: "Could not load profile data."});
+            } finally {
+                setIsLoading(false);
             }
-            setIsLoadingProfile(false);
         }
 
-        fetchProfileData();
+        fetchProfileAndRides();
 
-    }, [user, isUserLoading, db, router]);
+    }, [user, isUserLoading, db, router, toast]);
 
 
     const handleLogout = () => {
@@ -89,7 +109,16 @@ export default function UserProfilePage() {
         return names.length > 1 ? names[0][0] + names[1][0] : name.substring(0, 2);
     }
     
-    if (isUserLoading || isLoadingProfile) {
+    const rideStats = React.useMemo(() => {
+        const completedRides = rides.filter(r => r.status === 'completed');
+        const totalSpend = completedRides.reduce((sum, ride) => sum + (ride.fare || 0), 0);
+        return {
+            totalRides: rides.length,
+            totalSpend,
+        };
+    }, [rides]);
+
+    if (isLoading) {
         return (
             <div className="p-4 md:p-6 space-y-6">
                  <Skeleton className="h-10 w-48" />
@@ -101,6 +130,9 @@ export default function UserProfilePage() {
                             <Skeleton className="h-5 w-32" />
                         </div>
                     </CardHeader>
+                 </Card>
+                 <Card>
+                    <CardContent className="pt-6"><Skeleton className="h-20 w-full" /></CardContent>
                  </Card>
                   <Card>
                     <CardHeader><Skeleton className="h-6 w-1/3" /></CardHeader>
@@ -119,17 +151,17 @@ export default function UserProfilePage() {
 
     return (
         <div className="p-4 md:p-6 space-y-6">
-            <div className="animate-fade-in pl-16 md:pl-0">
+            <div className="animate-fade-in md:pl-0">
                 <h2 className="text-3xl font-bold tracking-tight flex items-center gap-2">
                     My Profile
                 </h2>
-                <p className="text-muted-foreground">Manage your account details and preferences.</p>
+                <p className="text-muted-foreground">Manage your account, activity, and preferences.</p>
             </div>
 
             <Card>
-                <CardHeader className="items-center text-center">
+                <CardHeader className="flex-row items-center gap-4">
                     <div className="relative">
-                        <Avatar className="w-24 h-24 border-4 border-primary">
+                        <Avatar className="w-20 h-20 border-4 border-primary">
                             <AvatarImage src={profileData.photoURL || 'https://placehold.co/100x100.png'} alt={profileData.name || ''} data-ai-hint="customer portrait" />
                             <AvatarFallback className="text-3xl">{getInitials(profileData.name).toUpperCase()}</AvatarFallback>
                         </Avatar>
@@ -138,41 +170,65 @@ export default function UserProfilePage() {
                             <span className="sr-only">Change photo</span>
                         </Button>
                     </div>
-                    <div className="pt-2">
+                    <div>
                         <CardTitle className="text-2xl">{profileData.name}</CardTitle>
-                        <CardDescription>{profileData.phone ? `+91 ${profileData.phone}` : profileData.email}</CardDescription>
+                        <CardDescription>Member since {profileData.createdAt ? profileData.createdAt.toDate().toLocaleDateString('en-US', { year: 'numeric', month: 'long' }) : '2024'}</CardDescription>
                     </div>
                 </CardHeader>
             </Card>
 
             <Card>
                 <CardHeader>
-                    <CardTitle>Saved Locations</CardTitle>
+                    <CardTitle className="flex items-center gap-2 text-lg"><Activity className="w-5 h-5"/> Activity Snapshot</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                    <div className="flex items-center gap-4">
-                        <Home className="w-5 h-5 text-muted-foreground"/>
-                        <Input placeholder="Add Home address" />
-                        <Button variant="outline">Save</Button>
+                <CardContent className="grid grid-cols-2 gap-4 text-center">
+                    <div className="p-4 bg-muted rounded-lg">
+                        <p className="text-2xl font-bold">{rideStats.totalRides}</p>
+                        <p className="text-sm text-muted-foreground">Total Rides</p>
                     </div>
-                     <div className="flex items-center gap-4">
-                        <Briefcase className="w-5 h-5 text-muted-foreground"/>
-                        <Input placeholder="Add Work address" />
-                        <Button variant="outline">Save</Button>
+                    <div className="p-4 bg-muted rounded-lg">
+                        <p className="text-2xl font-bold">₹{rideStats.totalSpend.toLocaleString()}</p>
+                        <p className="text-sm text-muted-foreground">Total Spend</p>
+                    </div>
+                </CardContent>
+            </Card>
+
+            <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2"><Shield className="w-5 h-5"/> Emergency Contact</CardTitle>
+                    <CardDescription>Add a trusted contact to be notified in case of an emergency.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <div className="flex items-center gap-4">
+                        <Input placeholder="Enter contact's name & number" />
+                        <Button><PlusCircle className="w-4 h-4 mr-2"/> Add Contact</Button>
                     </div>
                 </CardContent>
             </Card>
             
-            <Card>
+             <Card>
                 <CardHeader>
-                    <CardTitle>Settings & Legal</CardTitle>
+                    <CardTitle className="flex items-center gap-2"><Wallet className="w-5 h-5"/> Payment Methods</CardTitle>
+                     <CardDescription>Manage your saved payment options for quick and easy checkout.</CardDescription>
                 </CardHeader>
-                <CardContent>
-                    <div className="flex flex-col gap-2">
-                        <Button variant="ghost" className="w-full justify-start gap-2"><Settings className="w-5 h-5"/> Account Settings</Button>
-                        <Button asChild variant="ghost" className="w-full justify-start gap-2"><Link href="/terms"><FileText className="w-5 h-5"/> Terms of Service</Link></Button>
-                        <Button asChild variant="ghost" className="w-full justify-start gap-2"><Link href="/privacy"><FileText className="w-5 h-5"/> Privacy Policy</Link></Button>
+                <CardContent className="space-y-3">
+                    <div className="flex items-center p-3 rounded-lg border">
+                        <CreditCard className="w-6 h-6 mr-4 text-muted-foreground"/>
+                        <div className="flex-1">
+                            <p className="font-semibold">HDFC Bank Credit Card</p>
+                            <p className="text-sm text-muted-foreground">**** **** **** 1234</p>
+                        </div>
+                         <Button variant="outline" size="sm">Remove</Button>
                     </div>
+                     <div className="flex items-center p-3 rounded-lg border">
+                        <Wallet className="w-6 h-6 mr-4 text-muted-foreground"/>
+                        <div className="flex-1">
+                            <p className="font-semibold">UPI</p>
+                            <p className="text-sm text-muted-foreground">user@okicici</p>
+                        </div>
+                         <Button variant="outline" size="sm">Remove</Button>
+                    </div>
+                     <Button variant="outline" className="w-full mt-2"><PlusCircle className="w-4 h-4 mr-2"/> Add New Payment Method</Button>
                 </CardContent>
             </Card>
 
