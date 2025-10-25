@@ -1,9 +1,9 @@
 
-# Cabzi: The CPR Ecosystem (Cure-Path-ResQ)
+# Curocity: The CPR Ecosystem (Cure-Path-ResQ)
 
-Cabzi is a full-stack, multi-tenant web application that re-imagines urban mobility by integrating a fair, 0% commission ride-hailing service with a life-saving emergency response network.
+Curocity is a full-stack, multi-tenant web application that re-imagines urban mobility by integrating a fair, 0% commission ride-hailing service with a life-saving emergency response network.
 
-This repository contains the complete source code for the Cabzi platform, built with Next.js, Firebase, and TypeScript.
+This repository contains the complete source code for the Curocity platform, built with Next.js, Firebase, and TypeScript.
 
 ---
 
@@ -13,10 +13,10 @@ To get this project up and running on your local machine, follow these simple st
 
 ### 1. Clone the Repository
 
-First, you need to download the project code. Open your terminal and run the following command. This will create a `CABZI` folder on your computer.
+First, you need to download the project code. Open your terminal and run the following command. This will create a `Curocity` folder on your computer.
 
 ```bash
-git clone https://github.com/Rishiraj1308/CABZI.git
+git clone https://github.com/Rishiraj1308/Curocity.git
 ```
 
 ### 2. Navigate to the Project Directory
@@ -24,7 +24,7 @@ git clone https://github.com/Rishiraj1308/CABZI.git
 Once the download is complete, move into the newly created project folder:
 
 ```bash
-cd CABZI
+cd Curocity
 ```
 
 ### 3. Install Dependencies
@@ -81,4 +81,4 @@ Open [http://localhost:3000](http://localhost:3000) in your browser to see the a
 *   **Path (Ride-Hailing):** A 0% commission ride-hailing platform for drivers and riders with real-time tracking.
 *   **ResQ (Roadside Assistance):** An on-demand network of mechanics for partners.
 *   **Admin Panel:** A central command center to manage the entire CPR ecosystem.
-*   **Cabzi Bank:** An integrated FinTech engine for partner wallets, loans, and savings.
+*   **Curocity Bank:** An integrated FinTech engine for partner wallets, loans, and savings.

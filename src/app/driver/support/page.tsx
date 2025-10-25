@@ -59,7 +59,7 @@ export default function SupportPage() {
 
     useEffect(() => {
         if (!db) return;
-        const session = localStorage.getItem('cabzi-session');
+        const session = localStorage.getItem('curocity-session');
         if (session) {
             const { partnerId } = JSON.parse(session);
             const unsubPartner = onSnapshot(doc(db, 'partners', partnerId), (doc) => {

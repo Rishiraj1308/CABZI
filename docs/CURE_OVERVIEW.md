@@ -1,6 +1,6 @@
-# Cabzi CURE: The Partner Workflow & Technical Architecture
+# Curocity CURE: The Partner Workflow & Technical Architecture
 
-This document provides a comprehensive overview of the **Cabzi CURE** ecosystem, designed for our hospital and clinic partners. It details the end-to-end workflow, from initial onboarding to managing live emergency cases, daily operations, and the underlying technology that powers it all.
+This document provides a comprehensive overview of the **Curocity CURE** ecosystem, designed for our hospital and clinic partners. It details the end-to-end workflow, from initial onboarding to managing live emergency cases, daily operations, and the underlying technology that powers it all.
 
 ---
 
@@ -17,7 +17,7 @@ The journey begins with a professional, multi-step registration process designed
 
 ## 2. The Mission Control Dashboard (`/cure`)
 
-This is the central command center for all hospital operations on the Cabzi platform.
+This is the central command center for all hospital operations on the Curocity platform.
 
 ### A. Master Controls & Availability
 *   **Go Online/Offline:** A master switch allows the hospital to start or stop accepting new emergency requests from the network.
@@ -79,18 +79,18 @@ Every doctor added by the hospital gets their own secure login to manage their s
 ## 5. Financials: Subscriptions & Payouts
 
 *   **Subscription Management (`/cure/subscription`):** A dedicated page to view and upgrade subscription plans. It clearly lists the features of each plan and provides company bank details for payment.
-*   **Billing & Payouts (`/cure/billing`):** A transparent financial ledger showing all earnings from completed ambulance services and doctor consultations, and tracking the total amount to be paid out by Cabzi.
+*   **Billing & Payouts (`/cure/billing`):** A transparent financial ledger showing all earnings from completed ambulance services and doctor consultations, and tracking the total amount to be paid out by Curocity.
 
 ---
 
 ## 6. Insurance Integration & Claim Workflow
 
-Cabzi CURE’s Insurance module bridges the gap between patients, hospitals, and insurance providers, ensuring that every emergency or consultation can be covered seamlessly under health policies.
+Curocity CURE’s Insurance module bridges the gap between patients, hospitals, and insurance providers, ensuring that every emergency or consultation can be covered seamlessly under health policies.
 
 ### A. Insurance Verification (/cure/insurance)
 
 **Real-Time Policy Check:**
-When a rider (patient) raises an SOS or books a doctor appointment, the system automatically checks if their Cabzi profile has a linked insurance policy.
+When a rider (patient) raises an SOS or books a doctor appointment, the system automatically checks if their Curocity profile has a linked insurance policy.
 
 **Instant Verification:**
 The hospital’s dashboard receives a “Verified” or “Unverified” insurance tag on the patient’s case card.

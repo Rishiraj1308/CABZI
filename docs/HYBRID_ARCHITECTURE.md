@@ -1,8 +1,8 @@
-# Cabzi: The Hybrid & Polyglot Persistence Architecture
+# Curocity: The Hybrid & Polyglot Persistence Architecture
 
 ## 1. The Problem: One Database Can't Rule Them All
 
-As Cabzi scales from a prototype to a massive, production-grade application, relying on a single database (like Firestore) for every task becomes inefficient, expensive, and risky.
+As Curocity scales from a prototype to a massive, production-grade application, relying on a single database (like Firestore) for every task becomes inefficient, expensive, and risky.
 
 *   **Real-time databases (Firestore)** are excellent for live updates but are not ideal for complex queries, relational data (like financial ledgers), or large-scale analytics.
 *   **Relational databases (PostgreSQL)** are perfect for transactional integrity (money matters) but are not built for the kind of real-time "fan-out" messaging needed for ride requests.
@@ -33,7 +33,7 @@ Our system will be a **Hybrid Model**, leveraging both Firebase and a managed cl
     *   **Purpose:** Our primary, permanent **"source of truth"**. It guarantees data integrity (ACID compliance), which is critical for financial data.
     *   **Use Cases:**
         *   **User & Partner Profiles:** All user and partner details, verification status, documents.
-        *   **Cabzi Bank:** The entire financial ledger—wallet balances, loans, EMIs, interest calculations. All transactions **must** be ACID-compliant.
+        *   **Curocity Bank:** The entire financial ledger—wallet balances, loans, EMIs, interest calculations. All transactions **must** be ACID-compliant.
         *   **Ride History:** Permanent record of all completed or cancelled rides.
         *   **Subscriptions:** Managing partner subscription plans and validity.
     *   **Why?** PostgreSQL is rock-solid for financial data and complex queries (e.g., "Show me all partners whose earnings were > ₹2000 last week").
@@ -89,4 +89,4 @@ Here's how these databases work together in a real-world scenario, ensuring ther
 2.  The server queries **PostgreSQL** to generate the P&L statement and revenue charts, as it holds all the permanent financial data.
 3.  **Admin opens "Market Trends" page ->** The server queries **Google BigQuery** to analyze city-wide ride patterns from months of historical data.
 
-This clear separation of concerns ensures that the system is not confused. Each database has a specialized role, and the backend server is the intelligent orchestrator that knows which database to use for which job. This architecture provides Cabzi with the scalability of a major tech company, ensuring our app is fast, reliable, and cost-effective as we grow.
+This clear separation of concerns ensures that the system is not confused. Each database has a specialized role, and the backend server is the intelligent orchestrator that knows which database to use for which job. This architecture provides Curocity with the scalability of a major tech company, ensuring our app is fast, reliable, and cost-effective as we grow.

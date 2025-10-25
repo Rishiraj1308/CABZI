@@ -1,13 +1,13 @@
 
-# Cabzi: The Quick Brief & Notes
+# Curocity: The Quick Brief & Notes
 
-This document provides a concise, at-a-glance summary of the entire Cabzi project. Use this as a quick reference for the core concepts, goals, and business logic.
+This document provides a concise, at-a-glance summary of the entire Curocity project. Use this as a quick reference for the core concepts, goals, and business logic.
 
 ---
 
 ## 1. The Core Idea (The "What")
 
-- **One-Liner:** Cabzi is a zero-commission ride-hailing app that empowers drivers with a FinTech ecosystem, offering fair fares to riders.
+- **One-Liner:** Curocity is a zero-commission ride-hailing app that empowers drivers with a FinTech ecosystem, offering fair fares to riders.
 - **Mission:** To fix India's broken ride-hailing market by focusing on driver welfare, which in turn creates a better service for riders.
 
 ---
@@ -31,7 +31,7 @@ This document provides a concise, at-a-glance summary of the entire Cabzi projec
     - **How:** Drivers pay a small, fixed subscription fee (daily/monthly).
     - **Result:** They keep 100% of the ride fare, leading to higher and more predictable income.
 
-- **The FinTech Ecosystem ("Cabzi Bank"):**
+- **The FinTech Ecosystem ("Curocity Bank"):**
     - **What:** A free, in-app financial hub for every driver.
     - **Features:**
         1.  **Instant Wallet:** Earnings are credited instantly.
@@ -52,7 +52,7 @@ This document provides a concise, at-a-glance summary of the entire Cabzi projec
 We have three clear revenue streams:
 
 1.  **Partner Subscriptions:** Our primary, stable income from driver subscription fees.
-2.  **Cabzi Bank (Net Interest Margin):** We earn a profit margin between the interest we pay on savings (e.g., 5%) and the interest we earn from loans (e.g., 15%) and other safe investments.
+2.  **Curocity Bank (Net Interest Margin):** We earn a profit margin between the interest we pay on savings (e.g., 5%) and the interest we earn from loans (e.g., 15%) and other safe investments.
 3.  **Value-Added Services (VAS):** Future income from partnerships with garages, insurance companies, etc., where we take a small, fixed cut.
 
 ---

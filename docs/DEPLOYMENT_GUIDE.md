@@ -36,13 +36,13 @@ Now, we'll install Capacitor and initialize it.
     ```
 
 2.  **Initialize Capacitor:**
-    The `npx cap init` command will ask you for your app name and an app ID (usually in reverse domain style, e.g., `com.cabzi.app`).
+    The `npx cap init` command will ask you for your app name and an app ID (usually in reverse domain style, e.g., `com.curocity.app`).
 
     ```bash
     npx cap init
     ```
-    *   **App Name:** Cabzi
-    *   **App ID:** com.cabzi.app
+    *   **App Name:** Curocity
+    *   **App ID:** com.curocity.app
     *   **Web Asset Directory:** When prompted, enter `out` (this is the folder Next.js created in Step 1).
 
 ---
@@ -118,4 +118,4 @@ You are now ready to build the final Android app.
 
 ---
 
-**Conclusion:** By following these steps, you can successfully package your "Cabzi" Next.js application into a native Android app with a custom icon, leveraging your existing web development efforts to reach a wider audience on the Play Store.
+**Conclusion:** By following these steps, you can successfully package your "Curocity" Next.js application into a native Android app with a custom icon, leveraging your existing web development efforts to reach a wider audience on the Play Store.

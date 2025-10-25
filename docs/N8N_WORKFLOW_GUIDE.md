@@ -1,6 +1,6 @@
-# n8n Workflow Integration Guide for Cabzi
+# n8n Workflow Integration Guide for Curocity
 
-This document explains the "Why" and "How" of integrating **n8n**, a powerful workflow automation tool, into the Cabzi ecosystem. It allows the non-technical operations team to build, test, and deploy automated business logic without writing code.
+This document explains the "Why" and "How" of integrating **n8n**, a powerful workflow automation tool, into the Curocity ecosystem. It allows the non-technical operations team to build, test, and deploy automated business logic without writing code.
 
 ---
 
@@ -64,9 +64,9 @@ We need a public URL that forwards traffic to our local n8n instance.
     ```
 3.  **Get the Public URL:** `ngrok` will give you a public "Forwarding" URL, like `https://<random-id>.ngrok-free.app`. **This is the magic URL.**
 
-### Step 4: Connecting the Cabzi App to Your n8n Workflow
+### Step 4: Connecting the Curocity App to Your n8n Workflow
 
-1.  **Update the `.env` file:** Open the `.env` file in the Cabzi project's root directory.
+1.  **Update the `.env` file:** Open the `.env` file in the Curocity project's root directory.
 2.  **Set the Webhook URL:** Find the `N8N_WEBHOOK_URL` variable and set its value to the public `ngrok` URL you copied, making sure to add `/webhook/high-demand` at the end. For example:
     ```
     N8N_WEBHOOK_URL="https://<random-id>.ngrok-free.app/webhook/high-demand"
@@ -76,9 +76,7 @@ We need a public URL that forwards traffic to our local n8n instance.
 ### Step 5: Testing the Full Flow
 
 1.  **Listen for Data:** In your n8n Webhook node, click the **"Listen for Test Event"** button. Your n8n is now waiting for data.
-2.  **Trigger the Event:** In the Cabzi Admin Panel, go to the **Live Map** (`/admin/map`). Click the **"Simulate High Demand"** button.
+2.  **Trigger the Event:** In the Curocity Admin Panel, go to the **Live Map** (`/admin/map`). Click the **"Simulate High Demand"** button.
 3.  **See the Magic:** Go back to your n8n browser tab. You will see that the event data (e.g., `{ "zoneName": "Cyber Hub, Gurgaon" }`) has been successfully received by your local workflow!
 
-You can now add more nodes in n8n (like "Send Email", "Send Slack Message", or even a "Push Notification" node) to build powerful automations based on events from the Cabzi app.
-
-    
+You can now add more nodes in n8n (like "Send Email", "Send Slack Message", or even a "Push Notification" node) to build powerful automations based on events from the Curocity app.

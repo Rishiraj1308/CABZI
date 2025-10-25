@@ -1,4 +1,4 @@
-# Cabzi Garage Blueprint
+# Curocity Garage Blueprint
 
 ## 1. 🎯 Garage Onboarding Flow
 
@@ -17,7 +17,7 @@
 
 ### Step 3: Bank Setup
 
-*   Current Account auto-create (Cabzi Bank)
+*   Current Account auto-create (Curocity Bank)
 *   Option to link existing current account
 *   Auto-sweep savings pocket (interest feature) explained
 
@@ -35,7 +35,7 @@
 
 ### Step 6: Approval
 
-*   Cabzi admin verify docs → Garage goes live
+*   Curocity admin verify docs → Garage goes live
 
 ---
 
@@ -45,28 +45,28 @@ Garage ka role ek **Hotspot Hub** jaisa hai:
 
 *   **On-spot repair:** Job freelancer mechanic le sakta hai.
 *   **Major repair / towing:** Job garage mechanic ke paas route hoga.
-*   **Auto-allocation:** Rider ko dikhega → “Nearest ResQ Partner” + “Cabzi Garage Option”
+*   **Auto-allocation:** Rider ko dikhega → “Nearest ResQ Partner” + “Curocity Garage Option”
 
 ### Revenue Split
 
 *   **Garage job** = Payout directly Garage current a/c me
 *   **Mechanic job** = Payout directly Mechanic a/c me
-*   Cabzi only takes subscription, not per job commission
+*   Curocity only takes subscription, not per job commission
 
 ---
 
-## 3. 💰 Cabzi Bank Integration
+## 3. 💰 Curocity Bank Integration
 
 ### Garage ke liye:
 
-*   Cabzi Bank Current A/c milega
+*   Curocity Bank Current A/c milega
 *   Auto Sweep → Savings Pocket for interest
 *   Monthly payout report (earnings + expenses + mechanic settlement)
 
 ### Mechanics under Garage:
 
 *   Salary ya payout Garage → Mechanic a/c ke through settle hoga (monthly or per job)
-*   Cabzi ke side se koi direct charge nahi
+*   Curocity ke side se koi direct charge nahi
 
 ---
 
@@ -81,7 +81,7 @@ Garage ka role ek **Hotspot Hub** jaisa hai:
 *   Add/Remove Mechanics
 *   Track performance & jobs
 
-### Cabzi Bank
+### Curocity Bank
 *   Balance (Current + Savings Pocket)
 *   Withdraw / Transfer
 *   Loan / Overdraft option
@@ -100,7 +100,7 @@ Garage ka role ek **Hotspot Hub** jaisa hai:
 ## 5. 🚀 Future Add-ons
 
 *   **Insurance tie-up** → Garage gets claims jobs directly
-*   **Spare parts marketplace** → Garage can order parts via Cabzi
-*   **Credit line** → Garage can buy parts/service on credit from Cabzi Bank
+*   **Spare parts marketplace** → Garage can order parts via Curocity
+*   **Credit line** → Garage can buy parts/service on credit from Curocity Bank
 
 👉 Bhai isse Garage ek Business Hub ban jaayega aur freelancer mechanics ek Support Force.

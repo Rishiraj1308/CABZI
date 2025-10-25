@@ -1,16 +1,16 @@
-# Master Prompt: Generate the Cabzi PostgreSQL Schema with Prisma
+# Master Prompt: Generate the Curocity PostgreSQL Schema with Prisma
 
 ## 1. Project Vision & Core Concept
 
 **Build a complete database schema for a PostgreSQL database using the Prisma ORM.**
 
-The application is **"Cabzi"**, India's first unified CPR (Cure-Path-ResQ) ecosystem. The schema must be robust, scalable, and production-ready to handle ride-hailing, emergency response, and financial transactions.
+The application is **"Curocity"**, India's first unified CPR (Cure-Path-ResQ) ecosystem. The schema must be robust, scalable, and production-ready to handle ride-hailing, emergency response, and financial transactions.
 
 The schema must support four main user roles:
 *   **Riders:** Customers who book rides.
 *   **Partners:** Drivers, Mechanics, and Hospital Admins.
 *   **Ambulance Drivers:** Individual drivers belonging to a hospital.
-*   **Admins:** Cabzi's internal team.
+*   **Admins:** Curocity's internal team.
 
 ## 2. Technical Requirements
 
@@ -58,7 +58,7 @@ Generate the Prisma models as described below.
     *   `photoUrl`: `String?`
     *   `panCard`: `String` (Unique)
     *   `aadhaarNumber`: `String` (Unique)
-    *   `isCabziPinkPartner`: `Boolean` (@default(false))
+    *   `isCurocityPinkPartner`: `Boolean` (@default(false))
     *   `rating`: `Float` (@default(5.0))
     *   `ridesToday`, `jobsToday`, `casesToday`: `Int` (@default(0))
     *   `suspensionEndDate`: `DateTime?`
@@ -133,7 +133,7 @@ Generate the Prisma models as described below.
 ---
 
 ### **Model: `Wallet` & `Transaction`**
-*   **Purpose:** The financial engine of Cabzi Bank.
+*   **Purpose:** The financial engine of Curocity Bank.
 *   **Model: `Wallet`**
     *   `id`: `String` (Primary Key, CUID)
     *   `balance`: `Float` (@default(0))

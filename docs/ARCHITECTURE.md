@@ -1,6 +1,6 @@
-# Cabzi: The System Architecture Blueprint (Production-Ready)
+# Curocity: The System Architecture Blueprint (Production-Ready)
 
-This document provides a high-level overview of the technical architecture of the Cabzi application. It explains how different components work together to create a seamless, real-time, and scalable experience for riders, partners, and admins.
+This document provides a high-level overview of the technical architecture of the Curocity application. It explains how different components work together to create a seamless, real-time, and scalable experience for riders, partners, and admins.
 
 ## 1. Core Philosophy: Firebase-First, Scalable, and Server-Centric
 
@@ -72,4 +72,4 @@ The architecture is built on a "Firebase-first" principle, leveraging its powerf
 5.  **Driver accepts:** The driver's app receives the notification and updates the *specific ride document* (`/rides/{rideId}`), setting `status: 'accepted'`.
 6.  **Rider gets update:** The rider's app, which is only listening to that *one single document*, gets the update instantly and shows the driver's details.
 
-This **server-centric, push-based model** is the core of Cabzi's scalable and cost-effective architecture.
+This **server-centric, push-based model** is the core of Curocity's scalable and cost-effective architecture.

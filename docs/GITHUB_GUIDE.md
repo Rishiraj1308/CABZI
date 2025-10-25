@@ -1,6 +1,6 @@
-# GitHub Guide: How to Push Your "Cabzi" Project
+# GitHub Guide: How to Push Your "Curocity" Project
 
-This guide provides simple, step-by-step instructions on how to upload your entire "Cabzi" project to a new GitHub repository from your local machine using the command line.
+This guide provides simple, step-by-step instructions on how to upload your entire "Curocity" project to a new GitHub repository from your local machine using the command line.
 
 ---
 
@@ -18,12 +18,12 @@ First, you need a place on GitHub to store your project.
 1.  **Go to GitHub:** Log in to your GitHub account.
 2.  **Create New Repository:** Click on the `+` icon in the top-right corner and select **"New repository"**.
 3.  **Name Your Repository:**
-    *   **Repository name:** `cabzi-app` (or any name you prefer).
+    *   **Repository name:** `curocity-app` (or any name you prefer).
     *   **Description:** (Optional) "A full-stack CPR (Cure-Path-ResQ) ecosystem built with Next.js and Firebase."
 4.  **Set to Public:** Make sure **"Public"** is selected so that recruiters and others can see your work.
 5.  **❌ DO NOT Initialize:** **This is the most important step.** Do **not** check any of the boxes for "Add a README file," "Add .gitignore," or "Choose a license." Your local project already has these files. We need a completely empty repository.
 6.  **Create Repository:** Click the **"Create repository"** button.
-7.  **Copy the URL:** On the next page, GitHub will show you some commands. All we need is the repository URL. It will look like this: `https://github.com/YOUR_USERNAME/cabzi-app.git`. Copy this URL.
+7.  **Copy the URL:** On the next page, GitHub will show you some commands. All we need is the repository URL. It will look like this: `https://github.com/YOUR_USERNAME/curocity-app.git`. Copy this URL.
 
 ---
 
@@ -32,7 +32,7 @@ First, you need a place on GitHub to store your project.
 Now, open a terminal or command prompt inside your project's folder.
 
 1.  **Open a Terminal in Your Project Folder:**
-    *   Navigate to your main `cabzi` project directory in your terminal.
+    *   Navigate to your main `curocity` project directory in your terminal.
 
 2.  **Run the Following Git Commands:**
     *   Run these commands one by one.
@@ -48,11 +48,11 @@ Now, open a terminal or command prompt inside your project's folder.
 
     # Step 3: Save your files' current state in a "commit"
     # The -m flag lets you write a commit message.
-    git commit -m "Initial commit: Cabzi CPR Ecosystem MVP"
+    git commit -m "Initial commit: Curocity CPR Ecosystem MVP"
 
     # Step 4: Link your local repository to the one you created on GitHub
     # IMPORTANT: Replace the URL with the one you copied from your GitHub page.
-    git remote add origin https://github.com/YOUR_USERNAME/cabzi-app.git
+    git remote add origin https://github.com/YOUR_USERNAME/curocity-app.git
 
     # Step 5: Push (upload) your committed code to GitHub
     # The '-u' flag links your local 'main' branch to the remote 'origin/main' branch

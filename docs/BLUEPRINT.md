@@ -1,4 +1,4 @@
-# Cabzi: The Technical Blueprint
+# Curocity: The Technical Blueprint
 
 ## 1. Core Mission
 
@@ -89,7 +89,7 @@ Routing/Geocoding: OSRM + Nominatim API
 2.  Go Online → send live location
 3.  Accept Ride → via FCM
 4.  Trip → OTP verification
-5.  Completion → fare credited to Cabzi Wallet
+5.  Completion → fare credited to Curocity Wallet
 
 **ResQ Partner (Mechanic):**
 

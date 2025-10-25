@@ -26,16 +26,16 @@
 - Kaam hone ke baad “Mark Job Completed” button dabata hai
 - Rider job complete confirm karta hai → Payment trigger hoti hai
 
-## 4. Payment Flow (Cabzi Bank + Wallet)
+## 4. Payment Flow (Curocity Bank + Wallet)
 
-- Rider → Cabzi app se pay karega (UPI/Card/Wallet)
-- Amount instantly credit hota hai ResQ Partner ke Cabzi Bank Wallet me
+- Rider → Curocity app se pay karega (UPI/Card/Wallet)
+- Amount instantly credit hota hai ResQ Partner ke Curocity Bank Wallet me
 - Wallet →
     - “Withdraw to Bank” (IMPS/UPI instant payout)
     - “Save in Wallet & Earn 5% interest”
 - Saath hi Interest Tracker + Goal Saving + Loan EMI auto-deduction work karega.
 
-## 5. Bank/Finance Features (Cabzi Bank inside ResQ)
+## 5. Bank/Finance Features (Curocity Bank inside ResQ)
 
 - **Instant Wallet Credit** – har job complete ke baad turant paisa
 - **5% Interest** – wallet me rakhe paiso par

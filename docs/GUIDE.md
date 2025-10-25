@@ -1,6 +1,6 @@
-# Cabzi Guide: How It Works
+# Curocity Guide: How It Works
 
-This guide provides a complete overview of the Cabzi CPR (Cure-Path-ResQ) ecosystem, explaining the journey of each user role and the core functionalities of the platform.
+This guide provides a complete overview of the Curocity CPR (Cure-Path-ResQ) ecosystem, explaining the journey of each user role and the core functionalities of the platform.
 
 ---
 
@@ -15,11 +15,11 @@ The rider's experience is designed to be simple, safe, and reliable.
 - To start the trip, the rider shares a **4-digit OTP** with the driver.
 
 ### Step 2: Accessing Healthcare (The "Cure" Partner)
-This is the core of the Cabzi safety net, offering a complete healthcare solution.
+This is the core of the Curocity safety net, offering a complete healthcare solution.
 
 **A. Emergency SOS:**
 - **Smart Triage:** In an emergency, the rider selects the **severity** of the situation (e.g., "Critical," "Serious," "Non-Critical").
-- **Find Nearest Hospital:** The app automatically finds the nearest verified **Cabzi Cure Partners (Hospitals)**.
+- **Find Nearest Hospital:** The app automatically finds the nearest verified **Curocity Cure Partners (Hospitals)**.
 - **One-Click Request:** The rider selects a hospital and confirms the request, which is instantly sent to the hospital's **Mission Control Dashboard**.
 - **Ambulance Dispatched:** The hospital accepts the case and dispatches an ambulance. The rider's app shows the **live location of the incoming ambulance**, its ETA, and the paramedic's details.
 
@@ -43,10 +43,10 @@ The Path Partner's experience is focused on maximizing earnings and providing a 
 
 ### Step 3: Completing a Ride
 - Upon accepting, they collect the **4-digit OTP** from the rider to start the trip.
-- After completion, the fare is automatically added to their **Cabzi Bank Wallet**.
+- After completion, the fare is automatically added to their **Curocity Bank Wallet**.
 
 ### Step 4: Accessing the Ecosystem
-- **Cabzi Bank:** All partners get a free digital wallet with high-interest savings and access to instant loans.
+- **Curocity Bank:** All partners get a free digital wallet with high-interest savings and access to instant loans.
 - **SOS Garage:** If their vehicle breaks down, they can use the app to request an on-demand **ResQ Partner (Mechanic)**.
 
 ---
@@ -59,7 +59,7 @@ This is a B2B relationship. The hospital is our partner, using our software to m
 - A hospital administrator completes a **multi-step onboarding process**, providing hospital registration details, department information, and uploading necessary compliance documents.
 
 ### Step 2: The Mission Control Dashboard
-- Once verified, the hospital gains access to their **Cabzi Cure Mission Control Dashboard**.
+- Once verified, the hospital gains access to their **Curocity Cure Mission Control Dashboard**.
 - **Fleet Management:** They can add, manage, and track their entire ambulance fleet in real-time on a live map.
 - **Bed Availability:** A master toggle allows them to set their "ER Full" or "Beds Available" status.
 - **Manage Doctors:** They can add doctors to their roster, who then get their own portal to manage schedules.
@@ -75,6 +75,6 @@ This is a B2B relationship. The hospital is our partner, using our software to m
 
 The admin panel is the central hub for managing the entire CPR ecosystem.
 
-- **Unified Partner Management:** Admins can view, approve, reject, and manage all three types of partners—**Cure (Hospitals), Path (Drivers), and ResQ (Mechanics)**—from a single, unified interface.
+- **Unified Partner Management:** Admins can view, approve, reject, and manage all three partner types—**Cure (Hospitals), Path (Drivers), and ResQ (Mechanics)**—from a single, unified interface.
 - **Platform Audit:** Admins can view a complete history of all rides, emergency cases, and support tickets.
-- **Financial Oversight:** A dedicated panel to monitor the financial health of the platform, including Cabzi Bank operations and partner subscriptions.
+- **Financial Oversight:** A dedicated panel to monitor the financial health of the platform, including Curocity Bank operations and partner subscriptions.

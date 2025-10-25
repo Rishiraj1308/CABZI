@@ -45,16 +45,16 @@ export default function AdminTeamPage() {
     // Since this page is for demonstration of RBAC, we will keep mock data
     // but initialize it inside useEffect.
     const initialAdmins: AdminUser[] = [
-        { id: 'ADM001', name: 'Ankit Kumar', email: 'ankit.k@cabzi.com', role: 'Platform Owner', status: 'Active', salary: 'Equity', equity: '50%', icon: UserCog },
-        { id: 'ADM002', name: 'Bhaskar Sharma', email: 'bhaskar.s@cabzi.com', role: 'Co-founder', status: 'Active', salary: 'Equity', equity: '50%', icon: UserCog },
-        { id: 'ADM003', name: 'Alok Singh', email: 'alok.s@cabzi.com', role: 'Manager', status: 'Active', salary: '₹90,000', icon: Briefcase },
-        { id: 'ADM004', name: 'Priya Sharma', email: 'priya.s@cabzi.com', role: 'Support Staff', status: 'Active', salary: '₹40,000', icon: User },
-        { id: 'ADM005', name: 'Rahul Verma', email: 'rahul.v@cabzi.com', role: 'Tech Intern', status: 'Active', salary: '₹25,000', icon: Code },
-        { id: 'ADM006', name: 'AI Assistant', email: 'ai.support@cabzi.com', role: 'AI Assistant', status: 'Active', salary: 'API Credits', icon: Bot },
+        { id: 'ADM001', name: 'Ankit Kumar', email: 'ankit.k@curocity.com', role: 'Platform Owner', status: 'Active', salary: 'Equity', equity: '50%', icon: UserCog },
+        { id: 'ADM002', name: 'Bhaskar Sharma', email: 'bhaskar.s@curocity.com', role: 'Co-founder', status: 'Active', salary: 'Equity', equity: '50%', icon: UserCog },
+        { id: 'ADM003', name: 'Alok Singh', email: 'alok.s@curocity.com', role: 'Manager', status: 'Active', salary: '₹90,000', icon: Briefcase },
+        { id: 'ADM004', name: 'Priya Sharma', email: 'priya.s@curocity.com', role: 'Support Staff', status: 'Active', salary: '₹40,000', icon: User },
+        { id: 'ADM005', name: 'Rahul Verma', email: 'rahul.v@curocity.com', role: 'Tech Intern', status: 'Active', salary: '₹25,000', icon: Code },
+        { id: 'ADM006', name: 'AI Assistant', email: 'ai.support@curocity.com', role: 'AI Assistant', status: 'Active', salary: 'API Credits', icon: Bot },
     ];
     setAdmins(initialAdmins);
 
-    const session = localStorage.getItem('cabzi-session');
+    const session = localStorage.getItem('curocity-session');
     if (session) {
         const parsedSession = JSON.parse(session);
         setLoggedInUserRole(parsedSession.adminRole); 

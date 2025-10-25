@@ -1,16 +1,16 @@
 
-# Cabzi: Project Readiness Report
+# Curocity: Project Readiness Report
 
 **Report Date:** September 4, 2024
 **Project Status:** Feature-Rich MVP (Ready for UAT)
 
-This document provides a comprehensive analysis of the Cabzi application's current state, its readiness for a Minimum Viable Product (MVP) launch, and identifies the final steps required to go to market.
+This document provides a comprehensive analysis of the Curocity application's current state, its readiness for a Minimum Viable Product (MVP) launch, and identifies the final steps required to go to market.
 
 ---
 
 ## 1. Overall Readiness Score: 95%
 
-The Cabzi application is in an **excellent state of readiness**. The app has moved beyond a simple prototype to become a feature-rich MVP. All critical user flows and functionalities, barring live payment processing, are implemented and stable. The product is now robust enough for investor demonstrations, closed-group user testing, and is on the verge of being launch-ready.
+The Curocity application is in an **excellent state of readiness**. The app has moved beyond a simple prototype to become a feature-rich MVP. All critical user flows and functionalities, barring live payment processing, are implemented and stable. The product is now robust enough for investor demonstrations, closed-group user testing, and is on the verge of being launch-ready.
 
 ---
 
@@ -20,7 +20,7 @@ The Cabzi application is in an **excellent state of readiness**. The app has mov
 *   **User Onboarding & Ride Booking (100%):** Secure and fully functional.
 *   **Real-Time Ride & Ambulance Tracking (100%):** The core ride-hailing and emergency tracking experiences are seamless.
 *   **Smart SOS Triage System (100%):** Riders can now select emergency severity and see a list of the nearest verified hospitals. The request is sent directly to the hospital's dashboard.
-*   **Cabzi Pink (100%):** UI is integrated, and the backend matching logic (to only show requests from female riders to Pink partners) is now implemented.
+*   **Curocity Pink (100%):** UI is integrated, and the backend matching logic (to only show requests from female riders to Pink partners) is now implemented.
 
 ### ✅ **Partner Flows (Readiness: 98%)**
 *   **Path Partner (Driver) (100%):** The entire lifecycle from onboarding, going online, accepting/ending rides, and wallet updates is stable and complete. The SOS Garage feature is functional.
@@ -32,7 +32,7 @@ The Cabzi application is in an **excellent state of readiness**. The app has mov
 ### ✅ **Admin Panel (Readiness: 100%)**
 *   **Unified Partner Management (100%):** Admins can manage all three partner types (Cure, Path, ResQ) from a single, unified interface.
 *   **Complete Audit Trail (100%):** Admins have full visibility into all rides, emergency cases, and support tickets.
-*   **Financial & BI Tools (100%):** The Audit Report, Accounts Panel, and Cabzi Bank panel provide a deep, investor-ready overview of the platform's financial health.
+*   **Financial & BI Tools (100%):** The Audit Report, Accounts Panel, and Curocity Bank panel provide a deep, investor-ready overview of the platform's financial health.
 *   **Live Operations Map (100%):** Fully functional with live entity tracking.
 
 ### ✅ **Technical & Cross-Cutting Features (Readiness: 95%)**

@@ -1,12 +1,12 @@
-# Cabzi: The Investment Pitch Deck
+# Curocity: The Investment Pitch Deck
 
-This document outlines the core pitch for Cabzi, designed to be presented to potential investors, partners, and stakeholders.
+This document outlines the core pitch for Curocity, designed to be presented to potential investors, partners, and stakeholders.
 
 ---
 
 ## 1. The Elevator Pitch (The 30-Second Hook)
 
-**"For the 5 million ride-hailing drivers in India who lose up to 30% of their income to commissions, Cabzi is a new mobility platform that charges **zero commission**. But we're not just another taxi app. We are building India's first unified **CPR (Cure-Path-ResQ) ecosystem**, integrating life-saving emergency response with everyday travel. This B2B partnership model with hospitals and garages creates a deep, defensible moat that our competitors cannot replicate, making our cities safer and our business more sustainable."**
+**"For the 5 million ride-hailing drivers in India who lose up to 30% of their income to commissions, Curocity is a new mobility platform that charges **zero commission**. But we're not just another taxi app. We are building India's first unified **CPR (Cure-Path-ResQ) ecosystem**, integrating life-saving emergency response with everyday travel. This B2B partnership model with hospitals and garages creates a deep, defensible moat that our competitors cannot replicate, making our cities safer and our business more sustainable."**
 
 ---
 
@@ -28,9 +28,9 @@ The Indian mobility and emergency markets are massive, but they are fundamentall
 
 ---
 
-## 3. Our Solution: The Cabzi CPR Ecosystem (The "How")
+## 3. Our Solution: The Curocity CPR Ecosystem (The "How")
 
-Cabzi is not just a prototype; we are a **technology platform that connects and empowers three critical city services.**
+Curocity is not just a prototype; we are a **technology platform that connects and empowers three critical city services.**
 
 *   **PATH (Ride-Hailing):** Our 0% commission, subscription-based model for taxi and auto drivers. This is our customer acquisition engine.
 *   **ResQ (Roadside Assistance):** A network of verified mechanics providing on-the-spot service to our Path partners, keeping them on the road.
@@ -53,7 +53,7 @@ Our true customers are not just riders; they are **hospitals and garages**.
 
 While competitors burn cash on user discounts, we are signing **B2B contracts with hospitals and service centers.**
 
-**Why will a Hospital partner with Cabzi?**
+**Why will a Hospital partner with Curocity?**
 1.  **Efficiency:** Our "Mission Control" dashboard gives them a real-time view of their ambulance fleet, incoming patient data, and bed availability. It turns their chaotic ER dispatch into a streamlined, digital operation.
 2.  **New Revenue Stream:** Hospitals can better utilize their ambulance fleet, a typically under-monetized asset.
 3.  **Pre-Arrival Information:** They know the patient's condition *before* they arrive, allowing them to prepare the ER, saving critical "Golden Hour" time.
@@ -70,12 +70,12 @@ We have three clear proposed revenue streams, built for long-term profitability.
 *   **Path Partners (Drivers):** Will pay a recurring fee (e.g., daily/monthly/yearly). The final pricing is yet to be determined based on market feedback.
 *   **ResQ/Cure Partners (Mechanics/Hospitals):** Will pay a monthly subscription fee for access to our platform, lead generation, and the Mission Control software. This is a stable, SaaS-like revenue model.
 
-### **Pillar 2: Cabzi Bank (FinTech for Partners)**
+### **Pillar 2: Curocity Bank (FinTech for Partners)**
 *   We offer instant loans and high-interest savings to our driver and mechanic partners.
 *   We earn on the **Net Interest Margin**—the difference between the interest we pay on savings (e.g., 5%) and the interest we earn from loans (e.g., 15%). This is a high-margin, self-sustaining financial engine.
 
 ### **Pillar 3: Value-Added Services & Strategic Incentives**
-*   **Vendor Commission:** A small, fixed commission from "Cabzi-approved" garages and vendors for services availed through the platform.
+*   **Vendor Commission:** A small, fixed commission from "Curocity-approved" garages and vendors for services availed through the platform.
 *   **Driver Incentives:** Unlike competitors who use "surge pricing" to penalize riders, we use **strategic driver bonuses** in high-demand zones. This is a small, targeted marketing expense from our P&L to ensure service reliability and customer retention, rather than a commission cut from the driver's fare. This driver-centric approach builds loyalty and a better rider experience.
 *   **Insurance Partnerships:** Future partnerships with insurance companies for custom health and vehicle plans.
 
@@ -91,10 +91,10 @@ Our launch strategy is phased and designed for creating a dense, reliable networ
 2.  **Phase 2: Launch Path Partners (Months 7-9)**
     *   **Acquisition:** With the safety net in place, we will aggressively onboard drivers, offering them a platform that genuinely cares for their well-being.
 3.  **Phase 3: Public Rider Launch (Months 10-12)**
-    *   **Marketing Message:** "The Safest Ride in Town. Every Cabzi is backed by our ResQ and Cure network."
-4.  **Phase 4: Scale & Cabzi Pink**
+    *   **Marketing Message:** "The Safest Ride in Town. Every Curocity is backed by our ResQ and Cure network."
+4.  **Phase 4: Scale & Curocity Pink**
     *   Replicate the model in new cities.
-    *   Launch **"Cabzi Pink"** - a women-only service with women partners, leveraging our core value of safety.
+    *   Launch **"Curocity Pink"** - a women-only service with women partners, leveraging our core value of safety.
 
 ---
 
@@ -102,7 +102,7 @@ Our launch strategy is phased and designed for creating a dense, reliable networ
 
 We are a lean, passionate team with the right mix of expertise. Our key advantage is our **capital efficiency** and **speed**, achieved by leveraging modern development tools and rapid iteration.
 
-*   **The Founder (Vision & Strategy):** Cabzi is led by its solo founder, **Rishiraj Mishra**, who possesses a deep understanding of the market's problems and a clear vision for the solution.
+*   **The Founder (Vision & Strategy):** Curocity is led by its solo founder, **Rishiraj Mishra**, who possesses a deep understanding of the market's problems and a clear vision for the solution.
 *   **Tech-Driven Development (Execution & Speed):** We operate on a lean, tech-forward model. This allows us to build, iterate, and deploy features at a fraction of the time and cost of our competitors. This is our strategic advantage.
 
 ---

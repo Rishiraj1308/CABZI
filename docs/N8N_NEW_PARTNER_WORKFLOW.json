@@ -1,6 +1,6 @@
 
 {
-  "name": "Cabzi Business Automations",
+  "name": "Curocity Business Automations",
   "nodes": [
     {
       "parameters": {},
@@ -199,8 +199,8 @@
       "parameters": {
         "accountSid": "YOUR_TWILIO_ACCOUNT_SID",
         "to": "={{$node[\"Get All Path Partners\"].json[\"phone\"]}}",
-        "from": "Cabzi",
-        "message": "Hi {{$node[\"Get All Path Partners\"].json[\"name\"]}}, your Cabzi Wallet balance is low (₹{{$node[\"Get All Path Partners\"].json[\"walletBalance\"]}}). Please add funds to avoid any service interruptions for fuel payments. Thank you!"
+        "from": "Curocity",
+        "message": "Hi {{$node[\"Get All Path Partners\"].json[\"name\"]}}, your Curocity Wallet balance is low (₹{{$node[\"Get All Path Partners\"].json[\"walletBalance\"]}}). Please add funds to avoid any service interruptions for fuel payments. Thank you!"
       },
       "id": "c3b2a1d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d",
       "name": "Send Low Balance SMS",
@@ -221,8 +221,8 @@
       "parameters": {
         "resource": "message",
         "to": "={{$json.body.email}}",
-        "subject": "Welcome to Cabzi! Your Application is Under Review.",
-        "text": "=Welcome to the Cabzi Family, {{$json.body.name}}!\n\nThank you for choosing to partner with us as a {{$json.body.type}}. We are excited to have you on board.\n\nYour application has been successfully submitted and is now under review by our team. We typically verify applications within 24-48 hours.\n\nOnce your verification is complete, you will receive another notification. After that, you can log in to your Partner Dashboard and start earning.\n\nThank you for your patience.\n\nBest Regards,\nThe Cabzi Team",
+        "subject": "Welcome to Curocity! Your Application is Under Review.",
+        "text": "=Welcome to the Curocity Family, {{$json.body.name}}!\n\nThank you for choosing to partner with us as a {{$json.body.type}}. We are excited to have you on board.\n\nYour application has been successfully submitted and is now under review by our team. We typically verify applications within 24-48 hours.\n\nOnce your verification is complete, you will receive another notification. After that, you can log in to your Partner Dashboard and start earning.\n\nThank you for your patience.\n\nBest Regards,\nThe Curocity Team",
         "options": {}
       },
       "id": "a4d38c64-42f7-4180-87a3-5c2f82161741",

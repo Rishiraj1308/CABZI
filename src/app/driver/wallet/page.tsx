@@ -66,7 +66,7 @@ export default function WalletPage() {
     useEffect(() => {
         // This effect only checks if a PIN exists in localStorage.
         // It does not fetch any data.
-        const storedPin = localStorage.getItem('cabzi-user-pin');
+        const storedPin = localStorage.getItem('curocity-user-pin');
         if (storedPin) {
             setIsPinSet(true);
         }
@@ -80,7 +80,7 @@ export default function WalletPage() {
             return;
         };
 
-        const session = localStorage.getItem('cabzi-session');
+        const session = localStorage.getItem('curocity-session');
         if (!session || !db) {
             setIsLoading(false);
             return;
@@ -97,8 +97,8 @@ export default function WalletPage() {
                  const mechanicData = { 
                     id: partnerDoc.id, 
                     ...partnerDoc.data(),
-                    upiId: partnerDoc.data().upiId || `${partnerDoc.data().phone}@cabzi`,
-                    qrCodeUrl: partnerDoc.data().qrCodeUrl || `https://placehold.co/300x300/FBBF24/1E293B?text=CabziUPI`
+                    upiId: partnerDoc.data().upiId || `${partnerDoc.data().phone}@curocity`,
+                    qrCodeUrl: partnerDoc.data().qrCodeUrl || `https://placehold.co/300x300/FBBF24/1E293B?text=CurocityUPI`
                 } as Partner
                 setPartner(mechanicData);
                 
@@ -122,10 +122,10 @@ export default function WalletPage() {
     }, [isWalletVisible, toast]);
 
     const handlePinSubmit = () => {
-        const storedPin = localStorage.getItem('cabzi-user-pin');
+        const storedPin = localStorage.getItem('curocity-user-pin');
         if (enteredPin === storedPin) {
             setIsWalletVisible(true);
-            toast({ title: 'Access Granted', description: 'Welcome to your Cabzi Bank.' });
+            toast({ title: 'Access Granted', description: 'Welcome to your Curocity Bank.' });
         } else {
             toast({ variant: 'destructive', title: 'Invalid PIN', description: 'Please enter the correct 4-digit PIN.' });
         }
@@ -147,8 +147,8 @@ export default function WalletPage() {
             return;
         }
 
-        localStorage.setItem('cabzi-user-pin', newPin);
-        toast({ title: 'PIN Set Successfully!', description: 'Your Cabzi Bank is now secure.', className: 'bg-green-600 text-white border-green-600' });
+        localStorage.setItem('curocity-user-pin', newPin);
+        toast({ title: 'PIN Set Successfully!', description: 'Your Curocity Bank is now secure.', className: 'bg-green-600 text-white border-green-600' });
         setIsPinSet(true);
     }
     
@@ -244,7 +244,7 @@ export default function WalletPage() {
             return;
         }
 
-        let statementContent = `Cabzi Bank Statement for ${partner.name}\n`;
+        let statementContent = `Curocity Bank Statement for ${partner.name}\n`;
         statementContent += `Partner ID: ${partner.id}\n`;
         statementContent += `Date Generated: ${new Date().toLocaleDateString()}\n\n`;
         statementContent += '-------------------------------------------------\n';
@@ -266,7 +266,7 @@ export default function WalletPage() {
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `Cabzi_Statement_${partner.phone}_${new Date().toISOString().split('T')[0]}.txt`;
+        a.download = `Curocity_Statement_${partner.phone}_${new Date().toISOString().split('T')[0]}.txt`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
@@ -289,7 +289,7 @@ export default function WalletPage() {
                         <CardTitle>Create a Secure PIN</CardTitle>
                         <CardDescription>
                             {pinStep === 1 
-                                ? "Welcome to Cabzi Bank! Let's create your 4-digit UPI PIN to secure your wallet."
+                                ? "Welcome to Curocity Bank! Let's create your 4-digit UPI PIN to secure your wallet."
                                 : "Please re-enter the PIN to confirm."
                             }
                         </CardDescription>
@@ -342,7 +342,7 @@ export default function WalletPage() {
                            <KeyRound className="w-8 h-8 text-primary"/>
                         </div>
                         <CardTitle>Enter PIN to Continue</CardTitle>
-                        <CardDescription>For your security, please enter your UPI PIN to access your Cabzi Bank.</CardDescription>
+                        <CardDescription>For your security, please enter your UPI PIN to access your Curocity Bank.</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
                         <div className="flex flex-col items-center justify-center gap-4">
@@ -359,7 +359,7 @@ export default function WalletPage() {
                                autoFocus
                            />
                        </div>
-                        <Button className="w-full" onClick={handlePinSubmit}>Unlock Cabzi Bank</Button>
+                        <Button className="w-full" onClick={handlePinSubmit}>Unlock Curocity Bank</Button>
                     </CardContent>
                 </Card>
             </div>
@@ -380,19 +380,19 @@ export default function WalletPage() {
 
   return (
     <div className="grid gap-6 animate-fade-in">
-      <h2 className="text-3xl font-bold tracking-tight">Cabzi Bank</h2>
+      <h2 className="text-3xl font-bold tracking-tight">Curocity Bank</h2>
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2"><Landmark /> Your Financial Hub</CardTitle>
           <CardDescription>
-            Your free bank account to manage your earnings, watch them grow with interest, and utilize them within the Cabzi ecosystem.
+            Your free bank account to manage your earnings, watch them grow with interest, and utilize them within the Curocity ecosystem.
           </CardDescription>
         </CardHeader>
         <CardContent className="grid md:grid-cols-2 gap-6">
           <div className="rounded-lg bg-primary text-primary-foreground p-6 flex flex-col justify-between">
             <div>
               <p className="text-sm">Available Balance</p>
-              <p className="text-4xl font-bold">₹{partner?.walletBalance?.toFixed(2) || '0.00'}</p>
+              <p className="text-4xl font-bold">₹{(partner?.walletBalance || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
               <p className="text-xs text-primary-foreground/80 mt-1">No minimum balance required</p>
             </div>
             <Button size="lg" className="w-full bg-accent text-accent-foreground hover:bg-accent/90 mt-4">
@@ -443,7 +443,7 @@ export default function WalletPage() {
                     </Button>
                 </DialogTrigger>
                 <DialogContent className="max-w-xs">
-                    <DialogHeader><DialogTitle className="text-center">My Cabzi UPI QR Code</DialogTitle></DialogHeader>
+                    <DialogHeader><DialogTitle className="text-center">My Curocity UPI QR Code</DialogTitle></DialogHeader>
                     <div className="flex flex-col items-center gap-4 py-4">
                         <div className="p-4 bg-white rounded-lg border">
                             <Image 
@@ -468,7 +468,7 @@ export default function WalletPage() {
                 <DialogContent>
                     <DialogHeader>
                         <DialogTitle>Link Your Bank Account</DialogTitle>
-                        <DialogDescription>Enter your bank details to enable withdrawals from your Cabzi Wallet.</DialogDescription>
+                        <DialogDescription>Enter your bank details to enable withdrawals from your Curocity Wallet.</DialogDescription>
                     </DialogHeader>
                     <form onSubmit={handleBankDetailsSubmit}>
                         <div className="space-y-4 py-4">
@@ -543,7 +543,7 @@ export default function WalletPage() {
                 <CardTitle className="flex items-center gap-2">
                     <PiggyBank className="text-primary"/> Goal Planner
                 </CardTitle>
-                 <CardDescription>Save for your goals and get smart tips from our system.</CardDescription>
+                 <CardDescription>Save for your goals and get smart tips from our AI planner.</CardDescription>
              </CardHeader>
              <CardContent>
                 <div className="space-y-4">

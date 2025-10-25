@@ -1,3 +1,4 @@
+
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
@@ -25,7 +26,7 @@ export default function OnboardingPage() {
     const db = useFirestore();
     const [isLoading, setIsLoading] = useState(false)
     const [isMounted, setIsMounted] = useState(false)
-    const [isCabziPink, setIsCabziPink] = useState(false);
+    const [isCurocityPink, setIsCurocityPink] = useState(false);
     const [currentStep, setCurrentStep] = useState(1);
     const [formData, setFormData] = useState({
         name: '',
@@ -52,7 +53,7 @@ export default function OnboardingPage() {
     const handleGenderChange = (value: string) => {
         setFormData(prev => ({...prev, gender: value}));
         if (value !== 'female') {
-            setIsCabziPink(false); // Automatically uncheck and disable for non-females
+            setIsCurocityPink(false); // Automatically uncheck and disable for non-females
         }
     }
     
@@ -116,13 +117,13 @@ export default function OnboardingPage() {
             }
 
             const partnerId = `CZD${phone.slice(-4)}${vehicleNumber.slice(-4).toUpperCase()}`
-            const cabziBankAccountNumber = `11${phone}`
+            const curocityBankAccountNumber = `11${phone}`
             const photoUrl = 'https://placehold.co/100x100.png';
 
             await addDoc(collection(db, "partners"), {
                 partnerId: partnerId,
-                cabziBankAccountNumber: cabziBankAccountNumber,
-                name, phone, gender, panCard, vehicleType, vehicleName, vehicleNumber, isCabziPink, drivingLicence, aadhaarNumber, photoUrl,
+                curocityBankAccountNumber: curocityBankAccountNumber,
+                name, phone, gender, panCard, vehicleType, vehicleName, vehicleNumber, isCurocityPink, drivingLicence, aadhaarNumber, photoUrl,
                 status: 'pending_verification',
                 isOnline: false,
                 createdAt: serverTimestamp(),
@@ -174,7 +175,7 @@ export default function OnboardingPage() {
                            <div className="space-y-2">
                                 <Label htmlFor="pan-card">PAN Card Number</Label>
                                 <Input id="pan-card" name="pan-card" placeholder="e.g., ABCDE1234F" required className="uppercase" value={formData.panCard} onChange={(e) => handleInputChange('panCard', e.target.value)} />
-                                <p className="text-xs text-muted-foreground pt-1">Required for Cabzi Bank payouts.</p>
+                                <p className="text-xs text-muted-foreground pt-1">Required for Curocity Bank payouts.</p>
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="aadhaar-number">Aadhaar Number</Label>
@@ -216,17 +217,17 @@ export default function OnboardingPage() {
                         </div>
                         <div className="mt-6 flex items-center space-x-2">
                             <Checkbox 
-                                id="cabzi-pink" 
-                                name="cabzi-pink"
-                                checked={isCabziPink}
-                                onCheckedChange={(checked) => setIsCabziPink(checked as boolean)}
+                                id="curocity-pink" 
+                                name="curocity-pink"
+                                checked={isCurocityPink}
+                                onCheckedChange={(checked) => setIsCurocityPink(checked as boolean)}
                                 disabled={formData.gender !== 'female'}
                             />
                             <Label 
-                                htmlFor="cabzi-pink" 
+                                htmlFor="curocity-pink" 
                                 className={`text-sm font-medium leading-none ${formData.gender !== 'female' ? 'cursor-not-allowed opacity-50' : 'peer-disabled:cursor-not-allowed peer-disabled:opacity-70'}`}
                             >
-                              Register as a Cabzi Pink Partner (Women only)
+                              Register as a Curocity Pink Partner (Women only)
                             </Label>
                         </div>
                     </div>

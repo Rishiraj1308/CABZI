@@ -1,4 +1,4 @@
-package com.cabzi.app;
+package com.curocity.app;
 
 import com.getcapacitor.BridgeActivity;
 

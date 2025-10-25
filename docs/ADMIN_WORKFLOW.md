@@ -1,6 +1,6 @@
-# Cabzi Admin: The Complete Workflow & Improvements Guide
+# Curocity Admin: The Complete Workflow & Improvements Guide
 
-This document provides a clear, step-by-step guide on the daily workflows, responsibilities, and advanced features of a Cabzi Admin. The admin panel acts as the central command system of the entire CPR (Cure-Path-ResQ) ecosystem.
+This document provides a clear, step-by-step guide on the daily workflows, responsibilities, and advanced features of a Curocity Admin. The admin panel acts as the central command system of the entire CPR (Cure-Path-ResQ) ecosystem.
 
 ## 1. Admin Login & Security
 
@@ -80,7 +80,7 @@ This document provides a clear, step-by-step guide on the daily workflows, respo
 **Step 2:** Add Company Expenses (`/admin/accounts`) → instant ledger update.
 
 **Step 3:** Monitor Wallets & Loans (`/admin/bank`) →
-- Track Cabzi float, disbursed loans, repayment statuses.
+- Track Curocity float, disbursed loans, repayment statuses.
 
 **Improvements:**
 - Auto-reconciliation with payment gateways.

@@ -1,6 +1,6 @@
-# Cabzi: The Firebase Firestore Query Guide
+# Curocity: The Firebase Firestore Query Guide
 
-This document explains the common Firestore query patterns used in the Cabzi application. It serves as a practical guide for understanding how we fetch and listen to data.
+This document explains the common Firestore query patterns used in the Curocity application. It serves as a practical guide for understanding how we fetch and listen to data.
 
 ---
 
@@ -137,4 +137,4 @@ useEffect(() => {
 
 ```
 
-This guide covers the fundamental query patterns that power the real-time features of the Cabzi application.
+This guide covers the fundamental query patterns that power the real-time features of the Curocity application.

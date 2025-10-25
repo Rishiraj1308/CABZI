@@ -62,7 +62,7 @@ export default function AdminLayout({
   
   useEffect(() => {
     if (typeof window !== 'undefined') {
-        const session = localStorage.getItem('cabzi-session');
+        const session = localStorage.getItem('curocity-session');
         if (session) {
             try {
                 const parsedSession = JSON.parse(session);
@@ -91,7 +91,7 @@ export default function AdminLayout({
   }
 
   const handleLogout = () => {
-    localStorage.removeItem('cabzi-session');
+    localStorage.removeItem('curocity-session');
     toast({
         title: 'Logged Out',
         description: 'You have been successfully logged out.'

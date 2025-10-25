@@ -1,12 +1,12 @@
-# How to Showcase "Cabzi" in Your Portfolio
+# How to Showcase "Curocity" in Your Portfolio
 
-This guide provides a template for writing about the Cabzi project on your resume, portfolio website, or LinkedIn profile. The goal is to highlight the complexity, scale, and technical depth of what you have built.
+This guide provides a template for writing about the Curocity project on your resume, portfolio website, or LinkedIn profile. The goal is to highlight the complexity, scale, and technical depth of what you have built.
 
 ---
 
 ## 1. Project Title
 
-**Cabzi: Full-Stack CPR (Cure-Path-ResQ) Ecosystem**
+**Curocity: Full-Stack CPR (Cure-Path-ResQ) Ecosystem**
 
 *(Subtitle: An integrated ride-hailing, emergency response, and roadside assistance platform)*
 
@@ -14,9 +14,9 @@ This guide provides a template for writing about the Cabzi project on your resum
 
 ## 2. Project Summary (The Elevator Pitch)
 
-Cabzi is a full-stack, multi-tenant web application that re-imagines urban mobility by integrating a fair, 0% commission ride-hailing service with a life-saving emergency response network. I architected and built this platform from the ground up, creating a unified ecosystem for four distinct user roles: Riders, Path Partners (Drivers), Cure Partners (Hospitals), and a central Admin.
+Curocity is a full-stack, multi-tenant web application that re-imagines urban mobility by integrating a fair, 0% commission ride-hailing service with a life-saving emergency response network. I architected and built this platform from the ground up, creating a unified ecosystem for four distinct user roles: Riders, Path Partners (Drivers), Cure Partners (Hospitals), and a central Admin.
 
-The platform's core is a "FinTech for Mobility" engine, featuring the "Cabzi Bank" for partner financial services. The entire system is built on a scalable, real-time, server-centric architecture using Next.js, Firebase, and Cloud Functions to handle live ride dispatching, ambulance assignments, and partner location tracking efficiently and at near-zero cost.
+The platform's core is a "FinTech for Mobility" engine, featuring the "Curocity Bank" for partner financial services. The entire system is built on a scalable, real-time, server-centric architecture using Next.js, Firebase, and Cloud Functions to handle live ride dispatching, ambulance assignments, and partner location tracking efficiently and at near-zero cost.
 
 ---
 
@@ -30,8 +30,8 @@ The platform's core is a "FinTech for Mobility" engine, featuring the "Cabzi Ban
 
 ### 🚖 Path Ecosystem (Ride-Hailing)
 *   **Real-time Ride Booking:** A full-featured booking flow for riders, including location search, fare estimation for multiple vehicle types, and live partner tracking on an interactive map.
-*   **0% Commission Model:** The core business logic is built around a subscription model for partners, with a full-fledged "Cabzi Bank" wallet for instant fare credits.
-*   **"Cabzi Pink" Service:** A safety-focused feature for women, with dedicated UI on the rider's booking screen and specific matching logic in the backend dispatcher to connect women riders with women partners.
+*   **0% Commission Model:** The core business logic is built around a subscription model for partners, with a full-fledged "Curocity Bank" wallet for instant fare credits.
+*   **"Curocity Pink" Service:** A safety-focused feature for women, with dedicated UI on the rider's booking screen and specific matching logic in the backend dispatcher to connect women riders with women partners.
 
 ### 🛠️ ResQ Ecosystem (Roadside Assistance)
 *   **Mechanic Onboarding:** A specialized onboarding flow for mechanics to register and list their on-the-spot repair services.
@@ -59,7 +59,7 @@ The platform's core is a "FinTech for Mobility" engine, featuring the "Cabzi Ban
 
 ## 5. My Role & Contributions
 
-As the sole architect and developer of this project, I was responsible for the end-to-end design, development, and implementation of the entire Cabzi platform. My key contributions include:
+As the sole architect and developer of this project, I was responsible for the end-to-end design, development, and implementation of the entire Curocity platform. My key contributions include:
 
 *   **System Architecture:** I designed the "No Cost" server-centric architecture using Firebase Cloud Functions and FCM to dispatch ride requests efficiently, reducing potential database reads by over 99% compared to a client-side listener model.
 *   **Full-Stack Development:** I built all four user-facing applications (Rider, Path Partner, Cure Partner, Admin) using Next.js and TypeScript. This included creating reusable UI components with ShadCN and managing complex application state.

@@ -1,7 +1,7 @@
 
-# Cabzi: The Deep Dive Market Research Blueprint
+# Curocity: The Deep Dive Market Research Blueprint
 
-This document provides a comprehensive, step-by-step framework for conducting market research for Cabzi. The goal is not just to collect data, but to derive actionable insights that will shape our product, marketing, and business strategy.
+This document provides a comprehensive, step-by-step framework for conducting market research for Curocity. The goal is not just to collect data, but to derive actionable insights that will shape our product, marketing, and business strategy.
 
 ---
 
@@ -35,8 +35,8 @@ This phase is about leveraging existing information. It's low-cost and can be do
 ### 1.2. Competitive Analysis (The Deep Dive)
 **Objective:** Know your enemy. Understand their strengths to avoid, and their weaknesses to exploit.
 
-*   **A) Feature Matrix:** Create a spreadsheet comparing Cabzi, Ola, Uber, and Rapido.
-| Feature               | Ola                       | Uber                | Rapido                          | **Cabzi**                                |
+*   **A) Feature Matrix:** Create a spreadsheet comparing Curocity, Ola, Uber, and Rapido.
+| Feature               | Ola                       | Uber                | Rapido                          | **Curocity**                                |
 | --------------------- | ------------------------- | ------------------- | ------------------------------- | ---------------------------------------- |
 | **Driver Commission** | ~30%                      | ~30%                | Subscription (e.g., ₹15/day)    | **0% (Subscription)**                    |
 | **Primary Service**   | Cabs, Auto                | Cabs                | Bike, Auto                      | **All, with FinTech focus**              |
@@ -49,11 +49,11 @@ This phase is about leveraging existing information. It's low-cost and can be do
         *   **Strengths:** Global brand recognition, strong technology.
         *   **Weaknesses:** High commission model leading to driver dissatisfaction, frequent PR issues, perceived as expensive.
         *   **Opportunities:** Untapped tier-2/3 cities, corporate tie-ups.
-        *   **Threats:** Strong local competition (Ola/Rapido), changing government regulations, **Cabzi's driver-centric FinTech model**.
+        *   **Threats:** Strong local competition (Ola/Rapido), changing government regulations, **Curocity's driver-centric FinTech model**.
 
 *   **C) Customer Review Mining:**
     *   Go to the Play Store/App Store. Filter reviews for 1-star and 2-star ratings for Ola, Uber, and Rapido.
-    *   Look for recurring keywords: "cancellation", "surge", "rude driver", "support", "payment issue". This is a goldmine of customer pain points that Cabzi can solve.
+    *   Look for recurring keywords: "cancellation", "surge", "rude driver", "support", "payment issue". This is a goldmine of customer pain points that Curocity can solve.
 
 ### 1.3. Regulatory & PESTLE Analysis
 **Objective:** Understand external factors that can impact the business.
@@ -67,7 +67,7 @@ This phase is about leveraging existing information. It's low-cost and can be do
 *   **Legal:**
     *   **Gig Worker Laws:** The biggest legal risk. New laws defining "gig workers" could force us to provide benefits like PF, increasing costs.
     *   **Data Privacy Laws (DPDP Act):** Strict compliance is necessary to avoid heavy penalties for data breaches.
-    *   **Financial Regulations:** Operating "Cabzi Bank" could attract scrutiny from RBI. We may need to partner with an actual NBFC (Non-Banking Financial Company) in the long run to offer loans legally and at scale. This is a critical legal hurdle.
+    *   **Financial Regulations:** Operating "Curocity Bank" could attract scrutiny from RBI. We may need to partner with an actual NBFC (Non-Banking Financial Company) in the long run to offer loans legally and at scale. This is a critical legal hurdle.
 *   **Environmental:** Push for EVs is an opportunity. Stricter pollution norms (e.g., for BS-IV vehicles) can be a threat to some drivers.
 
 ---
@@ -87,11 +87,11 @@ This is where we talk to real people.
         3.  *"Sabse zyada pareshani kab hoti hai? Ride cancel hone par, customer ke व्यवहार se, ya app ki wajah se?"*
         4.  *"Agar aap ride-hailing app ke maalik hote, toh drivers ke liye sabse pehli cheez kya badalte?"* (This uncovers hidden needs)
         5.  *"Agar ek nayi app aapse 0% commission le, lekin mahine ka ek chota subscription charge kare, toh aapko kaisa lagega?"* (Directly testing our USP)
-        6.  *"Aap apni savings kahan rakhte hain? Kya aapko kabhi gaadi theek karwane ke liye achanak loan ki zaroorat padi hai?"* (Testing the Cabzi Bank idea)
+        6.  *"Aap apni savings kahan rakhte hain? Kya aapko kabhi gaadi theek karwane ke liye achanak loan ki zaroorat padi hai?"* (Testing the Curocity Bank idea)
 
 *   **B) Rider Focus Groups (2-3 groups of 4-5 people):**
     *   Gather friends, college students, or working professionals.
-    *   Show them the Cabzi app prototype. Let them play with it.
+    *   Show them the Curocity app prototype. Let them play with it.
     *   Observe their reactions. Ask open-ended questions: *"What did you like? What was confusing? Would you trust this app with your safety?"*
 
 ### 2.2. Quantitative Research (To validate the "How Many")
@@ -128,7 +128,7 @@ Create fictional characters based on our research. This makes the user "real" fo
     *   **Age:** 26
     *   **Bio:** Works at a tech company in Gurgaon. Uses cabs daily for her commute. Values safety and predictability.
     *   **Goals:** Get to work on time, have a safe and comfortable ride, not get ripped off by surge pricing.
-    *   **Frustrations:** Driver cancellations, haggling with auto drivers, feeling unsafe during late-night rides. **This insight can lead to brainstorming solutions like "Cabzi Pink," a women-only service.**
+    *   **Frustrations:** Driver cancellations, haggling with auto drivers, feeling unsafe during late-night rides. **This insight can lead to brainstorming solutions like "Curocity Pink," a women-only service.**
 
 ### 3.2. Define the MVP (Minimum Viable Product)
 Based on the research, what are the absolute **must-have** features for launch?
@@ -140,4 +140,4 @@ Based on the research, what are the absolute **must-have** features for launch?
     4.  Basic Real-time Ride Matching (Notify nearby drivers).
     5.  Core Safety Features (SOS button).
 
-**Conclusion:** Market research is not a one-time task. It's the compass that guides Cabzi, ensuring that every feature we build and every marketing dollar we spend is solving a real problem for a real person.
+**Conclusion:** Market research is not a one-time task. It's the compass that guides Curocity, ensuring that every feature we build and every marketing dollar we spend is solving a real problem for a real person.

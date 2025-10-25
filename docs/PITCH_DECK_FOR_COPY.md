@@ -1,12 +1,12 @@
-# Cabzi: The Investment Pitch Deck
+# Curocity: The Investment Pitch Deck
 
-This document outlines the core pitch for Cabzi, designed to be presented to potential investors, partners, and stakeholders.
+This document outlines the core pitch for Curocity, designed to be presented to potential investors, partners, and stakeholders.
 
 ---
 
 ## 1. The Elevator Pitch (The 30-Second Hook)
 
-**"For the 5 million ride-hailing drivers in India who lose up to 30% of their income to commissions, Cabzi is a new ride-hailing platform that charges **zero commission**. We plan to operate on a simple subscription model, allowing drivers to keep 100% of their earnings. This creates a loyal driver fleet, which in turn provides more reliable and affordable rides for customers, disrupting the current market."**
+**"For the 5 million ride-hailing drivers in India who lose up to 30% of their income to commissions, Curocity is a new ride-hailing platform that charges **zero commission**. We plan to operate on a simple subscription model, allowing drivers to keep 100% of their earnings. This creates a loyal driver fleet, which in turn provides more reliable and affordable rides for customers, disrupting the current market."**
 
 ---
 
@@ -40,9 +40,9 @@ The Indian ride-hailing market is massive, but it's fundamentally broken for its
 
 ---
 
-## 3. Our Solution: Cabzi (The "How")
+## 3. Our Solution: Curocity (The "How")
 
-Cabzi is not just another ride-hailing app; it's a new ecosystem built on fairness and transparency.
+Curocity is not just another ride-hailing app; it's a new ecosystem built on fairness and transparency.
 
 *   **The 0% Commission Revolution (Our Core USP):**
     *   We have completely removed the commission model. Our proposed business model is a small, fixed subscription fee (e.g., daily, monthly, or yearly).
@@ -64,9 +64,9 @@ The Indian mobility market is on an explosive growth trajectory, yet it's ripe f
 
 ---
 
-## 5. Our "Unfair" Advantage: Why Drivers Will Trust Cabzi Over Rapido
+## 5. Our "Unfair" Advantage: Why Drivers Will Trust Curocity Over Rapido
 
-This is the most important question. If Rapido already offers a subscription, why would a driver switch to Cabzi? The answer lies in stories of real-world problems.
+This is the most important question. If Rapido already offers a subscription, why would a driver switch to Curocity? The answer lies in stories of real-world problems.
 
 ### **The Story: When a Tyre Punctures**
 Ramesh, an auto driver, is happy with Rapido's subscription model. No commission.
@@ -75,26 +75,26 @@ One day, his tyre punctures. The repair costs **₹800**. He checks his UPI. Aft
 
 He opens the Rapido app. It's just a tool to get rides. It can't help him. He wastes hours calling friends for a small loan, losing income and self-respect.
 
-**Now, imagine Ramesh with Cabzi.**
+**Now, imagine Ramesh with Curocity.**
 
 The tyre punctures. Ramesh doesn't panic.
-1.  He opens the **Cabzi App**.
-2.  Goes to **"Cabzi Bank"** and gets an **"Instant Loan"**.
+1.  He opens the **Curocity App**.
+2.  Goes to **"Curocity Bank"** and gets an **"Instant Loan"**.
 3.  Within 5 minutes, ₹1000 is in his wallet.
 4.  He pays the mechanic via UPI, gets the tyre fixed, and is back on the road in 15 minutes.
 
-**The lesson:** Rapido sells rides. **Cabzi builds partners.** We are a **FinTech company disguised as a ride-hailing app.** Our core product isn't the ride; it's the driver's financial well-being. This creates unbreakable loyalty.
+**The lesson:** Rapido sells rides. **Curocity builds partners.** We are a **FinTech company disguised as a ride-hailing app.** Our core product isn't the ride; it's the driver's financial well-being. This creates unbreakable loyalty.
 
 ### **Other Stories, Same Lesson:**
 
-*   **The Daughter's School Fees (Focus: Savings):** Sunil is worried about his daughter's school fees. With Cabzi, his earnings sit in the **Cabzi Bank wallet, earning 5% interest**—more than double the bank rate. He sees his money growing, and the fee no longer feels like a burden.
-*   **The Sudden Engine Trouble (Focus: Loans + Garages):** Priya's engine fails. The repair cost is ₹15,000. With Cabzi, she gets an **instant loan** and finds a **"Cabzi-approved Garage"** in the app where she gets a 20% discount. The problem is solved for less money, in less time.
+*   **The Daughter's School Fees (Focus: Savings):** Sunil is worried about his daughter's school fees. With Curocity, his earnings sit in the **Curocity Bank wallet, earning 5% interest**—more than double the bank rate. He sees his money growing, and the fee no longer feels like a burden.
+*   **The Sudden Engine Trouble (Focus: Loans + Garages):** Priya's engine fails. The repair cost is ₹15,000. With Curocity, she gets an **instant loan** and finds a **"Curocity-approved Garage"** in the app where she gets a 20% discount. The problem is solved for less money, in less time.
 
 ---
 
-### Introducing "Cabzi Bank": The Financial Hub for Drivers
+### Introducing "Curocity Bank": The Financial Hub for Drivers
 
-*   Every Cabzi partner gets a free, built-in digital wallet.
+*   Every Curocity partner gets a free, built-in digital wallet.
 *   **5% Interest on Savings:** We encourage drivers to save their earnings with us by providing a competitive interest rate. This creates a significant pool of internal capital (the "float").
 *   **Instant, Low-Interest Loans:** We use this internal float to offer pre-approved, instant loans to other drivers for vehicle repairs or personal emergencies, at a fair interest rate (e.g., 15% p.a.).
 
@@ -107,7 +107,7 @@ Our proposed revenue model is simple, transparent, and built on three pillars.
 ### **Pillar 1: Partner Subscriptions**
 Our primary, most straightforward revenue stream. A recurring fee from our partners for using the platform to get rides. This covers our operational costs. The final plans and pricing will be determined after market research and user feedback.
 
-### **Pillar 2: Cabzi Bank (Net Interest Margin)**
+### **Pillar 2: Curocity Bank (Net Interest Margin)**
 This is our smartest revenue stream. It's how we sustainably offer 5% interest to our partners and still make a profit.
 
 *   **The "Float":** All the money sitting in partner wallets creates a large pool of funds, called the "float". Let's say we have ₹20 Lakh in the float.
@@ -123,7 +123,7 @@ This proves that we can offer a high interest rate, keep our partners happy, and
 
 ### **Pillar 3: Value-Added Services (VAS)**
 Future revenue opportunities from our ecosystem:
-*   **Garage Partnerships:** A small, fixed commission from "Cabzi-approved Garages" for every service availed by our partners.
+*   **Garage Partnerships:** A small, fixed commission from "Curocity-approved Garages" for every service availed by our partners.
 *   **Insurance Products:** Partnerships with insurance companies to offer custom vehicle and health insurance plans.
 
 ---
@@ -140,8 +140,8 @@ Our launch strategy is focused, phased, and designed for rapid, capital-efficien
 3.  **Phase 3: Multi-City Scale (Months 10-18)**
     *   **Target:** Replicate the successful launch model in 2 more major cities (e.g., Bangalore, Mumbai).
     *   **Partnerships:** Partner with local auto unions and car dealerships.
-4.  **Phase 4: Launch Cabzi Pink (Post-18 Months)**
-    *   **Social Impact Initiative:** Introduce "Cabzi Pink" - a women-only service with women partners and women riders.
+4.  **Phase 4: Launch Curocity Pink (Post-18 Months)**
+    *   **Social Impact Initiative:** Introduce "Curocity Pink" - a women-only service with women partners and women riders.
     *   **Objective:** Directly address the critical need for women's safety in transportation, creating a trusted and secure ecosystem. This will not only open up a new, loyal customer base but also empower women partners, generating immense positive brand value.
 
 ---
@@ -150,7 +150,7 @@ Our launch strategy is focused, phased, and designed for rapid, capital-efficien
 
 We are not trying to be another Ola or Uber. We are fundamentally different.
 
-| Feature               | Existing Players (Ola/Uber/Rapido) | **Cabzi**                                |
+| Feature               | Existing Players (Ola/Uber/Rapido) | **Curocity**                                |
 | --------------------- | ---------------------------------- | ---------------------------------------- |
 | **Driver Commission** | 20-30% of every ride               | **0% (Zero Commission)**                 |
 | **Driver Earnings**   | Unpredictable, low                 | **High, Predictable (Keep 100% of fare)** |
@@ -177,7 +177,7 @@ Our model is designed for sustainable, long-term profitability.
 
 ## 10. The Team (The "Who")
 
-*   **The Founder (Vision & Strategy):** Cabzi is led by its solo founder, **Rishiraj Mishra**, who possesses a deep understanding of the market's problems and a clear vision for the solution, leveraging his own intellect and cutting-edge tools to build the platform.
+*   **The Founder (Vision & Strategy):** Curocity is led by its solo founder, **Rishiraj Mishra**, who possesses a deep understanding of the market's problems and a clear vision for the solution, leveraging his own intellect and cutting-edge tools to build the platform.
 
 *   **AI-Powered Development (Execution & Speed):** We are not a traditional company with a large development team. We operate on a lean, AI-powered model. This allows us to build, iterate, and deploy features at a fraction of the time and cost of our competitors. This is our strategic advantage.
 
@@ -189,7 +189,7 @@ We are seeking **[Amount]** in funding to achieve the following milestones in th
 
 *   **Launch in 3 Major Cities:** Onboard our first 10,000 partners.
 *   **Full-Scale Marketing:** Aggressively acquire both riders and drivers.
-*   **Scale Technology:** Fully develop and scale our live maps, real-time matching, and the Cabzi Bank infrastructure.
+*   **Scale Technology:** Fully develop and scale our live maps, real-time matching, and the Curocity Bank infrastructure.
 
 **Our vision is to become the most trusted and driver-centric mobility platform in India, creating a sustainable and fair ecosystem for millions.**
 

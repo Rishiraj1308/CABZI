@@ -153,7 +153,7 @@ export default function CompanySettingsPage() {
                 <CardContent className="space-y-4">
                     <div className="space-y-2">
                         <Label htmlFor="companyName">Account Name</Label>
-                        <Input id="companyName" name="companyName" value={settings.companyName || ''} onChange={handleChange} placeholder="e.g., Cabzi FinTech Pvt. Ltd." />
+                        <Input id="companyName" name="companyName" value={settings.companyName || ''} onChange={handleChange} placeholder="e.g., Curocity FinTech Pvt. Ltd." />
                     </div>
                     <div className="grid md:grid-cols-3 gap-4">
                         <div className="space-y-2">
@@ -171,7 +171,7 @@ export default function CompanySettingsPage() {
                     </div>
                      <div className="space-y-2">
                         <Label htmlFor="upiId">UPI ID (VPA)</Label>
-                        <Input id="upiId" name="upiId" value={settings.upiId || ''} onChange={handleChange} placeholder="e.g., cabzi@bank" />
+                        <Input id="upiId" name="upiId" value={settings.upiId || ''} onChange={handleChange} placeholder="e.g., curocity@bank" />
                     </div>
                 </CardContent>
             </Card>

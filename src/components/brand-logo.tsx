@@ -113,7 +113,7 @@ export default function BrandLogo({ className, iconClassName, hideText = false }
   return (
     <div className={cn("flex items-center select-none", className)}>
         <NewLogoIcon className={cn("w-10 h-10", iconClassName)} />
-       {!hideText && <span className="text-xl ml-2 font-extrabold tracking-tight animate-text-gradient bg-gradient-to-r from-primary via-accent to-primary font-headline">Cabzi</span>}
+       {!hideText && <span className="text-xl ml-2 font-extrabold tracking-tight animate-text-gradient bg-gradient-to-r from-primary via-accent to-primary font-headline">Curocity</span>}
     </div>
   )
 }

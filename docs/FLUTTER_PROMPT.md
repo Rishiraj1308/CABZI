@@ -1,11 +1,11 @@
 
-# Master Prompt: Build "Cabzi" - The Flutter Version
+# Master Prompt: Build "Curocity" - The Flutter Version
 
 ## 1. Project Vision & Core Concept
 
-Build a modern, cross-platform (iOS & Android) ride-hailing mobile application called **"Cabzi"** using Flutter.
+Build a modern, cross-platform (iOS & Android) ride-hailing mobile application called **"Curocity"** using Flutter.
 
-The core mission of Cabzi is to create a fair and transparent ecosystem for both riders and drivers in the Indian market. Its unique selling proposition (USP) is **0% commission for drivers**, who instead pay a subscription fee, and **fair, transparent fares for riders**.
+The core mission of Curocity is to create a fair and transparent ecosystem for both riders and drivers in the Indian market. Its unique selling proposition (USP) is **0% commission for drivers**, who instead pay a subscription fee, and **fair, transparent fares for riders**.
 
 The application should have a premium, trustworthy, and user-friendly feel, with a clean, modern aesthetic that performs smoothly on both platforms.
 
@@ -13,7 +13,7 @@ The application should have a premium, trustworthy, and user-friendly feel, with
 
 *   **Riders:** Individuals in Indian metro and tier-2 cities looking for affordable, reliable, and safe transportation.
 *   **Partners (Drivers):** Drivers who own their vehicles (bikes, auto-rickshaws, cars) and want to maximize their earnings without paying high commissions per ride.
-*   **Admin:** The Cabzi operations team responsible for verifying partners and managing the platform (this will be a separate web panel, but the Flutter app needs to interact with its data).
+*   **Admin:** The Curocity operations team responsible for verifying partners and managing the platform (this will be a separate web panel, but the Flutter app needs to interact with its data).
 
 ## 3. Tech Stack & Architecture (Flutter)
 
@@ -102,4 +102,4 @@ This is the "nervous system" of the app. Use Riverpod `StreamProvider` to listen
     *   **Functionality:** Fetches and displays the partner's verified details from their document in the `partners` collection.
 
 ---
-This prompt provides a complete blueprint. A developer can use this to understand the app's requirements, architecture, and user flow, and start building the Flutter version of Cabzi.
+This prompt provides a complete blueprint. A developer can use this to understand the app's requirements, architecture, and user flow, and start building the Flutter version of Curocity.

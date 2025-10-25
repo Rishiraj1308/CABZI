@@ -1,10 +1,10 @@
-# Master Prompt for Framer AI: Build "Cabzi"
+# Master Prompt for Framer AI: Build "Curocity"
 
 ## 1. Project Vision & Core Concept
 
-**Build a modern, high-fidelity, interactive prototype for a ride-hailing mobile application called "Cabzi".**
+**Build a modern, high-fidelity, interactive prototype for a ride-hailing mobile application called "Curocity".**
 
-The core mission of Cabzi is to create a fair and transparent ecosystem for both riders and drivers in the Indian market. Its unique selling proposition (USP) is **0% commission for drivers**, who instead pay a subscription fee, and **fair, transparent fares for riders**.
+The core mission of Curocity is to create a fair and transparent ecosystem for both riders and drivers in the Indian market. Its unique selling proposition (USP) is **0% commission for drivers**, who instead pay a subscription fee, and **fair, transparent fares for riders**.
 
 The prototype should have a premium, trustworthy, and user-friendly feel, with a clean, modern aesthetic that looks and performs smoothly.
 
@@ -13,7 +13,7 @@ The prototype should have a premium, trustworthy, and user-friendly feel, with a
 *   **Riders:** Individuals in Indian metro cities looking for affordable, reliable, and safe transportation.
 *   **Partners (Drivers):** Drivers who want to maximize their earnings without paying high commissions.
 
-## 3. UI/UX Design & Style Guide (The "Cabzi Neo" System)
+## 3. UI/UX Design & Style Guide (The "Curocity Neo" System)
 
 This is the most critical part. The entire design must follow this system.
 
@@ -25,7 +25,7 @@ This is the most critical part. The entire design must follow this system.
     *   **Muted/Secondary:** A light, soft teal-gray (`#DEF2F1`).
 *   **Typography:**
     *   **Font Family:** **Poppins**. Use a bold weight (`font-weight: 700`) for all titles and headings, and a normal weight (`font-weight: 400`) for body text.
-    *   **Brand Name/Logo:** The word "Cabzi" should use an extra-bold weight and have a text gradient from the primary teal to the accent yellow.
+    *   **Brand Name/Logo:** The word "Curocity" should use an extra-bold weight and have a text gradient from the primary teal to the accent yellow.
 *   **Component Styling:**
     *   **Rounding:** All components (Cards, Buttons, Inputs) must have a generous, modern rounding (e.g., `border-radius: 12px` or `16px`).
     *   **Shadows:** Use subtle but clean shadows to lift components off the background. Important elements should have a slightly more pronounced shadow.
@@ -72,4 +72,4 @@ Please generate the following screens for both a Rider and a Partner user flow.
         4.  Details like "Partner ID", "Vehicle Number", and "Member Since".
 
 ---
-This prompt provides a comprehensive blueprint. Please use these instructions to generate a visually stunning and functionally coherent prototype for the "Cabzi" app.
+This prompt provides a comprehensive blueprint. Please use these instructions to generate a visually stunning and functionally coherent prototype for the "Curocity" app.

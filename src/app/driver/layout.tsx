@@ -35,7 +35,7 @@ import { NotificationsProvider, useNotifications } from '@/context/NotificationC
 
 const navItems = [
   { href: '/driver', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/driver/wallet', label: 'Cabzi Bank', icon: Landmark },
+  { href: '/driver/wallet', label: 'Curocity Bank', icon: Landmark },
   { href: '/driver/subscription', label: 'Subscription', icon: Gem },
   { href: '/driver/support', label: 'Support', icon: Wrench },
   { href: '/driver/profile', label: 'Profile', icon: User },
@@ -102,7 +102,7 @@ function DriverLayoutContent({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    const session = localStorage.getItem('cabzi-session');
+    const session = localStorage.getItem('curocity-session');
     if (!session || !db) {
         router.push('/login?role=driver');
         return;
@@ -117,7 +117,7 @@ function DriverLayoutContent({ children }: { children: React.ReactNode }) {
         setUserName(name);
         partnerDocRef.current = doc(db, 'partners', partnerId);
     } catch (e) {
-        localStorage.removeItem('cabzi-session');
+        localStorage.removeItem('curocity-session');
         router.push('/login?role=driver');
         return;
     }
@@ -137,7 +137,7 @@ function DriverLayoutContent({ children }: { children: React.ReactNode }) {
     const unsubscribe = onSnapshot(partnerDocRef.current, (docSnap) => {
       if(docSnap.exists()){
           const data = docSnap.data();
-          const partnerIsPink = data.isCabziPinkPartner || false;
+          const partnerIsPink = data.isCurocityPinkPartner || false;
           setIsPinkPartner(partnerIsPink);
 
           if (partnerIsPink) {
@@ -221,7 +221,7 @@ function DriverLayoutContent({ children }: { children: React.ReactNode }) {
         }
     }
     if (auth) auth.signOut();
-    localStorage.removeItem('cabzi-session');
+    localStorage.removeItem('curocity-session');
     
     if (theme === 'pink') {
         setTheme('system'); 

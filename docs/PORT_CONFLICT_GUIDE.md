@@ -26,7 +26,7 @@ Run the following command for each port that is giving you trouble. Replace `<PO
 lsof -i :<PORT_NUMBER>
 ```
 
-**Common Cabzi Emulator Ports:**
+**Common Curocity Emulator Ports:**
 *   **Auth Emulator Port:** `lsof -i :9100`
 *   **Firestore Emulator Port:** `lsof -i :8082`
 *   **Functions Emulator Port:** `lsof -i :5002`

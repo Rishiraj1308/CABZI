@@ -1,6 +1,6 @@
-# Cabzi CPR: The Unified Onboarding Blueprint
+# Curocity CPR: The Unified Onboarding Blueprint
 
-This document outlines the professional, multi-step onboarding process for all partners in the Cabzi CPR (Cure-Path-ResQ) ecosystem.
+This document outlines the professional, multi-step onboarding process for all partners in the Curocity CPR (Cure-Path-ResQ) ecosystem.
 
 ---
 
@@ -23,7 +23,7 @@ This is a streamlined, single-form process designed for speed.
     *   Vehicle Details (Type, Model, RC Number)
     *   Driving Licence Number
     *   Photo Upload
-    *   "Cabzi Pink" opt-in for women partners.
+    *   "Curocity Pink" opt-in for women partners.
 *   **Step 2: Database Entry**
     *   A new document is created in the `partners` collection.
     *   Initial `status` is set to **`pending_verification`**.
@@ -63,9 +63,9 @@ This is a professional, multi-step wizard designed for businesses, reflecting a 
 
 ---
 
-## 4. Cabzi Bank: The Financial Backbone
+## 4. Curocity Bank: The Financial Backbone
 
-For **Path** and **ResQ** partners, a secure **Cabzi Bank Wallet** is automatically created upon successful verification and their first login.
+For **Path** and **ResQ** partners, a secure **Curocity Bank Wallet** is automatically created upon successful verification and their first login.
 
 *   **Instant Credit:** All earnings (ride fares, service charges) are credited instantly.
 *   **Secure PIN:** The partner is prompted to set a 4-digit UPI PIN on their first visit to the wallet, securing their funds.

@@ -22,12 +22,12 @@ import { AnimatePresence, motion } from 'framer-motion'
 
 // This now matches the team page data for consistent roles
 const MOCK_ADMIN_USERS = [
-    { id: 'owner@cabzi.com', password: 'password123', name: 'Platform Owner', role: 'Platform Owner' },
-    { id: 'cofounder@cabzi.com', password: 'password123', name: 'Co-founder', role: 'Co-founder' },
-    { id: 'manager@cabzi.com', password: 'password123', name: 'Alok Singh', role: 'Manager' },
-    { id: 'support@cabzi.com', password: 'password123', name: 'Priya Sharma', role: 'Support Staff' },
-    { id: 'intern@cabzi.com', password: 'password123', name: 'Rahul Verma', role: 'Tech Intern' },
-    { id: 'ai.support@cabzi.com', password: 'password123', name: 'AI Assistant', role: 'AI Assistant' },
+    { id: 'owner@curocity.com', password: 'password123', name: 'Platform Owner', role: 'Platform Owner' },
+    { id: 'cofounder@curocity.com', password: 'password123', name: 'Co-founder', role: 'Co-founder' },
+    { id: 'manager@curocity.com', password: 'password123', name: 'Alok Singh', role: 'Manager' },
+    { id: 'support@curocity.com', password: 'password123', name: 'Priya Sharma', role: 'Support Staff' },
+    { id: 'intern@curocity.com', password: 'password123', name: 'Rahul Verma', role: 'Tech Intern' },
+    { id: 'ai.support@curocity.com', password: 'password123', name: 'AI Assistant', role: 'AI Assistant' },
 ];
 
 function LanguageToggle() {
@@ -78,7 +78,7 @@ export default function LoginPage() {
 
   const [step, setStep] = useState<'login' | 'details' | 'otp'>('login');
   
-  const [identifier, setIdentifier] = useState(searchParams.get('email') || '');
+  const [identifier, setIdentifier] = useState(searchParams.get('phone') || '');
   const [inputType, setInputType] = useState<'email' | 'phone' | 'partnerId' | 'none'>('none');
   
   const [password, setPassword] = useState('')
@@ -102,7 +102,7 @@ export default function LoginPage() {
       setInputType('email');
     } else if (/^\d{1,10}$/.test(identifier)) {
       setInputType('phone');
-    } else if (identifier.startsWith('CZD') || identifier.startsWith('CZA') || identifier.startsWith('CZR')) {
+    } else if (identifier.startsWith('CZD') || identifier.startsWith('CZA') || identifier.startsWith('CZR') || identifier.startsWith('CZC')) {
         setInputType('partnerId');
     }
      else {
@@ -118,7 +118,7 @@ export default function LoginPage() {
 
       setTimeout(() => {
         if (user) {
-            localStorage.setItem('cabzi-session', JSON.stringify({ role: 'admin', phone: '', name: user.name, adminRole: user.role }));
+            localStorage.setItem('curocity-session', JSON.stringify({ role: 'admin', phone: '', name: user.name, adminRole: user.role }));
             toast({ title: "Login Successful", description: `Welcome, ${user.role}!`});
             router.push('/admin');
         } else {
@@ -135,7 +135,7 @@ export default function LoginPage() {
   const findAndSetSession = async (user: { uid: string; email?: string | null; phoneNumber?: string | null }) => {
     if (!db) return false;
 
-    const isPartnerLogin = ['driver', 'mechanic', 'cure', 'doctor', 'ambulance'].includes(roleFromQuery);
+    const isUserLogin = roleFromQuery === 'user';
     
     const partnerCollections = [
         { name: 'partners', role: 'driver', identifier: 'phone' },
@@ -146,22 +146,20 @@ export default function LoginPage() {
     ];
     const userCollections = [{ name: 'users', role: 'user', identifier: 'phone' }];
 
-    const collectionsToSearch = isPartnerLogin 
-        ? [...partnerCollections, ...userCollections] 
-        : [...userCollections, ...partnerCollections];
+    // If it's a user login, ONLY search the 'users' collection.
+    // If it's a partner login, search ALL partner collections.
+    const collectionsToSearch = isUserLogin ? userCollections : partnerCollections;
     
     let searchIdentifier: string | undefined;
-    let identifierField: 'email' | 'phone' | 'partnerId' = 'email';
-
-    if (inputType === 'partnerId') {
+    
+    if (roleFromQuery === 'cure' && !identifier.includes('@')) {
+      searchIdentifier = identifier;
+    } else if (inputType === 'partnerId') {
         searchIdentifier = identifier;
-        identifierField = 'partnerId';
     } else if (user.email) {
         searchIdentifier = user.email;
-        identifierField = 'email';
     } else if (user.phoneNumber) {
         searchIdentifier = user.phoneNumber.replace('+91', '');
-        identifierField = 'phone';
     }
     
     if (!searchIdentifier) return false;
@@ -180,10 +178,6 @@ export default function LoginPage() {
         if (!snapshot.empty) {
             const userDoc = snapshot.docs[0];
             const userData = userDoc.data();
-
-             if (isPartnerLogin && role === 'user') {
-                continue; 
-            }
             
             // Password check for partnerId logins
             if (inputType === 'partnerId' && userData.password !== password) {
@@ -196,7 +190,8 @@ export default function LoginPage() {
                 phone: userData.phone, 
                 email: userData.email,
                 name: userData.name,
-                partnerId: userData.partnerId,
+                partnerId: role === 'cure' ? userDoc.id : userData.partnerId,
+                id: userDoc.id,
             };
 
             if (role === 'doctor' || role === 'ambulance') {
@@ -206,13 +201,13 @@ export default function LoginPage() {
                 }
             }
 
-            let localStorageKey = 'cabzi-session';
+            let localStorageKey = 'curocity-session';
             let redirectPath = `/${role}`;
             
-            if (role === 'mechanic') localStorageKey = 'cabzi-resq-session';
-            if (role === 'cure') localStorageKey = 'cabzi-cure-session';
-            if (role === 'ambulance') localStorageKey = 'cabzi-ambulance-session';
-            if (role === 'doctor') localStorageKey = 'cabzi-doctor-session';
+            if (role === 'mechanic') localStorageKey = 'curocity-resq-session';
+            if (role === 'cure') localStorageKey = 'curocity-cure-session';
+            if (role === 'ambulance') localStorageKey = 'curocity-ambulance-session';
+            if (role === 'doctor') localStorageKey = 'curocity-doctor-session';
             
             localStorage.setItem(localStorageKey, JSON.stringify(sessionData));
             
@@ -222,11 +217,13 @@ export default function LoginPage() {
         }
     }
     
-    if (roleFromQuery === 'user' && inputType !== 'partnerId') {
-        setStep('details');
+    // This part is only reached if no account was found in the searched collections.
+    if (isUserLogin) {
+        setStep('details'); // If user login and not found, proceed to create account.
         return true; 
     } else {
-        toast({ variant: 'destructive', title: 'Account Not Found', description: 'This account does not exist. Please check your credentials or onboard first.' });
+        // If partner login and not found, show an error.
+        toast({ variant: 'destructive', title: 'Partner Not Found', description: 'This account does not exist. Please check your credentials or onboard first.' });
         return false;
     }
   }
@@ -235,7 +232,10 @@ export default function LoginPage() {
     e.preventDefault();
     setIsLoading(true);
 
-    if (inputType === 'email') {
+    if (roleFromQuery === 'cure') {
+      await findAndSetSession({ uid: '', email: '', phoneNumber: identifier });
+    }
+    else if (inputType === 'email') {
       await handleEmailSubmit();
     } else if (inputType === 'phone') {
       await handlePhoneSubmit();
@@ -323,8 +323,8 @@ export default function LoginPage() {
               isOnline: false,
           });
   
-          localStorage.setItem('cabzi-session', JSON.stringify({ role: 'user', email: user.email, name, gender, userId: user.uid }));
-          toast({ title: "Account Created!", description: "Welcome to Cabzi! Redirecting...", className: "bg-green-600 text-white border-green-600" });
+          localStorage.setItem('curocity-session', JSON.stringify({ role: 'user', email: user.email, name, gender, userId: user.uid }));
+          toast({ title: "Account Created!", description: "Welcome to Curocity! Redirecting...", className: "bg-green-600 text-white border-green-600" });
           router.push('/user');
   
       } catch (error: any) {
@@ -388,7 +388,7 @@ export default function LoginPage() {
           <form onSubmit={handleAdminLogin} className="space-y-4">
               <div className="space-y-2">
                   <Label htmlFor="adminId">Admin ID</Label>
-                  <Input id="adminId" name="adminId" type="email" placeholder="owner@cabzi.com" required value={adminId} onChange={(e) => setAdminId(e.target.value)} disabled={isLoading} />
+                  <Input id="adminId" name="adminId" type="email" placeholder="owner@curocity.com" required value={adminId} onChange={(e) => setAdminId(e.target.value)} disabled={isLoading} />
               </div>
               <div className="space-y-2">
                   <Label htmlFor="adminPassword">Password</Label>
@@ -410,7 +410,7 @@ export default function LoginPage() {
             <div className="space-y-4">
                 <form onSubmit={handleIdentifierSubmit} className="space-y-4">
                      <div className="space-y-2">
-                        <Label htmlFor="identifier">{isPartnerIdLogin ? 'Partner ID' : 'Email or Phone Number'}</Label>
+                        <Label htmlFor="identifier">{isPartnerIdLogin ? (roleFromQuery === 'cure' ? 'Registered Phone' : 'Partner ID') : 'Email or Phone Number'}</Label>
                         {inputType === 'phone' && !isPartnerIdLogin ? (
                              <div className="flex items-center gap-0 rounded-md border border-input focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2">
                                 <span className="pl-3 text-muted-foreground text-sm">+91</span>
@@ -432,7 +432,7 @@ export default function LoginPage() {
                                 id="identifier" 
                                 name="identifier" 
                                 type="text" 
-                                placeholder={isPartnerIdLogin ? 'e.g., CZD12345' : 'name@example.com or 1234567890'} 
+                                placeholder={isPartnerIdLogin ? (roleFromQuery === 'cure' ? 'e.g., 9876543210' : 'e.g., CZD12345') : 'name@example.com or 1234567890'} 
                                 required 
                                 value={identifier} 
                                 onChange={(e) => setIdentifier(e.target.value)} 
@@ -441,14 +441,14 @@ export default function LoginPage() {
                         )}
                     </div>
 
-                    {(inputType === 'email' || isPartnerIdLogin) && (
+                    {(inputType === 'email' || isPartnerIdLogin || roleFromQuery === 'cure') && (
                         <div className="space-y-2">
                             <Label htmlFor="password">Password</Label>
                             <Input id="password" name="password" type="password" placeholder="••••••••" required value={password} onChange={(e) => setPassword(e.target.value)} disabled={isLoading} />
                         </div>
                     )}
                     
-                    <Button type="submit" className="w-full" disabled={isLoading || inputType === 'none'}>
+                    <Button type="submit" className="w-full" disabled={isLoading || (inputType === 'none' && roleFromQuery !== 'cure')}>
                          {isLoading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Please wait...</> : (inputType === 'phone' ? 'Send OTP' : 'Continue')}
                     </Button>
                 </form>

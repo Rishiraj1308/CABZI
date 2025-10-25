@@ -1,6 +1,6 @@
-# Cabzi: The Unified Support Center Blueprint
+# Curocity: The Unified Support Center Blueprint
 
-This document outlines the complete architecture and workflow for the Cabzi Support Center. It is designed to handle queries from both Riders and Partners seamlessly, providing a single, efficient platform for the customer support team.
+This document outlines the complete architecture and workflow for the Curocity Support Center. It is designed to handle queries from both Riders and Partners seamlessly, providing a single, efficient platform for the customer support team.
 
 ---
 

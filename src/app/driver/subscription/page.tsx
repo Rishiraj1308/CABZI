@@ -1,4 +1,5 @@
 
+
       
 'use client'
 
@@ -99,7 +100,7 @@ export default function SubscriptionPage() {
     });
 
     // Fetch partner subscription details
-    const session = localStorage.getItem('cabzi-session');
+    const session = localStorage.getItem('curocity-session');
     if(session) {
         const { phone } = JSON.parse(session);
         const partnerQuery = query(collection(db, 'partners'), where('phone', '==', phone));

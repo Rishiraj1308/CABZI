@@ -1,6 +1,6 @@
-# Cabzi CURE: The User-to-Hospital Connection Blueprint
+# Curocity CURE: The User-to-Hospital Connection Blueprint
 
-This document outlines the precise, step-by-step technical workflow that connects a user in an emergency with a Cabzi CURE partner (hospital), ensuring a rapid and reliable ambulance dispatch. This process is built on our "No Cost" server-centric architecture.
+This document outlines the precise, step-by-step technical workflow that connects a user in an emergency with a Curocity CURE partner (hospital), ensuring a rapid and reliable ambulance dispatch. This process is built on our "No Cost" server-centric architecture.
 
 ---
 
@@ -12,7 +12,7 @@ A user is in a medical emergency and needs an ambulance immediately.
 
 ### **Step 1: The SOS Trigger (Rider's App)**
 
-1.  **Initiate SOS:** The user opens the Cabzi app and taps the main SOS button.
+1.  **Initiate SOS:** The user opens the Curocity app and taps the main SOS button.
 2.  **Smart Triage:** The app presents a "Severity Selection" screen (`Critical`, `Serious`, `Non-Critical`). The user selects one.
 3.  **Location Lock:** The app gets the user's precise GPS coordinates.
 4.  **Create Case Document:** The user's app performs a **single write operation**, creating a new document in the `emergencyCases` collection in Firestore. This document contains:

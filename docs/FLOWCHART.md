@@ -1,6 +1,6 @@
-# Cabzi: The CPR Technical Flowchart
+# Curocity: The CPR Technical Flowchart
 
-This document outlines the end-to-end technical data flow for each ecosystem within Cabzi. It explains how a user's request is processed, assigned, and completed in a scalable, real-time manner.
+This document outlines the end-to-end technical data flow for each ecosystem within Curocity. It explains how a user's request is processed, assigned, and completed in a scalable, real-time manner.
 
 ---
 
@@ -128,4 +128,4 @@ The Admin Panel (`/admin`) is the central nervous system that monitors all these
 *   **Audit Trails (`/admin/rides`, `/admin/cure-cases`):** These pages are a direct, read-only view of the `rides` and `emergencyCases` collections, sorted by date, providing a complete historical log.
 *   **Financials (`/admin/audit`, `/admin/bank`):** These panels read aggregated data from partner wallets and expense ledgers to generate P&L statements and financial reports.
 
-This server-centric, push-based architecture ensures the Cabzi platform is scalable, cost-effective, and provides a seamless real-time experience for all users.
+This server-centric, push-based architecture ensures the Curocity platform is scalable, cost-effective, and provides a seamless real-time experience for all users.

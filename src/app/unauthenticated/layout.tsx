@@ -22,7 +22,7 @@ export default function UnauthenticatedLayout({
     setIsMounted(true);
     
     // Check for a primary session first
-    const primarySession = localStorage.getItem('cabzi-session');
+    const primarySession = localStorage.getItem('curocity-session');
     if (primarySession) {
         try {
             const { role } = JSON.parse(primarySession);
@@ -32,12 +32,12 @@ export default function UnauthenticatedLayout({
                  return;
             }
         } catch (e) {
-            localStorage.removeItem('cabzi-session');
+            localStorage.removeItem('curocity-session');
         }
     }
     
     // If no primary session, check for other partner sessions
-    const partnerSessionKeys = ['cabzi-resq-session', 'cabzi-cure-session', 'cabzi-ambulance-session', 'cabzi-doctor-session'];
+    const partnerSessionKeys = ['curocity-resq-session', 'curocity-cure-session', 'curocity-ambulance-session', 'curocity-doctor-session'];
     for (const key of partnerSessionKeys) {
         const session = localStorage.getItem(key);
         if (session) {

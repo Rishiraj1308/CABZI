@@ -1,16 +1,16 @@
 
-# Cabzi: The Comprehensive Testing Report
+# Curocity: The Comprehensive Testing Report
 
 **Report Date:** August 21, 2024
 **App Version:** Advanced Prototype
 
-This document provides a detailed quality assurance and testing analysis of the Cabzi application. It evaluates each module, identifies bugs, and assesses overall stability and user experience.
+This document provides a detailed quality assurance and testing analysis of the Curocity application. It evaluates each module, identifies bugs, and assesses overall stability and user experience.
 
 ---
 
 ## 1. Overall Quality Score: 80% (Stable Prototype)
 
-**Summary:** The Cabzi application is a highly stable and feature-rich prototype. The core functionalities are robust, and the real-time architecture is sound. The primary deductions in the score are due to "edge case" scenarios and minor UI inconsistencies that need polishing before a public launch. The app is **ready for internal UAT (User Acceptance Testing)**.
+**Summary:** The Curocity application is a highly stable and feature-rich prototype. The core functionalities are robust, and the real-time architecture is sound. The primary deductions in the score are due to "edge case" scenarios and minor UI inconsistencies that need polishing before a public launch. The app is **ready for internal UAT (User Acceptance Testing)**.
 
 ---
 
@@ -44,7 +44,7 @@ This document provides a detailed quality assurance and testing analysis of the 
 | **Decline Ride**                                | Pop-up disappears, and the driver is available for the next ride. | Works flawlessly.                                                          | ✅ PASS  |                                                                       |
 | **Auto-Decline on Timeout**                     | If not accepted in 10s, the request is declined automatically. | Works perfectly.                                                           | ✅ PASS  |                                                                       |
 | **OTP Verification to Start Trip**              | The trip starts only after entering the correct OTP.     | Works perfectly. Handles incorrect OTP attempts.                           | ✅ PASS  |                                                                       |
-| **End Trip & Wallet Update**                    | Fare is instantly credited to the partner's Cabzi Bank wallet. | Works perfectly. Transaction is recorded correctly.                        | ✅ PASS  |                                                                       |
+| **End Trip & Wallet Update**                    | Fare is instantly credited to the partner's Curocity Bank wallet. | Works perfectly. Transaction is recorded correctly.                        | ✅ PASS  |                                                                       |
 | **Live Location Update**                        | Partner's location updates on the map while online.      | Works perfectly.                                                           | ✅ PASS  |                                                                       |
 | **SOS Garage Request**                          | A new `garageRequest` is created in the database.        | Works perfectly.                                                           | ✅ PASS  |                                                                       |
 | **PIN Management (Set/Change/Forgot)**          | The PIN flow is secure and user-friendly.                | Works perfectly. Remembers if PIN is set.                                  | ✅ PASS  |                                                                       |
@@ -80,4 +80,4 @@ This document provides a detailed quality assurance and testing analysis of the 
 
 ## 4. Final Verdict
 
-The Cabzi application is in a very healthy state. It has passed all major "happy path" test cases. The focus should now shift from building core features to **polishing the user experience, handling edge cases/errors, and completing the ResQ Partner module.**
+The Curocity application is in a very healthy state. It has passed all major "happy path" test cases. The focus should now shift from building core features to **polishing the user experience, handling edge cases/errors, and completing the ResQ Partner module.**

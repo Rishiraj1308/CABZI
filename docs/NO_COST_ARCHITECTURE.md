@@ -1,5 +1,5 @@
 
-# Cabzi: The "No Cost" Scalable Architecture Blueprint
+# Curocity: The "No Cost" Scalable Architecture Blueprint
 
 ## 1. The Problem: The "Public Radio" Model & The Quota Killer
 
@@ -32,7 +32,7 @@ Here is the new, intelligent data flow:
     1.  Read the newly created `ride` document (1 read).
     2.  Access the `partners` collection.
     3.  Perform a **geo-query** to find the nearest 10-20 online partners who match the `vehicleType`. This is a highly efficient, single query.
-    4.  The function can add more logic, like filtering for high-rated drivers or "Cabzi Pink" partners.
+    4.  The function can add more logic, like filtering for high-rated drivers or "Curocity Pink" partners.
 
 ### Step 4: The Function Sends a "Private Phone Call" (The Push Notification)
 - The function now has a small, targeted list of the best drivers for the job.
@@ -77,6 +77,4 @@ This architecture is not just a plan; it is **fully implemented** in the current
 3.  **Client-side Listeners Removed:** The inefficient `onSnapshot` listeners have been removed from the partner dashboards.
 4.  **Security Rules:** Granular `firestore.rules` are in place to secure the database.
 
-By adopting this blueprint, Cabzi now operates at scale with a predictable, minimal, and near-zero cost for its core real-time features.
-
-    
+By adopting this blueprint, Curocity now operates at scale with a predictable, minimal, and near-zero cost for its core real-time features.
