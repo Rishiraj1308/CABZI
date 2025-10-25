@@ -1,16 +1,28 @@
+
 'use client'
 
 import React, { useState, useEffect, useMemo } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { MapPin, History, Car, Ambulance, Calendar, User, Clock, IndianRupee, KeyRound } from 'lucide-react'
 import { useFirebase } from '@/firebase/client-provider'
-import { collection, query, where, orderBy, onSnapshot, Timestamp } from 'firebase/firestore'
+import { collection, query, where, orderBy, onSnapshot, Timestamp, doc, updateDoc } from 'firebase/firestore'
 import { useToast } from '@/hooks/use-toast'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 
 type ActivityStatus = 'Completed' | 'Cancelled' | 'Pending' | 'Confirmed' | string;
 
@@ -128,6 +140,45 @@ export default function MyActivityPage() {
 
   }, [db, user, toast]);
 
+  const handleCancelActivity = async () => {
+    if (!selectedActivity || !db) return;
+
+    let collectionName = '';
+    let statusField = 'status';
+    let newStatus = 'cancelled_by_rider';
+
+    switch (selectedActivity.type) {
+        case 'Ride':
+            collectionName = 'rides';
+            break;
+        case 'Appointment':
+            collectionName = 'appointments';
+            newStatus = 'Cancelled';
+            break;
+        case 'Emergency':
+            collectionName = 'emergencyCases';
+            break;
+    }
+    
+    if (!collectionName) return;
+
+    const docRef = doc(db, collectionName, selectedActivity.id);
+    
+    try {
+        await updateDoc(docRef, { [statusField]: newStatus });
+        toast({
+            title: 'Request Cancelled',
+            description: `Your ${selectedActivity.type} request has been cancelled.`,
+            variant: 'destructive',
+        });
+    } catch(error) {
+        console.error("Error cancelling activity: ", error);
+        toast({ variant: 'destructive', title: "Error", description: "Could not cancel the request." });
+    }
+    
+    setSelectedActivity(null);
+  };
+
   const getStatusBadge = (status: ActivityStatus) => {
     const lowerStatus = status.toLowerCase();
     if (lowerStatus.includes('completed')) return <Badge className="bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-200">{status}</Badge>;
@@ -158,8 +209,8 @@ export default function MyActivityPage() {
                 <div className="flex items-center gap-4">
                     <Avatar className="w-16 h-16"><AvatarImage src="https://placehold.co/100x100.png" data-ai-hint="driver portrait" /><AvatarFallback>{selectedActivity.driverName?.substring(0, 2)}</AvatarFallback></Avatar>
                     <div>
-                        <DialogTitle className="text-2xl">Ride with {selectedActivity.driverName}</DialogTitle>
-                        <DialogDescription>{selectedActivity.vehicle}</DialogDescription>
+                        <DialogTitle className="text-2xl">Ride with {selectedActivity.driverName || 'a partner'}</DialogTitle>
+                        <DialogDescription>{selectedActivity.vehicle || 'Vehicle details unavailable'}</DialogDescription>
                     </div>
                 </div>
             </DialogHeader>
@@ -216,6 +267,8 @@ export default function MyActivityPage() {
     }
   }
 
+  const canCancel = selectedActivity && (selectedActivity.status.toLowerCase() === 'pending' || selectedActivity.status.toLowerCase() === 'searching');
+
   return (
     <div className="p-4 md:p-6 space-y-6">
         <div className="animate-fade-in">
@@ -260,6 +313,23 @@ export default function MyActivityPage() {
             <DialogContent className="max-w-md">
               {renderDialogContent()}
                <DialogFooter>
+                    {canCancel && (
+                        <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <Button variant="destructive" className="w-full">Cancel Request</Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                    <AlertDialogDescription>This will cancel your {selectedActivity.type.toLowerCase()} request. This action cannot be undone.</AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel>Go Back</AlertDialogCancel>
+                                    <AlertDialogAction onClick={handleCancelActivity} className="bg-destructive hover:bg-destructive/90">Yes, Cancel</AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
+                    )}
                   <Button variant="outline" onClick={() => setSelectedActivity(null)}>Close</Button>
                </DialogFooter>
             </DialogContent>
