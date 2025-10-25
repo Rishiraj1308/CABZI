@@ -17,7 +17,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Home, Briefcase, Settings, FileText, User, LogOut, Camera, Shield, Wallet, CreditCard, PlusCircle, Activity, ArrowRight, Loader2, HeartPulse, Droplets } from 'lucide-react'
+import { Home, Briefcase, Settings, FileText, User, LogOut, Camera, Shield, Wallet, CreditCard, PlusCircle, Activity, ArrowRight, Loader2, HeartPulse, Droplets, Car } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useToast } from '@/hooks/use-toast'
 import {
@@ -237,187 +237,142 @@ export default function UserProfilePage() {
                 <p className="text-muted-foreground">Manage your account, activity, and preferences.</p>
             </div>
 
-            <Card>
-                <CardHeader className="flex-row items-center gap-4">
-                    <div className="relative">
-                        <Avatar className="w-20 h-20 border-4 border-primary">
-                            <AvatarImage src={profileData.photoURL || 'https://placehold.co/100x100.png'} alt={profileData.name || ''} data-ai-hint="customer portrait" />
-                            <AvatarFallback className="text-3xl">{getInitials(profileData.name).toUpperCase()}</AvatarFallback>
-                        </Avatar>
-                        <input
-                            type="file"
-                            ref={fileInputRef}
-                            onChange={handlePhotoUpload}
-                            accept="image/png, image/jpeg"
-                            className="hidden"
-                        />
-                         <Button 
-                            variant="outline" 
-                            size="icon" 
-                            className="absolute -bottom-2 -right-2 rounded-full h-8 w-8 bg-background"
-                            onClick={() => fileInputRef.current?.click()}
-                            disabled={isUploading}
-                         >
-                            {isUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Camera className="w-4 h-4"/>}
-                            <span className="sr-only">Change photo</span>
-                        </Button>
-                    </div>
-                    <div>
-                        <CardTitle className="text-2xl">{profileData.name}</CardTitle>
-                        <CardDescription>Member since {profileData.createdAt ? profileData.createdAt.toDate().toLocaleDateString('en-US', { year: 'numeric', month: 'long' }) : '2024'}</CardDescription>
-                    </div>
-                </CardHeader>
-            </Card>
-
-            <Card>
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-lg"><Activity className="w-5 h-5"/> Activity Snapshot</CardTitle>
-                </CardHeader>
-                <CardContent className="grid grid-cols-2 gap-4 text-center">
-                    <div className="p-4 bg-muted rounded-lg">
-                        <p className="text-2xl font-bold">{rideStats.totalRides}</p>
-                        <p className="text-sm text-muted-foreground">Total Rides</p>
-                    </div>
-                    <div className="p-4 bg-muted rounded-lg">
-                        <p className="text-2xl font-bold">₹{rideStats.totalSpend.toLocaleString()}</p>
-                        <p className="text-sm text-muted-foreground">Total Spend</p>
-                    </div>
-                </CardContent>
-                 <CardFooter>
-                    <Button asChild variant="outline" className="w-full">
-                        <Link href="/user/activity">
-                            View All Activity <ArrowRight className="ml-2 w-4 h-4" />
-                        </Link>
-                    </Button>
-                </CardFooter>
-            </Card>
-
-             <Card>
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-lg"><HeartPulse className="w-5 h-5 text-destructive"/> Health &amp; Insurance</CardTitle>
-                    <CardDescription>This information is critical for emergencies and will be shared with CURE partners when you use the SOS feature.</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                     <div className="grid md:grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="blood-group" className="flex items-center gap-1.5"><Droplets className="w-4 h-4"/>Blood Group</Label>
-                            <Input id="blood-group" placeholder="e.g., O+" value={healthProfile.bloodGroup} onChange={(e) => setHealthProfile(prev => ({...prev, bloodGroup: e.target.value}))}/>
-                        </div>
-                         <div className="space-y-2">
-                            <Label htmlFor="allergies">Known Allergies</Label>
-                            <Input id="allergies" placeholder="e.g., Peanuts, Penicillin" value={healthProfile.allergies} onChange={(e) => setHealthProfile(prev => ({...prev, allergies: e.target.value}))}/>
-                        </div>
-                     </div>
-                     <div className="space-y-2">
-                        <Label htmlFor="conditions">Pre-existing Medical Conditions</Label>
-                        <Textarea id="conditions" placeholder="e.g., Asthma, Diabetes, Hypertension" value={healthProfile.conditions} onChange={(e) => setHealthProfile(prev => ({...prev, conditions: e.target.value}))}/>
-                    </div>
-                    <Separator />
-                     <div className="grid md:grid-cols-2 gap-4">
-                         <div className="space-y-2">
-                            <Label htmlFor="insurance-provider">Insurance Provider</Label>
-                            <Input id="insurance-provider" placeholder="e.g., HDFC Ergo, Star Health" value={insurance.provider} onChange={(e) => setInsurance(prev => ({...prev, provider: e.target.value}))}/>
-                        </div>
-                         <div className="space-y-2">
-                            <Label htmlFor="policy-number">Policy Number</Label>
-                            <Input id="policy-number" placeholder="e.g., P123456789" value={insurance.policyNumber} onChange={(e) => setInsurance(prev => ({...prev, policyNumber: e.target.value}))}/>
-                        </div>
-                     </div>
-                </CardContent>
-                <CardFooter>
-                    <Button onClick={handleSaveHealthInfo} disabled={isSavingHealthInfo}>
-                        {isSavingHealthInfo ? <Loader2 className="w-4 h-4 animate-spin mr-2"/> : <Shield className="w-4 h-4 mr-2"/>}
-                        Save Health Info
-                    </Button>
-                </CardFooter>
-            </Card>
-
-            <Card>
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2"><Shield className="w-5 h-5"/> Emergency Contact</CardTitle>
-                    <CardDescription>Add a trusted contact to be notified in case of an emergency.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <div className="flex items-center gap-4">
-                        <Input placeholder="Enter contact's name &amp; number" />
-                        <Button><PlusCircle className="w-4 h-4 mr-2"/> Add Contact</Button>
-                    </div>
-                </CardContent>
-            </Card>
-            
-             <Card>
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2"><CreditCard className="w-5 h-5"/> Payment Methods</CardTitle>
-                     <CardDescription>Manage your saved payment options for quick and easy checkout.</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                    <div className="flex items-center p-3 rounded-lg border">
-                        <CreditCard className="w-6 h-6 mr-4 text-muted-foreground"/>
-                        <div className="flex-1">
-                            <p className="font-semibold">HDFC Bank Credit Card</p>
-                            <p className="text-sm text-muted-foreground">**** **** **** 1234</p>
-                        </div>
-                         <Button variant="outline" size="sm">Remove</Button>
-                    </div>
-                     <Button variant="outline" className="w-full mt-2"><PlusCircle className="w-4 h-4 mr-2"/> Add New Payment Method</Button>
-                </CardContent>
-            </Card>
-            
-             <Card>
-                <CardHeader>
-                    <CardTitle>Settings &amp; Legal</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <div className="space-y-4">
-                        <div>
-                             <Label>Saved Locations</Label>
-                             <div className="space-y-2 mt-2">
-                                <div className="flex items-center gap-4">
-                                    <Home className="w-5 h-5 text-muted-foreground"/>
-                                    <Input placeholder="Add Home address" />
+             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div className="lg:col-span-1 space-y-6">
+                     <Card>
+                        <CardHeader className="items-center text-center">
+                            <div className="relative">
+                                <Avatar className="w-24 h-24 border-4 border-primary">
+                                    <AvatarImage src={profileData.photoURL || 'https://placehold.co/100x100.png'} alt={profileData.name || ''} data-ai-hint="customer portrait" />
+                                    <AvatarFallback className="text-3xl">{getInitials(profileData.name).toUpperCase()}</AvatarFallback>
+                                </Avatar>
+                                <input type="file" ref={fileInputRef} onChange={handlePhotoUpload} accept="image/png, image/jpeg" className="hidden" />
+                                <Button variant="outline" size="icon" className="absolute -bottom-2 -right-2 rounded-full h-8 w-8 bg-background" onClick={() => fileInputRef.current?.click()} disabled={isUploading}>
+                                    {isUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Camera className="w-4 h-4"/>}
+                                    <span className="sr-only">Change photo</span>
+                                </Button>
+                            </div>
+                            <div className="pt-2">
+                                <CardTitle className="text-2xl">{profileData.name}</CardTitle>
+                                <CardDescription>Member since {profileData.createdAt ? profileData.createdAt.toDate().toLocaleDateString('en-US', { year: 'numeric', month: 'long' }) : '2024'}</CardDescription>
+                            </div>
+                        </CardHeader>
+                    </Card>
+                     <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2 text-lg"><Activity className="w-5 h-5"/> Activity Snapshot</CardTitle>
+                        </CardHeader>
+                        <CardContent className="grid grid-cols-2 gap-4 text-center">
+                            <div className="p-4 bg-muted rounded-lg">
+                                <Car className="w-6 h-6 mx-auto mb-1 text-primary"/>
+                                <p className="text-2xl font-bold">{rideStats.totalRides}</p>
+                                <p className="text-xs text-muted-foreground">Total Rides</p>
+                            </div>
+                            <div className="p-4 bg-muted rounded-lg">
+                                <IndianRupee className="w-6 h-6 mx-auto mb-1 text-primary"/>
+                                <p className="text-2xl font-bold">₹{rideStats.totalSpend.toLocaleString()}</p>
+                                <p className="text-xs text-muted-foreground">Total Spend</p>
+                            </div>
+                        </CardContent>
+                         <CardFooter>
+                            <Button asChild variant="outline" className="w-full">
+                                <Link href="/user/activity">
+                                    View All Activity <ArrowRight className="ml-2 w-4 h-4" />
+                                </Link>
+                            </Button>
+                        </CardFooter>
+                    </Card>
+                </div>
+                <div className="lg:col-span-2 space-y-6">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2 text-lg"><HeartPulse className="w-5 h-5 text-destructive"/> Health &amp; Insurance</CardTitle>
+                            <CardDescription>This information is critical for emergencies and will be shared with CURE partners when you use the SOS feature.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <div className="grid md:grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="blood-group" className="flex items-center gap-1.5"><Droplets className="w-4 h-4"/>Blood Group</Label>
+                                    <Input id="blood-group" placeholder="e.g., O+" value={healthProfile.bloodGroup} onChange={(e) => setHealthProfile(prev => ({...prev, bloodGroup: e.target.value}))}/>
                                 </div>
-                                 <div className="flex items-center gap-4">
-                                    <Briefcase className="w-5 h-5 text-muted-foreground"/>
-                                    <Input placeholder="Add Work address" />
+                                <div className="space-y-2">
+                                    <Label htmlFor="allergies">Known Allergies</Label>
+                                    <Input id="allergies" placeholder="e.g., Peanuts, Penicillin" value={healthProfile.allergies} onChange={(e) => setHealthProfile(prev => ({...prev, allergies: e.target.value}))}/>
                                 </div>
                             </div>
-                        </div>
-                        <Separator />
-                        <div className="flex flex-col gap-2">
-                            <Button variant="ghost" className="w-full justify-start gap-2"><Settings className="w-5 h-5"/> Account Settings</Button>
-                            <Button asChild variant="ghost" className="w-full justify-start gap-2"><Link href="/terms"><FileText className="w-5 h-5"/> Terms of Service</Link></Button>
-                            <Button asChild variant="ghost" className="w-full justify-start gap-2"><Link href="/privacy"><FileText className="w-5 h-5"/> Privacy Policy</Link></Button>
-                        </div>
-                    </div>
-                </CardContent>
-            </Card>
+                            <div className="space-y-2">
+                                <Label htmlFor="conditions">Pre-existing Medical Conditions</Label>
+                                <Textarea id="conditions" placeholder="e.g., Asthma, Diabetes, Hypertension" value={healthProfile.conditions} onChange={(e) => setHealthProfile(prev => ({...prev, conditions: e.target.value}))}/>
+                            </div>
+                            <Separator />
+                            <div className="grid md:grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="insurance-provider">Insurance Provider</Label>
+                                    <Input id="insurance-provider" placeholder="e.g., HDFC Ergo, Star Health" value={insurance.provider} onChange={(e) => setInsurance(prev => ({...prev, provider: e.target.value}))}/>
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="policy-number">Policy Number</Label>
+                                    <Input id="policy-number" placeholder="e.g., P123456789" value={insurance.policyNumber} onChange={(e) => setInsurance(prev => ({...prev, policyNumber: e.target.value}))}/>
+                                </div>
+                            </div>
+                        </CardContent>
+                        <CardFooter>
+                            <Button onClick={handleSaveHealthInfo} disabled={isSavingHealthInfo}>
+                                {isSavingHealthInfo ? <Loader2 className="w-4 h-4 animate-spin mr-2"/> : <Shield className="w-4 h-4 mr-2"/>}
+                                Save Health Info
+                            </Button>
+                        </CardFooter>
+                    </Card>
+                </div>
+            </div>
 
             <Card>
                 <CardHeader>
-                    <CardTitle>Account Actions</CardTitle>
+                    <CardTitle className="flex items-center gap-2"><Settings className="w-5 h-5"/> Account Settings</CardTitle>
+                     <CardDescription>Manage your saved locations, payment methods, and legal information.</CardDescription>
                 </CardHeader>
-                <CardContent>
-                    <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                            <Button variant="destructive" className="w-full">
-                                <LogOut className="mr-2 h-4 w-4" /> Logout
-                            </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                            <AlertDialogHeader>
-                                <AlertDialogTitle>Are you sure you want to log out?</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                    You will be returned to the home page and will need to log in again to book a ride.
-                                </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction onClick={handleLogout} className="bg-destructive hover:bg-destructive/90">
-                                    Logout
-                                </AlertDialogAction>
-                            </AlertDialogFooter>
-                        </AlertDialogContent>
-                    </AlertDialog>
+                <CardContent className="space-y-6">
+                    <div className="space-y-2">
+                        <Label>Saved Locations</Label>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="p-3 rounded-lg border flex items-center gap-3">
+                                <Home className="w-5 h-5 text-muted-foreground"/>
+                                <div className="flex-1"><p className="font-medium">Home</p><p className="text-xs text-muted-foreground">A-123, Sector 5, Noida</p></div>
+                                <Button variant="ghost" size="sm">Edit</Button>
+                            </div>
+                            <div className="p-3 rounded-lg border flex items-center gap-3">
+                                <Briefcase className="w-5 h-5 text-muted-foreground"/>
+                                <div className="flex-1"><p className="font-medium">Work</p><p className="text-xs text-muted-foreground">Cyber Hub, Gurgaon</p></div>
+                                <Button variant="ghost" size="sm">Edit</Button>
+                            </div>
+                        </div>
+                    </div>
+                     <Separator />
+                    <div className="flex flex-col md:flex-row gap-4">
+                        <Button asChild variant="ghost" className="w-full justify-start gap-2"><Link href="/terms"><FileText className="w-5 h-5"/> Terms of Service</Link></Button>
+                        <Button asChild variant="ghost" className="w-full justify-start gap-2"><Link href="/privacy"><FileText className="w-5 h-5"/> Privacy Policy</Link></Button>
+                        <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <Button variant="destructive" className="w-full md:w-auto">
+                                    <LogOut className="mr-2 h-4 w-4" /> Logout
+                                </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle>Are you sure you want to log out?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                        You will be returned to the home page and will need to log in again to book a ride.
+                                    </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction onClick={handleLogout} className="bg-destructive hover:bg-destructive/90">
+                                        Logout
+                                    </AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
+                    </div>
                 </CardContent>
             </Card>
         </div>
