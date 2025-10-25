@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Button } from '@/components/ui/button';
 import {
     Calendar as CalendarIcon, Stethoscope, Clock, Search, ArrowRight,
-    IndianRupee, MapPin, Building, Bone, Baby, Eye, Smile, AlertTriangle, PersonStanding, HeartHandshake, Sparkles, Layers, BrainCircuit, HeartPulse, UserCheck, Droplets, Thermometer, Mic
+    IndianRupee, MapPin, Building, Bone, Baby, Eye, Smile, AlertTriangle, PersonStanding, HeartHandshake, Sparkles, Layers, BrainCircuit, HeartPulse, UserCheck, Droplets, Thermometer, Mic, Video
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -64,6 +64,10 @@ const symptomCategories = [
     { name: 'Diabetes Care', icon: Droplets, specializations: ['Endocrinology', 'General Physician'] },
 ];
 
+const timeSlots = [
+  '09:00 AM', '10:00 AM', '11:00 AM', '12:00 PM', '02:00 PM', '03:00 PM', '04:00 PM'
+]
+
 
 export default function BookAppointmentPage() {
   const [doctors, setDoctors] = useState<Doctor[]>([]);
@@ -78,9 +82,29 @@ export default function BookAppointmentPage() {
   const [genderFilter, setGenderFilter] = useState('any');
   const [isFilterSheetOpen, setIsFilterSheetOpen] = useState(false);
 
+  // Booking state
+  const [isBooking, setIsBooking] = useState(false);
+  const [selectedDoctor, setSelectedDoctor] = useState<Doctor | null>(null);
+  const [isSheetOpen, setIsSheetOpen] = useState(false);
+  const [date, setDate] = useState<Date | undefined>(new Date());
+  const [time, setTime] = useState('');
+  const [consultationType, setConsultationType] = useState<'in-clinic' | 'video' | ''>('');
+  const [session, setSession] = useState<ClientSession | null>(null);
+
   const { toast } = useToast();
-  const { db } = useFirebase();
+  const { db, user } = useFirebase();
   const [userLocation, setUserLocation] = useState<{ lat: number, lon: number } | null>(null);
+
+   useEffect(() => {
+    if (user && db) {
+      getDoc(doc(db, 'users', user.uid)).then(docSnap => {
+        if (docSnap.exists()) {
+          const userData = docSnap.data();
+          setSession({ userId: user.uid, name: userData.name, phone: userData.phone, gender: userData.gender });
+        }
+      });
+    }
+  }, [user, db]);
 
   useEffect(() => {
     if (navigator.geolocation) {
@@ -180,6 +204,44 @@ export default function BookAppointmentPage() {
       });
   }, [doctors, searchQuery, selectedSymptom, sortBy, priceRange, genderFilter, availabilityFilter]);
 
+  const handleBookingConfirmation = async () => {
+    if (!selectedDoctor || !session || !db || !date || !time || !consultationType) { toast({ variant: 'destructive', title: 'Error', description: 'Missing required information to book.' }); return; }
+    setIsBooking(true);
+    try {
+      const userDoc = await getDoc(doc(db, "users", session.userId));
+      if (!userDoc.exists()) throw new Error("User profile not found. Cannot book appointment.");
+      const userData = userDoc.data();
+      const appointmentDateTime = new Date(date);
+      const [hours, minutes] = time.split(/[: ]/);
+      const parsedHours = parseInt(hours, 10);
+      const parsedMinutes = parseInt(minutes, 10);
+      let finalHours = parsedHours;
+      if (time.includes('PM') && parsedHours !== 12) finalHours += 12;
+      if (time.includes('AM') && parsedHours === 12) finalHours = 0;
+      appointmentDateTime.setHours(finalHours, parsedMinutes, 0, 0);
+      await addDoc(collection(db, 'appointments'), {
+          patientId: session.userId, patientName: userData.name, patientPhone: userData.phone,
+          hospitalId: selectedDoctor.hospitalId, hospitalName: selectedDoctor.hospitalName,
+          doctorId: selectedDoctor.id, doctorName: `Dr. ${selectedDoctor.name}`,
+          department: selectedDoctor.specialization, appointmentDate: appointmentDateTime,
+          appointmentTime: time, 
+          consultationType: consultationType,
+          status: 'Pending', createdAt: serverTimestamp()
+      });
+      toast({ title: "Appointment Requested!", description: `Your request for Dr. ${selectedDoctor?.name} has been sent. You will be notified upon confirmation.`, className: 'bg-green-600 border-green-600 text-white' });
+      setIsSheetOpen(false);
+    } catch(error) {
+        console.error("Failed to book appointment:", error);
+        toast({ variant: 'destructive', title: 'Booking Failed', description: (error as Error).message || 'There was an issue sending your request.' });
+    } finally {
+        setIsBooking(false);
+    }
+  };
+  
+  const handleOpenBookingSheet = (doctor: Doctor) => {
+    setSelectedDoctor(doctor);
+    setIsSheetOpen(true);
+  }
 
   const containerVariants = { hidden: { opacity: 0 }, visible: { opacity: 1, transition: { staggerChildren: 0.05 } } };
   const itemVariants = { hidden: { y: 20, opacity: 0 }, visible: { y: 0, opacity: 1 } };
@@ -240,7 +302,7 @@ export default function BookAppointmentPage() {
                         <Skeleton className="h-4 w-3/4"/>
                         <Skeleton className="h-4 w-1/4"/>
                     </div>
-                     <div className="flex flex-col items-end justify-between h-full">
+                     <div className="flex flex-col items-end justify-between h-full gap-2">
                         <Skeleton className="h-6 w-16"/>
                         <Skeleton className="h-9 w-24"/>
                     </div>
@@ -250,7 +312,7 @@ export default function BookAppointmentPage() {
                   <MotionDiv variants={containerVariants} initial="hidden" animate="visible" className="space-y-4">
                     {filteredAndSortedDoctors.map(doctor => (
                         <MotionDiv key={doctor.id} variants={itemVariants}>
-                            <Card className="p-4 flex gap-4 items-start w-full text-left">
+                            <Card className="p-4 flex flex-col md:flex-row gap-4 items-start w-full text-left">
                                 <Avatar className="w-24 h-24"><AvatarImage src={doctor.photoUrl || `https://i.pravatar.cc/150?u=${doctor.id}`} /><AvatarFallback>{doctor.name.substring(0,2)}</AvatarFallback></Avatar>
                                 <div className="flex-1">
                                     <p className="font-bold text-xl flex items-center gap-2">Dr. {doctor.name} 
@@ -264,13 +326,16 @@ export default function BookAppointmentPage() {
                                       {(doctor.availability?.availableToday ?? Math.random() > 0.3) && <Badge variant="secondary" className="bg-green-100 text-green-800">Available Today</Badge>}
                                     </div>
                                 </div>
-                                <div className="flex flex-col items-end justify-between h-full">
+                                <div className="flex flex-col items-end justify-between h-full w-full md:w-auto mt-4 md:mt-0">
                                   <p className="font-bold text-lg">₹{doctor.consultationFee}</p>
-                                   <Button asChild size="sm">
+                                  <div className="flex gap-2 w-full">
+                                    <Button asChild size="sm" variant="outline" className="flex-1">
                                       <Link href={`/user/doctor/${doctor.hospitalId}/${doctor.id}`}>
-                                        View Profile <ArrowRight className="ml-2 w-4 h-4"/>
+                                        View Profile
                                       </Link>
                                     </Button>
+                                    <Button size="sm" className="flex-1" onClick={() => handleOpenBookingSheet(doctor)}>Book Now</Button>
+                                  </div>
                                 </div>
                             </Card>
                         </MotionDiv>
@@ -285,6 +350,32 @@ export default function BookAppointmentPage() {
           </div>
         </div>
       </div>
+       <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
+         <SheetContent>
+            {selectedDoctor && (
+              <>
+                <SheetHeader className="text-left">
+                    <div className="flex items-center gap-4">
+                        <Avatar className="w-16 h-16"><AvatarImage src={selectedDoctor.photoUrl || `https://i.pravatar.cc/150?u=${selectedDoctor.id}`} /><AvatarFallback>{selectedDoctor.name.substring(0,2)}</AvatarFallback></Avatar>
+                        <div>
+                        <SheetTitle className="text-2xl">Book with Dr. {selectedDoctor.name}</SheetTitle>
+                        <SheetDescription>{selectedDoctor.specialization} at {selectedDoctor.hospitalName}</SheetDescription>
+                        </div>
+                    </div>
+                </SheetHeader>
+                <div className="space-y-6 py-4">
+                  <div className="p-3 rounded-lg border bg-muted/50 flex justify-between items-center"><span className="font-semibold">Consultation Fee</span><span className="font-bold text-lg text-primary">₹{selectedDoctor.consultationFee}</span></div>
+                  <div className="space-y-3"><Label className="font-semibold">1. Select Consultation Type</Label><RadioGroup onValueChange={(v) => setConsultationType(v as any)} value={consultationType} className="grid grid-cols-2 gap-4"><div><RadioGroupItem value="in-clinic" id="in-clinic" className="peer sr-only" /><Label htmlFor="in-clinic" className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary"><Building className="mb-3 h-6 w-6" /> In-Clinic</Label></div><div><RadioGroupItem value="video" id="video" className="peer sr-only" /><Label htmlFor="video" className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary"><Video className="mb-3 h-6 w-6" /> Video</Label></div></RadioGroup></div>
+                  <div className="space-y-2"><Label className="font-semibold">2. Select Appointment Date</Label><Popover><PopoverTrigger asChild><Button variant={"outline"} className={cn("w-full justify-start text-left font-normal", !date && "text-muted-foreground")}><CalendarIcon className="mr-2 h-4 w-4" />{date ? format(date, "PPP") : <span>Pick a date</span>}</Button></PopoverTrigger><PopoverContent className="w-auto p-0"><Calendar mode="single" selected={date} onSelect={setDate} initialFocus disabled={(d) => d < new Date(new Date().setDate(new Date().getDate() - 1))}/></PopoverContent></Popover></div>
+                  <div className="space-y-2"><Label className="font-semibold">3. Select Available Time Slot</Label><div className="grid grid-cols-3 gap-2">{timeSlots.map(slot => (<Button key={slot} variant={time === slot ? 'default' : 'outline'} onClick={() => setTime(slot)}>{slot}</Button>))}</div></div>
+                </div>
+                <SheetFooter className="absolute bottom-0 left-0 right-0 p-4 border-t bg-background">
+                  <Button className="w-full" size="lg" onClick={handleBookingConfirmation} disabled={!date || !time || isBooking || !consultationType}>{isBooking ? 'Requesting...' : 'Confirm Appointment'}</Button>
+                </SheetFooter>
+              </>
+            )}
+        </SheetContent>
+      </Sheet>
     </div>
   )
 }
