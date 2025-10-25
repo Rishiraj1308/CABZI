@@ -40,10 +40,13 @@ export default function VideoCall() {
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [chatInput, setChatInput] = useState('');
   const [isSending, setIsSending] = useState(false);
+  const [callDuration, setCallDuration] = useState(0);
 
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
   const pc = useRef<RTCPeerConnection | null>(null);
+  const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
 
   const params = useParams();
   const callId = params.id as string;
@@ -70,8 +73,19 @@ export default function VideoCall() {
         if (remoteVideoRef.current) {
           remoteVideoRef.current.srcObject = event.streams[0];
           setCallStatus('Connected');
+          // Start timer when connected
+           timerIntervalRef.current = setInterval(() => {
+             setCallDuration(prev => prev + 1);
+          }, 1000);
         }
       };
+      
+      pc.current.onconnectionstatechange = () => {
+        if (pc.current?.connectionState === 'disconnected' || pc.current?.connectionState === 'closed' || pc.current?.connectionState === 'failed') {
+            hangUp();
+        }
+      };
+
 
       const callDoc = doc(db, 'calls', callId);
       const offerCandidates = collection(callDoc, 'offerCandidates');
@@ -135,13 +149,17 @@ export default function VideoCall() {
         cleanup.then(unsub => {
             if(unsub) unsub();
         });
-        pc.current?.close();
+        hangUp();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [callId, db, user, toast]);
 
   const hangUp = () => {
     pc.current?.close();
     setCallStatus('Call Ended');
+    if (timerIntervalRef.current) {
+      clearInterval(timerIntervalRef.current);
+    }
   };
 
   const toggleMute = () => {
@@ -178,9 +196,18 @@ export default function VideoCall() {
       setIsSending(false);
     }
   };
+  
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60).toString().padStart(2, '0');
+    const secs = (seconds % 60).toString().padStart(2, '0');
+    return `${mins}:${secs}`;
+  }
 
   return (
     <div className="w-full h-screen bg-black text-white flex flex-col relative">
+      <div className="absolute top-4 left-4 z-10 bg-black/50 p-2 rounded-lg text-sm font-medium">
+        {callStatus} {callStatus === 'Connected' && `(${formatTime(callDuration)})`}
+      </div>
       <div className="flex-1 relative">
         <video ref={remoteVideoRef} autoPlay playsInline className="w-full h-full object-cover" />
         <div className="absolute top-4 right-4 w-40 h-56 rounded-lg overflow-hidden border-2 border-gray-600">
