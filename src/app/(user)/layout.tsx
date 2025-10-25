@@ -66,7 +66,6 @@ export default function UserLayout({
   const pathname = usePathname();
   const { toast } = useToast();
   
-  const [session, setSession] = useState<any | null>(null);
   const { user, isUserLoading, db, auth } = useFirebase();
 
   useEffect(() => {
@@ -78,32 +77,25 @@ export default function UserLayout({
     }
   }, [user, isUserLoading, router]);
 
-  useEffect(() => {
-    const sessionData = localStorage.getItem('cabzi-session');
-    if (sessionData) {
-      setSession(JSON.parse(sessionData));
-    }
-  }, []);
-
   const handleLogout = () => {
     if (!auth) return;
-    if (session?.userId && db) {
-      const userDocRef = doc(db, 'users', session.userId);
+    if (user && db) {
+      const userDocRef = doc(db, 'users', user.uid);
       updateDoc(userDocRef, { isOnline: false, currentLocation: null });
     }
     auth.signOut().then(() => {
-      localStorage.removeItem('cabzi-session');
+      localStorage.removeItem('curocity-session');
       router.push('/login');
     });
   };
 
-  const getInitials = (name: string) => {
+  const getInitials = (name: string | null | undefined) => {
     if (!name) return 'U';
     const names = name.split(' ');
     return names.length > 1 ? names[0][0] + names[1][0] : name.substring(0, 2);
   }
 
-  if (!isMounted || isUserLoading || !session) {
+  if (!isMounted || isUserLoading) {
     return null; // Or a loading spinner
   }
   
@@ -119,14 +111,14 @@ export default function UserLayout({
               <DropdownMenuTrigger asChild>
                 <Button variant="secondary" size="icon" className="rounded-full">
                   <Avatar className="h-8 w-8">
-                    <AvatarImage src={`https://placehold.co/100x100.png`} alt={session?.name} data-ai-hint="customer portrait" />
-                    <AvatarFallback>{getInitials(session?.name || '').toUpperCase()}</AvatarFallback>
+                    <AvatarImage src={user?.photoURL || 'https://placehold.co/100x100.png'} alt={user?.displayName || 'User'} data-ai-hint="customer portrait" />
+                    <AvatarFallback>{getInitials(user?.displayName).toUpperCase()}</AvatarFallback>
                   </Avatar>
                   <span className="sr-only">Toggle user menu</span>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuLabel>Hi, {session?.name}</DropdownMenuLabel>
+                <DropdownMenuLabel>Hi, {user?.displayName}</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onSelect={() => router.push('/user/profile')}>Profile</DropdownMenuItem>
                 <DropdownMenuItem onSelect={() => router.push('/user/support')}>Support</DropdownMenuItem>

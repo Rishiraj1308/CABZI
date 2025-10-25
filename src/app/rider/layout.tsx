@@ -4,7 +4,7 @@
 import React, { useState, useEffect } from 'react'
 import { Toaster } from "@/components/ui/toaster";
 import { Button } from '@/components/ui/button';
-import { Home, History, Menu, LogOut, Heart, Gift, PanelLeft, Landmark, Sun, Moon, Settings, User, Calendar } from 'lucide-react';
+import { Home, History, Menu, LogOut, Heart, Gift, PanelLeft, Landmark, Sun, Moon, Settings, User, Calendar, Car } from 'lucide-react';
 import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
@@ -31,11 +31,11 @@ import { doc, updateDoc } from 'firebase/firestore';
 
 
 const navItems = [
-    { href: '/rider', label: 'Book a Ride', icon: Home, comingSoon: false },
-    { href: '/rider/appointments', label: 'Book Appointment', icon: Calendar, comingSoon: false },
-    { href: '/rider/rides', label: 'My Rides', icon: History, comingSoon: false },
-    { href: '/rider/wallet', label: 'Cabzi Bank', icon: Landmark, comingSoon: true },
-    { href: '/rider/offers', label: 'Offers', icon: Gift, comingSoon: false },
+    { href: '/user', label: 'Services', icon: Home, comingSoon: false },
+    { href: '/user/activity', label: 'My Activity', icon: History, comingSoon: false },
+    { href: '/user/wallet', label: 'Curocity Bank', icon: Landmark, comingSoon: false },
+    { href: '/user/offers', label: 'Offers', icon: Gift, comingSoon: true },
+    { href: '/user/profile', label: 'Profile', icon: User, comingSoon: false },
 ]
 
 function ThemeToggle() {
@@ -68,49 +68,41 @@ export default function RiderLayout({
   const router = useRouter();
   const { toast } = useToast();
   
-  const [session, setSession] = useState<any | null>(null);
   const { user, isUserLoading, db, auth } = useFirebase();
 
   useEffect(() => {
     setIsMounted(true);
     if (!isUserLoading && !user) {
-      if (window.location.pathname.startsWith('/rider')) {
+      if (window.location.pathname.startsWith('/rider') || window.location.pathname.startsWith('/user')) {
         router.push('/login?role=user');
       }
     }
   }, [user, isUserLoading, router]);
 
-  useEffect(() => {
-    const sessionData = localStorage.getItem('cabzi-session');
-    if (sessionData) {
-      setSession(JSON.parse(sessionData));
-    }
-  }, []);
-
   const handleLogout = () => {
     if (!auth) return;
-    if (session?.userId && db) {
-      const userDocRef = doc(db, 'users', session.userId);
+    if (user?.uid && db) {
+      const userDocRef = doc(db, 'users', user.uid);
       updateDoc(userDocRef, { isOnline: false, currentLocation: null });
     }
     auth.signOut().then(() => {
-      localStorage.removeItem('cabzi-session');
+      localStorage.removeItem('curocity-session');
       router.push('/login?role=user');
     });
   };
 
-  const getInitials = (name: string) => {
+  const getInitials = (name: string | null | undefined) => {
     if (!name) return 'R';
     const names = name.split(' ');
     return names.length > 1 ? names[0][0] + names[1][0] : name.substring(0, 2);
   }
 
-  if (!isMounted || isUserLoading || !session) {
+  if (!isMounted || isUserLoading) {
     return null; // Or a loading spinner
   }
   
   return (
-      <div className="relative h-screen flex flex-col">
+      <div className="relative min-h-screen bg-background flex flex-col">
       <div className="absolute top-4 left-4 z-20">
           <Sheet open={open} onOpenChange={setOpen}>
               <SheetTrigger asChild>
@@ -169,13 +161,13 @@ export default function RiderLayout({
               <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="relative h-10 w-10 rounded-full shadow-lg border">
                   <Avatar className="h-9 w-9">
-                  <AvatarImage src={`https://placehold.co/100x100.png`} alt={session?.name} data-ai-hint="customer portrait" />
-                  <AvatarFallback>{getInitials(session?.name || '').toUpperCase()}</AvatarFallback>
+                  <AvatarImage src={user?.photoURL || 'https://placehold.co/100x100.png'} alt={user?.displayName || 'User'} data-ai-hint="customer portrait" />
+                  <AvatarFallback>{getInitials(user?.displayName).toUpperCase()}</AvatarFallback>
                   </Avatar>
               </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-              <DropdownMenuLabel>Hi, {session?.name}</DropdownMenuLabel>
+              <DropdownMenuLabel>Hi, {user?.displayName}</DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem onSelect={() => router.push('/user/profile')}><User className="mr-2 h-4 w-4"/> Profile</DropdownMenuItem>
               <DropdownMenuItem onSelect={() => router.push('/user/support')}><Heart className="mr-2 h-4 w-4"/> Support</DropdownMenuItem>
@@ -205,7 +197,7 @@ export default function RiderLayout({
               </DropdownMenuContent>
           </DropdownMenu>
       </div>
-      <main className="flex-1 flex flex-col h-full">
+      <main className="flex-1 flex flex-col">
           {children}
       </main>
       <Toaster />

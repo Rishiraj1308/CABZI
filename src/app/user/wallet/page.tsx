@@ -32,7 +32,7 @@ export default function UserWalletPage() {
 
     // In a real app, this would be fetched from the database
     useEffect(() => {
-        const kycStatus = localStorage.getItem('cabzi-user-kyc');
+        const kycStatus = localStorage.getItem('curocity-user-kyc');
         if (kycStatus === 'completed') {
             setIsKycDone(true);
         }
@@ -54,10 +54,10 @@ export default function UserWalletPage() {
 
         setTimeout(() => {
             // Simulate successful KYC
-            localStorage.setItem('cabzi-user-kyc', 'completed');
+            localStorage.setItem('curocity-user-kyc', 'completed');
             setIsKycDone(true);
             setIsLoading(false);
-            toast({ title: "KYC Submitted!", description: "Your Cabzi Wallet is now active.", className: "bg-green-600 text-white border-green-600" });
+            toast({ title: "KYC Submitted!", description: "Your Curocity Wallet is now active.", className: "bg-green-600 text-white border-green-600" });
         }, 1500);
     }
     
@@ -68,9 +68,9 @@ export default function UserWalletPage() {
             <div className="animate-fade-in">
                 <h2 className="text-3xl font-bold tracking-tight flex items-center gap-2">
                     <Wallet className="w-8 h-8 text-primary" /> 
-                    Cabzi Wallet
+                    Curocity Wallet
                 </h2>
-                <p className="text-muted-foreground">Your secure wallet for all rides and services on Cabzi.</p>
+                <p className="text-muted-foreground">Your secure wallet for all rides and services on Curocity.</p>
             </div>
             
             <Alert variant="destructive">
