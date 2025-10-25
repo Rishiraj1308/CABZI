@@ -4,7 +4,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Calendar as CalendarIcon, Stethoscope, Clock, Search, ArrowLeft, IndianRupee, MapPin, HeartPulse, SlidersHorizontal, Filter, SortAsc, Video, Building, X } from 'lucide-react';
+import { Calendar as CalendarIcon, Stethoscope, Clock, Search, ArrowLeft, IndianRupee, MapPin, HeartPulse, SlidersHorizontal, Filter, SortAsc, Video, Building, X, Baby } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Calendar } from '@/components/ui/calendar';
@@ -51,7 +51,7 @@ const symptomCategories = [
     { name: 'Headache', icon: '🤕', specializations: ['General Physician', 'Neurology'] },
     { name: 'Skin Issues', icon: '🍓', specializations: ['Dermatology'] },
     { name: 'Heart/Chest', icon: '❤️', specializations: ['Cardiology', 'General Physician'] },
-    { name: 'Child Health', icon: '👶', specializations: ['Pediatrics'] },
+    { name: 'Child Health', icon: Baby, specializations: ['Pediatrics'] },
     { name: 'ENT', icon: '👂', specializations: ['ENT Specialist'] },
 ];
 
@@ -250,20 +250,27 @@ export default function BookAppointmentPage() {
               <div className="space-y-2">
                 <Label className="font-semibold">Or select a common symptom:</Label>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                  {symptomCategories.map((symptom) => (
-                    <Card
-                      key={symptom.name}
-                      className="p-4 flex flex-col items-center justify-center gap-2 cursor-pointer hover:ring-2 hover:ring-primary transition-all text-center"
-                      onClick={() => {
-                        setSelectedSymptom(symptom.name);
-                        setSearchQuery('');
-                        setStep(2);
-                      }}
-                    >
-                      <span className="text-3xl">{symptom.icon}</span>
-                      <p className="text-sm font-medium">{symptom.name}</p>
-                    </Card>
-                  ))}
+                  {symptomCategories.map((symptom) => {
+                    const Icon = symptom.icon
+                    return (
+                        <Card
+                        key={symptom.name}
+                        className="p-4 flex flex-col items-center justify-center gap-2 cursor-pointer hover:ring-2 hover:ring-primary transition-all text-center"
+                        onClick={() => {
+                            setSelectedSymptom(symptom.name);
+                            setSearchQuery('');
+                            setStep(2);
+                        }}
+                        >
+                          {typeof Icon === 'string' ? (
+                            <span className="text-3xl">{Icon}</span>
+                          ) : (
+                            <Icon className="w-8 h-8" />
+                          )}
+                          <p className="text-sm font-medium">{symptom.name}</p>
+                        </Card>
+                    )
+                  })}
                 </div>
               </div>
             </CardContent>
@@ -365,3 +372,5 @@ export default function BookAppointmentPage() {
     </div>
   )
 }
+
+    
