@@ -4,7 +4,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Calendar as CalendarIcon, Stethoscope, Clock, Search, ArrowLeft, IndianRupee, MapPin, HeartPulse, SlidersHorizontal, Filter, SortAsc, Video, Building, X, Baby } from 'lucide-react';
+import { Calendar as CalendarIcon, Stethoscope, Clock, Search, ArrowLeft, IndianRupee, MapPin, HeartPulse, SlidersHorizontal, Filter, SortAsc, Video, Building, X, Baby, Thermometer, Bone, BrainCircuit, Sparkles, Heart, Ear } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Calendar } from '@/components/ui/calendar';
@@ -45,14 +45,14 @@ interface Doctor {
 }
 
 const symptomCategories = [
-    { name: 'Fever/Cold', icon: '🤒', specializations: ['General Physician', 'Pediatrics'] },
-    { name: 'Stomach Ache', icon: '🤢', specializations: ['Gastroenterology', 'General Physician'] },
-    { name: 'Bone/Joint Pain', icon: '🦴', specializations: ['Orthopedics'] },
-    { name: 'Headache', icon: '🤕', specializations: ['General Physician', 'Neurology'] },
-    { name: 'Skin Issues', icon: '🍓', specializations: ['Dermatology'] },
-    { name: 'Heart/Chest', icon: '❤️', specializations: ['Cardiology', 'General Physician'] },
+    { name: 'Fever/Cold', icon: Thermometer, specializations: ['General Physician', 'Pediatrics'] },
+    { name: 'Stomach Ache', icon: HeartPulse, specializations: ['Gastroenterology', 'General Physician'] },
+    { name: 'Bone/Joint Pain', icon: Bone, specializations: ['Orthopedics'] },
+    { name: 'Headache', icon: BrainCircuit, specializations: ['General Physician', 'Neurology'] },
+    { name: 'Skin Issues', icon: Sparkles, specializations: ['Dermatology'] },
+    { name: 'Heart/Chest', icon: Heart, specializations: ['Cardiology', 'General Physician'] },
     { name: 'Child Health', icon: Baby, specializations: ['Pediatrics'] },
-    { name: 'ENT', icon: '👂', specializations: ['ENT Specialist'] },
+    { name: 'ENT', icon: Ear, specializations: ['ENT Specialist'] },
 ];
 
 export default function BookAppointmentPage() {
@@ -262,11 +262,7 @@ export default function BookAppointmentPage() {
                             setStep(2);
                         }}
                         >
-                          {typeof Icon === 'string' ? (
-                            <span className="text-3xl">{Icon}</span>
-                          ) : (
-                            <Icon className="w-8 h-8" />
-                          )}
+                          <Icon className="w-8 h-8" />
                           <p className="text-sm font-medium">{symptom.name}</p>
                         </Card>
                     )
@@ -372,5 +368,3 @@ export default function BookAppointmentPage() {
     </div>
   )
 }
-
-    
