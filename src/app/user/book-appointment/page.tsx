@@ -1,3 +1,4 @@
+
 'use client'
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -5,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Button } from '@/components/ui/button';
 import {
     Calendar as CalendarIcon, Stethoscope, Clock, Search, ArrowLeft,
-    IndianRupee, MapPin, Video, Building, X, Baby, Thermometer, Bone, BrainCircuit, Heart, Ear, Layers, SlidersHorizontal, Filter, SortAsc, AlertTriangle
+    IndianRupee, MapPin, Video, Building, X, Baby, Thermometer, Bone, BrainCircuit, Heart, Ear, Layers, SlidersHorizontal, Filter, SortAsc, AlertTriangle, User, HeartPulse, Activity
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -48,14 +49,15 @@ interface Doctor {
 
 const symptomCategories = [
     { name: 'Fever/Cold', icon: Thermometer, specializations: ['General Physician', 'Pediatrics'] },
-    { name: 'Stomach Ache', icon: AlertTriangle, specializations: ['Gastroenterology', 'General Physician'] },
+    { name: 'Stomach Ache', icon: Activity, specializations: ['Gastroenterology', 'General Physician'] },
     { name: 'Bone/Joint Pain', icon: Bone, specializations: ['Orthopedics'] },
     { name: 'Headache', icon: BrainCircuit, specializations: ['General Physician', 'Neurology'] },
     { name: 'Skin Issues', icon: Layers, specializations: ['Dermatology'] },
-    { name: 'Heart/Chest', icon: Heart, specializations: ['Cardiology', 'General Physician'] },
+    { name: 'Heart/Chest', icon: HeartPulse, specializations: ['Cardiology', 'General Physician'] },
     { name: 'Child Health', icon: Baby, specializations: ['Pediatrics'] },
     { name: 'ENT', icon: Ear, specializations: ['ENT Specialist'] },
 ];
+
 
 export default function BookAppointmentPage() {
   const [step, setStep] = useState(1);
@@ -377,8 +379,8 @@ export default function BookAppointmentPage() {
                 <CardContent className="space-y-6">
                     <div className="p-3 rounded-lg border bg-muted/50 flex justify-between items-center"><span className="font-semibold">Consultation Fee</span><span className="font-bold text-lg text-primary">₹{selectedDoctor?.consultationFee}</span></div>
                     <div className="space-y-3"><Label className="font-semibold">Select Consultation Type</Label><RadioGroup onValueChange={(v) => setConsultationType(v as any)} value={consultationType} className="grid grid-cols-2 gap-4"><div><RadioGroupItem value="in-clinic" id="in-clinic" className="peer sr-only" /><Label htmlFor="in-clinic" className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary"><Building className="mb-3 h-6 w-6" /> In-Clinic</Label></div><div><RadioGroupItem value="video" id="video" className="peer sr-only" /><Label htmlFor="video" className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary"><Video className="mb-3 h-6 w-6" /> Video</Label></div></RadioGroup></div>
-                    <div className="space-y-2"><Label>Select Appointment Date</Label><Popover><PopoverTrigger asChild><Button variant={"outline"} className={cn("w-full justify-start text-left font-normal", !date && "text-muted-foreground")}><CalendarIcon className="mr-2 h-4 w-4" />{date ? format(date, "PPP") : <span>Pick a date</span>}</Button></PopoverTrigger><PopoverContent className="w-auto p-0"><Calendar mode="single" selected={date} onSelect={setDate} initialFocus disabled={(d) => d < new Date(new Date().setDate(new Date().getDate() - 1))}/></PopoverContent></Popover></div>
-                    <div className="space-y-2"><Label>Select Available Time Slot</Label><div className="grid grid-cols-3 gap-2">{timeSlots.map(slot => (<Button key={slot} variant={time === slot ? 'default' : 'outline'} onClick={() => setTime(slot)}>{slot}</Button>))}</div></div>
+                    <div className="space-y-2"><Label className="font-semibold">Select Appointment Date</Label><Popover><PopoverTrigger asChild><Button variant={"outline"} className={cn("w-full justify-start text-left font-normal", !date && "text-muted-foreground")}><CalendarIcon className="mr-2 h-4 w-4" />{date ? format(date, "PPP") : <span>Pick a date</span>}</Button></PopoverTrigger><PopoverContent className="w-auto p-0"><Calendar mode="single" selected={date} onSelect={setDate} initialFocus disabled={(d) => d < new Date(new Date().setDate(new Date().getDate() - 1))}/></PopoverContent></Popover></div>
+                    <div className="space-y-2"><Label className="font-semibold">Select Available Time Slot</Label><div className="grid grid-cols-3 gap-2">{timeSlots.map(slot => (<Button key={slot} variant={time === slot ? 'default' : 'outline'} onClick={() => setTime(slot)}>{slot}</Button>))}</div></div>
                 </CardContent>
                 <CardFooter>
                     <Button className="w-full" onClick={handleBookingConfirmation} disabled={!date || !time || isBooking || !consultationType}>{isBooking ? 'Requesting...' : 'Request Appointment'}</Button>
