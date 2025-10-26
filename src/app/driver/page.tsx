@@ -1064,15 +1064,25 @@ export default function DriverDashboard() {
      return (
        <div className="flex-1 flex flex-col gap-4">
             {!isOnline ? (
-                 <Alert variant="destructive" className="text-center">
-                    <Power className="w-12 h-12 text-destructive mx-auto mb-2"/>
-                    <AlertTitle className="font-bold">You are currently OFFLINE</AlertTitle>
-                    <AlertDescription>Toggle the switch above to go online and start receiving ride requests.</AlertDescription>
-                </Alert>
+                <Card className="text-center">
+                    <CardHeader className="items-center">
+                        <Power className="w-12 h-12 text-destructive mb-2"/>
+                        <CardTitle className="font-bold text-xl">You are OFFLINE</CardTitle>
+                        <CardDescription>Click the switch to go online and start receiving ride requests.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                       <Switch 
+                         id="main-online-switch"
+                         checked={isOnline}
+                         onCheckedChange={handleAvailabilityChange}
+                         className="data-[state=checked]:bg-green-500 transform scale-150"
+                       />
+                    </CardContent>
+                </Card>
             ) : (
                 <Card className="text-center">
                     <CardHeader className="p-3">
-                        <SearchingIndicator partnerType="path" />
+                        <SearchingIndicator partnerType="path" className="w-32 h-32" />
                         <CardTitle className="text-xl">You are Online</CardTitle>
                         <CardDescription>Looking for nearby ride requests...</CardDescription>
                     </CardHeader>
@@ -1173,3 +1183,5 @@ export default function DriverDashboard() {
     </div>
   )
 }
+
+    
