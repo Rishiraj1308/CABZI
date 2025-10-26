@@ -1,4 +1,3 @@
-
 'use client'
 
 import { useEffect, useRef, forwardRef, useImperativeHandle, useCallback } from "react";
@@ -483,7 +482,4 @@ const LiveMap = forwardRef<any, LiveMapProps>((props, ref) => {
 
 LiveMap.displayName = 'LiveMap';
 export default LiveMap;
-
-
-
     
