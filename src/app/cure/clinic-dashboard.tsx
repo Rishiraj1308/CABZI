@@ -218,13 +218,13 @@ const ClinicDashboard = () => {
             
             const batch = writeBatch(db);
             
+            // 1. Create record in the hospital's private subcollection
             const hospitalDoctorsRef = collection(db, `ambulances/${hospitalId}/doctors`);
             const newDoctorDocRefInHospital = doc(hospitalDoctorsRef);
             const doctorData = { 
                 id: newDoctorDocRefInHospital.id, 
                 name, phone, email, ...restOfData, 
                 partnerId, 
-                password, 
                 createdAt: serverTimestamp(), 
                 docStatus: 'Pending', 
                 hospitalId, hospitalName, 
@@ -233,8 +233,15 @@ const ClinicDashboard = () => {
             
             batch.set(newDoctorDocRefInHospital, doctorData);
 
+            // 2. Create record in the global 'doctors' collection for login
             const newDoctorDocRefGlobal = doc(globalDoctorsRef, newDoctorDocRefInHospital.id);
-            batch.set(newDoctorDocRefGlobal, doctorData);
+            batch.set(newDoctorDocRefGlobal, {
+                 id: newDoctorDocRefInHospital.id, 
+                 name, phone, email, partnerId, password,
+                 hospitalId, hospitalName,
+                 createdAt: serverTimestamp(),
+                 status: 'pending_verification' // Global status
+            });
 
             await batch.commit();
 
@@ -539,3 +546,5 @@ const ClinicDashboard = () => {
 };
 
 export default ClinicDashboard;
+
+    
