@@ -10,7 +10,7 @@ import { useToast } from '@/hooks/use-toast'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import RideStatus from '@/components/ride-status'
-import { Wrench, Zap, Fuel, Car, MoreHorizontal, LifeBuoy, Phone, Shield, LocateFixed, MessageSquare } from 'lucide-react'
+import { Wrench, Zap, Fuel, Car, MoreHorizontal, LifeBuoy, Phone, Shield, LocateFixed, MessageSquare, Siren } from 'lucide-react'
 import { runTransaction } from 'firebase/firestore'
 import SearchingIndicator from '@/components/ui/searching-indicator'
 import { cn } from '@/lib/utils'
@@ -318,8 +318,8 @@ export default function ResQPage() {
         </div>
          <Dialog>
             <DialogTrigger asChild>
-                 <Button variant="ghost" size="icon" className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-2xl bg-background/80 backdrop-blur-md">
-                    <Shield className="h-6 w-6 text-primary" />
+                 <Button variant="ghost" size="sm" className="fixed bottom-6 right-6 h-14 rounded-full shadow-2xl bg-background/80 backdrop-blur-md">
+                     <Shield className="w-4 h-4 mr-2"/> Safety Toolkit
                  </Button>
             </DialogTrigger>
             <DialogContent>
