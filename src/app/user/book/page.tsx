@@ -1,6 +1,7 @@
+
 'use client'
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -9,6 +10,8 @@ import { ArrowLeft, Map, MapPin } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
+import { searchPlace } from '@/lib/routing';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const recentTrips = [
     {
@@ -37,6 +40,8 @@ const recentTrips = [
 export default function BookRidePage() {
     const router = useRouter();
     const [destination, setDestination] = useState('');
+    const [searchResults, setSearchResults] = useState<any[]>([]);
+    const [isSearching, setIsSearching] = useState(false);
 
     const containerVariants = {
         hidden: { opacity: 0 },
@@ -51,10 +56,27 @@ export default function BookRidePage() {
         visible: { opacity: 1, y: 0 }
     };
 
-    const handleSearch = () => {
-        if (destination.trim()) {
-            router.push(`/user/book/map?search=${encodeURIComponent(destination)}`);
+    useEffect(() => {
+        if (destination.length < 3) {
+            setSearchResults([]);
+            return;
         }
+
+        const handler = setTimeout(async () => {
+            setIsSearching(true);
+            const results = await searchPlace(destination);
+            setSearchResults(results || []);
+            setIsSearching(false);
+        }, 300); // Debounce search
+
+        return () => clearTimeout(handler);
+    }, [destination]);
+
+    const handleSelectDestination = (place: any) => {
+        const destinationName = place.display_name.split(',')[0];
+        setDestination(destinationName);
+        setSearchResults([]);
+        router.push(`/user/book/map?search=${encodeURIComponent(place.display_name)}`);
     }
 
     return (
@@ -96,22 +118,42 @@ export default function BookRidePage() {
                     <Card className="shadow-lg">
                         <CardContent className="p-3 space-y-1">
                             <div className="flex items-center gap-4 p-2 rounded-lg">
-                                <div className="w-2.5 h-2.5 rounded-full bg-green-500 ring-4 ring-green-500/20"/>
+                                <div className="w-2.5 h-2.5 rounded-full bg-green-500 ring-2 ring-green-500/30"/>
                                 <p className="font-semibold text-base text-muted-foreground">Current Location</p>
                             </div>
                             <div className="border-l-2 border-dotted border-border h-4 ml-[13px]"></div>
                             <div className="flex items-center gap-4 p-2 rounded-lg">
-                                <div className="w-2.5 h-2.5 rounded-full bg-red-500 ring-4 ring-red-500/20"/>
+                                <div className="w-2.5 h-2.5 rounded-full bg-red-500 ring-2 ring-red-500/30"/>
                                 <Input
                                     placeholder="Where to?"
                                     className="border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 text-base font-semibold p-0 h-auto"
                                     value={destination}
                                     onChange={(e) => setDestination(e.target.value)}
-                                    onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
                                 />
                             </div>
                         </CardContent>
                     </Card>
+
+                    {/* Search Suggestions */}
+                    {(isSearching || searchResults.length > 0) && (
+                        <Card className="shadow-lg">
+                            <CardContent className="p-2 space-y-1">
+                                {isSearching ? (
+                                    <div className="p-2 space-y-2">
+                                        <Skeleton className="h-5 w-3/4" />
+                                        <Skeleton className="h-4 w-1/2" />
+                                    </div>
+                                ) : (
+                                    searchResults.map(place => (
+                                        <div key={place.place_id} onClick={() => handleSelectDestination(place)} className="p-2 rounded-md hover:bg-muted cursor-pointer">
+                                            <p className="font-semibold text-sm">{place.display_name.split(',')[0]}</p>
+                                            <p className="text-xs text-muted-foreground">{place.display_name.split(',').slice(1).join(',')}</p>
+                                        </div>
+                                    ))
+                                )}
+                            </CardContent>
+                        </Card>
+                    )}
                     
                     <div className="space-y-2 mt-8">
                         <h3 className="font-bold text-lg">Recent Trips</h3>
