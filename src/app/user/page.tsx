@@ -1,3 +1,4 @@
+
 'use client'
 
 import React from 'react';
@@ -61,7 +62,7 @@ export default function UserDashboard() {
     }, {} as Record<string, typeof serviceCards>);
 
     return (
-        <div className="p-4 md:p-6 space-y-8">
+        <div className="p-4 md:p-6 space-y-8 pt-24">
              <div className="animate-fade-in text-center md:text-left">
                 <h2 className="text-3xl font-bold tracking-tight">How can we help you today?</h2>
                 <p className="text-muted-foreground">Choose a service to get started.</p>
