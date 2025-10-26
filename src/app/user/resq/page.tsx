@@ -10,7 +10,7 @@ import { useToast } from '@/hooks/use-toast'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import RideStatus from '@/components/ride-status'
-import { Wrench, Zap, Fuel, Car, MoreHorizontal, LifeBuoy, Phone, Share2, Siren, Shield } from 'lucide-react'
+import { Wrench, Zap, Fuel, Car, MoreHorizontal, LifeBuoy, Phone, Share2, Siren, Shield, LocateFixed } from 'lucide-react'
 import { runTransaction } from 'firebase/firestore'
 import SearchingIndicator from '@/components/ui/searching-indicator'
 import { cn } from '@/lib/utils'
@@ -47,6 +47,29 @@ export default function ResQPage() {
       return 'Could not fetch address';
     }
   }, []);
+  
+  const fetchLocation = useCallback(() => {
+     if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+            async (position) => {
+                const { latitude, longitude } = position.coords;
+                setCurrentUserLocation({ lat: latitude, lon: longitude });
+                const address = await getAddressFromCoords(latitude, longitude);
+                setLocationAddress(address);
+            },
+            () => {
+                setLocationAddress('Location access denied. Please enable it in your browser settings.');
+                toast({ variant: 'destructive', title: 'Location Access Denied' });
+            }
+        );
+    }
+  }, [getAddressFromCoords, toast]);
+
+
+  useEffect(() => {
+    fetchLocation();
+  }, [fetchLocation]);
+
 
   useEffect(() => {
     if (user && db) {
@@ -69,23 +92,6 @@ export default function ResQPage() {
     setActiveGarageRequest(null);
     localStorage.removeItem('activeGarageRequestId');
   }, []);
-
-  useEffect(() => {
-    if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-            async (position) => {
-                const { latitude, longitude } = position.coords;
-                setCurrentUserLocation({ lat: latitude, lon: longitude });
-                const address = await getAddressFromCoords(latitude, longitude);
-                setLocationAddress(address);
-            },
-            () => {
-                setLocationAddress('Location access denied. Please enable it in your browser settings.');
-                toast({ variant: 'destructive', title: 'Location Access Denied' });
-            }
-        );
-    }
-  }, [getAddressFromCoords, toast]);
 
   useEffect(() => {
     if (!db || !session?.userId) return;
@@ -209,26 +215,39 @@ export default function ResQPage() {
         <CardContent className="space-y-4 px-8">
             <div className="grid grid-cols-3 gap-6 mt-6">
                 {commonIssues.map((item) => (
-                    <div
-                        key={item.id}
-                        onClick={() => setSelectedIssue(item.label)}
-                        className={cn(
-                          "flex flex-col items-center justify-center p-6 bg-orange-50 rounded-2xl hover:bg-orange-100 hover:scale-105 transition-all cursor-pointer shadow-sm hover:shadow-md",
-                          selectedIssue === item.label && "ring-2 ring-orange-500 bg-orange-100"
-                        )}
+                    <motion.div
+                      key={item.id}
+                      onClick={() => setSelectedIssue(item.label)}
+                      className={cn(
+                        "flex flex-col items-center justify-center p-4 bg-orange-50 rounded-2xl hover:bg-orange-100 transition-all cursor-pointer shadow-sm",
+                        selectedIssue === item.label && "ring-2 ring-orange-500 bg-orange-100"
+                      )}
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
                     >
                         <item.icon className="text-orange-500 w-8 h-8 mb-3" />
                         <span className="font-medium text-gray-800 text-center text-sm">{item.label}</span>
-                    </div>
+                    </motion.div>
                 ))}
             </div>
             <div className="flex items-center justify-between p-3 border rounded-lg bg-muted">
               <div>
                   <div className="text-xs text-muted-foreground">Location</div>
-                  <div className="text-sm font-semibold truncate">{locationAddress}</div>
+                  <div className="text-sm font-semibold truncate flex items-center gap-2">
+                     <Button variant="ghost" size="icon" className="h-6 w-6" onClick={fetchLocation}>
+                        <LocateFixed className="w-4 h-4" />
+                     </Button>
+                     {locationAddress}
+                  </div>
               </div>
               <div className="text-right">
-                  <div className="text-xs text-muted-foreground">ETA</div>
+                  <div className="text-xs text-muted-foreground flex items-center justify-end gap-1">
+                      <span className="relative flex h-2 w-2">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                      </span>
+                      ETA
+                  </div>
                   <div className="text-sm font-semibold">~ 10-15 mins</div>
               </div>
           </div>
@@ -315,4 +334,3 @@ export default function ResQPage() {
     </div>
   );
 }
-
