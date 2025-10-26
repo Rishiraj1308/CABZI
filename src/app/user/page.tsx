@@ -182,17 +182,19 @@ export default function UserDashboard() {
     const activeService = activeRide || activeAmbulanceCase || activeGarageRequest;
 
     return (
-        <div className="h-full w-full relative">
-            <div className="absolute inset-0 z-0">
-                 <LiveMap
-                    ref={liveMapRef}
-                    driverLocation={activeRide?.driverDetails?.location as any}
-                    riderLocation={activeRide?.pickup?.location as any}
-                    routeGeometry={activeRide?.routeGeometry}
-                    isTripInProgress={activeRide?.status === 'in-progress'}
-                />
+        <div className="h-full w-full flex flex-col">
+            <div className="flex-1 relative">
+                <div className="absolute inset-0 z-0">
+                    <LiveMap
+                        ref={liveMapRef}
+                        driverLocation={activeRide?.driverDetails?.location as any}
+                        riderLocation={activeRide?.pickup?.location as any}
+                        routeGeometry={activeRide?.routeGeometry}
+                        isTripInProgress={activeRide?.status === 'in-progress'}
+                    />
+                </div>
             </div>
-             <div className="absolute bottom-0 left-0 right-0 z-10 p-4">
+            <div className="z-10 p-4">
                 <AnimatePresence mode="wait">
                     {activeService ? (
                         <RideStatus 
