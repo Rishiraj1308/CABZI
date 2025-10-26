@@ -276,8 +276,8 @@ export default function RideStatus({
     switch (rideData.status) {
         case "searching":
             return (
-                <div className="text-center py-10 flex flex-col items-center relative overflow-hidden">
-                    <SearchingIndicator partnerType="path" />
+                <div className="text-center py-10 flex flex-col items-center">
+                    <SearchingIndicator partnerType="path" className="w-32 h-32" />
                     <h3 className="text-3xl font-bold mt-4">Finding you a ride...</h3>
                     <p className="text-muted-foreground">This will only take a moment.</p>
                 </div>
@@ -406,7 +406,7 @@ export default function RideStatus({
   }
 
   return (
-    <MotionDiv
+    <motion.div
         layout
         initial={{ y: 50, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
@@ -460,7 +460,7 @@ export default function RideStatus({
                 </CardFooter>
             )}
         </Card>
-    </MotionDiv>
+    </motion.div>
   );
 }
 
