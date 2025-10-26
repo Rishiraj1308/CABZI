@@ -11,12 +11,11 @@ import { useToast } from '@/hooks/use-toast'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import RideStatus from '@/components/ride-status'
-import { Wrench, Zap, Fuel, Car, MoreHorizontal, MessageSquare, Phone, Navigation } from 'lucide-react'
+import { Wrench, Zap, Fuel, Car, MoreHorizontal, LifeBuoy, Phone, Share2, Siren } from 'lucide-react'
 import { runTransaction } from 'firebase/firestore'
 import SearchingIndicator from '@/components/ui/searching-indicator'
 import { cn } from '@/lib/utils'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { MotionDiv } from '@/components/ui/motion-div'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 
 
 const LiveMap = dynamic(() => import('@/components/live-map'), {
@@ -159,7 +158,7 @@ export default function ResQPage() {
     localStorage.setItem('activeGarageRequestId', requestDocRef.id);
     toast({ title: "Request Sent!", description: "We are finding a nearby ResQ partner for you." });
   }
-
+  
   const renderInitialView = () => (
      <Card className="bg-background/90 backdrop-blur-sm rounded-t-2xl shadow-2xl border-t-0">
         <CardHeader className="text-center">
@@ -173,14 +172,14 @@ export default function ResQPage() {
             <motion.div 
                 className="grid grid-cols-3 gap-3"
                 initial={{ opacity: 0 }}
-                animate={{ opacity: 1, transition: { staggerChildren: 0.1 } }}
+                animate={{ opacity: 1, transition: { staggerChildren: 0.05 } }}
             >
                 {commonIssues.map((item) => (
                   <motion.div
                     key={item.id}
                     initial={{ y: 20, opacity: 0 }}
                     animate={{ y: 0, opacity: 1 }}
-                    whileHover={{ scale: 1.05 }}
+                    whileHover={{ y: -4, transition: { type: 'spring', stiffness: 300 } }}
                     whileTap={{ scale: 0.95 }}
                   >
                     <button
@@ -206,7 +205,7 @@ export default function ResQPage() {
                 </div>
             </div>
         </CardContent>
-        <CardFooter>
+        <CardFooter className="grid grid-cols-1 gap-2">
             <Button
                 size="lg"
                 disabled={!selectedIssue}
@@ -214,6 +213,19 @@ export default function ResQPage() {
                 className={cn("w-full bg-amber-500 hover:bg-amber-600 text-white font-semibold", selectedIssue && "btn-glow")}>
                 Request Help Now
             </Button>
+            <div className="flex justify-center gap-2">
+              <Button variant="ghost" size="sm" className="text-muted-foreground"><Phone className="w-4 h-4 mr-2" /> Call Helpline</Button>
+              <Dialog>
+                <DialogTrigger asChild><Button variant="ghost" size="sm" className="text-muted-foreground"><LifeBuoy className="w-4 h-4 mr-2" /> Safety Toolkit</Button></DialogTrigger>
+                <DialogContent>
+                  <DialogHeader><DialogTitle>Safety Toolkit</DialogTitle></DialogHeader>
+                  <div className="py-4 space-y-2">
+                    <Button variant="outline" className="w-full justify-start gap-2"><Share2 className="w-4 h-4"/> Share Live Location</Button>
+                    <Button variant="destructive" className="w-full justify-start gap-2"><Siren className="w-4 h-4"/> Call Emergency Services</Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </div>
         </CardFooter>
       </Card>
   )
@@ -233,7 +245,6 @@ export default function ResQPage() {
         )
     }
     
-    // Once accepted, the RideStatus component takes over
     return (
         <RideStatus 
             ride={activeGarageRequest} 
