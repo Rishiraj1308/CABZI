@@ -1,3 +1,4 @@
+
 @import 'leaflet/dist/leaflet.css';
 
 @tailwind base;
@@ -157,4 +158,19 @@
 
 .font-headline {
     font-family: var(--font-poppins), sans-serif;
+}
+
+@keyframes route-blink {
+  0%, 100% {
+    stroke-opacity: 0.8;
+    stroke-width: 5;
+  }
+  50% {
+    stroke-opacity: 0.3;
+    stroke-width: 6;
+  }
+}
+
+.route-blink-animate {
+  animation: route-blink 2s ease-in-out infinite;
 }

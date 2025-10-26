@@ -13,6 +13,7 @@ interface LiveMapProps {
     routeGeometry?: any;
     driverLocation?: { lat: number, lon: number };
     riderLocation?: { lat: number, lon: number };
+    destinationLocation?: { lat: number, lon: number };
     activePartners?: ActiveEntity[];
     activeRiders?: ActiveEntity[];
     onLocationFound?: (address: string, coords: { lat: number, lon: number }) => void;
@@ -28,6 +29,7 @@ const LiveMap = forwardRef<any, LiveMapProps>((props, ref) => {
     const routeLayerRef = useRef<L.Polyline | null>(null);
     const riderMarkerRef = useRef<L.Marker | null>(null);
     const driverMarkerRef = useRef<L.Marker | null>(null);
+    const destinationMarkerRef = useRef<L.Marker | null>(null);
     const cursorTooltipRef = useRef<L.Tooltip | null>(null);
     const locateControlRef = useRef<any | null>(null);
     const animationFrameRef = useRef<number | null>(null);
@@ -91,11 +93,13 @@ const LiveMap = forwardRef<any, LiveMapProps>((props, ref) => {
     }));
     
     // Icon creation utility
-    const createIcon = (type: ActiveEntity['type'] | EntityStatus | 'location' | string) => {
+    const createIcon = (type: ActiveEntity['type'] | EntityStatus | 'location' | string, options: { isPulsing?: boolean } = {}) => {
         const L = require('leaflet');
         let iconHtml;
         let iconSize: [number, number] = [24, 24];
         let iconAnchor: [number, number] = [12, 12];
+        const pulseAnimation = options.isPulsing ? `<style>@keyframes pulse { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.1); opacity: 0.7; } }</style>` : '';
+        const animationClass = options.isPulsing ? 'animation: pulse 1.5s infinite;' : '';
         
         switch (type) {
             case 'hospital':
@@ -105,9 +109,9 @@ const LiveMap = forwardRef<any, LiveMapProps>((props, ref) => {
                 break;
             case 'sos_medical':
             case 'ambulance':
-                iconHtml = `<div style="background-color: #ef4444; border-radius: 9999px; padding: 4px; display:flex; align-items:center; justify-content:center; box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.4); border: 1.5px solid white;"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-ambulance"><path d="M10 10H6"/><path d="M8 8v4"/><path d="M14 18V9a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h10.5a2.5 2.5 0 0 0 2.5-2.5V18"/><path d="M18 18h2a2 2 0 0 0 2-2v-4a2 2 0 0 0-2-2h-2v8Z"/><path d="M12 11h4"/><path d="M18 15h-2.5"/><circle cx="7" cy="18" r="2"/><circle cx="17" cy="18" r="2"/></svg></div>`;
-                iconSize = [20, 20];
-                iconAnchor = [10, 10];
+                iconHtml = `<div style="background-color: #ef4444; border-radius: 9999px; padding: 4px; display:flex; align-items:center; justify-content:center; box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.4); border: 1.5px solid white; ${animationClass}">${pulseAnimation}<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-ambulance"><path d="M10 10H6"/><path d="M8 8v4"/><path d="M14 18V9a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h10.5a2.5 2.5 0 0 0 2.5-2.5V18"/><path d="M18 18h2a2 2 0 0 0 2-2v-4a2 2 0 0 0-2-2h-2v8Z"/><path d="M12 11h4"/><path d="M18 15h-2.5"/><circle cx="7" cy="18" r="2"/><circle cx="17" cy="18" r="2"/></svg></div>`;
+                iconSize = [options.isPulsing ? 36 : 20, options.isPulsing ? 36 : 20];
+                iconAnchor = [options.isPulsing ? 18 : 10, options.isPulsing ? 18 : 10];
                 break;
             case 'sos_mechanical':
                 iconHtml = `<div style="background-color: #eab308; border-radius: 9999px; padding: 8px; display:flex; align-items:center; justify-content:center; box-shadow: 0 0 0 4px rgba(234, 179, 8, 0.5); border: 2px solid white; animation: pulse 1.5s infinite;"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-wrench"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg></div>
@@ -139,6 +143,11 @@ const LiveMap = forwardRef<any, LiveMapProps>((props, ref) => {
                  iconSize = [16, 16];
                  iconAnchor = [8, 8];
                 break;
+            case 'destination':
+                 iconHtml = `<div style="background-color: #ef4444; width: 12px; height: 12px; border-radius: 50%; border: 2px solid white; box-shadow: 0 0 8px #ef4444;"></div>`;
+                 iconSize = [16, 16];
+                 iconAnchor = [8, 8];
+                 break;
             default: // location marker
                 iconHtml = `<div style="background-color: #1d4ed8; width: 24px; height: 24px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.3);"></div>`;
                 break;
@@ -257,6 +266,7 @@ const LiveMap = forwardRef<any, LiveMapProps>((props, ref) => {
                 color: 'hsl(var(--primary))',
                 weight: 5,
                 opacity: 0.8,
+                className: 'route-blink-animate',
             }).addTo(map);
 
             let currentIndex = 0;
@@ -297,13 +307,25 @@ const LiveMap = forwardRef<any, LiveMapProps>((props, ref) => {
                 riderMarkerRef.current.setLatLng([lat, lon]);
             } else {
                 riderMarkerRef.current = L.marker([lat, lon], { icon: createIcon('rider') }).addTo(map);
-                // Do not fly here, let the locate control handle initial view
             }
         } else if (riderMarkerRef.current) {
             map.removeLayer(riderMarkerRef.current);
             riderMarkerRef.current = null;
         }
-    }, [props.riderLocation]);
+        
+         if (props.destinationLocation && typeof props.destinationLocation.lat === 'number' && typeof props.destinationLocation.lon === 'number') {
+            const { lat, lon } = props.destinationLocation;
+            if (destinationMarkerRef.current) {
+                destinationMarkerRef.current.setLatLng([lat, lon]);
+            } else {
+                destinationMarkerRef.current = L.marker([lat, lon], { icon: createIcon('destination') }).addTo(map);
+            }
+        } else if (destinationMarkerRef.current) {
+            map.removeLayer(destinationMarkerRef.current);
+            destinationMarkerRef.current = null;
+        }
+
+    }, [props.riderLocation, props.destinationLocation]);
 
     const startAnimationLoop = useCallback(() => {
         if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
@@ -352,8 +374,6 @@ const LiveMap = forwardRef<any, LiveMapProps>((props, ref) => {
         
         if (props.driverLocation && typeof props.driverLocation.lat === 'number' && typeof props.driverLocation.lon === 'number') {
             const { lat, lon } = props.driverLocation;
-            // The logic to determine the icon type can be complex, for now, we'll simplify
-            // and assume it's a 'driver' type if activePartners is not available.
             const partner = props.activePartners?.find(p => p.location.lat === lat && p.location.lon === lon);
             const iconType = partner ? partner.type : 'driver';
             
