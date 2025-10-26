@@ -1,14 +1,14 @@
 
 'use client'
 
-import React, { useState, useEffect, useRef, useCallback } from 'react'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle, CardFooter, CardDescription } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
-import { ArrowLeft, Map, Clock, MapPin, Search } from 'lucide-react'
-import { useRouter } from 'next/navigation'
-import Image from 'next/image'
-import Link from 'next/link'
+import React from 'react';
+import { useRouter } from 'next/navigation';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { ArrowLeft, MapPin } from 'lucide-react';
+import Image from 'next/image';
+import Link from 'next/link';
+import { motion } from 'framer-motion';
 
 const recentTrips = [
     {
@@ -36,82 +36,109 @@ const recentTrips = [
 
 export default function BookRidePage() {
     const router = useRouter();
+
+    const containerVariants = {
+        hidden: { opacity: 0 },
+        visible: {
+            opacity: 1,
+            transition: { staggerChildren: 0.1 }
+        }
+    };
     
+    const itemVariants = {
+        hidden: { opacity: 0, y: 20 },
+        visible: { opacity: 1, y: 0 }
+    };
+
     return (
-        <div className="h-screen w-screen flex flex-col bg-background overflow-hidden">
+        <motion.div 
+            className="h-screen w-screen flex flex-col bg-background overflow-hidden"
+            initial="hidden"
+            animate="visible"
+            variants={containerVariants}
+        >
             {/* Header Section */}
-            <div className="bg-green-500 text-white p-4 pt-6 relative">
+            <header className="bg-gradient-to-br from-green-500 to-primary p-4 pt-6 relative text-primary-foreground overflow-hidden">
                 <div className="container mx-auto">
-                    <div className="flex justify-between items-center">
-                        <Button variant="ghost" size="icon" className="text-white hover:bg-white/10" onClick={() => router.back()}>
+                    <motion.div variants={itemVariants}>
+                        <Button variant="ghost" size="icon" className="hover:bg-white/10" onClick={() => router.back()}>
                             <ArrowLeft className="w-5 h-5"/>
                         </Button>
-                         <Link href="/user/book/map" passHref legacyBehavior>
-                           <Button asChild variant="ghost" className="text-white hover:bg-white/10">
-                               <a><Map className="w-5 h-5 mr-2"/> Map</a>
-                           </Button>
-                        </Link>
-                    </div>
-                    <div className="pt-8 pb-16 text-left">
-                        <h1 className="text-3xl font-bold">Transport</h1>
-                        <p className="opacity-80">Wherever you're going, let's get you there!</p>
-                    </div>
+                    </motion.div>
+                    <motion.div variants={itemVariants} className="pt-8 pb-16 text-left">
+                        <h1 className="text-4xl font-bold">Transport</h1>
+                        <p className="opacity-80 mt-1">Wherever you're going, let's get you there!</p>
+                    </motion.div>
                 </div>
-                 <div className="absolute -bottom-1 right-4 w-40 h-24">
+                 <motion.div
+                    initial={{ x: 100, opacity: 0 }}
+                    animate={{ x: 0, opacity: 1 }}
+                    transition={{ delay: 0.2, type: 'spring', stiffness: 50 }}
+                    className="absolute -bottom-4 right-0 w-48 h-28"
+                 >
                     <Image src="/car.svg" alt="Car" layout="fill" objectFit="contain" className="opacity-90" data-ai-hint="car illustration" />
-                </div>
-            </div>
+                </motion.div>
+            </header>
 
             {/* Content Section */}
-            <div className="flex-1 bg-background rounded-t-3xl -mt-8 p-4 space-y-6">
+            <motion.div 
+                className="flex-1 bg-muted/30 rounded-t-3xl -mt-8 p-4 space-y-6"
+                variants={itemVariants}
+            >
                 <div className="container mx-auto">
                     {/* Search Card */}
-                    <Card className="shadow-lg -mt-12">
-                        <CardContent className="p-3 space-y-2">
-                             <div className="flex items-center gap-3 p-2 rounded-lg">
-                                 <div className="w-2.5 h-2.5 rounded-full bg-green-500 ring-2 ring-green-500/30"/>
-                                 <p className="font-semibold text-base text-muted-foreground">Current Location</p>
-                            </div>
-                            <div className="border-t"></div>
-                            <Link href="/user/book/map" className="flex items-center gap-3 p-2 rounded-lg">
-                                 <div className="w-2.5 h-2.5 rounded-full bg-red-500 ring-2 ring-red-500/30"/>
-                                 <p className="font-semibold text-base text-muted-foreground">Where to?</p>
-                            </Link>
-                        </CardContent>
-                    </Card>
+                    <motion.div
+                        initial={{ y: 50, opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        transition={{ delay: 0.3, type: 'spring' }}
+                    >
+                        <Card className="shadow-2xl -mt-12">
+                            <CardContent className="p-3 space-y-1">
+                                <div className="flex items-center gap-4 p-2 rounded-lg">
+                                    <div className="w-2.5 h-2.5 rounded-full bg-green-500 ring-4 ring-green-500/20"/>
+                                    <p className="font-semibold text-base text-muted-foreground">Current Location</p>
+                                </div>
+                                <div className="border-l-2 border-dotted border-border h-4 ml-[13px]"></div>
+                                <Link href="/user/book/map" className="flex items-center gap-4 p-2 rounded-lg hover:bg-muted">
+                                    <div className="w-2.5 h-2.5 rounded-full bg-red-500 ring-4 ring-red-500/20"/>
+                                    <p className="font-semibold text-base">Where to?</p>
+                                </Link>
+                            </CardContent>
+                        </Card>
+                    </motion.div>
                     
                     {/* Recent Trips */}
-                    <div className="space-y-2 mt-8">
+                    <motion.div 
+                        className="space-y-2 mt-8"
+                        variants={containerVariants}
+                        initial="hidden"
+                        animate="visible"
+                    >
                         <h3 className="font-bold text-lg">Recent Trips</h3>
-                        {recentTrips.map((trip) => (
-                            <div key={trip.title} className="flex items-center gap-4 p-3 rounded-lg hover:bg-muted cursor-pointer">
-                                <div className="p-3 bg-muted rounded-full">
-                                    <trip.icon className="w-5 h-5 text-muted-foreground" />
+                        {recentTrips.map((trip, index) => (
+                            <motion.div 
+                                key={trip.title}
+                                variants={itemVariants}
+                                transition={{delay: 0.5 + index * 0.1}}
+                            >
+                                <div className="flex items-center gap-4 p-3 rounded-lg hover:bg-card cursor-pointer transition-colors">
+                                    <div className="p-3 bg-card rounded-full border">
+                                        <trip.icon className="w-5 h-5 text-muted-foreground" />
+                                    </div>
+                                    <div className="flex-1">
+                                        <p className="font-semibold">{trip.title}</p>
+                                        <p className="text-sm text-muted-foreground">{trip.description}</p>
+                                    </div>
+                                    <div className="text-right">
+                                        <p className="text-sm font-semibold">{trip.distance}</p>
+                                        <p className="text-xs text-muted-foreground">{trip.time}</p>
+                                    </div>
                                 </div>
-                                <div className="flex-1">
-                                    <p className="font-semibold">{trip.title}</p>
-                                    <p className="text-sm text-muted-foreground">{trip.description}</p>
-                                </div>
-                                 <div className="text-right">
-                                    <p className="text-sm font-semibold">{trip.distance}</p>
-                                    <p className="text-xs text-muted-foreground">{trip.time}</p>
-                                </div>
-                            </div>
+                            </motion.div>
                         ))}
-                    </div>
-
-                    {/* More ways to travel */}
-                     <div className="pt-4">
-                        <div className="p-4 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center gap-4">
-                            <div className="text-4xl">👨‍👩‍👧‍👦</div>
-                            <div>
-                                <p className="font-bold">Travel with friends in group rides!</p>
-                                <p className="text-sm text-blue-800/80 dark:text-blue-200/80">Save money and the environment.</p>
-                            </div>
-                        </div>
-                    </div>
+                    </motion.div>
                 </div>
-            </div>
-        </div>
-    )
+            </motion.div>
+        </motion.div>
+    );
 }
