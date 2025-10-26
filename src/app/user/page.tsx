@@ -1,4 +1,3 @@
-
 'use client'
 
 import React, { useState, useEffect, useCallback } from 'react';
@@ -80,8 +79,11 @@ export default function UserDashboard() {
                         gender: userData.gender
                     });
                 }
-            });
+                 setIsLoading(false); // Set loading to false after session is fetched or fails
+            }, () => setIsLoading(false)); // Also set loading to false on error
             return () => unsub();
+        } else if (!user) {
+            setIsLoading(false); // If there's no user, we're not loading
         }
     }, [user, db]);
 
@@ -96,27 +98,29 @@ export default function UserDashboard() {
     // Effect to check for any active service on load and listen for updates
     useEffect(() => {
         if (!db || !session) {
-            setIsLoading(false);
             return;
         };
 
+        let unsubscribe: (() => void) | null = null;
+        
         const checkAndSubscribe = () => {
             // Check for active ride
             const rideId = localStorage.getItem('activeRideId');
             if (rideId) {
                 const rideRef = doc(db, 'rides', rideId);
-                return onSnapshot(rideRef, (docSnap) => {
+                unsubscribe = onSnapshot(rideRef, (docSnap) => {
                     if (docSnap.exists() && !['completed', 'cancelled_by_driver', 'cancelled_by_rider'].includes(docSnap.data().status)) {
                         setActiveRide({ id: docSnap.id, ...docSnap.data() } as RideData);
                     } else {
                        resetFlow();
                     }
                 });
+                return;
             }
             
             // Check for active emergency case
             const qCure = query(collection(db, "emergencyCases"), where("riderId", "==", session.userId), where("status", "in", ["pending", "accepted", "onTheWay", "arrived", "inTransit"]));
-            const unsubCure = onSnapshot(qCure, (snapshot) => {
+            unsubscribe = onSnapshot(qCure, (snapshot) => {
                 if (!snapshot.empty) {
                     const caseDoc = snapshot.docs[0];
                     setActiveAmbulanceCase({ id: caseDoc.id, ...caseDoc.data() } as AmbulanceCase);
@@ -127,7 +131,7 @@ export default function UserDashboard() {
             
              // Check for active ResQ request
             const qResq = query(collection(db, "garageRequests"), where("driverId", "==", session.userId), where("status", "not-in", ["completed", "cancelled_by_driver", "cancelled_by_mechanic"]));
-             const unsubResq = onSnapshot(qResq, (snapshot) => {
+             unsubscribe = onSnapshot(qResq, (snapshot) => {
                 if (!snapshot.empty) {
                     const reqDoc = snapshot.docs[0];
                     setActiveGarageRequest({ id: reqDoc.id, ...reqDoc.data() } as GarageRequest);
@@ -135,16 +139,9 @@ export default function UserDashboard() {
                     resetFlow();
                 }
             });
-
-
-            setIsLoading(false);
-            return () => {
-                unsubCure();
-                unsubResq();
-            };
         }
         
-        const unsubscribe = checkAndSubscribe();
+        checkAndSubscribe();
         return () => {
             if (unsubscribe) unsubscribe();
         };
