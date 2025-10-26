@@ -10,13 +10,12 @@ import { useToast } from '@/hooks/use-toast'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import RideStatus from '@/components/ride-status'
-import { Wrench, Zap, Fuel, Car, MoreHorizontal, LifeBuoy, Phone, Shield, LocateFixed, MessageSquare, Siren } from 'lucide-react'
+import { Wrench, Zap, Fuel, Car, MoreHorizontal, LifeBuoy, Phone, Shield, LocateFixed, MessageSquare, Siren, Separator } from 'lucide-react'
 import { runTransaction } from 'firebase/firestore'
 import SearchingIndicator from '@/components/ui/searching-indicator'
 import { cn } from '@/lib/utils'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from '@/components/ui/alert-dialog'
-import { Separator } from '@/components/ui/separator'
 
 
 const commonIssues = [
@@ -200,8 +199,20 @@ export default function ResQPage() {
   const renderInitialView = () => (
      <Card className="max-w-xl mx-auto mt-8 bg-white/80 backdrop-blur-md shadow-xl shadow-orange-100 rounded-3xl">
         <CardHeader className="text-center p-8">
-            <div className="mx-auto w-16 h-16 rounded-full bg-amber-500/10 flex items-center justify-center mb-2 border-4 border-amber-500/20">
-                <Wrench className="w-8 h-8 text-amber-500"/>
+            <div className="flex justify-between items-start">
+                 <div className="mx-auto w-16 h-16 rounded-full bg-amber-500/10 flex items-center justify-center mb-2 border-4 border-amber-500/20">
+                    <Wrench className="w-8 h-8 text-amber-500"/>
+                </div>
+                <div className="text-right">
+                    <div className="text-xs text-muted-foreground flex items-center justify-end gap-1">
+                        <span className="relative flex h-2 w-2">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                            <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                        </span>
+                        ETA
+                    </div>
+                    <div className="text-sm font-semibold">~10-15 mins</div>
+                </div>
             </div>
           <CardTitle className="text-2xl font-bold text-gray-800 leading-snug">Roadside Assistance</CardTitle>
           <CardDescription className="text-sm text-gray-500 mt-1 leading-snug">Vehicle trouble? Get quick help for tyre, battery, towing & more.</CardDescription>
@@ -223,28 +234,6 @@ export default function ResQPage() {
                         <span className="font-medium text-gray-800 text-center text-sm">{item.label}</span>
                     </motion.div>
                 ))}
-            </div>
-             <div className="flex items-center justify-between p-3 border rounded-lg bg-muted">
-                <div className="flex-1">
-                    <div className="text-xs text-muted-foreground">Location</div>
-                    <div className="text-sm font-semibold truncate flex items-center gap-2">
-                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={fetchLocation}>
-                            <LocateFixed className="w-4 h-4" />
-                        </Button>
-                        <span className="truncate">{locationAddress}</span>
-                    </div>
-                </div>
-                <Separator orientation="vertical" className="h-10 mx-4" />
-                <div className="text-right">
-                    <div className="text-xs text-muted-foreground flex items-center justify-end gap-1">
-                        <span className="relative flex h-2 w-2">
-                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                            <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
-                        </span>
-                        ETA
-                    </div>
-                    <div className="text-sm font-semibold">~10-15 mins</div>
-                </div>
             </div>
         </CardContent>
         <CardFooter className="grid grid-cols-1 gap-2 p-8">
@@ -318,7 +307,7 @@ export default function ResQPage() {
         </div>
          <Dialog>
             <DialogTrigger asChild>
-                 <Button variant="ghost" size="sm" className="fixed bottom-6 right-6 h-14 rounded-full shadow-2xl bg-background/80 backdrop-blur-md">
+                 <Button variant="ghost" size="sm" className="fixed bottom-6 right-6 h-auto p-3 rounded-full shadow-2xl bg-background/80 backdrop-blur-md">
                      <Shield className="w-4 h-4 mr-2"/> Safety Toolkit
                  </Button>
             </DialogTrigger>
@@ -334,3 +323,5 @@ export default function ResQPage() {
     </div>
   );
 }
+
+    
