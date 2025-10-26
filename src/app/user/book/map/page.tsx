@@ -113,44 +113,9 @@ function BookRideMapComponent() {
     }, [searchParams]);
 
     return (
-        <div className="h-screen w-screen flex flex-col bg-background">
-            <header className="absolute top-0 left-0 right-0 z-20 p-4">
-                <div className="flex items-start gap-4">
-                    <Button variant="outline" size="icon" className="rounded-full shadow-lg shrink-0" onClick={() => router.back()}>
-                        <ArrowLeft className="w-5 h-5"/>
-                    </Button>
-                    <div className="w-full">
-                        <Card className="shadow-lg">
-                            <CardContent className="p-2">
-                                <div className="relative">
-                                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                    <Input
-                                        placeholder="Search for a destination..."
-                                        className="pl-10 border-0 focus-visible:ring-0 text-base"
-                                        value={searchQuery}
-                                        onChange={(e) => setSearchQuery(e.target.value)}
-                                        onKeyDown={(e) => e.key === 'Enter' && handleSearch(searchQuery)}
-                                    />
-                                </div>
-                            </CardContent>
-                        </Card>
-                        {searchResults.length > 0 && (
-                            <Card className="mt-2 shadow-lg max-h-60 overflow-y-auto">
-                                <CardContent className="p-2 space-y-1">
-                                    {searchResults.map(place => (
-                                        <div key={place.place_id} onClick={() => handleSelectPlace(place)} className="p-2 rounded-md hover:bg-muted cursor-pointer">
-                                            <p className="font-semibold text-sm">{place.display_name.split(',')[0]}</p>
-                                            <p className="text-xs text-muted-foreground">{place.display_name.split(',').slice(1).join(',')}</p>
-                                        </div>
-                                    ))}
-                                </CardContent>
-                            </Card>
-                        )}
-                    </div>
-                </div>
-            </header>
-
-            <div className="flex-1 z-0">
+        <div className="h-screen w-screen relative">
+            {/* Map Layer */}
+            <div className="absolute inset-0 z-0">
                 <LiveMap 
                     ref={liveMapRef} 
                     riderLocation={userLocation}
@@ -158,23 +123,66 @@ function BookRideMapComponent() {
                 />
             </div>
             
-             {destination && (
-                <div className="absolute bottom-0 left-0 right-0 z-20 p-4">
-                     <div className="absolute top-0 right-6 -translate-y-1/2 flex flex-col gap-2">
-                        <Button variant="outline" size="icon" className="rounded-full shadow-lg h-12 w-12"><MessageSquare className="w-6 h-6"/></Button>
-                        <Button variant="outline" size="icon" className="rounded-full shadow-lg h-12 w-12"><Shield className="w-6 h-6"/></Button>
+            {/* UI Overlay Layer */}
+            <div className="absolute inset-0 z-10 flex flex-col pointer-events-none">
+                <header className="p-4 pointer-events-auto">
+                    <div className="flex items-start gap-4">
+                        <Button variant="outline" size="icon" className="rounded-full shadow-lg shrink-0" onClick={() => router.back()}>
+                            <ArrowLeft className="w-5 h-5"/>
+                        </Button>
+                        <div className="w-full">
+                            <Card className="shadow-lg">
+                                <CardContent className="p-2">
+                                    <div className="relative">
+                                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                        <Input
+                                            placeholder="Search for a destination..."
+                                            className="pl-10 border-0 focus-visible:ring-0 text-base"
+                                            value={searchQuery}
+                                            onChange={(e) => setSearchQuery(e.target.value)}
+                                            onKeyDown={(e) => e.key === 'Enter' && handleSearch(searchQuery)}
+                                        />
+                                    </div>
+                                </CardContent>
+                            </Card>
+                            {searchResults.length > 0 && (
+                                <Card className="mt-2 shadow-lg max-h-60 overflow-y-auto">
+                                    <CardContent className="p-2 space-y-1">
+                                        {searchResults.map(place => (
+                                            <div key={place.place_id} onClick={() => handleSelectPlace(place)} className="p-2 rounded-md hover:bg-muted cursor-pointer">
+                                                <p className="font-semibold text-sm">{place.display_name.split(',')[0]}</p>
+                                                <p className="text-xs text-muted-foreground">{place.display_name.split(',').slice(1).join(',')}</p>
+                                            </div>
+                                        ))}
+                                    </CardContent>
+                                </Card>
+                            )}
+                        </div>
                     </div>
-                    <Card className="shadow-2xl animate-fade-in">
-                        <CardContent className="p-4 flex items-center justify-between gap-4">
-                           <div className="flex-1">
-                                <p className="text-sm text-muted-foreground">Your Trip</p>
-                                <h3 className="font-bold text-lg leading-tight line-clamp-2">{originName} to {destinationName}</h3>
-                           </div>
-                           <Button size="lg" className="h-12 text-base">Confirm Ride</Button>
-                        </CardContent>
-                    </Card>
-                </div>
-            )}
+                </header>
+
+                <div className="flex-grow" />
+
+                {destination && (
+                    <footer className="p-4 pointer-events-auto">
+                         <div className="relative">
+                            <div className="absolute -top-4 right-2 flex flex-col gap-2">
+                                <Button variant="outline" size="icon" className="rounded-full shadow-lg h-12 w-12"><MessageSquare className="w-6 h-6"/></Button>
+                                <Button variant="outline" size="icon" className="rounded-full shadow-lg h-12 w-12"><Shield className="w-6 h-6"/></Button>
+                            </div>
+                            <Card className="shadow-2xl animate-fade-in">
+                                <CardContent className="p-4 flex items-center justify-between gap-4">
+                                   <div className="flex-1">
+                                        <p className="text-sm text-muted-foreground">Your Trip</p>
+                                        <h3 className="font-bold text-lg leading-tight line-clamp-2">{originName} to {destinationName}</h3>
+                                   </div>
+                                   <Button size="lg" className="h-12 text-base">Confirm Ride</Button>
+                                </CardContent>
+                            </Card>
+                         </div>
+                    </footer>
+                )}
+            </div>
         </div>
     )
 }
