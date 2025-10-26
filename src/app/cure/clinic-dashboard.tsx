@@ -203,7 +203,6 @@ const ClinicDashboard = () => {
             return;
         }
         
-        const hospitalDoctorsRef = collection(db, `ambulances/${hospitalId}/doctors`);
         const globalDoctorsRef = collection(db, 'doctors');
 
         try {
@@ -219,8 +218,19 @@ const ClinicDashboard = () => {
             
             const batch = writeBatch(db);
             
+            const hospitalDoctorsRef = collection(db, `ambulances/${hospitalId}/doctors`);
             const newDoctorDocRefInHospital = doc(hospitalDoctorsRef);
-            const doctorData = { id: newDoctorDocRefInHospital.id, name, phone, email, ...restOfData, partnerId, password, createdAt: serverTimestamp(), docStatus: 'Pending', hospitalId, hospitalName, isAvailable: false };
+            const doctorData = { 
+                id: newDoctorDocRefInHospital.id, 
+                name, phone, email, ...restOfData, 
+                partnerId, 
+                password, 
+                createdAt: serverTimestamp(), 
+                docStatus: 'Pending', 
+                hospitalId, hospitalName, 
+                isAvailable: false 
+            };
+            
             batch.set(newDoctorDocRefInHospital, doctorData);
 
             const newDoctorDocRefGlobal = doc(globalDoctorsRef, newDoctorDocRefInHospital.id);
@@ -245,9 +255,19 @@ const ClinicDashboard = () => {
     
     const handleDeleteDoctor = async (doctorId: string, doctorName: string) => {
         if (!db || !hospitalId) return;
-        const doctorRef = doc(db, `ambulances/${hospitalId}/doctors`, doctorId);
+        
+        const batch = writeBatch(db);
+
+        // 1. Delete from hospital's subcollection
+        const hospitalDoctorRef = doc(db, `ambulances/${hospitalId}/doctors`, doctorId);
+        batch.delete(hospitalDoctorRef);
+
+        // 2. Delete from global collection to revoke login
+        const globalDoctorRef = doc(db, 'doctors', doctorId);
+        batch.delete(globalDoctorRef);
+        
         try {
-          await deleteDoc(doctorRef);
+          await batch.commit();
           toast({ variant: 'destructive', title: 'Doctor Removed', description: `Dr. ${doctorName} has been removed from the roster.` });
         } catch (error) {
            toast({ variant: 'destructive', title: 'Error', description: 'Could not remove the doctor.' });
@@ -368,7 +388,47 @@ const ClinicDashboard = () => {
                             <CardDescription>View and manage doctor availability for the upcoming week.</CardDescription>
                         </CardHeader>
                         <CardContent className="h-48 flex items-center justify-center">
-                            <p className="text-muted-foreground">Doctor schedule management coming soon.</p>
+                             <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>Doctor</TableHead>
+                                        <TableHead>Availability</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                   {isLoading ? (
+                                     Array.from({ length: 3 }).map((_, i) => (
+                                        <TableRow key={i}>
+                                            <TableCell><Skeleton className="h-5 w-32" /></TableCell>
+                                            <TableCell><Skeleton className="h-6 w-24 rounded-full" /></TableCell>
+                                        </TableRow>
+                                    ))
+                                   ) : doctors.length > 0 ? (
+                                     doctors.map(doctor => (
+                                        <TableRow key={doctor.id}>
+                                            <TableCell className="font-medium">Dr. {doctor.name}</TableCell>
+                                            <TableCell>
+                                                <div className="flex items-center gap-2">
+                                                    <Switch 
+                                                        id={`avail-${doctor.id}`} 
+                                                        checked={doctor.isAvailable} 
+                                                        onCheckedChange={(checked) => handleToggleAvailability(doctor.id, checked)}
+                                                        className="data-[state=checked]:bg-green-500"
+                                                    />
+                                                    <Label htmlFor={`avail-${doctor.id}`} className={cn("text-xs", doctor.isAvailable ? 'text-green-600' : 'text-muted-foreground')}>
+                                                        {doctor.isAvailable ? 'Online' : 'Offline'}
+                                                    </Label>
+                                                </div>
+                                            </TableCell>
+                                        </TableRow>
+                                     ))
+                                   ) : (
+                                    <TableRow>
+                                        <TableCell colSpan={2} className="text-center h-24">No doctors on roster.</TableCell>
+                                    </TableRow>
+                                   )}
+                                </TableBody>
+                            </Table>
                         </CardContent>
                     </Card>
                 </TabsContent>
@@ -407,7 +467,7 @@ const ClinicDashboard = () => {
                                     <TableRow>
                                         <TableHead>Doctor</TableHead>
                                         <TableHead>Specialization</TableHead>
-                                        <TableHead>Status</TableHead>
+                                        <TableHead>Contact</TableHead>
                                         <TableHead className="text-right">Actions</TableHead>
                                     </TableRow>
                                 </TableHeader>
@@ -417,7 +477,7 @@ const ClinicDashboard = () => {
                                         <TableRow key={i}>
                                             <TableCell><Skeleton className="h-5 w-32" /></TableCell>
                                             <TableCell><Skeleton className="h-5 w-24" /></TableCell>
-                                            <TableCell><Skeleton className="h-6 w-20 rounded-full" /></TableCell>
+                                            <TableCell><Skeleton className="h-5 w-28" /></TableCell>
                                             <TableCell className="text-right"><Skeleton className="h-8 w-8 rounded-full ml-auto" /></TableCell>
                                         </TableRow>
                                     ))
@@ -426,19 +486,7 @@ const ClinicDashboard = () => {
                                         <TableRow key={doctor.id}>
                                             <TableCell className="font-medium">Dr. {doctor.name}</TableCell>
                                             <TableCell><Badge variant="secondary">{doctor.specialization}</Badge></TableCell>
-                                            <TableCell>
-                                                <div className="flex items-center gap-2">
-                                                    <Switch 
-                                                        id={`avail-${doctor.id}`} 
-                                                        checked={doctor.isAvailable} 
-                                                        onCheckedChange={(checked) => handleToggleAvailability(doctor.id, checked)}
-                                                        className="data-[state=checked]:bg-green-500"
-                                                    />
-                                                    <Label htmlFor={`avail-${doctor.id}`} className={cn("text-xs", doctor.isAvailable ? 'text-green-600' : 'text-muted-foreground')}>
-                                                        {doctor.isAvailable ? 'Online' : 'Offline'}
-                                                    </Label>
-                                                </div>
-                                            </TableCell>
+                                            <TableCell>{doctor.phone}</TableCell>
                                             <TableCell className="text-right">
                                                  <AlertDialog>
                                                      <DropdownMenu>
