@@ -4,12 +4,12 @@
 import React, { useState, useEffect, useCallback, useRef, Suspense } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { ArrowLeft, Search } from 'lucide-react'
+import { ArrowLeft, Search, MessageSquare, Shield } from 'lucide-react'
 import { searchPlace, getRoute } from '@/lib/routing'
 import dynamic from 'next/dynamic'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Card, CardContent } from '@/components/ui/card'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 
 const LiveMap = dynamic(() => import('@/components/live-map'), { 
     ssr: false,
@@ -145,14 +145,18 @@ function BookRideMapComponent() {
             </div>
             
              {destination && (
-                <div className="absolute bottom-0 left-0 right-0 z-10 p-4 bg-gradient-to-t from-background via-background/80 to-transparent">
+                <div className="absolute bottom-0 left-0 right-0 z-10 p-4">
+                     <div className="absolute top-0 right-6 -translate-y-1/2 flex flex-col gap-2">
+                        <Button variant="outline" size="icon" className="rounded-full shadow-lg h-12 w-12"><MessageSquare className="w-6 h-6"/></Button>
+                        <Button variant="outline" size="icon" className="rounded-full shadow-lg h-12 w-12"><Shield className="w-6 h-6"/></Button>
+                    </div>
                     <Card className="shadow-2xl animate-fade-in">
                         <CardContent className="p-4 flex items-center justify-between gap-4">
                            <div className="flex-1">
                                 <p className="text-sm text-muted-foreground">Destination</p>
-                                <h3 className="font-bold text-lg leading-tight">{destinationName}</h3>
+                                <h3 className="font-bold text-lg leading-tight line-clamp-2">{destinationName}</h3>
                            </div>
-                           <Button size="lg" className="w-full max-w-40">Confirm Ride</Button>
+                           <Button size="lg" className="h-12 text-base">Confirm Ride</Button>
                         </CardContent>
                     </Card>
                 </div>
@@ -168,4 +172,3 @@ export default function BookRideMapPage() {
         </Suspense>
     );
 }
-
