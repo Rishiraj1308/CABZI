@@ -1,17 +1,16 @@
-
 'use client'
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ArrowLeft, Search, MapPin, MoreVertical, LocateFixed } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import dynamic from 'next/dynamic';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetDescription } from '@/components/ui/sheet';
-import { searchPlace } from '@/lib/routing';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
+import { searchPlace } from '@/lib/routing';
+import { useFirebase } from '@/firebase/client-provider';
 
 const LiveMap = dynamic(() => import('@/components/live-map'), {
     ssr: false,
@@ -24,6 +23,13 @@ interface Place {
     display_name: string;
     lat: string;
     lon: string;
+    [key: string]: any; // Allow other properties
+}
+
+interface POI {
+    place_id: string;
+    display_name: string;
+    distance: string;
 }
 
 export default function BookRidePage() {
@@ -32,8 +38,59 @@ export default function BookRidePage() {
     const [searchQuery, setSearchQuery] = useState('');
     const [searchResults, setSearchResults] = useState<Place[]>([]);
     const [selectedPlace, setSelectedPlace] = useState<Place | null>(null);
+    const [nearbyPois, setNearbyPois] = useState<POI[]>([]);
     const [isSearching, setIsSearching] = useState(false);
+    const [userCoords, setUserCoords] = useState<{lat: number, lon: number} | null>(null);
     const mapRef = useRef<any>(null);
+    const { user } = useFirebase();
+
+    useEffect(() => {
+        if (!user) {
+            router.push('/login?role=user');
+        }
+    }, [user, router]);
+    
+    useEffect(() => {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(pos => {
+                setUserCoords({ lat: pos.coords.latitude, lon: pos.coords.longitude });
+            });
+        }
+    }, []);
+
+    const fetchPois = useCallback(async (place: Place) => {
+        if (!userCoords) return;
+        
+        setIsSearching(true);
+        try {
+            // A simple way to get POIs is to search for common terms near the selected place
+            const poiQuery = `(gate, pickup, drop-off, entry, exit) near ${place.display_name}`;
+            const results = await searchPlace(poiQuery);
+            if (results && results.length > 0) {
+                 const pois = results.map((poi: Place) => {
+                     const distanceInKm = getDistance(
+                         userCoords.lat,
+                         userCoords.lon,
+                         parseFloat(poi.lat),
+                         parseFloat(poi.lon)
+                     );
+                     return {
+                         place_id: poi.place_id,
+                         display_name: poi.display_name.split(',')[0], // Keep it short
+                         distance: `${distanceInKm.toFixed(1)}km`
+                     };
+                 }).slice(0, 5); // Limit to 5 POIs
+                 setNearbyPois(pois);
+            } else {
+                 setNearbyPois([]);
+            }
+        } catch (error) {
+            setNearbyPois([]);
+        } finally {
+            setIsSearching(false);
+        }
+    }, [userCoords]);
+
 
     const handleSearch = useCallback(async (query: string) => {
         if (query.length < 3) {
@@ -58,6 +115,7 @@ export default function BookRidePage() {
         if (mapRef.current) {
             mapRef.current.flyTo([parseFloat(place.lat), parseFloat(place.lon)], 16);
         }
+        fetchPois(place);
     };
     
     const handleLocateMe = () => {
@@ -66,16 +124,23 @@ export default function BookRidePage() {
         }
     }
 
+    const getDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
+        const R = 6371; // km
+        const dLat = (lat2 - lat1) * Math.PI / 180;
+        const dLon = (lon2 - lon1) * Math.PI / 180;
+        const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return R * c;
+    };
+
+
     return (
     <div className="h-screen w-screen flex flex-col bg-muted relative">
-        {/* Map Background */}
         <div className="absolute inset-0 z-0">
              <LiveMap ref={mapRef} />
         </div>
 
-        {/* UI Overlay */}
         <div className="absolute inset-0 z-10 flex flex-col pointer-events-none">
-            {/* Header */}
             <div className="p-4 flex items-center gap-2 pointer-events-auto">
                  <Button variant="outline" size="icon" className="rounded-full bg-background/80 backdrop-blur-sm" onClick={() => router.back()}>
                     <ArrowLeft className="w-5 h-5"/>
@@ -91,7 +156,6 @@ export default function BookRidePage() {
                  </div>
             </div>
             
-            {/* Search Results */}
             {searchResults.length > 0 && (
                 <Card className="mx-4 mt-2 shadow-lg pointer-events-auto">
                     <CardContent className="p-2 max-h-60 overflow-y-auto">
@@ -116,7 +180,6 @@ export default function BookRidePage() {
                 </Button>
             </div>
 
-            {/* Bottom Sheet for Confirmation */}
             {selectedPlace && (
                 <div className="mt-auto pointer-events-auto">
                     <Card className="rounded-b-none rounded-t-2xl shadow-2xl">
@@ -124,29 +187,37 @@ export default function BookRidePage() {
                             <CardTitle className="flex justify-between items-start">
                                 <div>
                                     <p className="text-xl">{selectedPlace.display_name.split(',')[0]}</p>
-                                    <p className="text-xs text-muted-foreground font-normal">{selectedPlace.display_name.split(',').slice(1).join(',')}</p>
+                                    <p className="text-xs text-muted-foreground font-normal">{selectedPlace.display_name.split(',').slice(1,3).join(',')}</p>
                                 </div>
                                  <Button variant="ghost" size="icon"><MoreVertical className="w-5 h-5"/></Button>
                             </CardTitle>
                         </CardHeader>
-                        <CardContent className="space-y-4">
-                             <div className="flex items-start gap-4 p-3 rounded-lg hover:bg-muted cursor-pointer">
-                                <MapPin className="w-6 h-6 text-primary mt-1"/>
-                                <div>
-                                    <p className="font-semibold">South Wing Drop-off (Departure)</p>
-                                    <p className="text-sm text-muted-foreground">0.0km</p>
-                                </div>
-                             </div>
-                             <div className="flex items-start gap-4 p-3 rounded-lg hover:bg-muted cursor-pointer">
-                                <MapPin className="w-6 h-6 text-green-500 mt-1"/>
-                                <div>
-                                    <p className="font-semibold">Grab Pickup (Arrival Bays A1-A3)</p>
-                                    <p className="text-sm text-muted-foreground">0.2km</p>
-                                </div>
-                             </div>
+                        <CardContent className="space-y-2">
+                             {isSearching ? <Skeleton className="h-16 w-full" /> : 
+                                nearbyPois.length > 0 ? (
+                                    nearbyPois.map(poi => (
+                                        <div key={poi.place_id} className="flex items-center gap-4 p-3 rounded-lg hover:bg-muted cursor-pointer">
+                                            <MapPin className="w-6 h-6 text-primary mt-1"/>
+                                            <div>
+                                                <p className="font-semibold">{poi.display_name}</p>
+                                                <p className="text-sm text-muted-foreground">{poi.distance} from your location</p>
+                                            </div>
+                                        </div>
+                                    ))
+                                ) : (
+                                    // Default/Fallback when no POIs found
+                                    <div className="flex items-center gap-4 p-3 rounded-lg hover:bg-muted cursor-pointer">
+                                        <MapPin className="w-6 h-6 text-primary mt-1"/>
+                                        <div>
+                                            <p className="font-semibold">Main Entrance</p>
+                                            <p className="text-sm text-muted-foreground">Default drop-off point</p>
+                                        </div>
+                                    </div>
+                                )
+                             }
                         </CardContent>
                         <CardFooter>
-                            <Button size="lg" className="w-full bg-green-600 hover:bg-green-700">Choose This Destination</Button>
+                            <Button size="lg" className="w-full" onClick={() => toast({ title: 'Feature Coming Soon!', description: 'Ride confirmation flow will be enabled soon.' })}>Choose This Destination</Button>
                         </CardFooter>
                     </Card>
                 </div>
