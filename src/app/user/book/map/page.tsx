@@ -26,9 +26,6 @@ interface Place {
 function BookRideMapComponent() {
     const router = useRouter();
     const searchParams = useSearchParams();
-    const [searchQuery, setSearchQuery] = useState('');
-    const [searchResults, setSearchResults] = useState<Place[]>([]);
-    const [isSearching, setIsSearching] = useState(false);
     
     const [userLocation, setUserLocation] = useState<{ lat: number, lon: number } | null>(null);
     const [originName, setOriginName] = useState('Current Location');
@@ -41,18 +38,16 @@ function BookRideMapComponent() {
 
     const handleSearch = useCallback(async (query: string) => {
         if(query.length < 3) return;
-        setIsSearching(true);
         const results = await searchPlace(query);
-        setSearchResults(results || []);
-        setIsSearching(false);
+        if (results && results.length > 0) {
+            handleSelectPlace(results[0]);
+        }
     }, []);
 
     const handleSelectPlace = useCallback((place: Place) => {
         const destCoords = { lat: parseFloat(place.lat), lon: parseFloat(place.lon) };
         setDestination(destCoords);
         setDestinationName(place.display_name.split(',').slice(0, 2).join(', '));
-        setSearchQuery(place.display_name.split(',')[0]);
-        setSearchResults([]);
     }, []);
 
     useEffect(() => {
@@ -71,7 +66,7 @@ function BookRideMapComponent() {
                         clearInterval(checkMapReady);
                         const address = await liveMapRef.current.getAddress(coords.lat, coords.lon);
                         if (address) {
-                            setOriginName(address.split(',')[0]);
+                            setOriginName(address.split(',')[0] || 'Current Location');
                         }
                     }
                 }, 100);
@@ -106,7 +101,6 @@ function BookRideMapComponent() {
     useEffect(() => {
         const initialSearch = searchParams.get('search');
         if (initialSearch) {
-            setSearchQuery(initialSearch);
             handleSearch(initialSearch);
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -126,39 +120,9 @@ function BookRideMapComponent() {
             {/* UI Overlay Layer */}
             <div className="absolute inset-0 z-10 flex flex-col pointer-events-none">
                 <header className="p-4 pointer-events-auto">
-                    <div className="flex items-start gap-4">
-                        <Button variant="outline" size="icon" className="rounded-full shadow-lg shrink-0" onClick={() => router.back()}>
-                            <ArrowLeft className="w-5 h-5"/>
-                        </Button>
-                        <div className="w-full">
-                            <Card className="shadow-lg">
-                                <CardContent className="p-2">
-                                    <div className="relative">
-                                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                        <Input
-                                            placeholder="Search for a destination..."
-                                            className="pl-10 border-0 focus-visible:ring-0 text-base"
-                                            value={searchQuery}
-                                            onChange={(e) => setSearchQuery(e.target.value)}
-                                            onKeyDown={(e) => e.key === 'Enter' && handleSearch(searchQuery)}
-                                        />
-                                    </div>
-                                </CardContent>
-                            </Card>
-                            {searchResults.length > 0 && (
-                                <Card className="mt-2 shadow-lg max-h-60 overflow-y-auto">
-                                    <CardContent className="p-2 space-y-1">
-                                        {searchResults.map(place => (
-                                            <div key={place.place_id} onClick={() => handleSelectPlace(place)} className="p-2 rounded-md hover:bg-muted cursor-pointer">
-                                                <p className="font-semibold text-sm">{place.display_name.split(',')[0]}</p>
-                                                <p className="text-xs text-muted-foreground">{place.display_name.split(',').slice(1).join(',')}</p>
-                                            </div>
-                                        ))}
-                                    </CardContent>
-                                </Card>
-                            )}
-                        </div>
-                    </div>
+                    <Button variant="outline" size="icon" className="rounded-full shadow-lg shrink-0" onClick={() => router.back()}>
+                        <ArrowLeft className="w-5 h-5"/>
+                    </Button>
                 </header>
 
                 <div className="flex-grow" />
