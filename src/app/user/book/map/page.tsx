@@ -3,14 +3,14 @@
 
 import React, { useState, useEffect, useCallback, Suspense } from 'react'
 import { Button } from '@/components/ui/button'
-import { ArrowLeft, MapPin } from 'lucide-react'
+import { ArrowLeft, MapPin, X } from 'lucide-react'
 import { getRoute, searchPlace } from '@/lib/routing'
 import dynamic from 'next/dynamic'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card'
 import { useFirebase } from '@/firebase/client-provider'
-import { GeoPoint, addDoc, collection, serverTimestamp, getDoc, doc, onSnapshot } from 'firebase/firestore'
+import { GeoPoint, addDoc, collection, serverTimestamp, getDoc, doc, onSnapshot, updateDoc } from 'firebase/firestore'
 import { useToast } from '@/hooks/use-toast'
 import type { RideData, ClientSession } from '@/lib/types'
 import { cn } from '@/lib/utils'
@@ -18,6 +18,17 @@ import { BikeIcon, AutoIcon, CabIcon } from '@/components/icons'
 import { HeartHandshake, Clock, IndianRupee, Shield } from 'lucide-react'
 import SearchingIndicator from '@/components/ui/searching-indicator'
 import { motion, AnimatePresence } from 'framer-motion'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 
 const LiveMap = dynamic(() => import('@/components/live-map'), {
     ssr: false,
@@ -69,6 +80,8 @@ function BookRideMapComponent() {
     const [isLoading, setIsLoading] = useState(true);
     const [isBooking, setIsBooking] = useState(false);
     const [isSearching, setIsSearching] = useState(false);
+    const [activeRideId, setActiveRideId] = useState<string | null>(null);
+
 
     const getAddress = useCallback(async (lat: number, lon: number): Promise<string | null> => {
         try {
@@ -212,10 +225,10 @@ function BookRideMapComponent() {
 
         try {
             const docRef = await addDoc(collection(db, 'rides'), rideData);
+            setActiveRideId(docRef.id);
             localStorage.setItem('activeRideId', docRef.id);
-            setIsSearching(true); // Show searching UI
+            setIsSearching(true); 
             
-             // Listen for the ride to be accepted, then navigate
             const unsubscribe = onSnapshot(doc(db, 'rides', docRef.id), (rideSnap) => {
                 if (rideSnap.exists() && rideSnap.data().status !== 'searching') {
                     unsubscribe();
@@ -226,7 +239,22 @@ function BookRideMapComponent() {
         } catch (error) {
             console.error("Error creating ride:", error);
             toast({ variant: 'destructive', title: 'Booking Failed' });
-            setIsBooking(false); // Re-enable button on failure
+            setIsBooking(false);
+        }
+    }
+    
+    const handleCancelSearch = async () => {
+        if (!db || !activeRideId) return;
+
+        const rideRef = doc(db, 'rides', activeRideId);
+        try {
+            await updateDoc(rideRef, { status: 'cancelled_by_user' });
+            toast({ variant: 'destructive', title: 'Ride Cancelled' });
+            setIsSearching(false);
+            setActiveRideId(null);
+            localStorage.removeItem('activeRideId');
+        } catch (error) {
+            toast({ variant: 'destructive', title: 'Cancellation failed' });
         }
     }
 
@@ -264,6 +292,26 @@ function BookRideMapComponent() {
                                 <SearchingIndicator partnerType="path" className="w-32 h-32"/>
                                 <p className="text-muted-foreground mt-4">Please wait while we connect you to a nearby partner.</p>
                             </CardContent>
+                             <CardFooter>
+                                <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                        <Button variant="destructive" className="w-full">
+                                            <X className="mr-2 h-4 w-4"/>
+                                            Cancel Ride
+                                        </Button>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                        <AlertDialogHeader>
+                                            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                            <AlertDialogDescription>This will cancel your current ride search.</AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                            <AlertDialogCancel>Go Back</AlertDialogCancel>
+                                            <AlertDialogAction onClick={handleCancelSearch} className="bg-destructive hover:bg-destructive/80">Yes, Cancel</AlertDialogAction>
+                                        </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                </AlertDialog>
+                            </CardFooter>
                          </motion.div>
                     ) : (
                          <motion.div
@@ -327,5 +375,3 @@ export default function BookRideMapPage() {
         </Suspense>
     );
 }
-
-    
