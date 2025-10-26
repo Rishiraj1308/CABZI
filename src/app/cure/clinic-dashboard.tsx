@@ -169,9 +169,10 @@ const ClinicDashboard = () => {
             </div>
             
             <Tabs defaultValue="appointments" className="w-full">
-                <TabsList className="grid w-full grid-cols-2">
+                <TabsList className="grid w-full grid-cols-3">
                     <TabsTrigger value="appointments">Appointment Queue</TabsTrigger>
-                    <TabsTrigger value="doctors">Doctor Roster</TabsTrigger>
+                    <TabsTrigger value="schedules">Doctor Schedules</TabsTrigger>
+                    <TabsTrigger value="doctors">Manage Roster</TabsTrigger>
                 </TabsList>
                 <TabsContent value="appointments" className="mt-4">
                      <Card>
@@ -209,6 +210,17 @@ const ClinicDashboard = () => {
                                     <div className="text-center py-10 text-muted-foreground">No appointments for today.</div>
                                )}
                            </div>
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+                <TabsContent value="schedules" className="mt-4">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Doctor Schedules</CardTitle>
+                            <CardDescription>This is a placeholder. Functionality to manage schedules will be added soon.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="h-48 flex items-center justify-center">
+                            <p className="text-muted-foreground">Doctor schedule management coming soon.</p>
                         </CardContent>
                     </Card>
                 </TabsContent>
