@@ -294,35 +294,6 @@ export default function ResQPage() {
         <div className="w-full">
             {activeGarageRequest ? renderActiveRequest() : renderInitialView()}
         </div>
-        <div className="fixed bottom-6 right-6 z-20 flex flex-col gap-3">
-             <Dialog>
-                <DialogTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-14 w-14 rounded-full shadow-2xl bg-background/80 backdrop-blur-md">
-                        <MessageSquare className="w-6 h-6"/>
-                        <span className="sr-only">Help</span>
-                    </Button>
-                </DialogTrigger>
-                 <DialogContent>
-                    <DialogHeader><DialogTitle>Live Support</DialogTitle><DialogDescription>This feature is coming soon.</DialogDescription></DialogHeader>
-                </DialogContent>
-            </Dialog>
-            <Dialog>
-                <DialogTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-14 w-14 rounded-full shadow-2xl bg-background/80 backdrop-blur-md">
-                        <Shield className="w-6 h-6"/>
-                        <span className="sr-only">Safety Toolkit</span>
-                    </Button>
-                </DialogTrigger>
-                <DialogContent>
-                    <DialogHeader><DialogTitle>Safety Toolkit</DialogTitle></DialogHeader>
-                    <div className="py-4 space-y-2">
-                        <Button variant="outline" className="w-full justify-start gap-2" onClick={() => toast({title: "Coming Soon!"})}><MessageSquare className="w-4 h-4"/> Share Live Location</Button>
-                        <Button variant="outline" className="w-full justify-start gap-2"><a href="tel:1800-XXX-XXXX"><Phone className="w-4 h-4"/> Contact Support</a></Button>
-                        <Button variant="destructive" className="w-full justify-start gap-2"><a href="tel:112"><Siren className="w-4 h-4"/> Emergency SOS</a></Button>
-                    </div>
-                </DialogContent>
-            </Dialog>
-        </div>
     </div>
   );
 }
