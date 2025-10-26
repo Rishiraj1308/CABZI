@@ -162,7 +162,7 @@ export default function ResQPage() {
     }
     const generatedOtp = Math.floor(1000 + Math.random() * 9000).toString();
     const requestData = {
-        driverId: session.userId,
+        driverId: session.userId, // Use user's ID as the requester
         driverName: session.name,
         driverPhone: session.phone,
         issue: selectedIssue,
@@ -188,6 +188,13 @@ export default function ResQPage() {
     } catch (error) {
       toast({ variant: 'destructive', title: 'Error', description: 'Could not cancel the request.' });
     }
+  };
+
+  const handleShareRide = () => {
+    toast({
+        title: "Share Location",
+        description: "This feature will be available soon!",
+    });
   };
 
   const renderInitialView = () => (
@@ -244,6 +251,21 @@ export default function ResQPage() {
                 className={cn("w-full bg-amber-500 hover:bg-amber-600 text-white font-semibold", selectedIssue && "btn-glow")}>
                 Request Help Now
             </Button>
+             <Dialog>
+                <DialogTrigger asChild>
+                    <Button variant="ghost" size="sm">
+                        <Shield className="w-4 h-4 mr-2"/> Safety Toolkit
+                    </Button>
+                </DialogTrigger>
+                <DialogContent>
+                    <DialogHeader><DialogTitle>Safety Toolkit</DialogTitle></DialogHeader>
+                    <div className="py-4 space-y-2">
+                        <Button variant="outline" className="w-full justify-start gap-2" onClick={handleShareRide}><Share2 className="w-4 h-4"/> Share Live Location</Button>
+                        <Button variant="outline" className="w-full justify-start gap-2"><LifeBuoy className="w-4 h-4"/> Contact Curocity Support</Button>
+                        <Button variant="destructive" className="w-full justify-start gap-2"><Siren className="w-4 h-4"/> Emergency SOS</Button>
+                    </div>
+                </DialogContent>
+            </Dialog>
         </CardFooter>
       </Card>
   )
@@ -296,11 +318,10 @@ export default function ResQPage() {
   }
 
   return (
-    <div className="h-full w-full relative flex flex-col p-4 md:p-6 bg-muted/40">
+    <div className="h-full w-full relative flex flex-col p-4 md:p-6">
         <div className="flex-1">
           {activeGarageRequest ? renderActiveRequest() : renderInitialView()}
         </div>
     </div>
   );
 }
-
