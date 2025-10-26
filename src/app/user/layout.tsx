@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { useFirebase } from '@/firebase/client-provider';
 import { doc, updateDoc } from 'firebase/firestore';
+import { AnimatePresence, motion } from 'framer-motion';
 
 
 const navItems = [
@@ -97,6 +98,7 @@ export default function UserLayout({
   const [isMounted, setIsMounted] = useState(false);
   const [open, setOpen] = useState(false);
   const router = useRouter();
+  const pathname = usePathname();
   const { toast } = useToast();
   
   const { user, isUserLoading, db, auth } = useFirebase();
@@ -235,7 +237,17 @@ export default function UserLayout({
           </div>
       </header>
       <main className="flex-1 flex flex-col">
-          {children}
+           <AnimatePresence mode="wait">
+              <motion.div
+                key={pathname}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.3 }}
+              >
+                {children}
+              </motion.div>
+            </AnimatePresence>
       </main>
       <Toaster />
     </div>

@@ -1,3 +1,4 @@
+
 'use client'
 
 import React, { useState, useEffect, useCallback } from 'react'
@@ -211,13 +212,19 @@ export default function ResQPage() {
     hidden: { y: 20, opacity: 0 },
     visible: {
         y: 0,
-        opacity: 1
+        opacity: 1,
+        transition: {
+            type: "spring",
+            stiffness: 100,
+            damping: 10,
+        }
     }
   };
 
 
   const renderInitialView = () => (
-     <Card className="max-w-xl mx-auto mt-8 bg-white/80 dark:bg-background/80 backdrop-blur-md shadow-xl rounded-3xl">
+    <MotionDiv layoutId="resq-card" className="max-w-xl mx-auto mt-8 bg-white/80 dark:bg-background/80 backdrop-blur-md shadow-xl rounded-3xl">
+     <Card>
         <CardHeader className="p-8">
             <div className="flex justify-between items-center">
                  <div className="w-16 h-16 rounded-full bg-amber-500/10 flex items-center justify-center border-4 border-amber-500/20">
@@ -279,6 +286,7 @@ export default function ResQPage() {
             </Button>
         </CardFooter>
       </Card>
+      </MotionDiv>
   )
 
   const renderActiveRequest = () => {

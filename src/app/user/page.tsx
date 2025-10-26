@@ -15,7 +15,8 @@ const serviceCards = [
         icon: Car,
         href: '/user/book',
         color: 'text-primary',
-        category: 'Mobility & Transport'
+        category: 'Mobility & Transport',
+        layoutId: 'path-card'
     },
      {
         title: 'ResQ',
@@ -23,7 +24,8 @@ const serviceCards = [
         icon: Wrench,
         href: '/user/resq',
         color: 'text-amber-500',
-        category: 'Mobility & Transport'
+        category: 'Mobility & Transport',
+        layoutId: 'resq-card'
     },
     {
         title: 'Emergency SOS',
@@ -31,7 +33,8 @@ const serviceCards = [
         icon: Ambulance,
         href: '/user/book', // SOS logic will be on the book page
         color: 'text-red-500',
-        category: 'Health & Safety'
+        category: 'Health & Safety',
+        layoutId: 'cure-card'
     },
      {
         title: 'Book Appointment',
@@ -39,7 +42,8 @@ const serviceCards = [
         icon: Calendar,
         href: '/user/book-appointment',
         color: 'text-blue-500',
-        category: 'Health & Safety'
+        category: 'Health & Safety',
+        layoutId: 'appointment-card'
     },
     {
         title: 'Lab Tests',
@@ -47,7 +51,8 @@ const serviceCards = [
         icon: FlaskConical,
         href: '#',
         color: 'text-purple-500',
-        category: 'Health & Safety'
+        category: 'Health & Safety',
+        layoutId: 'labs-card'
     },
 ];
 
@@ -104,6 +109,7 @@ export default function UserDashboard() {
                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                             {services.map((service) => (
                                 <MotionDiv
+                                    layoutId={service.layoutId}
                                     key={service.title}
                                     variants={itemVariants}
                                     whileHover={{ y: -5, scale: 1.05 }}
