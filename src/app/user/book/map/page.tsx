@@ -34,6 +34,17 @@ function BookRideMapComponent() {
     
     const liveMapRef = useRef<any>(null);
 
+    const getAddress = useCallback(async (lat: number, lon: number): Promise<string | null> => {
+        try {
+            const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`);
+            if (!res.ok) return null;
+            const data = await res.json();
+            return data?.display_name || null;
+        } catch {
+            return null;
+        }
+    }, []);
+
     useEffect(() => {
         const fetchInitialData = async () => {
             const destQuery = searchParams.get('search');
@@ -41,7 +52,6 @@ function BookRideMapComponent() {
 
             setDestinationName(destQuery.split(',').slice(0, 2).join(', '));
             
-            // Get user's current location
             navigator.geolocation.getCurrentPosition(
                 async (position) => {
                     const coords = {
@@ -50,24 +60,17 @@ function BookRideMapComponent() {
                     };
                     setUserLocation(coords);
 
-                    const checkMapReady = setInterval(async () => {
-                        if (liveMapRef.current) {
-                            clearInterval(checkMapReady);
-                            const address = await liveMapRef.current.getAddress(coords.lat, coords.lon);
-                            if (address) {
-                                setOriginName(address.split(',')[0] || 'Current Location');
-                            }
-                        }
-                    }, 100);
+                    const address = await getAddress(coords.lat, coords.lon);
+                    if (address) {
+                        setOriginName(address.split(',')[0] || 'Current Location');
+                    }
                 },
                 () => {
-                    // Fallback location (e.g., Delhi) if location access is denied
                     setUserLocation({ lat: 28.6139, lon: 77.2090 });
                     setOriginName("New Delhi");
                 }
             );
 
-            // Fetch the coordinates for the destination name
             try {
                 const results = await (await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(destQuery)}&format=json&limit=1`)).json();
                 if (results.length > 0) {
@@ -80,7 +83,7 @@ function BookRideMapComponent() {
         };
 
         fetchInitialData();
-    }, [searchParams]);
+    }, [searchParams, getAddress]);
 
     useEffect(() => {
         const fetchRoute = async () => {
@@ -100,9 +103,15 @@ function BookRideMapComponent() {
     }, [userLocation, destination]);
 
     return (
-        <div className="h-screen w-screen relative">
-            {/* Map Layer */}
-            <div className="absolute inset-0 z-0">
+        <div className="h-screen w-screen flex flex-col">
+            <header className="p-4 shrink-0">
+                <Button variant="outline" size="icon" className="rounded-full shadow-lg" onClick={() => router.back()}>
+                    <ArrowLeft className="w-5 h-5"/>
+                </Button>
+            </header>
+
+            {/* Map occupies top part of the screen */}
+            <div className="h-2/3 w-full">
                 <LiveMap 
                     ref={liveMapRef} 
                     riderLocation={userLocation}
@@ -110,34 +119,18 @@ function BookRideMapComponent() {
                 />
             </div>
             
-            {/* UI Overlay Layer */}
-            <div className="absolute inset-0 z-10 flex flex-col p-4 pointer-events-none">
-                 <header className="shrink-0 pointer-events-auto">
-                    <Button variant="outline" size="icon" className="rounded-full shadow-lg" onClick={() => router.back()}>
-                        <ArrowLeft className="w-5 h-5"/>
-                    </Button>
-                </header>
-
-                <div className="flex-grow" />
-
+            {/* Confirmation card occupies the bottom part */}
+            <div className="flex-1 p-4 flex flex-col justify-center">
                 {destination && (
-                    <footer className="pointer-events-auto">
-                        <div className="relative">
-                            <div className="absolute -top-16 right-0 flex flex-col gap-2">
-                                <Button variant="outline" size="icon" className="rounded-full shadow-lg h-12 w-12"><MessageSquare className="w-6 h-6"/></Button>
-                                <Button variant="outline" size="icon" className="rounded-full shadow-lg h-12 w-12"><Shield className="w-6 h-6"/></Button>
+                    <Card className="shadow-2xl animate-fade-in w-full max-w-lg mx-auto">
+                        <CardContent className="p-4 flex items-center justify-between gap-4">
+                            <div className="flex-1">
+                                <p className="text-sm text-muted-foreground">Your Trip</p>
+                                <h3 className="font-bold text-lg leading-tight line-clamp-2">{originName} to {destinationName}</h3>
                             </div>
-                            <Card className="shadow-2xl animate-fade-in">
-                                <CardContent className="p-4 flex items-center justify-between gap-4">
-                                <div className="flex-1">
-                                        <p className="text-sm text-muted-foreground">Your Trip</p>
-                                        <h3 className="font-bold text-lg leading-tight line-clamp-2">{originName} to {destinationName}</h3>
-                                </div>
-                                <Button size="lg" className="h-12 text-base">Confirm Ride</Button>
-                                </CardContent>
-                            </Card>
-                        </div>
-                    </footer>
+                            <Button size="lg" className="h-12 text-base">Confirm Ride</Button>
+                        </CardContent>
+                    </Card>
                 )}
             </div>
         </div>
