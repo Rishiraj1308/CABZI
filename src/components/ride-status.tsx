@@ -255,7 +255,7 @@ export default function RideStatus({
             return (
                 <div className="text-center py-10 flex flex-col items-center">
                     <SearchingIndicator partnerType="path" />
-                    <h3 className="text-2xl font-bold mt-4">Finding you a ride...</h3>
+                    <h3 className="text-3xl font-bold mt-4">Finding you a ride...</h3>
                     <p className="text-muted-foreground">This will only take a moment.</p>
                 </div>
             );
@@ -372,7 +372,7 @@ export default function RideStatus({
                     </div>
                     <div>
                     <CardTitle className="text-lg">{getActiveRideTitle()}</CardTitle>
-                    <CardDescription>ID: {ride.id.substring(0, 8)}...</CardDescription>
+                    {/* ID is hidden as per user request */}
                     </div>
                 </div>
                 <Dialog>
@@ -393,7 +393,7 @@ export default function RideStatus({
             {renderContent()}
             </CardContent>
             {ride.status !== 'completed' && ride.status !== 'payment_pending' && (ride as any).status !== 'bill_sent' && (
-                <CardFooter className="p-2 border-t">
+                <CardFooter className="p-2 border-t flex justify-between items-center">
                     <AlertDialog>
                         <AlertDialogTrigger asChild>
                             <Button variant="link" size="sm" className="w-full text-muted-foreground">Cancel {isGarageRequest ? 'Request' : isAmbulanceCase ? 'Case' : 'Ride'}</Button>
@@ -406,6 +406,9 @@ export default function RideStatus({
                             </AlertDialogFooter>
                         </AlertDialogContent>
                     </AlertDialog>
+                    <Button variant="ghost" size="icon" className="rounded-full">
+                        <MessageSquare className="w-5 h-5" />
+                    </Button>
                 </CardFooter>
             )}
         </Card>
