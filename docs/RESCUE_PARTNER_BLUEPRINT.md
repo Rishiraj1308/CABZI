@@ -19,15 +19,25 @@
     - Buttons → [Accept] [Reject]
 - Accept karte hi Navigation + Rider Contact unlock hota hai.
 
-## 3. Job Execution
+## 3. Job Execution & Approval (New Step)
 
-- Partner location pe pohonchta hai
-- App me “Start Job” button tap karta hai
-- Kaam hone ke baad “Mark Job Completed” button dabata hai
-- Rider job complete confirm karta hai → Payment trigger hoti hai
+- Partner location pe pohonchta hai.
+- **"Start Job" button tap karta hai aur gaadi inspect karta hai.**
+- **Digital Job Card Create Karta Hai:**
+    - Partner app me itemized list banata hai:
+        - e.g., "Puncture Repair Kit: ₹150"
+        - e.g., "Labour Charge: ₹100"
+    - "Submit for Approval" button tap karta hai.
+- **Customer Approval:**
+    - Customer ke app pe notification aata hai: "Please approve the Job Card to begin work."
+    - Customer itemized cost dekhta hai aur **"Approve Work"** button tap karta hai.
+- Kaam shuru hota hai.
+- Kaam hone ke baad “Mark Job Completed” button dabata hai.
 
 ## 4. Payment Flow (Curocity Bank + Wallet)
 
+- Mechanic "Generate Final Bill" pe click karta hai (Job Card becomes the bill).
+- Rider job complete confirm karta hai → Payment trigger hoti hai
 - Rider → Curocity app se pay karega (UPI/Card/Wallet)
 - Amount instantly credit hota hai ResQ Partner ke Curocity Bank Wallet me
 - Wallet →
@@ -63,4 +73,4 @@
 ---
 
 ## ⚡️ Core Idea:
-ResQ Partner sirf ek roadside helper nahi rahega → uske paas jobs + instant income + bank + loans + insurance sab ek hi app me honge.
+ResQ Partner sirf ek roadside helper nahi rahega → uske paas jobs + instant income + bank + loans + insurance sab ek hi app me honge. The "Digital Job Card" feature ensures professionalism and transparency, building immense customer trust.
