@@ -3,8 +3,8 @@
 
 import React, { useState, useEffect, useCallback, Suspense } from 'react'
 import { Button } from '@/components/ui/button'
-import { ArrowLeft } from 'lucide-react'
-import { getRoute } from '@/lib/routing'
+import { ArrowLeft, MapPin } from 'lucide-react'
+import { getRoute, searchPlace } from '@/lib/routing'
 import dynamic from 'next/dynamic'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -236,12 +236,12 @@ function BookRideMapComponent() {
                 </div>
             </div>
             
-            <Card className="shadow-2xl rounded-t-3xl border-t-4 border-primary/20 flex flex-col">
+             <Card className="shadow-2xl rounded-t-3xl border-t-4 border-primary/20 flex flex-col h-[55%]">
                 <CardHeader className="text-center">
                     <CardTitle>Select a Ride</CardTitle>
                     <CardDescription>Choose your preferred ride type for this trip.</CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-3 flex-1 overflow-y-auto">
+                 <CardContent className="space-y-3 flex-1 overflow-y-auto">
                     {isLoading ? (
                         Array.from({length: 4}).map((_, i) => <Skeleton key={i} className="h-16 w-full" />)
                     ) : (
@@ -290,3 +290,4 @@ export default function BookRideMapPage() {
         </Suspense>
     );
 }
+
