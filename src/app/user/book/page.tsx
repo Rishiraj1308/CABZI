@@ -1,13 +1,14 @@
 
+
 'use client'
 
-import React, { useState } from 'react';
-import Link from 'next/link';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { ArrowLeft, Clock, Map, MapPin } from 'lucide-react';
-import { useRouter } from 'next/navigation';
-import Image from 'next/image';
+import React, { useState, useEffect, useRef, useCallback } from 'react'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card'
+import { ArrowLeft, Clock, Map, MapPin, IndianRupee } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import Image from 'next/image'
+import Link from 'next/link'
 
 const recentTrips = [
     {
@@ -43,12 +44,14 @@ export default function BookRidePage() {
                 <Button variant="ghost" size="icon" className="absolute top-4 left-4" onClick={() => router.back()}>
                     <ArrowLeft className="w-5 h-5"/>
                 </Button>
-                 <Button variant="ghost" className="absolute top-4 right-4">
-                    <Map className="w-5 h-5 mr-2"/> Map
+                 <Button asChild variant="ghost" className="absolute top-4 right-4">
+                    <Link href="/user/book/map">
+                        <Map className="w-5 h-5 mr-2"/> Map
+                    </Link>
                 </Button>
                 <div className="pt-12 text-left">
                     <h1 className="text-3xl font-bold">Transport</h1>
-                    <p className="text-muted-foreground">Wherever you&apos;re going, let&apos;s get you there!</p>
+                    <p className="text-muted-foreground">Wherever you're going, let's get you there!</p>
                 </div>
                  <div className="absolute -bottom-10 right-4">
                     <Image src="/car.svg" alt="Car" width={160} height={100} className="opacity-80" data-ai-hint="car illustration" />
