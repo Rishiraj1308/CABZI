@@ -1,4 +1,3 @@
-
 'use client'
 
 import React, { useState, useEffect, useRef, useCallback } from 'react'
@@ -8,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
-import { Star, CheckCircle, Car, Route, Shield, LifeBuoy, Phone, Sparkles, KeyRound, Clock, Pin, User as UserIcon, QrCode, Send, ScanLine, Wallet, BarChart, Settings, Power, CircleDot, CreditCard, Bot, ChevronsUpDown, AlertCircle, Hand, History, IndianRupee, Eye, Navigation, LocateFixed, HeartHandshake, MessageSquare, Wrench, Ambulance, FileText, PlusCircle, Trash2 } from 'lucide-react'
+import { Star, CheckCircle, Car, Route, Shield, LifeBuoy, Phone, Sparkles, KeyRound, Clock, Pin, User as UserIcon, Send, ScanLine, Wallet, BarChart, Settings, Power, CircleDot, CreditCard, Bot, ChevronsUpDown, AlertCircle, Hand, History, IndianRupee, Eye, Navigation, LocateFixed, HeartHandshake, MessageSquare, Wrench, Ambulance, FileText, PlusCircle, Trash2 } from 'lucide-react'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger, } from "@/components/ui/alert-dialog"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription, DialogFooter } from '@/components/ui/dialog'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -104,7 +103,7 @@ export default function ResQDashboard() {
   useEffect(() => {
     notificationSoundRef.current = new Audio('/sounds/notification.mp3');
     setIsMounted(true);
-    const session = localStorage.getItem('cabzi-resq-session');
+    const session = localStorage.getItem('curocity-resq-session');
     if (!session) {
         setIsLoading(false);
         return;
@@ -124,8 +123,8 @@ export default function ResQDashboard() {
               acceptanceRate: data.acceptanceRate || 95,
               jobsToday: data.jobsToday || 0,
               todaysEarnings: data.todaysEarnings || 0,
-              qrCodeUrl: data.qrCodeUrl || `https://placehold.co/300x300.png?text=CabziUPI`,
-              upiId: data.upiId || `${data.phone}@cabzi`,
+              qrCodeUrl: data.qrCodeUrl || `https://placehold.co/300x300.png?text=CurocityUPI`,
+              upiId: data.upiId || `${data.phone}@curocity`,
             } as MechanicData);
             setIsAvailable(data.isAvailable);
         }
@@ -418,7 +417,7 @@ export default function ResQDashboard() {
   }
 
    const handlePinSubmit = () => {
-      const storedPin = localStorage.getItem('cabzi-user-pin');
+      const storedPin = localStorage.getItem('curocity-user-pin');
       if (!storedPin) {
           toast({ variant: 'destructive', title: 'PIN Not Set', description: 'Please set a UPI PIN from your wallet first.' });
           return;
@@ -600,7 +599,7 @@ export default function ResQDashboard() {
                         <div className="grid grid-cols-3 gap-2">
                             <Button variant="outline" className="flex-col h-20"><Send className="w-6 h-6 mb-1 text-primary" /><span className="text-xs">Pay UPI</span></Button>
                              <Dialog><DialogTrigger asChild><Button variant="outline" className="flex-col h-20"><QrCode className="w-6 h-6 mb-1 text-primary"/><span className="text-xs">My QR</span></Button></DialogTrigger>
-                             <DialogContent className="max-w-xs"><DialogHeader><DialogTitle className="text-center">My Cabzi UPI QR Code</DialogTitle></DialogHeader><div className="flex flex-col items-center gap-4 py-4"><div className="p-4 bg-white rounded-lg border"><Image src={mechanicData?.qrCodeUrl || ''} alt="UPI QR Code" width={200} height={200} data-ai-hint="qr code"/></div><p className="font-semibold text-lg text-center">{mechanicData?.upiId || '...'}</p></div></DialogContent></Dialog>
+                             <DialogContent className="max-w-xs"><DialogHeader><DialogTitle className="text-center">My Curocity UPI QR Code</DialogTitle></DialogHeader><div className="flex flex-col items-center gap-4 py-4"><div className="p-4 bg-white rounded-lg border"><Image src={mechanicData?.qrCodeUrl || ''} alt="UPI QR Code" width={200} height={200} data-ai-hint="qr code"/></div><p className="font-semibold text-lg text-center">{mechanicData?.upiId || '...'}</p></div></DialogContent></Dialog>
                              <Dialog open={isScannerOpen} onOpenChange={setIsScannerOpen}><DialogTrigger asChild><Button variant="outline" className="flex-col h-20"><ScanLine className="w-6 h-6 mb-1 text-primary"/><span className="text-xs">Scan & Pay</span></Button></DialogTrigger>
                                 <DialogContent>
                                     <DialogHeader><DialogTitle>Scan UPI QR Code</DialogTitle><DialogDescription>Point your camera at a UPI QR code.</DialogDescription></DialogHeader>
@@ -622,7 +621,7 @@ export default function ResQDashboard() {
                     <TabsContent value="coach" className="mt-4 flex-1">
                          <Card className="bg-gradient-to-r from-primary to-primary/80 text-primary-foreground border-none h-full flex items-center">
                             <CardContent className="p-4"><div className="flex gap-3 items-center"><Sparkles className="w-8 h-8 text-yellow-300 flex-shrink-0" />
-                                <div><p className="font-bold">AI Earnings Coach</p><p className="text-sm text-primary-foreground/90">Focus on battery jump-starts in the evening. It&apos;s a high-demand service in your area!</p></div>
+                                <div><p className="font-bold">AI Earnings Coach</p><p className="text-sm text-primary-foreground/90">Focus on battery jump-starts in the evening. It's a high-demand service in your area!</p></div>
                             </div></CardContent>
                         </Card>
                     </TabsContent>
@@ -634,7 +633,7 @@ export default function ResQDashboard() {
             <DialogContent className="max-w-xs">
                 <DialogHeader>
                     <DialogTitle>Enter PIN to View</DialogTitle>
-                    <DialogDescription>For your privacy, please enter your PIN to see today&apos;s earnings.</DialogDescription>
+                    <DialogDescription>For your privacy, please enter your PIN to see today's earnings.</DialogDescription>
                 </DialogHeader>
                  <div className="flex flex-col items-center justify-center gap-4 py-4">
                     <Label htmlFor="pin-input-earnings" className="sr-only">Enter PIN</Label>
