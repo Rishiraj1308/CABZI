@@ -262,7 +262,7 @@ export default function BookAppointmentPage() {
   );
 
   return (
-    <div className="p-4 md:p-6 space-y-8">
+    <div className="p-4 md:p-6 space-y-8 pt-24">
       <div className="text-center max-w-2xl mx-auto">
           <CardTitle className="text-3xl md:text-4xl font-extrabold tracking-tight">Find the Right Care, Instantly.</CardTitle>
           <CardDescription className="text-lg mt-2">Search by doctor, specialization, or symptoms.</CardDescription>
