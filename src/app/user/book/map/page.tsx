@@ -65,6 +65,7 @@ function BookRideMapComponent() {
     const [rideTypes, setRideTypes] = useState<RideTypeInfo[]>(initialRideTypes);
     const [selectedRide, setSelectedRide] = useState('Cab (Lite)');
     const [isLoading, setIsLoading] = useState(true);
+    const [isBooking, setIsBooking] = useState(false);
 
     const getAddress = useCallback(async (lat: number, lon: number): Promise<string | null> => {
         try {
@@ -150,6 +151,10 @@ function BookRideMapComponent() {
                     });
                     
                     const updatedRideTypes = initialRideTypes.map(rt => {
+                        if (rt.name === 'Curocity Pink' && session?.gender !== 'female') {
+                            return { ...rt, fare: 'N/A', eta: 'N/A' };
+                        }
+
                         const config = fareConfig[rt.name];
                         if (!config) return { ...rt, fare: 'N/A', eta: 'N/A' };
                         
@@ -175,17 +180,47 @@ function BookRideMapComponent() {
         };
 
         fetchRouteAndFares();
-    }, [userLocation, destination, toast]);
+    }, [userLocation, destination, toast, session?.gender]);
     
     const handleConfirmRide = async () => {
-        // Placeholder function
-        toast({ title: 'Booking confirmation logic goes here' });
+       if (!userLocation || !destination?.coords || !session || !db) return;
+    
+        const selectedRideInfo = rideTypes.find(rt => rt.name === selectedRide);
+        if (!selectedRideInfo?.fareDetails) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Could not get ride fare details.' });
+            return;
+        }
+
+        setIsBooking(true); 
+
+        const generatedOtp = Math.floor(1000 + Math.random() * 9000).toString();
+        const rideData = {
+            riderId: session.userId,
+            riderName: session.name,
+            riderGender: session.gender,
+            pickup: { address: 'Current Location', location: new GeoPoint(userLocation.lat, userLocation.lon) },
+            destination: { address: destination.address, location: new GeoPoint(destination.coords.lat, destination.coords.lon) },
+            rideType: selectedRide,
+            status: 'searching' as const,
+            fare: selectedRideInfo.fareDetails.total,
+            otp: generatedOtp,
+            createdAt: serverTimestamp(),
+        };
+
+        try {
+            const docRef = await addDoc(collection(db, 'rides'), rideData);
+            localStorage.setItem('activeRideId', docRef.id);
+            router.push('/user');
+        } catch (error) {
+            console.error("Error creating ride:", error);
+            toast({ variant: 'destructive', title: 'Booking Failed' });
+            setIsBooking(false); // Re-enable button on failure
+        }
     }
 
 
     return (
         <div className="h-screen w-screen flex flex-col bg-background">
-            {/* Map Container */}
             <div className="flex-1 relative">
                 <div className="absolute inset-0 z-0">
                     <LiveMap
@@ -201,13 +236,12 @@ function BookRideMapComponent() {
                 </div>
             </div>
             
-            {/* Bottom Sheet Card */}
-            <Card className="shadow-2xl rounded-t-3xl border-t-4 border-primary/20">
+            <Card className="shadow-2xl rounded-t-3xl border-t-4 border-primary/20 flex flex-col">
                 <CardHeader className="text-center">
                     <CardTitle>Select a Ride</CardTitle>
                     <CardDescription>Choose your preferred ride type for this trip.</CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-3">
+                <CardContent className="space-y-3 flex-1 overflow-y-auto">
                     {isLoading ? (
                         Array.from({length: 4}).map((_, i) => <Skeleton key={i} className="h-16 w-full" />)
                     ) : (
@@ -237,8 +271,8 @@ function BookRideMapComponent() {
                     )}
                 </CardContent>
                 <CardFooter className="pt-4 grid grid-cols-5 gap-2">
-                    <Button size="lg" className="h-12 text-base font-bold col-span-4" disabled={isLoading} onClick={handleConfirmRide}>
-                        Confirm {selectedRide}
+                    <Button size="lg" className="h-12 text-base font-bold col-span-4" disabled={isLoading || isBooking} onClick={handleConfirmRide}>
+                        {isBooking ? 'Confirming...' : `Confirm ${selectedRide}`}
                     </Button>
                     <Button variant="outline" size="lg" className="h-12">
                         <Shield/>
@@ -256,4 +290,3 @@ export default function BookRideMapPage() {
         </Suspense>
     );
 }
-
