@@ -30,6 +30,9 @@ export default function BookRidePage() {
     const [destination, setDestination] = useState<LocationWithCoords>({ address: '', coords: null });
     const [currentUserLocation, setCurrentUserLocation] = useState<{ lat: number, lon: number } | null>(null);
     const [activeRide, setActiveRide] = useState<RideData | null>(null);
+    const [activeAmbulanceCase, setActiveAmbulanceCase] = useState<AmbulanceCase | null>(null);
+    const [activeGarageRequest, setActiveGarageRequest] = useState<GarageRequest | null>(null);
+    const [isRequestingSos, setIsRequestingSos] = useState(false);
     const [routeGeometry, setRouteGeometry] = useState<any>(null);
     const [session, setSession] = useState<ClientSession | null>(null);
 
@@ -56,10 +59,14 @@ export default function BookRidePage() {
 
      const resetFlow = useCallback(() => {
         setActiveRide(null);
+        setActiveAmbulanceCase(null);
+        setActiveGarageRequest(null);
         setRouteGeometry(null);
         setPickup({ address: '', coords: null });
         setDestination({ address: '', coords: null });
+        setIsRequestingSos(false);
         localStorage.removeItem('activeRideId');
+        localStorage.removeItem('activeGarageRequestId');
     }, []);
 
     const handleLocationFound = useCallback((address: string, coords: { lat: number, lon: number }) => {
@@ -71,20 +78,36 @@ export default function BookRidePage() {
 
 
     useEffect(() => {
-        const checkActiveRide = async () => {
+        const checkActiveServices = async () => {
             if (!db || !session) return;
+            // Check for active ride first
             const rideId = localStorage.getItem('activeRideId');
             if (rideId) {
                 const rideRef = doc(db, 'rides', rideId);
                 const docSnap = await getDoc(rideRef);
                 if (docSnap.exists() && !['completed', 'cancelled_by_driver', 'cancelled_by_rider'].includes(docSnap.data().status)) {
                     setActiveRide({ id: docSnap.id, ...docSnap.data() } as RideData);
+                    return;
                 } else {
                     localStorage.removeItem('activeRideId');
                 }
             }
+
+            // Then check for active garage request
+             const garageRequestId = localStorage.getItem('activeGarageRequestId');
+             if (garageRequestId) {
+                const garageRef = doc(db, 'garageRequests', garageRequestId);
+                const docSnap = await getDoc(garageRef);
+                 if (docSnap.exists() && !['completed', 'cancelled_by_driver', 'cancelled_by_mechanic'].includes(docSnap.data().status)) {
+                    setActiveGarageRequest({ id: docSnap.id, ...docSnap.data() } as GarageRequest);
+                    return;
+                } else {
+                    localStorage.removeItem('activeGarageRequestId');
+                }
+             }
+
         };
-        checkActiveRide();
+        checkActiveServices();
     }, [db, session]);
 
     return (
@@ -106,6 +129,25 @@ export default function BookRidePage() {
                             <div className="p-1">
                                 <RideStatus ride={activeRide} onCancel={resetFlow} onDone={resetFlow} />
                             </div>
+                        ) : activeAmbulanceCase ? (
+                            <div className="p-1">
+                                <RideStatus ride={activeAmbulanceCase} onCancel={resetFlow} onDone={resetFlow} />
+                            </div>
+                        ) : activeGarageRequest ? (
+                             <div className="p-1">
+                                <RideStatus ride={activeGarageRequest} isGarageRequest onCancel={resetFlow} onDone={resetFlow} />
+                            </div>
+                        ) : isRequestingSos ? (
+                            <EmergencyButtons
+                                serviceType="cure" // Can be made dynamic
+                                liveMapRef={liveMapRef}
+                                pickupCoords={pickup.coords}
+                                setIsRequestingSos={setIsRequestingSos}
+                                setActiveAmbulanceCase={setActiveAmbulanceCase}
+                                setActiveGarageRequest={setActiveGarageRequest}
+                                onBack={resetFlow}
+                                session={session}
+                            />
                         ) : (
                             <LocationSelector
                                 pickup={pickup}

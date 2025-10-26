@@ -21,7 +21,7 @@ const serviceCards = [
         title: 'ResQ',
         description: 'Get help for vehicle breakdowns.',
         icon: Wrench,
-        href: '#',
+        href: '/user/book',
         color: 'text-amber-500',
         category: 'Mobility & Transport'
     },
