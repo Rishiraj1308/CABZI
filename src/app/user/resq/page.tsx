@@ -1,7 +1,7 @@
+
 'use client'
 
 import React, { useState, useEffect, useRef, useCallback } from 'react'
-import dynamic from 'next/dynamic'
 import { motion } from 'framer-motion'
 import { useFirebase } from '@/firebase/client-provider'
 import { getDoc, doc, onSnapshot, query, collection, where, updateDoc, GeoPoint, serverTimestamp, addDoc } from 'firebase/firestore'
@@ -17,11 +17,6 @@ import { cn } from '@/lib/utils'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from '@/components/ui/alert-dialog'
 
-
-const LiveMap = dynamic(() => import('@/components/live-map'), {
-  ssr: false,
-  loading: () => <div className="w-full h-full bg-muted flex items-center justify-center"><p>Loading Map...</p></div>,
-});
 
 const commonIssues = [
     { id: 'flat_tyre', label: 'Flat Tyre', icon: Wrench },
@@ -39,9 +34,19 @@ export default function ResQPage() {
   const [locationAddress, setLocationAddress] = useState('Locating...');
   const [selectedIssue, setSelectedIssue] = useState('');
 
-  const liveMapRef = useRef<any>(null);
   const { user, db } = useFirebase();
   const { toast } = useToast();
+
+  const getAddressFromCoords = useCallback(async (lat: number, lon: number) => {
+    try {
+      const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`);
+      const data = await response.json();
+      return data.display_name || 'Unknown Location';
+    } catch (error) {
+      console.error("Error fetching address:", error);
+      return 'Could not fetch address';
+    }
+  }, []);
 
   useEffect(() => {
     if (user && db) {
@@ -64,11 +69,23 @@ export default function ResQPage() {
     setActiveGarageRequest(null);
     localStorage.removeItem('activeGarageRequestId');
   }, []);
-  
-  const handleLocationFound = useCallback((address: string, coords: { lat: number; lon: number }) => {
-    setCurrentUserLocation(coords);
-    setLocationAddress(address);
-  }, []);
+
+  useEffect(() => {
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+            async (position) => {
+                const { latitude, longitude } = position.coords;
+                setCurrentUserLocation({ lat: latitude, lon: longitude });
+                const address = await getAddressFromCoords(latitude, longitude);
+                setLocationAddress(address);
+            },
+            () => {
+                setLocationAddress('Location access denied. Please enable it in your browser settings.');
+                toast({ variant: 'destructive', title: 'Location Access Denied' });
+            }
+        );
+    }
+  }, [getAddressFromCoords, toast]);
 
   useEffect(() => {
     if (!db || !session?.userId) return;
@@ -108,7 +125,7 @@ export default function ResQPage() {
   const handleGaragePayment = async (paymentMode: 'cash' | 'wallet') => {
     if (!db || !activeGarageRequest || !user || !activeGarageRequest.mechanicId) return;
 
-    const driverRef = doc(db, 'users', user.uid); // Assuming driver is a user
+    const driverRef = doc(db, 'users', user.uid);
     const garageRequestRef = doc(db, 'garageRequests', activeGarageRequest.id);
     const mechanicRef = doc(db, 'mechanics', activeGarageRequest.mechanicId);
 
@@ -174,10 +191,10 @@ export default function ResQPage() {
   };
 
   const renderInitialView = () => (
-     <Card className="bg-background/90 backdrop-blur-sm rounded-t-2xl shadow-2xl border-t-0">
+     <Card className="max-w-xl mx-auto mt-8 bg-background/90 backdrop-blur-sm">
         <CardHeader className="text-center">
-            <div className="mx-auto w-12 h-12 rounded-full bg-amber-500/10 flex items-center justify-center mb-2 border-2 border-amber-500/20">
-                <Wrench className="w-6 h-6 text-amber-500"/>
+            <div className="mx-auto w-16 h-16 rounded-full bg-amber-500/10 flex items-center justify-center mb-2 border-4 border-amber-500/20">
+                <Wrench className="w-8 h-8 text-amber-500"/>
             </div>
           <CardTitle className="text-2xl">Roadside Assistance</CardTitle>
           <CardDescription>Vehicle trouble? Get quick help for tyre, battery, towing & more.</CardDescription>
@@ -227,19 +244,6 @@ export default function ResQPage() {
                 className={cn("w-full bg-amber-500 hover:bg-amber-600 text-white font-semibold", selectedIssue && "btn-glow")}>
                 Request Help Now
             </Button>
-            <div className="flex justify-center gap-2">
-              <Button variant="ghost" size="sm" className="text-muted-foreground"><Phone className="w-4 h-4 mr-2" /> Call Helpline</Button>
-              <Dialog>
-                <DialogTrigger asChild><Button variant="ghost" size="sm" className="text-muted-foreground"><LifeBuoy className="w-4 h-4 mr-2" /> Safety Toolkit</Button></DialogTrigger>
-                <DialogContent>
-                  <DialogHeader><DialogTitle>Safety Toolkit</DialogTitle></DialogHeader>
-                  <div className="py-4 space-y-2">
-                    <Button variant="outline" className="w-full justify-start gap-2"><Share2 className="w-4 h-4"/> Share Live Location</Button>
-                    <Button variant="destructive" className="w-full justify-start gap-2"><Siren className="w-4 h-4"/> Call Emergency Services</Button>
-                  </div>
-                </DialogContent>
-              </Dialog>
-            </div>
         </CardFooter>
       </Card>
   )
@@ -249,7 +253,7 @@ export default function ResQPage() {
 
     if (activeGarageRequest.status === 'pending') {
         return (
-            <Card>
+            <Card className="max-w-xl mx-auto mt-8">
                 <CardContent className="py-10 text-center">
                     <SearchingIndicator partnerType="resq" />
                     <h3 className="text-2xl font-bold mt-4">Finding a Mechanic...</h3>
@@ -279,6 +283,7 @@ export default function ResQPage() {
     }
     
     return (
+      <div className="max-w-xl mx-auto mt-8">
         <RideStatus 
             ride={activeGarageRequest} 
             isGarageRequest 
@@ -286,31 +291,15 @@ export default function ResQPage() {
             onDone={resetFlow} 
             onPayment={handleGaragePayment}
         />
+      </div>
     )
   }
 
   return (
-    <div className="h-full w-full relative flex flex-col">
-      <div className="flex-1 relative">
-        <LiveMap 
-            ref={liveMapRef} 
-            onLocationFound={handleLocationFound}
-            riderLocation={currentUserLocation}
-            driverLocation={activeGarageRequest?.mechanicLocation ? { lat: activeGarageRequest.mechanicLocation.latitude, lon: activeGarageRequest.mechanicLocation.longitude } : undefined}
-         />
-      </div>
-
-      <div className="absolute bottom-0 left-0 right-0 z-10">
-        <motion.div
-          initial={{ y: '100%' }}
-          animate={{ y: 0 }}
-          exit={{ y: '100%' }}
-          transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-          className="mx-auto max-w-xl w-full"
-        >
+    <div className="h-full w-full relative flex flex-col p-4 md:p-6 bg-muted/40">
+        <div className="flex-1">
           {activeGarageRequest ? renderActiveRequest() : renderInitialView()}
-        </motion.div>
-      </div>
+        </div>
     </div>
   );
 }
