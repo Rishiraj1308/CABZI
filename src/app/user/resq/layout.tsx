@@ -4,7 +4,7 @@
 import React, { useState, useEffect } from 'react'
 import { Toaster } from "@/components/ui/toaster";
 import { Button } from '@/components/ui/button';
-import { Menu, LogOut, Sun, Moon, LifeBuoy, Shield, Siren, User } from 'lucide-react';
+import { Menu, LogOut, Sun, Moon, LifeBuoy, Shield, Siren, User, Home, History } from 'lucide-react';
 import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
@@ -73,12 +73,12 @@ function LocationDisplay() {
                     const data = await response.json();
                     const address = data.address;
                     const city = address.city || address.town || address.village || address.state_district || '';
-                    const state = address.state || '';
                     const area = address.suburb || address.neighbourhood || address.road || '';
                     
                     if (area && city) {
                         setLocation(`${area}, ${city}`);
                     } else if (city) {
+                         const state = address.state || '';
                          setLocation(`${city}, ${state}`);
                     }
                     else if (data.display_name) {
