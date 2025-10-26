@@ -5,7 +5,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardFooter, CardDescription } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
-import { ArrowLeft, Map, Clock, MapPin } from 'lucide-react'
+import { ArrowLeft, Map, Clock, MapPin, Search } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -46,11 +46,11 @@ export default function BookRidePage() {
                         <Button variant="ghost" size="icon" className="text-white hover:bg-white/10" onClick={() => router.back()}>
                             <ArrowLeft className="w-5 h-5"/>
                         </Button>
-                        <Button asChild variant="ghost" className="text-white hover:bg-white/10">
-                            <Link href="/user/book/map">
-                                <Map className="w-5 h-5 mr-2"/> Map
-                            </Link>
-                        </Button>
+                         <Link href="/user/book/map" passHref legacyBehavior>
+                           <Button asChild variant="ghost" className="text-white hover:bg-white/10">
+                               <a><Map className="w-5 h-5 mr-2"/> Map</a>
+                           </Button>
+                        </Link>
                     </div>
                     <div className="pt-8 pb-16 text-left">
                         <h1 className="text-3xl font-bold">Transport</h1>
@@ -67,15 +67,16 @@ export default function BookRidePage() {
                 <div className="container mx-auto">
                     {/* Search Card */}
                     <Card className="shadow-lg -mt-12">
-                        <CardContent className="p-3 flex items-center gap-3">
-                             <div className="flex items-center gap-3 p-2 flex-1">
+                        <CardContent className="p-3 space-y-2">
+                             <div className="flex items-center gap-3 p-2 rounded-lg">
+                                 <div className="w-2.5 h-2.5 rounded-full bg-green-500 ring-2 ring-green-500/30"/>
+                                 <p className="font-semibold text-base text-muted-foreground">Current Location</p>
+                            </div>
+                            <div className="border-t"></div>
+                            <Link href="/user/book/map" className="flex items-center gap-3 p-2 rounded-lg">
                                  <div className="w-2.5 h-2.5 rounded-full bg-red-500 ring-2 ring-red-500/30"/>
                                  <p className="font-semibold text-base text-muted-foreground">Where to?</p>
-                            </div>
-                            <Button variant="secondary" className="h-full">
-                                <Clock className="w-4 h-4 mr-2"/>
-                                Later
-                            </Button>
+                            </Link>
                         </CardContent>
                     </Card>
                     
