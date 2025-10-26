@@ -10,9 +10,9 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { CheckCircle, QrCode, Download, KeyRound } from 'lucide-react'
 import DriverIdCard from '@/components/driver-id-card'
-import { db, auth } from '@/lib/firebase'
-import { collection, query, where, getDocs, onSnapshot } from 'firebase/firestore'
-import { Skeleton } from './ui/skeleton'
+import { useFirebase } from '@/firebase/client-provider' // Corrected import
+import { collection, query, where, onSnapshot } from 'firebase/firestore'
+import { Skeleton } from '@/components/ui/skeleton' // Corrected import
 import { useToast } from '@/hooks/use-toast'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger, } from "@/components/ui/alert-dialog"
@@ -33,6 +33,7 @@ export default function ProfilePage() {
     const [partnerData, setPartnerData] = useState<PartnerData | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const { toast } = useToast();
+    const { db, auth } = useFirebase(); // Use the hook
     
     // PIN Management State
     const [isPinSet, setIsPinSet] = useState(false);
@@ -215,6 +216,16 @@ export default function ProfilePage() {
         }
     }
 
+
+  if (isLoading) {
+        return (
+             <div className="space-y-6">
+                <Skeleton className="h-44 w-full" />
+                <Skeleton className="h-64 w-full" />
+                <Skeleton className="h-56 w-full" />
+            </div>
+        )
+    }
 
   return (
       <div className="grid gap-6">
@@ -416,5 +427,8 @@ export default function ProfilePage() {
           </Card>
       </div>
   );
+
+    
+}
 
     
