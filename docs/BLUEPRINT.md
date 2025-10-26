@@ -36,7 +36,6 @@ Routing/Geocoding: OSRM + Nominatim API
 - `rider/` → Rider dashboard
 - `mechanic/` → ResQ partner dashboard
 - `cure/` → Hospital dashboard (Mission Control)
-- `ambulance/` → Ambulance driver-specific dashboard
 - `partner-hub/` → central onboarding page
 
 **Components (`src/components`)**
