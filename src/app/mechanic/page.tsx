@@ -1,3 +1,4 @@
+
 'use client'
 
 import React, { useState, useEffect, useRef, useCallback } from 'react'
@@ -19,12 +20,17 @@ import { collection, query, where, onSnapshot, doc, updateDoc, getDoc, serverTim
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert'
 import { cn } from '@/lib/utils'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 import BrandLogo from '@/components/brand-logo'
-import Lottie from 'lottie-react'
-import lottieFindingDriver from '@/components/ui/lottie-finding-driver.json'
+import SearchingIndicator from '@/components/ui/searching-indicator'
 import { useMessaging } from '@/firebase/client-provider'
 import { onMessage } from 'firebase/messaging'
-import SearchingIndicator from '@/components/ui/searching-indicator'
 
 
 const LiveMap = dynamic(() => import('@/components/live-map'), { 
@@ -80,7 +86,7 @@ export default function ResQDashboard() {
   const [isAvailable, setIsAvailable] = useState(false);
   const [jobRequest, setJobRequest] = useState<JobRequest | null>(null);
   const [acceptedJob, setAcceptedJob] = useState<JobRequest | null>(null);
-  const [jobStatus, setJobStatus] = useState<'navigating' | 'arrived' | 'in_progress' | 'payment' | 'completed' | null>(null);
+  const [jobStatus, setJobStatus] = useState<'navigating' | 'arrived' | 'in_progress' | 'billing' | 'payment' | 'completed' | null>(null);
   const [enteredOtp, setEnteredOtp] = useState('');
   const [billItems, setBillItems] = useState<BillItem[]>([{ description: '', amount: '' }]);
   const [requestTimeout, setRequestTimeout] = useState(15);
@@ -408,7 +414,7 @@ export default function ResQDashboard() {
           });
           
           setJobStatus('payment'); // Local state update for UI
-          toast({ title: "Bill Sent!", description: `The bill has been sent to the driver for payment.` });
+          toast({ title: "Job Card Sent for Approval!", description: `The bill has been sent to the driver.` });
           
       } catch (error) {
           console.error("Error sending bill:", error);
@@ -529,12 +535,12 @@ export default function ResQDashboard() {
                     {jobStatus === 'in_progress' && (
                         <div className="text-center space-y-4 p-4 bg-muted rounded-lg">
                             <p className="font-semibold">Service Ongoing...</p>
-                            <Button className="w-full" size="lg" onClick={() => setJobStatus('payment')}>Complete Service & Generate Bill</Button>
+                            <Button className="w-full" size="lg" onClick={() => setJobStatus('billing')}>Complete Service & Generate Bill</Button>
                         </div>
                     )}
-                    {jobStatus === 'payment' && (
+                     {jobStatus === 'billing' && (
                         <div className="space-y-4">
-                            <Label className="text-lg font-semibold">Generate Bill</Label>
+                            <Label className="text-lg font-semibold">Generate Job Card</Label>
                             <div className="space-y-2 max-h-48 overflow-y-auto pr-2">
                                 {billItems.map((item, index) => (
                                     <div key={index} className="flex gap-2 items-center">
@@ -563,7 +569,14 @@ export default function ResQDashboard() {
                                 <span>Total Amount:</span>
                                 <span>₹{totalAmount.toFixed(2)}</span>
                             </div>
-                            <Button className="w-full" size="lg" onClick={completeJob}>Generate & Send Bill</Button>
+                            <Button className="w-full" size="lg" onClick={completeJob}>Submit Job Card for Approval</Button>
+                        </div>
+                    )}
+                    {jobStatus === 'payment' && (
+                         <div className="text-center space-y-4 p-4 bg-muted rounded-lg">
+                            <p className="font-semibold">Waiting for Payment</p>
+                            <p className="text-sm text-muted-foreground">The bill has been sent to the driver for approval and payment.</p>
+                            <p className="text-3xl font-bold">₹{totalAmount.toFixed(2)}</p>
                         </div>
                     )}
                 </CardContent>
@@ -590,34 +603,10 @@ export default function ResQDashboard() {
                         </CardContent>
                     </Card>
                 </div>
-                 <Tabs defaultValue="payments" className="flex-1 flex flex-col">
-                    <TabsList className="grid w-full grid-cols-2">
-                        <TabsTrigger value="payments">Quick Payments</TabsTrigger>
+                 <Tabs defaultValue="coach" className="flex-1 flex flex-col">
+                    <TabsList className="grid w-full grid-cols-1">
                         <TabsTrigger value="coach">AI Coach</TabsTrigger>
                     </TabsList>
-                    <TabsContent value="payments" className="mt-4 flex-1">
-                        <div className="grid grid-cols-3 gap-2">
-                            <Button variant="outline" className="flex-col h-20"><Send className="w-6 h-6 mb-1 text-primary" /><span className="text-xs">Pay UPI</span></Button>
-                             <Dialog><DialogTrigger asChild><Button variant="outline" className="flex-col h-20"><QrCode className="w-6 h-6 mb-1 text-primary"/><span className="text-xs">My QR</span></Button></DialogTrigger>
-                             <DialogContent className="max-w-xs"><DialogHeader><DialogTitle className="text-center">My Curocity UPI QR Code</DialogTitle></DialogHeader><div className="flex flex-col items-center gap-4 py-4"><div className="p-4 bg-white rounded-lg border"><Image src={mechanicData?.qrCodeUrl || ''} alt="UPI QR Code" width={200} height={200} data-ai-hint="qr code"/></div><p className="font-semibold text-lg text-center">{mechanicData?.upiId || '...'}</p></div></DialogContent></Dialog>
-                             <Dialog open={isScannerOpen} onOpenChange={setIsScannerOpen}><DialogTrigger asChild><Button variant="outline" className="flex-col h-20"><ScanLine className="w-6 h-6 mb-1 text-primary"/><span className="text-xs">Scan & Pay</span></Button></DialogTrigger>
-                                <DialogContent>
-                                    <DialogHeader><DialogTitle>Scan UPI QR Code</DialogTitle><DialogDescription>Point your camera at a UPI QR code.</DialogDescription></DialogHeader>
-                                    {isScannerOpen && (
-                                    <div className="relative w-full aspect-square bg-muted rounded-lg overflow-hidden mt-4">
-                                        <QrScanner onResult={handleScanResult} />
-                                        {hasCameraPermission === false && (
-                                            <Alert variant="destructive" className="absolute bottom-4 left-4 right-4">
-                                                <AlertCircle className="h-4 w-4" /><AlertTitle>Camera Permission Denied</AlertTitle>
-                                                <AlertDescription>Please allow camera access in your browser settings.</AlertDescription>
-                                            </Alert>
-                                        )}
-                                    </div>
-                                    )}
-                                </DialogContent>
-                             </Dialog>
-                        </div>
-                    </TabsContent>
                     <TabsContent value="coach" className="mt-4 flex-1">
                          <Card className="bg-gradient-to-r from-primary to-primary/80 text-primary-foreground border-none h-full flex items-center">
                             <CardContent className="p-4"><div className="flex gap-3 items-center"><Sparkles className="w-8 h-8 text-yellow-300 flex-shrink-0" />

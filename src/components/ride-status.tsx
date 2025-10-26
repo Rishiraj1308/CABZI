@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState } from 'react';
@@ -195,16 +196,27 @@ export default function RideStatus({
             case 'bill_sent':
                 return (
                     <div className="text-center space-y-4 animate-fade-in">
-                        <Card className="bg-primary text-primary-foreground text-center">
-                            <CardContent className="p-4">
-                            <p className="text-primary-foreground/80 text-sm">Total Bill Amount</p>
-                            <p className="text-5xl font-bold">₹{ride.totalAmount}</p>
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Job Card Approval</CardTitle>
+                                <CardDescription>Please review the estimated cost and approve to start the work.</CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                {ride.billItems?.map((item: any, index: number) => (
+                                    <div key={index} className="flex justify-between text-sm py-2 border-b">
+                                        <span>{item.description}</span>
+                                        <span className="font-medium">₹{item.amount.toFixed(2)}</span>
+                                    </div>
+                                ))}
+                                <div className="flex justify-between font-bold text-lg pt-2">
+                                    <span>Total Amount:</span>
+                                    <span>₹{ride.totalAmount?.toFixed(2)}</span>
+                                </div>
                             </CardContent>
                         </Card>
-                        <p className="text-muted-foreground text-sm">Please choose a payment method to complete the service.</p>
                         <div className="grid grid-cols-2 gap-2">
-                            <Button size="lg" className="w-full" onClick={() => onPayment && onPayment('wallet')} disabled={isPaying}>{isPaying ? 'Processing...' : 'Pay from Wallet'}</Button>
-                            <Button size="lg" variant="outline" className="w-full" onClick={() => toast({title: "Please pay the mechanic in cash."})}>Pay with Cash</Button>
+                            <Button size="lg" className="w-full" onClick={() => onPayment && onPayment('wallet')} disabled={isPaying}>{isPaying ? 'Approving...' : 'Approve & Pay from Wallet'}</Button>
+                            <Button size="lg" variant="outline" className="w-full" onClick={() => toast({title: "Please approve and pay the mechanic in cash."})}>Approve & Pay Cash</Button>
                         </div>
                     </div>
                 );
