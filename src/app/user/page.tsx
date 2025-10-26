@@ -1,12 +1,17 @@
 
 'use client'
 
-import React from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Car, Wrench, Ambulance, Calendar, FlaskConical } from 'lucide-react';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
 import { MotionDiv } from '@/components/ui/motion-div';
+import { useFirebase } from '@/firebase/client-provider';
+import { getDoc, doc, onSnapshot, query, collection, where } from 'firebase/firestore';
+import type { RideData, AmbulanceCase, GarageRequest, ClientSession } from '@/lib/types';
+import RideStatus from '@/components/ride-status';
+import { useRouter }from 'next/navigation';
 
 const serviceCards = [
     {
@@ -53,7 +58,99 @@ const serviceCards = [
 
 export default function UserDashboard() {
     const { toast } = useToast();
-    
+    const router = useRouter();
+    const { user, db } = useFirebase();
+
+    const [activeRide, setActiveRide] = useState<RideData | null>(null);
+    const [activeAmbulanceCase, setActiveAmbulanceCase] = useState<AmbulanceCase | null>(null);
+    const [activeGarageRequest, setActiveGarageRequest] = useState<GarageRequest | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
+    const [session, setSession] = useState<ClientSession | null>(null);
+
+     useEffect(() => {
+        if (user && db) {
+            const userDocRef = doc(db, 'users', user.uid);
+            const unsub = onSnapshot(userDocRef, (docSnap) => {
+                if (docSnap.exists()) {
+                    const userData = docSnap.data();
+                    setSession({
+                        userId: user.uid,
+                        name: userData.name,
+                        phone: userData.phone,
+                        gender: userData.gender
+                    });
+                }
+            });
+            return () => unsub();
+        }
+    }, [user, db]);
+
+    const resetFlow = useCallback(() => {
+        setActiveRide(null);
+        setActiveAmbulanceCase(null);
+        setActiveGarageRequest(null);
+        localStorage.removeItem('activeRideId');
+        localStorage.removeItem('activeGarageRequestId');
+    }, []);
+
+    // Effect to check for any active service on load and listen for updates
+    useEffect(() => {
+        if (!db || !session) {
+            setIsLoading(false);
+            return;
+        };
+
+        const checkAndSubscribe = () => {
+            // Check for active ride
+            const rideId = localStorage.getItem('activeRideId');
+            if (rideId) {
+                const rideRef = doc(db, 'rides', rideId);
+                return onSnapshot(rideRef, (docSnap) => {
+                    if (docSnap.exists() && !['completed', 'cancelled_by_driver', 'cancelled_by_rider'].includes(docSnap.data().status)) {
+                        setActiveRide({ id: docSnap.id, ...docSnap.data() } as RideData);
+                    } else {
+                       resetFlow();
+                    }
+                });
+            }
+            
+            // Check for active emergency case
+            const qCure = query(collection(db, "emergencyCases"), where("riderId", "==", session.userId), where("status", "in", ["pending", "accepted", "onTheWay", "arrived", "inTransit"]));
+            const unsubCure = onSnapshot(qCure, (snapshot) => {
+                if (!snapshot.empty) {
+                    const caseDoc = snapshot.docs[0];
+                    setActiveAmbulanceCase({ id: caseDoc.id, ...caseDoc.data() } as AmbulanceCase);
+                } else if (activeAmbulanceCase) {
+                    resetFlow();
+                }
+            });
+            
+             // Check for active ResQ request
+            const qResq = query(collection(db, "garageRequests"), where("driverId", "==", session.userId), where("status", "not-in", ["completed", "cancelled_by_driver", "cancelled_by_mechanic"]));
+             const unsubResq = onSnapshot(qResq, (snapshot) => {
+                if (!snapshot.empty) {
+                    const reqDoc = snapshot.docs[0];
+                    setActiveGarageRequest({ id: reqDoc.id, ...reqDoc.data() } as GarageRequest);
+                } else if (activeGarageRequest) {
+                    resetFlow();
+                }
+            });
+
+
+            setIsLoading(false);
+            return () => {
+                unsubCure();
+                unsubResq();
+            };
+        }
+        
+        const unsubscribe = checkAndSubscribe();
+        return () => {
+            if (unsubscribe) unsubscribe();
+        };
+
+    }, [db, session, resetFlow, activeAmbulanceCase, activeGarageRequest]);
+
     const servicesByCat = serviceCards.reduce((acc, service) => {
         if (!acc[service.category]) {
             acc[service.category] = [];
@@ -64,27 +161,38 @@ export default function UserDashboard() {
 
     const containerVariants = {
         hidden: { opacity: 0 },
-        visible: {
-            opacity: 1,
-            transition: {
-                staggerChildren: 0.08,
-                delayChildren: 0.1,
-            },
-        },
+        visible: { opacity: 1, transition: { staggerChildren: 0.08, delayChildren: 0.1 } },
     };
 
     const itemVariants = {
         hidden: { opacity: 0, y: 15 },
-        visible: {
-            opacity: 1,
-            y: 0,
-            transition: {
-                duration: 0.5,
-                ease: 'easeOut'
-            }
-        },
+        visible: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 100 } },
     };
+    
+    if (isLoading) {
+        return (
+             <div className="p-4 md:p-6 space-y-8 pt-12">
+                <div className="text-center md:text-left"><h2 className="text-3xl font-bold tracking-tight">Loading Dashboard...</h2></div>
+            </div>
+        )
+    }
+    
+    // If there is any active service, render the status component
+    const activeService = activeRide || activeAmbulanceCase || activeGarageRequest;
+    if (activeService) {
+        return (
+            <div className="p-4 flex items-center justify-center h-full">
+                <RideStatus 
+                    ride={activeService} 
+                    isGarageRequest={!!activeGarageRequest}
+                    onCancel={resetFlow} 
+                    onDone={resetFlow}
+                />
+            </div>
+        )
+    }
 
+    // Otherwise, render the service selection grid
     return (
         <MotionDiv 
             className="p-4 md:p-6 space-y-8 pt-12"
@@ -109,6 +217,9 @@ export default function UserDashboard() {
                                             if (service.href === '#') {
                                                 e.preventDefault();
                                                 toast({ title: 'Coming Soon!', description: 'This feature is under development.' });
+                                            } else if (service.title === 'Emergency SOS') {
+                                                e.preventDefault();
+                                                router.push('/user/book?sos=true');
                                             }
                                         }}>
                                             <Card className="h-full transition-all text-center bg-background/80 backdrop-blur-sm hover:shadow-lg hover:border-primary/50">

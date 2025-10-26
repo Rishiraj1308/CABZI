@@ -5,7 +5,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { useToast } from '@/hooks/use-toast'
 import dynamic from 'next/dynamic'
 import { useFirebase } from '@/firebase/client-provider'
-import { collection, addDoc, serverTimestamp, doc, GeoPoint, query, where, getDocs, updateDoc, getDoc } from 'firebase/firestore'
+import { collection, addDoc, serverTimestamp, doc, GeoPoint, query, where, getDocs, updateDoc, getDoc, onSnapshot } from 'firebase/firestore'
 import { motion, AnimatePresence } from 'framer-motion'
 import EmergencyButtons from '@/components/EmergencyButtons'
 import LocationSelector from '@/components/location-selector'
@@ -13,6 +13,7 @@ import RideStatus from '@/components/ride-status'
 import type { RideData, AmbulanceCase, GarageRequest, ClientSession } from '@/lib/types'
 import { getRoute, searchPlace } from '@/lib/routing'
 import { Card } from '@/components/ui/card'
+import { useSearchParams } from 'next/navigation'
 
 const LiveMap = dynamic(() => import('@/components/live-map'), { 
     ssr: false,
@@ -26,13 +27,16 @@ interface LocationWithCoords {
 
 
 export default function BookRidePage() {
+    const searchParams = useSearchParams();
+    const isSosFlow = searchParams.get('sos') === 'true';
+
     const [pickup, setPickup] = useState<LocationWithCoords>({ address: '', coords: null });
     const [destination, setDestination] = useState<LocationWithCoords>({ address: '', coords: null });
     const [currentUserLocation, setCurrentUserLocation] = useState<{ lat: number, lon: number } | null>(null);
     const [activeRide, setActiveRide] = useState<RideData | null>(null);
     const [activeAmbulanceCase, setActiveAmbulanceCase] = useState<AmbulanceCase | null>(null);
     const [activeGarageRequest, setActiveGarageRequest] = useState<GarageRequest | null>(null);
-    const [isRequestingSos, setIsRequestingSos] = useState(false);
+    const [isRequestingSos, setIsRequestingSos] = useState(isSosFlow);
     const [routeGeometry, setRouteGeometry] = useState<any>(null);
     const [session, setSession] = useState<ClientSession | null>(null);
 
@@ -76,39 +80,61 @@ export default function BookRidePage() {
         }
     }, [pickup.address]);
 
-
     useEffect(() => {
         const checkActiveServices = async () => {
-            if (!db || !session) return;
-            // Check for active ride first
+            if (!db || !session?.userId) return;
+
+            // Define a generic unsubscriber
+            let unsubscribe: (() => void) | null = null;
+            
+            // Function to handle active documents
+            const handleActiveDoc = (docSnap: any, type: 'ride' | 'garage' | 'ambulance') => {
+                 if (docSnap.exists() && !['completed', 'cancelled_by_driver', 'cancelled_by_rider', 'cancelled_by_mechanic', 'cancelled_by_admin', 'cancelled_by_partner'].includes(docSnap.data().status)) {
+                    const data = { id: docSnap.id, ...docSnap.data() };
+                    if (type === 'ride') setActiveRide(data as RideData);
+                    if (type === 'garage') setActiveGarageRequest(data as GarageRequest);
+                    if (type === 'ambulance') setActiveAmbulanceCase(data as AmbulanceCase);
+                    return true;
+                }
+                return false;
+            }
+
+            // Check for active ride first from local storage
             const rideId = localStorage.getItem('activeRideId');
             if (rideId) {
                 const rideRef = doc(db, 'rides', rideId);
-                const docSnap = await getDoc(rideRef);
-                if (docSnap.exists() && !['completed', 'cancelled_by_driver', 'cancelled_by_rider'].includes(docSnap.data().status)) {
-                    setActiveRide({ id: docSnap.id, ...docSnap.data() } as RideData);
-                    return;
-                } else {
-                    localStorage.removeItem('activeRideId');
-                }
+                unsubscribe = onSnapshot(rideRef, (docSnap) => {
+                   if (!handleActiveDoc(docSnap, 'ride')) {
+                        resetFlow();
+                   }
+                });
+                return unsubscribe;
             }
+            
+            // Check for active ambulance case
+            const qCure = query(collection(db, "emergencyCases"), where("riderId", "==", session.userId), where("status", "not-in", ["completed", "cancelled_by_rider", "cancelled_by_partner", "cancelled_by_admin"]));
+            const unsubCure = onSnapshot(qCure, (snapshot) => {
+                if (!snapshot.empty) handleActiveDoc(snapshot.docs[0], 'ambulance');
+            });
 
-            // Then check for active garage request
-             const garageRequestId = localStorage.getItem('activeGarageRequestId');
-             if (garageRequestId) {
-                const garageRef = doc(db, 'garageRequests', garageRequestId);
-                const docSnap = await getDoc(garageRef);
-                 if (docSnap.exists() && !['completed', 'cancelled_by_driver', 'cancelled_by_mechanic'].includes(docSnap.data().status)) {
-                    setActiveGarageRequest({ id: docSnap.id, ...docSnap.data() } as GarageRequest);
-                    return;
-                } else {
-                    localStorage.removeItem('activeGarageRequestId');
-                }
-             }
-
+            // Check for active garage request
+            const qResq = query(collection(db, "garageRequests"), where("driverId", "==", session.userId), where("status", "not-in", ["completed", "cancelled_by_driver", "cancelled_by_mechanic"]));
+            const unsubResq = onSnapshot(qResq, (snapshot) => {
+                if (!snapshot.empty) handleActiveDoc(snapshot.docs[0], 'garage');
+            });
+            
+            return () => {
+                unsubCure();
+                unsubResq();
+                if(unsubscribe) unsubscribe();
+            }
         };
-        checkActiveServices();
-    }, [db, session]);
+
+        const unsubscribe = checkActiveServices();
+        return () => {
+            if (unsubscribe) unsubscribe();
+        }
+    }, [db, session, resetFlow]);
 
     return (
         <div className="h-full w-full relative flex flex-col">
