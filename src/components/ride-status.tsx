@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -54,7 +55,7 @@ import { cn } from '@/lib/utils';
 import SearchingIndicator from '@/components/ui/searching-indicator';
 import type { RideData } from '@/lib/types';
 import type { AmbulanceCase } from '@/lib/types';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { MotionDiv } from '@/components/ui/motion-div';
 
 
@@ -284,7 +285,6 @@ export default function RideStatus({
         case "accepted":
              return (
                 <div className="h-[260px] flex flex-col justify-center">
-                    <AnimatePresence mode="wait">
                     {!showDriverDetails ? (
                         <motion.div
                             key="car"
@@ -307,7 +307,7 @@ export default function RideStatus({
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: -20 }}
                             transition={{ duration: 0.5 }}
-                            className="space-y-4 animate-fade-in"
+                            className="space-y-4"
                         >
                             <CardHeader className="p-0 text-center">
                                 <CardTitle>Driver is on the way!</CardTitle>
@@ -323,7 +323,6 @@ export default function RideStatus({
                             </div>
                         </motion.div>
                     )}
-                    </AnimatePresence>
                 </div>
             );
       case "in-progress":
@@ -464,3 +463,4 @@ export default function RideStatus({
     </MotionDiv>
   );
 }
+
