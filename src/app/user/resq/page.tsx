@@ -207,31 +207,21 @@ export default function ResQPage() {
           <CardDescription>Vehicle trouble? Get quick help for tyre, battery, towing & more.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4 px-8">
-            <motion.div 
-                className="grid grid-cols-3 gap-3"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1, transition: { staggerChildren: 0.05 } }}
-            >
+             <div className="grid grid-cols-3 gap-6 mt-6">
                 {commonIssues.map((item) => (
-                  <motion.div
-                    key={item.id}
-                    initial={{ y: 20, opacity: 0 }}
-                    animate={{ y: 0, opacity: 1 }}
-                    whileHover={{ y: -4, transition: { type: 'spring', stiffness: 300 } }}
-                    whileTap={{ scale: 0.95 }}
-                  >
-                    <button
+                    <div
+                        key={item.id}
                         onClick={() => setSelectedIssue(item.label)}
                         className={cn(
-                            'flex flex-col w-full h-24 items-center justify-center gap-2 p-3 rounded-xl border-2 transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500',
-                            selectedIssue === item.label ? 'bg-amber-500/10 border-amber-500/50 shadow-md' : 'bg-muted/50 border-muted hover:border-amber-500/30'
-                        )}>
-                        <item.icon className="w-8 h-8 text-amber-600"/>
-                        <div className="text-xs text-foreground font-medium">{item.label}</div>
-                    </button>
-                  </motion.div>
+                          "flex flex-col items-center justify-center p-6 bg-orange-50 rounded-2xl hover:bg-orange-100 hover:scale-105 transition-all cursor-pointer shadow-sm hover:shadow-md",
+                          selectedIssue === item.label && "ring-2 ring-orange-500 bg-orange-100"
+                        )}
+                    >
+                        <item.icon className="text-orange-500 w-8 h-8 mb-3" />
+                        <span className="font-medium text-gray-800 text-center text-sm">{item.label}</span>
+                    </div>
                 ))}
-            </motion.div>
+            </div>
             <div className="flex items-center justify-between p-3 border rounded-lg bg-muted">
               <div>
                   <div className="text-xs text-muted-foreground">Location</div>
@@ -281,7 +271,7 @@ export default function ResQPage() {
                     <h3 className="text-2xl font-bold mt-4">Finding a Mechanic...</h3>
                     <p className="text-muted-foreground">Contacting nearby ResQ partners for your issue: <span className="font-semibold">{activeGarageRequest.issue}</span></p>
                 </CardContent>
-                <CardFooter>
+                 <CardFooter>
                      <AlertDialog>
                         <AlertDialogTrigger asChild>
                            <Button variant="link" size="sm" className="w-full text-muted-foreground">Cancel Request</Button>
