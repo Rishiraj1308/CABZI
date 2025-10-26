@@ -201,7 +201,7 @@ export default function ResQPage() {
   const renderInitialView = () => (
      <Card className="max-w-xl mx-auto mt-8 bg-white/80 dark:bg-background/80 backdrop-blur-md shadow-xl rounded-3xl">
         <CardHeader className="p-8">
-             <div className="flex justify-between items-center">
+            <div className="flex justify-between items-center">
                 <div className="p-3 rounded-full bg-amber-500/10 border-4 border-amber-500/20">
                     <Wrench className="w-8 h-8 text-amber-500"/>
                 </div>
@@ -232,13 +232,13 @@ export default function ResQPage() {
                       key={item.id}
                       onClick={() => setSelectedIssue(item.label)}
                       className={cn(
-                        "flex flex-col items-center justify-center p-3 bg-background rounded-xl hover:bg-muted/80 transition-all cursor-pointer shadow-orange-glow hover:-translate-y-1",
+                        "group flex flex-col items-center justify-center p-3 bg-background rounded-xl hover:bg-muted/80 transition-all cursor-pointer shadow-orange-glow hover:-translate-y-1",
                         selectedIssue === item.label && "ring-2 ring-orange-500 bg-orange-100/50 dark:bg-orange-900/30"
                       )}
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
                     >
-                        <item.icon className="text-orange-500 w-6 h-6 mb-2" />
+                        <item.icon className="text-orange-500 w-6 h-6 mb-2 transition-all group-hover:text-orange-400 group-hover:drop-shadow-[0_0_4px_rgba(255,140,0,0.4)]" />
                         <span className="font-medium text-gray-800 dark:text-gray-200 text-center text-xs">{item.label}</span>
                     </motion.div>
                 ))}
