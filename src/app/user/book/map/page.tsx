@@ -31,6 +31,7 @@ function BookRideMapComponent() {
     const [isSearching, setIsSearching] = useState(false);
     
     const [userLocation, setUserLocation] = useState<{ lat: number, lon: number } | null>(null);
+    const [originName, setOriginName] = useState('Current Location');
     const [destination, setDestination] = useState<{ lat: number, lon: number } | null>(null);
     const [routeGeometry, setRouteGeometry] = useState(null);
     const [destinationName, setDestinationName] = useState('');
@@ -49,7 +50,7 @@ function BookRideMapComponent() {
     const handleSelectPlace = useCallback((place: Place) => {
         const destCoords = { lat: parseFloat(place.lat), lon: parseFloat(place.lon) };
         setDestination(destCoords);
-        setDestinationName(place.display_name);
+        setDestinationName(place.display_name.split(',').slice(0, 2).join(', '));
         setSearchQuery(place.display_name.split(',')[0]);
         setSearchResults([]);
     }, []);
@@ -57,15 +58,28 @@ function BookRideMapComponent() {
     useEffect(() => {
         // Get user's current location once
         navigator.geolocation.getCurrentPosition(
-            (position) => {
-                setUserLocation({
+            async (position) => {
+                const coords = {
                     lat: position.coords.latitude,
                     lon: position.coords.longitude
-                });
+                };
+                setUserLocation(coords);
+
+                // Wait for map to be ready before calling getAddress
+                const checkMapReady = setInterval(async () => {
+                    if (liveMapRef.current) {
+                        clearInterval(checkMapReady);
+                        const address = await liveMapRef.current.getAddress(coords.lat, coords.lon);
+                        if (address) {
+                            setOriginName(address.split(',')[0]);
+                        }
+                    }
+                }, 100);
             },
             () => {
                 // Fallback to a default location if user denies permission
                 setUserLocation({ lat: 28.6139, lon: 77.2090 });
+                setOriginName("New Delhi");
             }
         );
     }, []);
@@ -153,8 +167,8 @@ function BookRideMapComponent() {
                     <Card className="shadow-2xl animate-fade-in">
                         <CardContent className="p-4 flex items-center justify-between gap-4">
                            <div className="flex-1">
-                                <p className="text-sm text-muted-foreground">Destination</p>
-                                <h3 className="font-bold text-lg leading-tight line-clamp-2">{destinationName}</h3>
+                                <p className="text-sm text-muted-foreground">Your Trip</p>
+                                <h3 className="font-bold text-lg leading-tight line-clamp-2">{originName} to {destinationName}</h3>
                            </div>
                            <Button size="lg" className="h-12 text-base">Confirm Ride</Button>
                         </CardContent>
@@ -172,3 +186,4 @@ export default function BookRideMapPage() {
         </Suspense>
     );
 }
+
