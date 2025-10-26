@@ -26,7 +26,7 @@ import { useToast } from '@/hooks/use-toast'
 import BrandLogo from '@/components/brand-logo'
 import { useTheme } from 'next-themes'
 import { useFirebase } from '@/firebase/client-provider'
-import { doc, updateDoc, onSnapshot, serverTimestamp, getDoc, GeoPoint, type DocumentReference } from 'firebase/firestore'
+import { doc, updateDoc, onSnapshot, serverTimestamp, getDoc, GeoPoint, type DocumentReference, type FieldValue } from 'firebase/firestore'
 import { Badge } from '@/components/ui/badge'
 import { MotionDiv } from '@/components/ui/motion-div'
 import { errorEmitter, FirestorePermissionError } from '@/lib/error-handling';
@@ -184,13 +184,11 @@ function DriverLayoutContent({ children }: { children: React.ReactNode }) {
 
         if (partnerIsPink && theme !== 'pink') setTheme('pink');
         else if (!partnerIsPink && theme === 'pink') setTheme('system');
-        
-        // **THE FIX**: Send the first heartbeat *after* the first successful read.
-        sendHeartbeat();
       }
+    });
 
-      // Start geolocation watcher
-      if (navigator.geolocation) {
+    // Start geolocation watcher
+    if (navigator.geolocation) {
         watchId = navigator.geolocation.watchPosition(
             (pos) => {
                 const newLocation = { lat: pos.coords.latitude, lon: pos.coords.longitude };
@@ -205,8 +203,7 @@ function DriverLayoutContent({ children }: { children: React.ReactNode }) {
             () => {},
             { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
         );
-      }
-    });
+    }
 
     // Set up a periodic heartbeat interval
     const heartbeatInterval = setInterval(() => sendHeartbeat(), MIN_TIME_THRESHOLD);
@@ -381,5 +378,3 @@ export default function DriverLayout({ children }: { children: React.ReactNode }
         </NotificationsProvider>
     );
 }
-
-    
