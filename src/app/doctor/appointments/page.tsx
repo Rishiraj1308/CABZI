@@ -1,3 +1,4 @@
+
 'use client'
 
 import { useState, useEffect, useMemo } from 'react'
@@ -5,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
-import { Search, Calendar as CalendarIcon, Settings, Building, Video } from 'lucide-react'
+import { Search, Calendar as CalendarIcon, Settings, Building, Video, CheckCircle, UserCheck } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useDb } from '@/firebase/client-provider'
@@ -157,7 +158,7 @@ export default function DoctorAppointmentsPage() {
             case 'Completed': return <Badge className="bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-200">{status}</Badge>;
             case 'Pending': return <Badge className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-200">{status}</Badge>;
             case 'Cancelled': return <Badge variant="destructive">{status}</Badge>;
-            case 'In Queue': return <Badge className="bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-200">In Queue</Badge>;
+            case 'In Queue': return <Badge className="bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-200">{status}</Badge>;
             default: return <Badge variant="secondary">{status}</Badge>;
         }
     }
@@ -258,7 +259,7 @@ export default function DoctorAppointmentsPage() {
                                                 <DialogHeader>
                                                     <DialogTitle>Manage: {selectedAppointment?.patientName}</DialogTitle>
                                                     <DialogDescription>
-                                                        View details, reschedule, or cancel the appointment.
+                                                        View details, reschedule, or manage the consultation status.
                                                     </DialogDescription>
                                                 </DialogHeader>
                                                 
@@ -284,22 +285,28 @@ export default function DoctorAppointmentsPage() {
                                                     </div>
                                                     <Button className="w-full mt-4" onClick={handleRescheduleSubmit}>Confirm Reschedule</Button>
                                                 </div>
-                                                <DialogFooter className="border-t pt-4 space-y-2 sm:space-y-0 flex-col sm:flex-row sm:justify-end sm:space-x-2">
-                                                     {selectedAppointment?.status === 'Confirmed' && selectedAppointment?.consultationType === 'video' && (
-                                                        <Button className="w-full" variant="secondary" onClick={() => router.push(`/video-call/${selectedAppointment.id}`)}>
-                                                            <Video className="w-4 h-4 mr-2" /> Start Video Call
-                                                        </Button>
+                                                <DialogFooter className="border-t pt-4 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                                    {selectedAppointment?.status === 'In Queue' && (
+                                                        <>
+                                                            {selectedAppointment.consultationType === 'video' ? (
+                                                                <Button className="w-full" onClick={() => router.push(`/video-call/${selectedAppointment.id}`)}>
+                                                                    <Video className="w-4 h-4 mr-2" /> Start Video Call
+                                                                </Button>
+                                                            ) : (
+                                                                 <Button className="w-full" onClick={() => handleAppointmentAction(selectedAppointment.id, 'complete')}>
+                                                                    <CheckCircle className="w-4 h-4 mr-2" /> Mark as Completed
+                                                                </Button>
+                                                            )}
+                                                        </>
                                                     )}
-                                                     {selectedAppointment && selectedAppointment.status === 'Pending' && <Button className="w-full" onClick={() => handleAppointmentAction(selectedAppointment.id, 'confirm')}>Confirm Appointment</Button>}
-                                                     {selectedAppointment && selectedAppointment.status === 'Confirmed' && <Button className="w-full" variant="secondary" onClick={() => handleAppointmentAction(selectedAppointment.id, 'check-in')}>Check-in Patient</Button>}
                                                      <AlertDialog>
                                                          <AlertDialogTrigger asChild>
                                                             <Button variant="destructive" className="w-full">Cancel Appointment</Button>
-                                                        </AlertDialogTrigger>
+                                                         </AlertDialogTrigger>
                                                          <AlertDialogContent>
                                                             <AlertDialogHeader>
-                                                              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                                                              <AlertDialogDescription>This action will cancel the appointment for {selectedAppointment?.patientName}. This cannot be undone.</AlertDialogDescription>
+                                                                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                                                <AlertDialogDescription>This action will cancel the appointment for {selectedAppointment?.patientName}. This cannot be undone.</AlertDialogDescription>
                                                             </AlertDialogHeader>
                                                             <AlertDialogFooter>
                                                                 <AlertDialogCancel>Go Back</AlertDialogCancel>

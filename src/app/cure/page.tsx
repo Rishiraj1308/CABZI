@@ -40,7 +40,6 @@ export default function CureDashboardPage() {
                 const unsubType = onSnapshot(hospitalRef, (docSnap) => {
                     if (docSnap.exists()) {
                         const data = docSnap.data();
-                        // CORRECTED: Read from `clinicType` which is saved during onboarding
                         const type = data.clinicType?.toLowerCase() || 'hospital'; 
                         
                         if (type.includes('clinic')) {
