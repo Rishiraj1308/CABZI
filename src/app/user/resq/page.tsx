@@ -1,8 +1,7 @@
-
 'use client'
 
 import React, { useState, useEffect, useCallback } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { AnimatePresence } from 'framer-motion'
 import { useFirebase } from '@/firebase/client-provider'
 import { getDoc, doc, onSnapshot, query, collection, where, updateDoc, GeoPoint, serverTimestamp, addDoc } from 'firebase/firestore'
 import type { GarageRequest, ClientSession } from '@/lib/types'
@@ -17,7 +16,7 @@ import { cn } from '@/lib/utils'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription, DialogFooter } from '@/components/ui/dialog'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Label } from '@/components/ui/label'
-
+import { MotionDiv } from '@/components/ui/motion-div'
 
 const commonIssues = [
     { id: 'flat_tyre', label: 'Flat Tyre', icon: Wrench },
@@ -198,18 +197,37 @@ export default function ResQPage() {
     }
   };
 
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+        opacity: 1,
+        transition: {
+            staggerChildren: 0.1
+        }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { y: 20, opacity: 0 },
+    visible: {
+        y: 0,
+        opacity: 1
+    }
+  };
+
+
   const renderInitialView = () => (
      <Card className="max-w-xl mx-auto mt-8 bg-white/80 dark:bg-background/80 backdrop-blur-md shadow-xl rounded-3xl">
         <CardHeader className="p-8">
             <div className="flex justify-between items-center">
-                <div className="w-16 h-16 rounded-full bg-amber-500/10 flex items-center justify-center border-4 border-amber-500/20">
+                 <div className="w-16 h-16 rounded-full bg-amber-500/10 flex items-center justify-center border-4 border-amber-500/20">
                     <Wrench className="w-8 h-8 text-amber-500"/>
                 </div>
                 <div className="text-center">
                     <CardTitle className="text-2xl font-bold text-gray-800 dark:text-gray-200 leading-snug">Roadside Assistance</CardTitle>
                     <CardDescription className="text-sm text-gray-500 dark:text-gray-400 mt-1 leading-snug">Vehicle trouble? Get quick help for tyre, battery, towing & more.</CardDescription>
                 </div>
-                <div className="text-right">
+                 <div className="text-right">
                     <div className="text-xs text-muted-foreground flex items-center justify-end gap-1">
                         <span className="relative flex h-2 w-2">
                             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
@@ -222,23 +240,29 @@ export default function ResQPage() {
             </div>
         </CardHeader>
         <CardContent className="space-y-4 px-8">
-            <div className="grid grid-cols-3 gap-2">
+             <MotionDiv 
+                className="grid grid-cols-3 gap-2"
+                variants={containerVariants}
+                initial="hidden"
+                animate="visible"
+            >
                 {commonIssues.map((item) => (
-                    <motion.div
+                    <MotionDiv
                       key={item.id}
                       onClick={() => setSelectedIssue(item.label)}
                       className={cn(
-                        "group flex flex-col items-center justify-center p-3 bg-background rounded-xl hover:bg-muted/80 transition-all cursor-pointer shadow-orange-glow hover:-translate-y-1",
+                        "group flex flex-col items-center justify-center p-3 bg-background rounded-xl hover:bg-muted/80 transition-all cursor-pointer shadow-orange-glow",
                         selectedIssue === item.label && "ring-2 ring-orange-500 bg-orange-100/50 dark:bg-orange-900/30"
                       )}
-                      whileHover={{ scale: 1.05 }}
+                      variants={itemVariants}
+                      whileHover={{ scale: 1.05, y: -2, transition: { type: 'spring', stiffness: 300 } }}
                       whileTap={{ scale: 0.95 }}
                     >
                         <item.icon className="text-orange-500 w-6 h-6 mb-2 transition-all group-hover:text-orange-400 group-hover:drop-shadow-[0_0_4px_rgba(255,140,0,0.4)]" />
                         <span className="font-medium text-gray-800 dark:text-gray-200 text-center text-xs">{item.label}</span>
-                    </motion.div>
+                    </MotionDiv>
                 ))}
-            </div>
+            </MotionDiv>
         </CardContent>
         <CardFooter className="p-8">
             <Button

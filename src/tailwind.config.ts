@@ -1,4 +1,3 @@
-
 import type {Config} from 'tailwindcss';
 
 export default {
@@ -64,7 +63,7 @@ export default {
         md: 'calc(var(--radius) - 2px)',
         sm: 'calc(var(--radius) - 4px)',
       },
-      boxShadow: {
+       boxShadow: {
         'orange-glow': '0 4px 10px rgba(255, 165, 0, 0.08)',
       },
       keyframes: {
