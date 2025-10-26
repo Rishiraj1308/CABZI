@@ -10,7 +10,7 @@ import { useToast } from '@/hooks/use-toast'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import RideStatus from '@/components/ride-status'
-import { Wrench, Zap, Fuel, Car, MoreHorizontal, LifeBuoy, Phone, Share2, Siren, Shield, LocateFixed } from 'lucide-react'
+import { Wrench, Zap, Fuel, Car, MoreHorizontal, LifeBuoy, Phone, Share2, Siren, Shield, LocateFixed, MessageSquare } from 'lucide-react'
 import { runTransaction } from 'firebase/firestore'
 import SearchingIndicator from '@/components/ui/searching-indicator'
 import { cn } from '@/lib/utils'
@@ -219,7 +219,7 @@ export default function ResQPage() {
                       key={item.id}
                       onClick={() => setSelectedIssue(item.label)}
                       className={cn(
-                        "flex flex-col items-center justify-center p-4 bg-orange-50 rounded-2xl hover:bg-orange-100 transition-all cursor-pointer shadow-sm",
+                        "flex flex-col items-center justify-center p-6 bg-orange-50 rounded-2xl hover:bg-orange-100 transition-all cursor-pointer shadow-sm hover:shadow-md",
                         selectedIssue === item.label && "ring-2 ring-orange-500 bg-orange-100"
                       )}
                       whileHover={{ scale: 1.05 }}
@@ -257,24 +257,14 @@ export default function ResQPage() {
                 size="lg"
                 disabled={!selectedIssue}
                 onClick={handleRequestMechanic}
-                className={cn("w-full bg-amber-500 hover:bg-amber-600 text-white font-semibold", selectedIssue && "btn-glow")}>
-                Request Help Now
+                className={cn(
+                    "w-full font-semibold rounded-full h-12 text-lg bg-gradient-to-r from-orange-500 to-yellow-400 text-white transition-all duration-300",
+                    "hover:shadow-lg hover:shadow-yellow-500/50",
+                    "disabled:from-gray-400 disabled:to-gray-300 disabled:shadow-none",
+                    selectedIssue && "btn-glow"
+                )}>
+                Request Assistance
             </Button>
-             <Dialog>
-                <DialogTrigger asChild>
-                    <Button variant="ghost" size="sm">
-                        <Shield className="w-4 h-4 mr-2"/> Safety Toolkit
-                    </Button>
-                </DialogTrigger>
-                <DialogContent>
-                    <DialogHeader><DialogTitle>Safety Toolkit</DialogTitle></DialogHeader>
-                    <div className="py-4 space-y-2">
-                        <Button variant="outline" className="w-full justify-start gap-2" onClick={handleShareRide}><Share2 className="w-4 h-4"/> Share Live Location</Button>
-                        <Button variant="outline" className="w-full justify-start gap-2"><LifeBuoy className="w-4 h-4"/> Contact Curocity Support</Button>
-                        <Button variant="destructive" className="w-full justify-start gap-2"><Siren className="w-4 h-4"/> Emergency SOS</Button>
-                    </div>
-                </DialogContent>
-            </Dialog>
         </CardFooter>
       </Card>
   )
@@ -331,6 +321,20 @@ export default function ResQPage() {
         <div className="flex-1">
           {activeGarageRequest ? renderActiveRequest() : renderInitialView()}
         </div>
+         <Dialog>
+            <DialogTrigger asChild>
+                <Button variant="outline" size="icon" className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-2xl">
+                    <MessageSquare className="h-6 w-6" />
+                </Button>
+            </DialogTrigger>
+            <DialogContent>
+                <DialogHeader><DialogTitle>Help & Support</DialogTitle></DialogHeader>
+                 <div className="py-4 text-center">
+                    <p>Support chat is coming soon. For immediate assistance, please call our helpline.</p>
+                    <Button asChild className="mt-4"><a href="tel:1800-XXX-XXXX">Call Support</a></Button>
+                </div>
+            </DialogContent>
+        </Dialog>
     </div>
   );
 }
