@@ -1,3 +1,4 @@
+
 'use client'
 
 import React, { useState, useEffect, useRef, useCallback } from 'react'
@@ -95,38 +96,51 @@ export default function BookRidePage() {
             return false;
         }
 
-        const rideId = localStorage.getItem('activeRideId');
-        if (rideId) {
-            const rideRef = doc(db, 'rides', rideId);
-            const unsub = onSnapshot(rideRef, (docSnap) => {
-                if (!handleActiveDoc(docSnap, 'ride')) {
+        const checkAndSubscribe = async () => {
+            const rideId = localStorage.getItem('activeRideId');
+            if (rideId) {
+                const rideRef = doc(db, 'rides', rideId);
+                const unsub = onSnapshot(rideRef, (docSnap) => {
+                    if (!handleActiveDoc(docSnap, 'ride')) {
+                        resetFlow();
+                    }
+                });
+                unsubscribers.push(unsub);
+                return; // Prioritize ride
+            }
+
+            // If no active ride, check for other services
+            const qCure = query(collection(db, "emergencyCases"), where("riderId", "==", session.userId), where("status", "in", ["pending", "accepted", "onTheWay", "arrived", "inTransit"]));
+            const unsubCure = onSnapshot(qCure, (snapshot) => {
+                if (!snapshot.empty) {
+                    if (handleActiveDoc(snapshot.docs[0], 'ambulance')) return;
+                } else if (activeAmbulanceCase) {
                     resetFlow();
                 }
             });
-            unsubscribers.push(unsub);
-        } else {
-             // If there's no active ride, check for other services
-            const qCure = query(collection(db, "emergencyCases"), where("riderId", "==", session.userId), where("status", "not-in", ["completed", "cancelled_by_rider", "cancelled_by_partner", "cancelled_by_admin"]));
-            const unsubCure = onSnapshot(qCure, (snapshot) => {
-                if (!snapshot.empty) handleActiveDoc(snapshot.docs[0], 'ambulance');
-            });
             unsubscribers.push(unsubCure);
 
-            const qResq = query(collection(db, "garageRequests"), where("driverId", "==", session.userId), where("status", "not-in", ["completed", "cancelled_by_driver", "cancelled_by_mechanic"]));
+            const qResq = query(collection(db, "garageRequests"), where("driverId", "==", session.userId), where("status", "in", ["pending", "accepted", "in_progress", "bill_sent"]));
             const unsubResq = onSnapshot(qResq, (snapshot) => {
-                if (!snapshot.empty) handleActiveDoc(snapshot.docs[0], 'garage');
+                if (!snapshot.empty) {
+                    if (handleActiveDoc(snapshot.docs[0], 'garage')) return;
+                } else if (activeGarageRequest) {
+                    resetFlow();
+                }
             });
             unsubscribers.push(unsubResq);
-        }
+        };
+        
+        checkAndSubscribe();
 
         return () => {
             unsubscribers.forEach(unsub => unsub());
         };
 
-    }, [db, session, resetFlow]);
+    }, [db, session, resetFlow, activeAmbulanceCase, activeGarageRequest]);
 
     return (
-        <div className="h-full w-full relative flex flex-col">
+        <div className="h-full w-full flex flex-col">
             <div className="flex-1 relative">
                  <LiveMap ref={liveMapRef} onLocationFound={handleLocationFound} routeGeometry={routeGeometry} />
             </div>
