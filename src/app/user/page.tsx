@@ -14,7 +14,7 @@ import RideStatus from '@/components/ride-status';
 import { useRouter }from 'next/navigation';
 import dynamic from 'next/dynamic';
 
-const LiveMap = dynamic(() => import('@/components/live-map'), { 
+const LiveMap = dynamic(() => import('@/components/live-map'), {
     ssr: false,
     loading: () => <div className="w-full h-full bg-muted flex items-center justify-center"><p>Loading Map...</p></div>
 });

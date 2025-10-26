@@ -201,7 +201,7 @@ export default function DriverDashboard() {
   useEffect(() => {
     notificationSoundRef.current = new Audio('/sounds/notification.mp3');
     setIsMounted(true);
-    const session = localStorage.getItem('cabzi-session');
+    const session = localStorage.getItem('curocity-session');
     if (!session || !db) {
         setIsLoading(false);
         return;
@@ -235,8 +235,8 @@ export default function DriverDashboard() {
                 walletBalance: data.walletBalance || 0,
                 currentLocation: data.currentLocation ? { lat: data.currentLocation.latitude, lon: data.currentLocation.longitude } : undefined,
                 bankDetails: data.bankDetails,
-                upiId: data.upiId || `${data.phone}@cabzi`,
-                qrCodeUrl: data.qrCodeUrl || `https://placehold.co/300x300/FBBF24/1E293B?text=CabziUPI`,
+                upiId: data.upiId || `${data.phone}@curocity`,
+                qrCodeUrl: data.qrCodeUrl || `https://placehold.co/300x300/FBBF24/1E293B?text=CurocityUPI`,
                 isCabziPinkPartner: data.isCabziPinkPartner || false,
                 subscription: data.subscription,
                 gender: data.gender,
@@ -289,7 +289,7 @@ export default function DriverDashboard() {
   useEffect(() => {
     if (partnerData?.isCabziPinkPartner) {
         const today = new Date().toISOString().split('T')[0]; // Format: YYYY-MM-DD
-        const greetingKey = `cabzi-pink-greeting-shown-${today}`;
+        const greetingKey = `curocity-pink-greeting-shown-${today}`;
 
         const hasBeenShownToday = localStorage.getItem(greetingKey);
 
@@ -647,7 +647,7 @@ export default function DriverDashboard() {
       
       const formData = new FormData(event.currentTarget);
       const pin = formData.get('pin') as string;
-      const storedPin = localStorage.getItem('cabzi-user-pin');
+      const storedPin = localStorage.getItem('curocity-user-pin');
 
       if (pin !== storedPin) {
           toast({ variant: 'destructive', title: 'Incorrect PIN', description: 'The UPI PIN you entered is incorrect. Please try again.' });
@@ -786,7 +786,7 @@ export default function DriverDashboard() {
 
 
   const handlePinSubmit = () => {
-      const storedPin = localStorage.getItem('cabzi-user-pin');
+      const storedPin = localStorage.getItem('curocity-user-pin');
       if (!storedPin) {
           toast({ variant: 'destructive', title: 'PIN Not Set', description: 'Please set a UPI PIN from your profile first.' });
           return;
@@ -1064,20 +1064,12 @@ export default function DriverDashboard() {
      return (
        <div className="flex-1 flex flex-col gap-4">
             {!isOnline ? (
-                <Card className="text-center">
+                <Card className="text-center" onClick={() => handleAvailabilityChange(true)}>
                     <CardHeader className="items-center">
                         <Power className="w-12 h-12 text-destructive mb-2"/>
                         <CardTitle className="font-bold text-xl">You are OFFLINE</CardTitle>
-                        <CardDescription>Click the switch to go online and start receiving ride requests.</CardDescription>
+                        <CardDescription>Tap to go online and start receiving ride requests.</CardDescription>
                     </CardHeader>
-                    <CardContent>
-                       <Switch 
-                         id="main-online-switch"
-                         checked={isOnline}
-                         onCheckedChange={handleAvailabilityChange}
-                         className="data-[state=checked]:bg-green-500 transform scale-150"
-                       />
-                    </CardContent>
                 </Card>
             ) : (
                 <Card className="text-center">
@@ -1127,7 +1119,7 @@ export default function DriverDashboard() {
   return (
     <div className="h-full w-full flex flex-col bg-background">
         <div className="h-1/2">
-           <LiveMap 
+           <LiveMap
               ref={liveMapRef}
               driverLocation={partnerData?.currentLocation}
               riderLocation={riderLocation ?? activeGarageRequest?.location as any}
@@ -1183,5 +1175,3 @@ export default function DriverDashboard() {
     </div>
   )
 }
-
-    
