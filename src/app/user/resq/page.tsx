@@ -199,7 +199,7 @@ export default function ResQPage() {
   };
 
   const renderInitialView = () => (
-     <Card className="max-w-xl mx-auto mt-8 bg-white/80 dark:bg-background/80 backdrop-blur-md shadow-xl shadow-orange-glow rounded-3xl">
+     <Card className="max-w-xl mx-auto mt-8 bg-white/80 dark:bg-background/80 backdrop-blur-md shadow-xl rounded-3xl">
         <CardHeader className="p-8">
              <div className="flex justify-between items-center">
                 <div className="p-3 rounded-full bg-amber-500/10 border-4 border-amber-500/20">
@@ -222,20 +222,24 @@ export default function ResQPage() {
             </div>
         </CardHeader>
         <CardContent className="space-y-4 px-8">
-            <div className="grid grid-cols-3 gap-6 mt-6">
+            <div className="p-3 border rounded-lg bg-muted flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">{locationAddress}</span>
+                <Button variant="ghost" size="icon" onClick={fetchLocation}><LocateFixed className="w-4 h-4"/></Button>
+            </div>
+            <div className="grid grid-cols-3 gap-2">
                 {commonIssues.map((item) => (
                     <motion.div
                       key={item.id}
                       onClick={() => setSelectedIssue(item.label)}
                       className={cn(
-                        "flex flex-col items-center justify-center p-6 bg-orange-50 dark:bg-orange-900/20 rounded-2xl hover:bg-orange-100 dark:hover:bg-orange-900/30 transition-all cursor-pointer shadow-orange-glow hover:-translate-y-1",
-                        selectedIssue === item.label && "ring-2 ring-orange-500 bg-orange-100 dark:bg-orange-900/30"
+                        "flex flex-col items-center justify-center p-3 bg-background rounded-xl hover:bg-muted/80 transition-all cursor-pointer shadow-orange-glow hover:-translate-y-1",
+                        selectedIssue === item.label && "ring-2 ring-orange-500 bg-orange-100/50 dark:bg-orange-900/30"
                       )}
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
                     >
-                        <item.icon className="text-orange-500 w-8 h-8 mb-3" />
-                        <span className="font-medium text-gray-800 dark:text-gray-200 text-center text-sm">{item.label}</span>
+                        <item.icon className="text-orange-500 w-6 h-6 mb-2" />
+                        <span className="font-medium text-gray-800 dark:text-gray-200 text-center text-xs">{item.label}</span>
                     </motion.div>
                 ))}
             </div>
@@ -305,7 +309,7 @@ export default function ResQPage() {
   }
 
   return (
-    <div className="h-full w-full relative flex flex-col p-4 md:p-6 items-center justify-center">
+    <div className="h-full w-full relative flex flex-col p-4 md:p-6 items-center justify-center bg-[linear-gradient(180deg,_#fffdf8_0%,_#fff6e9_100%)] dark:bg-[linear-gradient(180deg,_hsl(var(--background))_0%,_hsl(var(--muted))_100%)]">
         <div className="w-full">
           <AnimatePresence mode="wait">
             {activeGarageRequest ? renderActiveRequest() : renderInitialView()}
