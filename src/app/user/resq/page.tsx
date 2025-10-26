@@ -1,3 +1,4 @@
+
 'use client'
 
 import React, { useState, useEffect, useRef, useCallback } from 'react'
@@ -15,6 +16,7 @@ import { runTransaction } from 'firebase/firestore'
 import SearchingIndicator from '@/components/ui/searching-indicator'
 import { cn } from '@/lib/utils'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { MotionDiv } from '@/components/ui/motion-div'
 
 
 const LiveMap = dynamic(() => import('@/components/live-map'), {
@@ -23,12 +25,12 @@ const LiveMap = dynamic(() => import('@/components/live-map'), {
 });
 
 const commonIssues = [
-    { id: 'flat_tyre', label: 'Flat Tyre', icon: () => <div className="text-xl">🛞</div> },
-    { id: 'battery_jumpstart', label: 'Jump Start', icon: () => <Zap className="w-6 h-6" /> },
-    { id: 'towing_required', label: 'Towing', icon: () => <Car className="w-6 h-6" /> },
-    { id: 'fuel_delivery', label: 'Fuel Refill', icon: () => <Fuel className="w-6 h-6" /> },
-    { id: 'minor_repair', label: 'Minor Repair', icon: () => <div className="text-xl">🔩</div> },
-    { id: 'other', label: 'Other', icon: () => <MoreHorizontal className="w-6 h-6" /> },
+    { id: 'flat_tyre', label: 'Flat Tyre', icon: Wrench },
+    { id: 'battery_jumpstart', label: 'Jump Start', icon: Zap },
+    { id: 'towing_required', label: 'Towing', icon: Car },
+    { id: 'fuel_delivery', label: 'Fuel Refill', icon: Fuel },
+    { id: 'minor_repair', label: 'Minor Repair', icon: Wrench },
+    { id: 'other', label: 'Other', icon: MoreHorizontal },
 ]
 
 export default function ResQPage() {
@@ -159,61 +161,61 @@ export default function ResQPage() {
   }
 
   const renderInitialView = () => (
-     <div className="bg-white/95 backdrop-blur-md rounded-2xl shadow-xl border border-slate-100 overflow-hidden">
-        {/* Header */}
-        <div className="px-5 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-11 h-11 rounded-xl bg-amber-500 flex items-center justify-center text-white">
-              <Wrench className="w-5 h-5"/>
+     <Card className="bg-background/90 backdrop-blur-sm rounded-t-2xl shadow-2xl border-t-0">
+        <CardHeader className="text-center">
+            <div className="mx-auto w-12 h-12 rounded-full bg-amber-500/10 flex items-center justify-center mb-2 border-2 border-amber-500/20">
+                <Wrench className="w-6 h-6 text-amber-500"/>
             </div>
-            <div>
-              <div className="text-sm text-slate-600 font-semibold">Roadside Assistance</div>
-              <div className="text-xs text-slate-400">Quick help for tyre, battery, towing & more</div>
-            </div>
-          </div>
-          {activeGarageRequest && <div className="text-xs text-slate-500">Help is on the way</div>}
-        </div>
-
-        <div className="px-5 pb-5">
-            <div className="space-y-4">
-              <div className="grid grid-cols-3 gap-3">
+          <CardTitle className="text-2xl">Roadside Assistance</CardTitle>
+          <CardDescription>Vehicle trouble? Get quick help for tyre, battery, towing & more.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+            <motion.div 
+                className="grid grid-cols-3 gap-3"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1, transition: { staggerChildren: 0.1 } }}
+            >
                 {commonIssues.map((item) => (
-                  <button
-                    key={item.key}
-                    onClick={() => setSelectedIssue(item.label)}
-                    className={cn(
-                        'flex flex-col items-center justify-center gap-2 p-3 rounded-xl border transition-shadow duration-150 focus:outline-none',
-                        selectedIssue === item.label ? 'bg-amber-50 border-amber-300 shadow-md ring-2 ring-amber-200' : 'bg-white border-slate-100 hover:shadow-sm'
-                    )}>
-                    <div className="text-2xl text-amber-600"><item.icon/></div>
-                    <div className="text-xs text-slate-700 font-medium">{item.label}</div>
-                  </button>
+                  <motion.div
+                    key={item.id}
+                    initial={{ y: 20, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    <button
+                        onClick={() => setSelectedIssue(item.label)}
+                        className={cn(
+                            'flex flex-col w-full h-24 items-center justify-center gap-2 p-3 rounded-xl border-2 transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500',
+                            selectedIssue === item.label ? 'bg-amber-500/10 border-amber-500/50 shadow-md' : 'bg-muted/50 border-muted hover:border-amber-500/30'
+                        )}>
+                        <item.icon className="w-8 h-8 text-amber-600"/>
+                        <div className="text-xs text-foreground font-medium">{item.label}</div>
+                    </button>
+                  </motion.div>
                 ))}
-              </div>
-
-              <div className="flex items-center justify-between p-3 border rounded-lg bg-slate-50">
+            </motion.div>
+            <div className="flex items-center justify-between p-3 border rounded-lg bg-muted">
                 <div>
-                  <div className="text-xs text-slate-500">Location</div>
-                  <div className="text-sm font-medium text-slate-700">Current GPS location</div>
+                    <div className="text-xs text-muted-foreground">Location</div>
+                    <div className="text-sm font-semibold">Current GPS location</div>
                 </div>
                 <div className="text-right">
-                  <div className="text-xs text-slate-500">ETA</div>
-                  <div className="text-sm font-medium text-slate-700">~ 10-15 mins</div>
+                    <div className="text-xs text-muted-foreground">ETA</div>
+                    <div className="text-sm font-semibold">~ 10-15 mins</div>
                 </div>
-              </div>
-
-              <div className="pt-2">
-                <Button
-                  size="lg"
-                  disabled={!selectedIssue}
-                  onClick={handleRequestMechanic}
-                  className="w-full bg-amber-500 hover:bg-amber-600 text-white font-semibold">
-                  Request Help Now
-                </Button>
-              </div>
             </div>
-        </div>
-      </div>
+        </CardContent>
+        <CardFooter>
+            <Button
+                size="lg"
+                disabled={!selectedIssue}
+                onClick={handleRequestMechanic}
+                className={cn("w-full bg-amber-500 hover:bg-amber-600 text-white font-semibold", selectedIssue && "btn-glow")}>
+                Request Help Now
+            </Button>
+        </CardFooter>
+      </Card>
   )
 
   const renderActiveRequest = () => {
@@ -225,7 +227,7 @@ export default function ResQPage() {
                  <CardContent className="py-10 text-center">
                     <SearchingIndicator partnerType="resq" />
                     <h3 className="text-2xl font-bold mt-4">Finding a Mechanic...</h3>
-                    <p className="text-muted-foreground">Contacting nearby ResQ partners.</p>
+                    <p className="text-muted-foreground">Contacting nearby ResQ partners for your issue: <span className="font-semibold">{activeGarageRequest.issue}</span></p>
                 </CardContent>
             </Card>
         )
@@ -254,11 +256,11 @@ export default function ResQPage() {
          />
       </div>
 
-      <div className="absolute bottom-0 left-0 right-0 p-4 z-10">
+      <div className="absolute bottom-0 left-0 right-0 z-10">
         <motion.div
-          initial={{ y: '100%', opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          exit={{ y: '100%', opacity: 0 }}
+          initial={{ y: '100%' }}
+          animate={{ y: 0 }}
+          exit={{ y: '100%' }}
           transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
           className="mx-auto max-w-xl w-full"
         >
