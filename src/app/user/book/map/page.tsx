@@ -10,12 +10,14 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card'
 import { useFirebase } from '@/firebase/client-provider'
-import { GeoPoint, addDoc, collection, serverTimestamp, getDoc, doc } from 'firebase/firestore'
+import { GeoPoint, addDoc, collection, serverTimestamp, getDoc, doc, onSnapshot } from 'firebase/firestore'
 import { useToast } from '@/hooks/use-toast'
 import type { RideData, ClientSession } from '@/lib/types'
 import { cn } from '@/lib/utils'
 import { BikeIcon, AutoIcon, CabIcon } from '@/components/icons'
 import { HeartHandshake, Clock, IndianRupee, Shield } from 'lucide-react'
+import SearchingIndicator from '@/components/ui/searching-indicator'
+import { motion, AnimatePresence } from '@/components/ui/motion-div'
 
 const LiveMap = dynamic(() => import('@/components/live-map'), {
     ssr: false,
@@ -66,6 +68,7 @@ function BookRideMapComponent() {
     const [selectedRide, setSelectedRide] = useState('Cab (Lite)');
     const [isLoading, setIsLoading] = useState(true);
     const [isBooking, setIsBooking] = useState(false);
+    const [isSearching, setIsSearching] = useState(false);
 
     const getAddress = useCallback(async (lat: number, lon: number): Promise<string | null> => {
         try {
@@ -210,7 +213,16 @@ function BookRideMapComponent() {
         try {
             const docRef = await addDoc(collection(db, 'rides'), rideData);
             localStorage.setItem('activeRideId', docRef.id);
-            router.push('/user');
+            setIsSearching(true); // Show searching UI
+            
+             // Listen for the ride to be accepted, then navigate
+            const unsubscribe = onSnapshot(doc(db, 'rides', docRef.id), (rideSnap) => {
+                if (rideSnap.exists() && rideSnap.data().status !== 'searching') {
+                    unsubscribe();
+                    router.push('/user');
+                }
+            });
+
         } catch (error) {
             console.error("Error creating ride:", error);
             toast({ variant: 'destructive', title: 'Booking Failed' });
@@ -236,48 +248,73 @@ function BookRideMapComponent() {
                 </div>
             </div>
             
-             <Card className="shadow-2xl rounded-t-3xl border-t-4 border-primary/20 flex flex-col h-[55%]">
-                <CardHeader className="text-center">
-                    <CardTitle>Select a Ride</CardTitle>
-                    <CardDescription>Choose your preferred ride type for this trip.</CardDescription>
-                </CardHeader>
-                 <CardContent className="space-y-3 flex-1 overflow-y-auto">
-                    {isLoading ? (
-                        Array.from({length: 4}).map((_, i) => <Skeleton key={i} className="h-16 w-full" />)
+             <Card className="shadow-2xl rounded-t-3xl border-t-4 border-primary/20 flex flex-col h-auto max-h-[55%]">
+                <AnimatePresence mode="wait">
+                    {isSearching ? (
+                         <motion.div
+                            key="searching"
+                            initial={{ opacity: 0, y: 50 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -50 }}
+                         >
+                            <CardHeader>
+                                <CardTitle>Finding you a ride...</CardTitle>
+                            </CardHeader>
+                             <CardContent className="flex flex-col items-center justify-center text-center h-64">
+                                <SearchingIndicator partnerType="path" className="w-32 h-32"/>
+                                <p className="text-muted-foreground mt-4">Please wait while we connect you to a nearby partner.</p>
+                            </CardContent>
+                         </motion.div>
                     ) : (
-                        rideTypes.map(rt => (
-                            <Card 
-                                key={rt.name} 
-                                onClick={() => rt.fare !== 'N/A' && setSelectedRide(rt.name)}
-                                className={cn(
-                                "flex items-center p-3 gap-3 cursor-pointer transition-all", 
-                                selectedRide === rt.name && 'ring-2 ring-primary', 
-                                rt.fare === 'N/A' && 'opacity-40 cursor-not-allowed',
-                                rt.name === 'Curocity Pink' && 'bg-pink-500/5',
-                                rt.name === 'Curocity Pink' && selectedRide === rt.name && 'ring-pink-500'
-                                
-                                )}>
-                                <rt.icon className={cn("w-10 h-10 flex-shrink-0", rt.name === 'Curocity Pink' ? 'text-pink-500' : 'text-primary')} />
-                                <div className="flex-1">
-                                    <p className="font-bold">{rt.name}</p>
-                                    <p className="text-xs text-muted-foreground">{rt.description}</p>
-                                </div>
-                                <div className="text-right">
-                                    <p className="font-bold text-lg">{rt.fare}</p>
-                                    <p className="text-xs flex items-center justify-end gap-1"><Clock className="w-3 h-3"/> {rt.eta}</p>
-                                </div>
-                            </Card>
-                        ))
+                         <motion.div
+                            key="selection"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                         >
+                             <CardHeader className="text-center">
+                                <CardTitle>Select a Ride</CardTitle>
+                                <CardDescription>Choose your preferred ride type for this trip.</CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-3 flex-1 overflow-y-auto">
+                                {isLoading ? (
+                                    Array.from({length: 4}).map((_, i) => <Skeleton key={i} className="h-16 w-full" />)
+                                ) : (
+                                    rideTypes.map(rt => (
+                                        <Card 
+                                            key={rt.name} 
+                                            onClick={() => rt.fare !== 'N/A' && setSelectedRide(rt.name)}
+                                            className={cn(
+                                            "flex items-center p-3 gap-3 cursor-pointer transition-all", 
+                                            selectedRide === rt.name && 'ring-2 ring-primary', 
+                                            rt.fare === 'N/A' && 'opacity-40 cursor-not-allowed',
+                                            rt.name === 'Curocity Pink' && 'bg-pink-500/5',
+                                            rt.name === 'Curocity Pink' && selectedRide === rt.name && 'ring-pink-500'
+                                            
+                                            )}>
+                                            <rt.icon className={cn("w-10 h-10 flex-shrink-0", rt.name === 'Curocity Pink' ? 'text-pink-500' : 'text-primary')} />
+                                            <div className="flex-1">
+                                                <p className="font-bold">{rt.name}</p>
+                                                <p className="text-xs text-muted-foreground">{rt.description}</p>
+                                            </div>
+                                            <div className="text-right">
+                                                <p className="font-bold text-lg">{rt.fare}</p>
+                                                <p className="text-xs flex items-center justify-end gap-1"><Clock className="w-3 h-3"/> {rt.eta}</p>
+                                            </div>
+                                        </Card>
+                                    ))
+                                )}
+                            </CardContent>
+                            <CardFooter className="pt-4 grid grid-cols-5 gap-2">
+                                <Button size="lg" className="h-12 text-base font-bold col-span-4" disabled={isLoading || isBooking} onClick={handleConfirmRide}>
+                                    {isBooking ? 'Confirming...' : `Confirm ${selectedRide}`}
+                                </Button>
+                                <Button variant="outline" size="lg" className="h-12">
+                                    <Shield/>
+                                </Button>
+                            </CardFooter>
+                         </motion.div>
                     )}
-                </CardContent>
-                <CardFooter className="pt-4 grid grid-cols-5 gap-2">
-                    <Button size="lg" className="h-12 text-base font-bold col-span-4" disabled={isLoading || isBooking} onClick={handleConfirmRide}>
-                        {isBooking ? 'Confirming...' : `Confirm ${selectedRide}`}
-                    </Button>
-                    <Button variant="outline" size="lg" className="h-12">
-                        <Shield/>
-                    </Button>
-                </CardFooter>
+                </AnimatePresence>
             </Card>
         </div>
     )
@@ -290,4 +327,3 @@ export default function BookRideMapPage() {
         </Suspense>
     );
 }
-
