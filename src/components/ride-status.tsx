@@ -55,6 +55,7 @@ import SearchingIndicator from '@/components/ui/searching-indicator';
 import type { RideData } from '@/lib/types';
 import type { AmbulanceCase } from '@/lib/types';
 import { motion, AnimatePresence } from 'framer-motion';
+import { MotionDiv } from '@/components/ui/motion-div';
 
 
 interface Props {
