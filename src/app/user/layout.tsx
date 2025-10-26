@@ -63,18 +63,33 @@ function LocationDisplay() {
     navigator.geolocation.getCurrentPosition(async (position) => {
       const { latitude, longitude } = position.coords;
       try {
-        const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`);
+        const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=14`);
+        if (!response.ok) {
+            setLocation('Location not found');
+            return;
+        }
         const data = await response.json();
         const address = data.address;
-        const city = address.city || address.town || address.village;
-        const state = address.state;
-        if (city && state) {
-          setLocation(`${city}, ${state}`);
+        // Construct a cleaner address: neighborhood/suburb, then city/town, then state.
+        const locationParts = [
+            address.suburb,
+            address.neighbourhood,
+            address.city,
+            address.town,
+            address.village,
+            address.state_district
+        ].filter(Boolean); // Filter out any undefined/null parts
+        
+        if (locationParts.length > 0) {
+            // Join the first two available parts for a concise display
+            setLocation(locationParts.slice(0, 2).join(', '));
         } else {
-          setLocation(data.display_name.split(',').slice(0, 3).join(', '));
+            // Fallback to a broader part of the display name if specific parts aren't available
+            setLocation(data.display_name.split(',').slice(0, 2).join(','));
         }
+
       } catch (error) {
-        setLocation('Location not found');
+        setLocation('Could not fetch location');
       }
     }, () => {
       setLocation('Location access denied');
@@ -82,8 +97,8 @@ function LocationDisplay() {
   }, []);
   
   return (
-    <div className="flex items-center gap-1.5">
-      <MapPin className="w-4 h-4 text-muted-foreground"/>
+    <div className="flex items-center gap-1.5 overflow-hidden">
+      <MapPin className="w-4 h-4 text-muted-foreground flex-shrink-0"/>
       <span className="text-sm font-medium text-muted-foreground truncate">{location}</span>
     </div>
   )
@@ -187,7 +202,9 @@ export default function UserLayout({
                         </nav>
                     </SheetContent>
                 </Sheet>
-                <LocationDisplay />
+                <div className="max-w-[200px]">
+                  <LocationDisplay />
+                </div>
             </div>
             <div className="flex items-center gap-2">
                 <ThemeToggle />
