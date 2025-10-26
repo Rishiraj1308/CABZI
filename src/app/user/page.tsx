@@ -67,20 +67,21 @@ export default function UserDashboard() {
         visible: {
             opacity: 1,
             transition: {
-                staggerChildren: 0.1,
+                staggerChildren: 0.08,
+                delayChildren: 0.1,
             },
         },
     };
 
     const itemVariants = {
-        hidden: { y: 20, opacity: 0 },
+        hidden: { opacity: 0, y: 15 },
         visible: {
-            y: 0,
             opacity: 1,
+            y: 0,
             transition: {
-                type: 'spring',
-                stiffness: 100,
-            },
+                duration: 0.5,
+                ease: 'easeOut'
+            }
         },
     };
 
