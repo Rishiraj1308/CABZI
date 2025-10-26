@@ -1,16 +1,24 @@
+
 'use client'
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Car, Wrench, Ambulance, Calendar, FlaskConical } from 'lucide-react';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
-import { MotionDiv } from '@/components/ui/motion-div';
+import { MotionDiv, AnimatePresence } from '@/components/ui/motion-div';
 import { useFirebase } from '@/firebase/client-provider';
 import { getDoc, doc, onSnapshot, query, collection, where } from 'firebase/firestore';
 import type { RideData, AmbulanceCase, GarageRequest, ClientSession } from '@/lib/types';
 import RideStatus from '@/components/ride-status';
 import { useRouter }from 'next/navigation';
+import dynamic from 'next/dynamic';
+
+const LiveMap = dynamic(() => import('@/components/live-map'), { 
+    ssr: false,
+    loading: () => <div className="w-full h-full bg-muted flex items-center justify-center"><p>Loading Map...</p></div>
+});
+
 
 const serviceCards = [
     {
@@ -65,6 +73,7 @@ export default function UserDashboard() {
     const [activeGarageRequest, setActiveGarageRequest] = useState<GarageRequest | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [session, setSession] = useState<ClientSession | null>(null);
+    const liveMapRef = useRef<any>(null);
 
      useEffect(() => {
         if (user && db) {
@@ -170,64 +179,71 @@ export default function UserDashboard() {
         return null;
     }
     
-    // If there is any active service, render the status component
     const activeService = activeRide || activeAmbulanceCase || activeGarageRequest;
-    if (activeService) {
-        return (
-            <div className="p-4 flex items-center justify-center h-full">
-                <RideStatus 
-                    ride={activeService} 
-                    isGarageRequest={!!activeGarageRequest}
-                    onCancel={resetFlow} 
-                    onDone={resetFlow}
+
+    return (
+        <div className="h-full w-full relative">
+            <div className="absolute inset-0 z-0">
+                 <LiveMap
+                    ref={liveMapRef}
+                    driverLocation={activeRide?.driverDetails?.location as any}
+                    riderLocation={activeRide?.pickup?.location as any}
+                    routeGeometry={activeRide?.routeGeometry}
+                    isTripInProgress={activeRide?.status === 'in-progress'}
                 />
             </div>
-        )
-    }
-
-    // Otherwise, render the service selection grid
-    return (
-        <MotionDiv 
-            className="p-4 md:p-6 space-y-8 pt-12"
-            variants={containerVariants}
-            initial="hidden"
-            animate="visible"
-        >
-             <MotionDiv variants={itemVariants} className="text-center md:text-left">
-                <h2 className="text-3xl font-bold tracking-tight font-headline">How can we help you today?</h2>
-                <p className="text-muted-foreground">Choose a service to get started.</p>
-            </MotionDiv>
-            
-            <div className="space-y-8">
-                {Object.entries(servicesByCat).map(([category, services]) => (
-                    <MotionDiv key={category} variants={itemVariants}>
-                        <h3 className="text-xl font-bold mb-4 px-2">{category}</h3>
-                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                            {services.map((service, index) => (
-                                <MotionDiv key={service.title} variants={itemVariants}>
-                                    <Link href={service.href} legacyBehavior>
-                                        <a onClick={(e) => {
-                                            if (service.href === '#') {
-                                                e.preventDefault();
-                                                toast({ title: 'Coming Soon!', description: 'This feature is under development.' });
-                                            }
-                                        }}>
-                                            <Card className="h-full transition-all text-center bg-background/80 backdrop-blur-sm hover:shadow-lg hover:border-primary/50">
-                                                 <CardContent className="p-4 flex flex-col items-center justify-center gap-2">
-                                                    <div className="p-3 bg-muted rounded-full">
-                                                      <service.icon className={`w-6 h-6 ${service.color}`} />
-                                                    </div>
-                                                    <p className="font-semibold text-sm">{service.title}</p>
-                                                </CardContent>
-                                            </Card>
-                                        </a>
-                                    </Link>
-                                </MotionDiv>
-                            ))}
-                        </div>
-                    </MotionDiv>
-                ))}
+             <div className="absolute bottom-0 left-0 right-0 z-10 p-4">
+                <AnimatePresence mode="wait">
+                    {activeService ? (
+                        <RideStatus 
+                            key="ride-status"
+                            ride={activeService} 
+                            isGarageRequest={!!activeGarageRequest}
+                            onCancel={resetFlow} 
+                            onDone={resetFlow}
+                        />
+                    ) : (
+                        <MotionDiv 
+                            key="selection"
+                            className="space-y-8"
+                            initial={{y: 200, opacity: 0}}
+                            animate={{y: 0, opacity: 1}}
+                            exit={{y: 200, opacity: 0}}
+                            transition={{type: 'spring', stiffness: 100, damping: 20}}
+                        >
+                            <Card className="shadow-2xl">
+                                <CardHeader className="text-center">
+                                    <CardTitle>How can we help you today?</CardTitle>
+                                    <CardDescription>Choose a service to get started.</CardDescription>
+                                </CardHeader>
+                                <CardContent>
+                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                        {serviceCards.map((service, index) => (
+                                             <Link key={service.title} href={service.href} legacyBehavior>
+                                                <a onClick={(e) => {
+                                                    if (service.href === '#') {
+                                                        e.preventDefault();
+                                                        toast({ title: 'Coming Soon!', description: 'This feature is under development.' });
+                                                    }
+                                                }}>
+                                                    <Card className="h-full transition-all text-center bg-background/80 backdrop-blur-sm hover:shadow-lg hover:border-primary/50">
+                                                        <CardContent className="p-4 flex flex-col items-center justify-center gap-2">
+                                                            <div className="p-3 bg-muted rounded-full">
+                                                            <service.icon className={`w-6 h-6 ${service.color}`} />
+                                                            </div>
+                                                            <p className="font-semibold text-sm">{service.title}</p>
+                                                        </CardContent>
+                                                    </Card>
+                                                </a>
+                                            </Link>
+                                        ))}
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        </MotionDiv>
+                    )}
+                </AnimatePresence>
             </div>
-        </MotionDiv>
+        </div>
     );
 }
