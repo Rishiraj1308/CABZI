@@ -106,7 +106,7 @@ export default function UserLayout({
   useEffect(() => {
     setIsMounted(true);
     if (!isUserLoading && !user) {
-      if (window.location.pathname.startsWith('/user')) {
+      if (window.location.pathname.startsWith('/rider') || window.location.pathname.startsWith('/user')) {
         router.push('/login?role=user');
       }
     }
