@@ -15,6 +15,7 @@ import { runTransaction } from 'firebase/firestore'
 import SearchingIndicator from '@/components/ui/searching-indicator'
 import { cn } from '@/lib/utils'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
+import { AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from '@/components/ui/alert-dialog'
 
 
 const LiveMap = dynamic(() => import('@/components/live-map'), {
@@ -237,11 +238,30 @@ export default function ResQPage() {
     if (activeGarageRequest.status === 'pending') {
         return (
             <Card>
-                 <CardContent className="py-10 text-center">
+                <CardContent className="py-10 text-center">
                     <SearchingIndicator partnerType="resq" />
                     <h3 className="text-2xl font-bold mt-4">Finding a Mechanic...</h3>
                     <p className="text-muted-foreground">Contacting nearby ResQ partners for your issue: <span className="font-semibold">{activeGarageRequest.issue}</span></p>
                 </CardContent>
+                <CardFooter>
+                     <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                           <Button variant="link" size="sm" className="w-full text-muted-foreground">Cancel Request</Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                            <AlertDialogHeader>
+                                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    This will cancel your current request for roadside assistance.
+                                </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel>Go Back</AlertDialogCancel>
+                                <AlertDialogAction onClick={resetFlow} className="bg-destructive hover:bg-destructive/80">Yes, Cancel</AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
+                </CardFooter>
             </Card>
         )
     }
