@@ -1,100 +1,156 @@
 
 'use client'
 
-import React, { useState, useEffect, useRef, useCallback } from 'react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { ArrowLeft, Star, MapPin, HeartHandshake, IndianRupee, Clock, Calendar, Search } from 'lucide-react'
-import { Card, CardContent } from '@/components/ui/card'
-import Image from 'next/image'
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { ArrowLeft, Search, MapPin, MoreVertical, LocateFixed } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import dynamic from 'next/dynamic';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetDescription } from '@/components/ui/sheet';
+import { searchPlace } from '@/lib/routing';
+import { useToast } from '@/hooks/use-toast';
+import { useRouter } from 'next/navigation';
+
+const LiveMap = dynamic(() => import('@/components/live-map'), {
+    ssr: false,
+    loading: () => <div className="w-full h-full bg-muted flex items-center justify-center"><p>Loading Map...</p></div>
+});
+
+
+interface Place {
+    place_id: string;
+    display_name: string;
+    lat: string;
+    lon: string;
+}
 
 export default function BookRidePage() {
-    
-  return (
-    <div className="flex flex-col h-screen bg-muted/20">
-        {/* Header Section */}
-        <div className="bg-green-100 dark:bg-green-900/30 p-6 pt-12 relative overflow-hidden">
-            <div className="flex justify-between items-center mb-4">
-                <Button variant="ghost" size="icon"><ArrowLeft className="w-6 h-6"/></Button>
-                <h1 className="text-2xl font-bold">Transport</h1>
-                <Button variant="outline" className="bg-white/80 backdrop-blur-sm"><MapPin className="w-4 h-4 mr-2"/> Map</Button>
-            </div>
-            <p className="text-lg text-foreground/80 mb-6">Wherever you're going, let's get you there!</p>
+    const router = useRouter();
+    const { toast } = useToast();
+    const [searchQuery, setSearchQuery] = useState('');
+    const [searchResults, setSearchResults] = useState<Place[]>([]);
+    const [selectedPlace, setSelectedPlace] = useState<Place | null>(null);
+    const [isSearching, setIsSearching] = useState(false);
+    const mapRef = useRef<any>(null);
 
-            <div className="absolute -right-10 -bottom-5 w-48 h-24">
-                 <Image src="/images/curocity-car-illustration.svg" alt="Car Illustration" width={192} height={96} data-ai-hint="car illustration" />
-            </div>
+    const handleSearch = useCallback(async (query: string) => {
+        if (query.length < 3) {
+            setSearchResults([]);
+            return;
+        }
+        setIsSearching(true);
+        try {
+            const results = await searchPlace(query);
+            setSearchResults(results || []);
+        } catch (error) {
+            toast({ variant: 'destructive', title: 'Search Failed' });
+        } finally {
+            setIsSearching(false);
+        }
+    }, [toast]);
+
+    const handleSelectPlace = (place: Place) => {
+        setSelectedPlace(place);
+        setSearchResults([]);
+        setSearchQuery(place.display_name.split(',')[0]);
+        if (mapRef.current) {
+            mapRef.current.flyTo([parseFloat(place.lat), parseFloat(place.lon)], 16);
+        }
+    };
+    
+    const handleLocateMe = () => {
+        if(mapRef.current) {
+            mapRef.current.locate();
+        }
+    }
+
+    return (
+    <div className="h-screen w-screen flex flex-col bg-muted relative">
+        {/* Map Background */}
+        <div className="absolute inset-0 z-0">
+             <LiveMap ref={mapRef} />
         </div>
 
-        {/* Content Section */}
-        <div className="flex-1 bg-background rounded-t-3xl -mt-4 p-4 space-y-6">
-            {/* Search Card */}
-            <Card className="shadow-lg">
-                <CardContent className="p-4 flex items-center gap-2">
-                     <div className="relative flex-1">
-                        <div className="absolute left-3 top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-red-500 ring-2 ring-red-200"></div>
-                        <Input placeholder="Where to?" className="pl-8 h-11 border-0 focus-visible:ring-0 text-base font-semibold"/>
-                     </div>
-                     <Button variant="outline"><Calendar className="w-4 h-4 mr-2"/> Later</Button>
-                </CardContent>
-            </Card>
-
-            {/* Recent Trips */}
-             <div className="space-y-4">
-                <h3 className="font-bold">Recent Trips</h3>
-                 <div className="flex items-center gap-4 cursor-pointer">
-                    <div className="p-2.5 bg-muted rounded-full">
-                        <MapPin className="w-5 h-5 text-muted-foreground" />
-                    </div>
-                    <div className="flex-1 border-b pb-4">
-                        <p className="font-semibold">Connaught Place</p>
-                        <p className="text-xs text-muted-foreground">New Delhi, Delhi</p>
-                    </div>
-                    <div className="text-right">
-                        <p className="text-sm font-semibold">5.2 km</p>
-                        <p className="text-xs text-muted-foreground">15 min</p>
-                    </div>
-                </div>
-                 <div className="flex items-center gap-4 cursor-pointer">
-                    <div className="p-2.5 bg-muted rounded-full">
-                        <MapPin className="w-5 h-5 text-muted-foreground" />
-                    </div>
-                    <div className="flex-1 border-b pb-4">
-                        <p className="font-semibold">Indira Gandhi International Airport</p>
-                        <p className="text-xs text-muted-foreground">New Delhi, Delhi</p>
-                    </div>
-                     <div className="text-right">
-                        <p className="text-sm font-semibold">21.8 km</p>
-                        <p className="text-xs text-muted-foreground">45 min</p>
-                    </div>
-                </div>
-                 <div className="flex items-center gap-4 cursor-pointer">
-                    <div className="p-2.5 bg-muted rounded-full">
-                        <MapPin className="w-5 h-5 text-muted-foreground" />
-                    </div>
-                    <div className="flex-1">
-                        <p className="font-semibold">Select Citywalk</p>
-                        <p className="text-xs text-muted-foreground">Saket, New Delhi</p>
-                    </div>
-                     <div className="text-right">
-                        <p className="text-sm font-semibold">12.5 km</p>
-                        <p className="text-xs text-muted-foreground">30 min</p>
-                    </div>
-                </div>
+        {/* UI Overlay */}
+        <div className="absolute inset-0 z-10 flex flex-col pointer-events-none">
+            {/* Header */}
+            <div className="p-4 flex items-center gap-2 pointer-events-auto">
+                 <Button variant="outline" size="icon" className="rounded-full bg-background/80 backdrop-blur-sm" onClick={() => router.back()}>
+                    <ArrowLeft className="w-5 h-5"/>
+                 </Button>
+                 <div className="relative flex-1">
+                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                     <Input 
+                        placeholder="Search for a destination..." 
+                        className="pl-10 h-11 rounded-full shadow-md bg-background/80 backdrop-blur-sm"
+                        value={searchQuery}
+                        onChange={(e) => { setSearchQuery(e.target.value); handleSearch(e.target.value); }}
+                     />
+                 </div>
             </div>
             
-            {/* More Ways to Travel */}
-            <div className="pt-4">
-                <h3 className="font-bold mb-2">More ways to travel</h3>
-                 <Card className="bg-blue-100/50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-900">
-                    <CardContent className="p-4 flex items-center gap-3">
-                         <div className="p-2 bg-blue-200/50 dark:bg-blue-500/30 rounded-full">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6 text-blue-600"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-                         </div>
-                        <p className="font-semibold">Travel with friends in group rides!</p>
+            {/* Search Results */}
+            {searchResults.length > 0 && (
+                <Card className="mx-4 mt-2 shadow-lg pointer-events-auto">
+                    <CardContent className="p-2 max-h-60 overflow-y-auto">
+                        {isSearching ? <Skeleton className="h-20 w-full" /> : (
+                            searchResults.map(place => (
+                                <div key={place.place_id} onClick={() => handleSelectPlace(place)} className="p-2 flex items-start gap-3 rounded-md hover:bg-muted cursor-pointer">
+                                    <MapPin className="w-5 h-5 text-muted-foreground mt-1"/>
+                                    <div>
+                                        <p className="font-semibold text-sm">{place.display_name.split(',')[0]}</p>
+                                        <p className="text-xs text-muted-foreground">{place.display_name.split(',').slice(1,4).join(',')}</p>
+                                    </div>
+                                </div>
+                            ))
+                        )}
                     </CardContent>
                 </Card>
+            )}
+
+            <div className="absolute top-1/2 right-4 -translate-y-1/2 pointer-events-auto">
+                <Button variant="outline" size="icon" className="rounded-full bg-background/80 backdrop-blur-sm" onClick={handleLocateMe}>
+                    <LocateFixed className="w-5 h-5"/>
+                </Button>
             </div>
+
+            {/* Bottom Sheet for Confirmation */}
+            {selectedPlace && (
+                <div className="mt-auto pointer-events-auto">
+                    <Card className="rounded-b-none rounded-t-2xl shadow-2xl">
+                        <CardHeader>
+                            <CardTitle className="flex justify-between items-start">
+                                <div>
+                                    <p className="text-xl">{selectedPlace.display_name.split(',')[0]}</p>
+                                    <p className="text-xs text-muted-foreground font-normal">{selectedPlace.display_name.split(',').slice(1).join(',')}</p>
+                                </div>
+                                 <Button variant="ghost" size="icon"><MoreVertical className="w-5 h-5"/></Button>
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                             <div className="flex items-start gap-4 p-3 rounded-lg hover:bg-muted cursor-pointer">
+                                <MapPin className="w-6 h-6 text-primary mt-1"/>
+                                <div>
+                                    <p className="font-semibold">South Wing Drop-off (Departure)</p>
+                                    <p className="text-sm text-muted-foreground">0.0km</p>
+                                </div>
+                             </div>
+                             <div className="flex items-start gap-4 p-3 rounded-lg hover:bg-muted cursor-pointer">
+                                <MapPin className="w-6 h-6 text-green-500 mt-1"/>
+                                <div>
+                                    <p className="font-semibold">Grab Pickup (Arrival Bays A1-A3)</p>
+                                    <p className="text-sm text-muted-foreground">0.2km</p>
+                                </div>
+                             </div>
+                        </CardContent>
+                        <CardFooter>
+                            <Button size="lg" className="w-full bg-green-600 hover:bg-green-700">Choose This Destination</Button>
+                        </CardFooter>
+                    </Card>
+                </div>
+            )}
         </div>
     </div>
   );
