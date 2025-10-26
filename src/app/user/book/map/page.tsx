@@ -15,7 +15,7 @@ import { useToast } from '@/hooks/use-toast'
 import type { RideData, ClientSession } from '@/lib/types'
 import { cn } from '@/lib/utils'
 import { BikeIcon, AutoIcon, CabIcon } from '@/components/icons'
-import { HeartHandshake, Clock, IndianRupee } from 'lucide-react'
+import { HeartHandshake, Clock, IndianRupee, Shield } from 'lucide-react'
 
 const LiveMap = dynamic(() => import('@/components/live-map'), {
     ssr: false,
@@ -47,7 +47,7 @@ const initialRideTypes: RideTypeInfo[] = [
     { name: 'Bike', description: 'Quick and affordable for solo trips', icon: BikeIcon, eta: '...', fare: '...' },
     { name: 'Auto', description: 'The classic three-wheeler for city travel', icon: AutoIcon, eta: '...', fare: '...' },
     { name: 'Cab (Lite)', description: 'Affordable sedans for everyday rides', icon: CabIcon, eta: '...', fare: '...' },
-    { name: 'Curocity Pink', description: 'A safe ride option exclusively for women, with women partners.', icon: HeartHandshake, eta: '...', fare: '...' },
+    { name: 'Curocity Pink', description: 'A safe ride option exclusively for women.', icon: HeartHandshake, eta: '...', fare: '...' },
 ]
 
 
@@ -167,66 +167,69 @@ function BookRideMapComponent() {
 
 
     return (
-        <div className="h-screen w-screen flex flex-col bg-background">
-            {/* Full-screen map container */}
-            <div className="flex-1 w-full h-full relative">
+        <div className="h-screen w-screen relative bg-background">
+            {/* Map as background */}
+            <div className="absolute inset-0 z-0">
                 <LiveMap
                     riderLocation={userLocation}
+                    destinationLocation={destination?.coords}
                     routeGeometry={routeGeometry}
                 />
             </div>
-            {/* UI overlay */}
-            <div className="absolute inset-0 z-10 pointer-events-none">
-                 <div className="h-full w-full flex flex-col justify-between p-4">
-                     {/* Top buttons */}
-                    <div className="pointer-events-auto">
-                        <Button variant="outline" size="icon" className="rounded-full shadow-lg" onClick={() => router.back()}>
-                            <ArrowLeft className="w-5 h-5"/>
-                        </Button>
-                    </div>
-
-                    {/* Bottom ride selection card */}
-                     <Card className="pointer-events-auto shadow-2xl animate-fade-in">
-                         <CardHeader className="text-center">
-                            <CardTitle>Select a Ride</CardTitle>
-                            <CardDescription>Choose your preferred ride type for this trip.</CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-3 max-h-[40vh] overflow-y-auto">
-                            {isLoading ? (
-                                Array.from({length: 4}).map((_, i) => <Skeleton key={i} className="h-16 w-full" />)
-                            ) : (
-                                rideTypes.map(rt => (
-                                    <Card 
-                                      key={rt.name} 
-                                      onClick={() => rt.fare !== 'N/A' && setSelectedRide(rt.name)}
-                                      className={cn(
-                                        "flex items-center p-3 gap-3 cursor-pointer transition-all", 
-                                        selectedRide === rt.name && 'ring-2 ring-primary', 
-                                        rt.fare === 'N/A' && 'opacity-40 cursor-not-allowed',
-                                        rt.name === 'Curocity Pink' && 'bg-pink-500/5',
-                                        rt.name === 'Curocity Pink' && selectedRide === rt.name && 'ring-pink-500'
-                                        
-                                        )}>
-                                        <rt.icon className={cn("w-10 h-10 flex-shrink-0", rt.name === 'Curocity Pink' ? 'text-pink-500' : 'text-primary')} />
-                                        <div className="flex-1">
-                                            <p className="font-bold">{rt.name}</p>
-                                            <p className="text-xs text-muted-foreground">{rt.description}</p>
-                                        </div>
-                                        <div className="text-right">
-                                            <p className="font-bold text-lg">{rt.fare}</p>
-                                            <p className="text-xs flex items-center justify-end gap-1"><Clock className="w-3 h-3"/> {rt.eta}</p>
-                                        </div>
-                                    </Card>
-                                ))
-                            )}
-                        </CardContent>
-                         <CardFooter className="pt-4">
-                            <Button size="lg" className="w-full h-12 text-base font-bold" disabled={isLoading}>
-                               Confirm {selectedRide}
-                            </Button>
-                        </CardFooter>
-                    </Card>
+            
+            {/* UI Overlay */}
+            <div className="absolute inset-0 z-10 pointer-events-none flex flex-col justify-between">
+                {/* Top Controls */}
+                 <div className="p-4 pointer-events-auto">
+                    <Button variant="outline" size="icon" className="rounded-full shadow-lg" onClick={() => router.back()}>
+                        <ArrowLeft className="w-5 h-5"/>
+                    </Button>
                 </div>
+
+                {/* Bottom Sheet Card */}
+                <Card className="pointer-events-auto shadow-2xl rounded-t-3xl">
+                     <CardHeader className="text-center">
+                        <CardTitle>Select a Ride</CardTitle>
+                        <CardDescription>Choose your preferred ride type for this trip.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                        {isLoading ? (
+                            Array.from({length: 4}).map((_, i) => <Skeleton key={i} className="h-16 w-full" />)
+                        ) : (
+                            rideTypes.map(rt => (
+                                <Card 
+                                  key={rt.name} 
+                                  onClick={() => rt.fare !== 'N/A' && setSelectedRide(rt.name)}
+                                  className={cn(
+                                    "flex items-center p-3 gap-3 cursor-pointer transition-all", 
+                                    selectedRide === rt.name && 'ring-2 ring-primary', 
+                                    rt.fare === 'N/A' && 'opacity-40 cursor-not-allowed',
+                                    rt.name === 'Curocity Pink' && 'bg-pink-500/5',
+                                    rt.name === 'Curocity Pink' && selectedRide === rt.name && 'ring-pink-500'
+                                    
+                                    )}>
+                                    <rt.icon className={cn("w-10 h-10 flex-shrink-0", rt.name === 'Curocity Pink' ? 'text-pink-500' : 'text-primary')} />
+                                    <div className="flex-1">
+                                        <p className="font-bold">{rt.name}</p>
+                                        <p className="text-xs text-muted-foreground">{rt.description}</p>
+                                    </div>
+                                    <div className="text-right">
+                                        <p className="font-bold text-lg">{rt.fare}</p>
+                                        <p className="text-xs flex items-center justify-end gap-1"><Clock className="w-3 h-3"/> {rt.eta}</p>
+                                    </div>
+                                </Card>
+                            ))
+                        )}
+                    </CardContent>
+                    <CardFooter className="pt-4 grid grid-cols-5 gap-2">
+                        <Button size="lg" className="h-12 text-base font-bold col-span-4" disabled={isLoading}>
+                           Confirm {selectedRide}
+                        </Button>
+                        <Button variant="outline" size="lg" className="h-12">
+                            <Shield/>
+                        </Button>
+                    </CardFooter>
+                </Card>
             </div>
         </div>
     )
