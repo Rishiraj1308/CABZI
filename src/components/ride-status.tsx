@@ -259,12 +259,13 @@ export default function RideStatus({
                     <h3 className="text-3xl font-bold mt-4">Finding you a ride...</h3>
                     <p className="text-muted-foreground">This will only take a moment.</p>
                      <MotionDiv
-                        animate={{ x: [-20, 20, -20] }}
+                        animate={{ x: ["-110%", "20%", "20%", "120%"] }}
                         transition={{
-                            duration: 2,
+                            duration: 4,
                             ease: "easeInOut",
                             repeat: Infinity,
-                            repeatType: "loop"
+                            repeatType: "loop",
+                            times: [0, 0.4, 0.6, 1] // Come in (40%), pause (20%), go out (40%)
                         }}
                         className="absolute bottom-0 w-48 h-28 z-0"
                      >
