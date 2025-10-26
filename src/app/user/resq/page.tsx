@@ -16,6 +16,7 @@ import SearchingIndicator from '@/components/ui/searching-indicator'
 import { cn } from '@/lib/utils'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from '@/components/ui/alert-dialog'
+import { Separator } from '@/components/ui/separator'
 
 
 const commonIssues = [
@@ -223,27 +224,28 @@ export default function ResQPage() {
                     </motion.div>
                 ))}
             </div>
-            <div className="flex items-center justify-between p-3 border rounded-lg bg-muted">
-              <div>
-                  <div className="text-xs text-muted-foreground">Location</div>
-                  <div className="text-sm font-semibold truncate flex items-center gap-2">
-                     <Button variant="ghost" size="icon" className="h-6 w-6" onClick={fetchLocation}>
-                        <LocateFixed className="w-4 h-4" />
-                     </Button>
-                     {locationAddress}
-                  </div>
-              </div>
-              <div className="text-right">
-                  <div className="text-xs text-muted-foreground flex items-center justify-end gap-1">
-                      <span className="relative flex h-2 w-2">
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                        <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
-                      </span>
-                      ETA
-                  </div>
-                  <div className="text-sm font-semibold">~ 10-15 mins</div>
-              </div>
-          </div>
+             <div className="flex items-center justify-between p-3 border rounded-lg bg-muted">
+                <div className="flex-1">
+                    <div className="text-xs text-muted-foreground">Location</div>
+                    <div className="text-sm font-semibold truncate flex items-center gap-2">
+                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={fetchLocation}>
+                            <LocateFixed className="w-4 h-4" />
+                        </Button>
+                        <span className="truncate">{locationAddress}</span>
+                    </div>
+                </div>
+                <Separator orientation="vertical" className="h-10 mx-4" />
+                <div className="text-right">
+                    <div className="text-xs text-muted-foreground flex items-center justify-end gap-1">
+                        <span className="relative flex h-2 w-2">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                            <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                        </span>
+                        ETA
+                    </div>
+                    <div className="text-sm font-semibold">~10-15 mins</div>
+                </div>
+            </div>
         </CardContent>
         <CardFooter className="grid grid-cols-1 gap-2 p-8">
             <Button
@@ -316,15 +318,16 @@ export default function ResQPage() {
         </div>
          <Dialog>
             <DialogTrigger asChild>
-                <Button variant="outline" size="icon" className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-2xl">
-                    <MessageSquare className="h-6 w-6" />
-                </Button>
+                 <Button variant="ghost" size="icon" className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-2xl bg-background/80 backdrop-blur-md">
+                    <Shield className="h-6 w-6 text-primary" />
+                 </Button>
             </DialogTrigger>
             <DialogContent>
-                <DialogHeader><DialogTitle>Help & Support</DialogTitle></DialogHeader>
-                 <div className="py-4 text-center">
-                    <p>Support chat is coming soon. For immediate assistance, please call our helpline.</p>
-                    <Button asChild className="mt-4"><a href="tel:1800-XXX-XXXX">Call Support</a></Button>
+                <DialogHeader><DialogTitle>Safety Toolkit</DialogTitle></DialogHeader>
+                 <div className="py-4 space-y-2">
+                    <Button variant="outline" className="w-full justify-start gap-2" onClick={() => toast({title: "Coming Soon!"})}><MessageSquare className="w-4 h-4"/> Share Live Location</Button>
+                    <Button variant="outline" className="w-full justify-start gap-2"><a href="tel:1800-XXX-XXXX"><Phone className="w-4 h-4"/> Contact Support</a></Button>
+                    <Button variant="destructive" className="w-full justify-start gap-2"><a href="tel:112"><Siren className="w-4 h-4"/> Emergency SOS</a></Button>
                 </div>
             </DialogContent>
         </Dialog>
