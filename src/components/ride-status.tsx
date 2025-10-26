@@ -54,6 +54,7 @@ import { cn } from '@/lib/utils';
 import SearchingIndicator from '@/components/ui/searching-indicator';
 import type { RideData } from '@/lib/types';
 import type { AmbulanceCase } from '@/lib/types';
+import { MotionDiv } from './ui/motion-div';
 
 
 interface Props {
@@ -252,7 +253,7 @@ export default function RideStatus({
     switch (rideData.status) {
         case "searching":
             return (
-                <div className="text-center py-10">
+                <div className="text-center py-10 flex flex-col items-center">
                     <SearchingIndicator partnerType="path" />
                     <h3 className="text-2xl font-bold mt-4">Finding you a ride...</h3>
                     <p className="text-muted-foreground">This will only take a moment.</p>
@@ -356,50 +357,58 @@ export default function RideStatus({
   }
 
   return (
-    <Card className="w-full max-w-md mx-auto shadow-2xl animate-fade-in">
-        <CardHeader className="p-4 flex-row items-center justify-between">
-             <div className="flex items-center gap-3">
-                <div className={cn("p-2 rounded-full", isAmbulanceCase ? 'bg-destructive/10' : isGarageRequest ? 'bg-amber-500/10' : 'bg-primary/10')}>
-                  {getActiveRideIcon()}
-                </div>
-                <div>
-                   <CardTitle className="text-lg">{getActiveRideTitle()}</CardTitle>
-                   <CardDescription>ID: {ride.id.substring(0, 8)}...</CardDescription>
-                </div>
-             </div>
-             <Dialog>
-                <DialogTrigger asChild>
-                    <Button variant="ghost" size="icon"><Shield className="w-5 h-5 text-muted-foreground"/></Button>
-                </DialogTrigger>
-                <DialogContent>
-                    <DialogHeader><DialogTitle>Safety Toolkit</DialogTitle></DialogHeader>
-                    <div className="py-4 space-y-2">
-                        <Button variant="outline" className="w-full justify-start gap-2" onClick={handleShareRide}><Share2 className="w-4 h-4"/> Share Ride Details</Button>
-                        <Button variant="outline" className="w-full justify-start gap-2"><LifeBuoy className="w-4 h-4"/> Contact Support</Button>
-                        <Button variant="destructive" className="w-full justify-start gap-2"><Siren className="w-4 h-4"/> Emergency SOS</Button>
+    <MotionDiv
+        layout
+        initial={{ y: 50, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        exit={{ y: 50, opacity: 0 }}
+        transition={{ type: 'spring', stiffness: 100 }}
+    >
+        <Card className="w-full max-w-md mx-auto shadow-2xl">
+            <CardHeader className="p-4 flex-row items-center justify-between">
+                <div className="flex items-center gap-3">
+                    <div className={cn("p-2 rounded-full", isAmbulanceCase ? 'bg-destructive/10' : isGarageRequest ? 'bg-amber-500/10' : 'bg-primary/10')}>
+                    {getActiveRideIcon()}
                     </div>
-                </DialogContent>
-            </Dialog>
-        </CardHeader>
-        <CardContent className="p-4 sm:p-6 bg-muted/30">
-          {renderContent()}
-        </CardContent>
-        {ride.status !== 'completed' && ride.status !== 'payment_pending' && (ride as any).status !== 'bill_sent' && (
-             <CardFooter className="p-2">
-                <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                        <Button variant="link" size="sm" className="w-full text-muted-foreground">Cancel {isGarageRequest ? 'Request' : isAmbulanceCase ? 'Case' : 'Ride'}</Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                        <AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle><AlertDialogDescription>This will cancel the current {isGarageRequest ? 'service request' : isAmbulanceCase ? 'emergency case' : 'ride'}. This action cannot be undone.</AlertDialogDescription></AlertDialogHeader>
-                        <AlertDialogFooter>
-                            <AlertDialogCancel>Go Back</AlertDialogCancel>
-                            <AlertDialogAction onClick={onCancel} className="bg-destructive hover:bg-destructive/80">Yes, Cancel</AlertDialogAction>
-                        </AlertDialogFooter>
-                    </AlertDialogContent>
-                </AlertDialog>
-            </CardFooter>
-        )}
-    </Card>
+                    <div>
+                    <CardTitle className="text-lg">{getActiveRideTitle()}</CardTitle>
+                    <CardDescription>ID: {ride.id.substring(0, 8)}...</CardDescription>
+                    </div>
+                </div>
+                <Dialog>
+                    <DialogTrigger asChild>
+                        <Button variant="ghost" size="icon"><Shield className="w-5 h-5 text-muted-foreground"/></Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                        <DialogHeader><DialogTitle>Safety Toolkit</DialogTitle></DialogHeader>
+                        <div className="py-4 space-y-2">
+                            <Button variant="outline" className="w-full justify-start gap-2" onClick={handleShareRide}><Share2 className="w-4 h-4"/> Share Ride Details</Button>
+                            <Button variant="outline" className="w-full justify-start gap-2"><LifeBuoy className="w-4 h-4"/> Contact Support</Button>
+                            <Button variant="destructive" className="w-full justify-start gap-2"><Siren className="w-4 h-4"/> Emergency SOS</Button>
+                        </div>
+                    </DialogContent>
+                </Dialog>
+            </CardHeader>
+            <CardContent className="p-4 sm:p-6 bg-muted/30">
+            {renderContent()}
+            </CardContent>
+            {ride.status !== 'completed' && ride.status !== 'payment_pending' && (ride as any).status !== 'bill_sent' && (
+                <CardFooter className="p-2">
+                    <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                            <Button variant="link" size="sm" className="w-full text-muted-foreground">Cancel {isGarageRequest ? 'Request' : isAmbulanceCase ? 'Case' : 'Ride'}</Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                            <AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle><AlertDialogDescription>This will cancel the current {isGarageRequest ? 'service request' : isAmbulanceCase ? 'emergency case' : 'ride'}. This action cannot be undone.</AlertDialogDescription></AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel>Go Back</AlertDialogCancel>
+                                <AlertDialogAction onClick={onCancel} className="bg-destructive hover:bg-destructive/80">Yes, Cancel</AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
+                </CardFooter>
+            )}
+        </Card>
+    </MotionDiv>
   );
 }
