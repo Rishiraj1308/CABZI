@@ -24,102 +24,116 @@ interface ActivityItem {
 }
 
 export default function MyActivityPage() {
-  const [activities, setActivities] = useState<ActivityItem[]>([]);
+  const [rides, setRides] = useState<ActivityItem[]>([]);
+  const [appointments, setAppointments] = useState<ActivityItem[]>([]);
+  const [emergencies, setEmergencies] = useState<ActivityItem[]>([]);
+  const [resqRequests, setResqRequests] = useState<ActivityItem[]>([]);
+  
   const [isLoading, setIsLoading] = useState(true);
   const { db, user } = useFirebase();
   const { toast } = useToast();
 
+  const activities = useMemo(() => {
+    return [...rides, ...appointments, ...emergencies, ...resqRequests].sort((a,b) => b.date.getTime() - a.date.getTime());
+  }, [rides, appointments, emergencies, resqRequests]);
+
+
+  // Fetch Rides
   useEffect(() => {
-    if (!db || !user) {
-        if (!user && !db) {
-           setIsLoading(false);
-        }
-        return;
-    }
-    
-    const userId = user.uid;
-
-    const queries = [
-        query(collection(db, 'rides'), where('riderId', '==', userId), orderBy('createdAt', 'desc')),
-        query(collection(db, 'appointments'), where('patientId', '==', userId), orderBy('createdAt', 'desc')),
-        query(collection(db, 'emergencyCases'), where('riderId', '==', userId), orderBy('createdAt', 'desc')),
-        query(collection(db, 'garageRequests'), where('driverId', '==', userId), orderBy('createdAt', 'desc')) // New query for ResQ
-    ];
-    
-    const unsubs = queries.map((q, index) => {
-        return onSnapshot(q, (querySnapshot) => {
-            const newActivities: ActivityItem[] = querySnapshot.docs.map(doc => {
-                const data = doc.data();
-                switch (index) {
-                    case 0: // Rides
-                        return {
-                            id: doc.id,
-                            type: 'Ride',
-                            title: `Ride to ${data.destination?.address || 'destination'}`,
-                            description: `From: ${data.pickup?.address || 'start'}`,
-                            date: (data.createdAt as Timestamp).toDate(),
-                            status: data.status.charAt(0).toUpperCase() + data.status.slice(1).replace(/_/g, ' '),
-                            fare: data.fare,
-                            icon: Car,
-                            color: 'text-primary'
-                        };
-                    case 1: // Appointments
-                        return {
-                            id: doc.id,
-                            type: 'Appointment',
-                            title: `Appointment with ${data.doctorName}`,
-                            description: data.hospitalName,
-                            date: (data.appointmentDate as Timestamp).toDate(),
-                            status: data.status,
-                            icon: Calendar,
-                            color: 'text-blue-500'
-                        };
-                    case 2: // Emergency Cases
-                         return {
-                            id: doc.id,
-                            type: 'Emergency',
-                            title: `SOS Case: ${data.caseId}`,
-                            description: `Assigned to: ${data.assignedPartner?.name || 'Searching...'}`,
-                            date: (data.createdAt as Timestamp).toDate(),
-                            status: data.status.charAt(0).toUpperCase() + data.status.slice(1).replace(/_/g, ' '),
-                            icon: Ambulance,
-                            color: 'text-red-500'
-                        };
-                    case 3: // ResQ Requests
-                        return {
-                            id: doc.id,
-                            type: 'ResQ',
-                            title: `ResQ Request: ${data.issue}`,
-                            description: `Mechanic: ${data.mechanicName || 'Searching...'}`,
-                            date: (data.createdAt as Timestamp).toDate(),
-                            status: data.status.charAt(0).toUpperCase() + data.status.slice(1).replace(/_/g, ' '),
-                            fare: data.totalAmount,
-                            icon: Wrench,
-                            color: 'text-amber-500'
-                        };
-                    default:
-                        // This should not happen
-                        return null as any;
-                }
-            }).filter(Boolean); // Filter out any nulls
-
-            setActivities(prev => {
-                const activityTypes = ['Ride', 'Appointment', 'Emergency', 'ResQ'];
-                const typeToUpdate = activityTypes[index];
-                const otherActivities = prev.filter(act => act.type !== typeToUpdate);
-                const all = [...otherActivities, ...newActivities].sort((a, b) => b.date.getTime() - a.date.getTime());
-                return all;
-            });
-
-        }, (error) => {
-            console.error("Error fetching activity:", error);
-            toast({ variant: 'destructive', title: "Error", description: "Could not load part of your activity history."});
-        });
+    if (!db || !user) { setIsLoading(false); return; }
+    const q = query(collection(db, 'rides'), where('riderId', '==', user.uid), orderBy('createdAt', 'desc'));
+    const unsub = onSnapshot(q, (snapshot) => {
+        const ridesData = snapshot.docs.map(doc => ({
+            id: doc.id,
+            type: 'Ride' as const,
+            title: `Ride to ${doc.data().destination?.address || 'destination'}`,
+            description: `From: ${doc.data().pickup?.address || 'start'}`,
+            date: (doc.data().createdAt as Timestamp).toDate(),
+            status: doc.data().status.charAt(0).toUpperCase() + doc.data().status.slice(1).replace(/_/g, ' '),
+            fare: doc.data().fare,
+            icon: Car,
+            color: 'text-primary'
+        }));
+        setRides(ridesData);
+        setIsLoading(false);
+    }, (error) => {
+        console.error("Error fetching rides:", error);
+        toast({ variant: 'destructive', title: "Error", description: "Could not load your ride history."});
     });
+    return () => unsub();
+  }, [db, user, toast]);
+  
+  // Fetch Appointments
+  useEffect(() => {
+    if (!db || !user) { setIsLoading(false); return; }
+    const q = query(collection(db, 'appointments'), where('patientId', '==', user.uid), orderBy('createdAt', 'desc'));
+    const unsub = onSnapshot(q, (snapshot) => {
+        const apptsData = snapshot.docs.map(doc => ({
+            id: doc.id,
+            type: 'Appointment' as const,
+            title: `Appointment with ${doc.data().doctorName}`,
+            description: doc.data().hospitalName,
+            date: (doc.data().appointmentDate as Timestamp).toDate(),
+            status: doc.data().status,
+            icon: Calendar,
+            color: 'text-blue-500'
+        }));
+        setAppointments(apptsData);
+        setIsLoading(false);
+    }, (error) => {
+        console.error("Error fetching appointments:", error);
+        toast({ variant: 'destructive', title: "Error", description: "Could not load your appointment history."});
+    });
+    return () => unsub();
+  }, [db, user, toast]);
 
-    setIsLoading(false);
-    return () => unsubs.forEach(unsub => unsub());
-
+  // Fetch Emergencies
+  useEffect(() => {
+    if (!db || !user) { setIsLoading(false); return; }
+    const q = query(collection(db, 'emergencyCases'), where('riderId', '==', user.uid), orderBy('createdAt', 'desc'));
+    const unsub = onSnapshot(q, (snapshot) => {
+        const casesData = snapshot.docs.map(doc => ({
+            id: doc.id,
+            type: 'Emergency' as const,
+            title: `SOS Case: ${doc.data().caseId}`,
+            description: `Assigned to: ${doc.data().assignedPartner?.name || 'Searching...'}`,
+            date: (doc.data().createdAt as Timestamp).toDate(),
+            status: doc.data().status.charAt(0).toUpperCase() + doc.data().status.slice(1).replace(/_/g, ' '),
+            icon: Ambulance,
+            color: 'text-red-500'
+        }));
+        setEmergencies(casesData);
+        setIsLoading(false);
+    }, (error) => {
+        console.error("Error fetching emergencies:", error);
+        toast({ variant: 'destructive', title: "Error", description: "Could not load your SOS history."});
+    });
+    return () => unsub();
+  }, [db, user, toast]);
+  
+  // Fetch ResQ Requests
+  useEffect(() => {
+    if (!db || !user) { setIsLoading(false); return; }
+    const q = query(collection(db, 'garageRequests'), where('driverId', '==', user.uid), orderBy('createdAt', 'desc'));
+    const unsub = onSnapshot(q, (snapshot) => {
+        const resqData = snapshot.docs.map(doc => ({
+            id: doc.id,
+            type: 'ResQ' as const,
+            title: `ResQ Request: ${doc.data().issue}`,
+            description: `Mechanic: ${doc.data().mechanicName || 'Searching...'}`,
+            date: (doc.data().createdAt as Timestamp).toDate(),
+            status: doc.data().status.charAt(0).toUpperCase() + doc.data().status.slice(1).replace(/_/g, ' '),
+            fare: doc.data().totalAmount,
+            icon: Wrench,
+            color: 'text-amber-500'
+        }));
+        setResqRequests(resqData);
+        setIsLoading(false);
+    }, (error) => {
+        console.error("Error fetching ResQ requests:", error);
+        toast({ variant: 'destructive', title: "Error", description: "Could not load your ResQ history."});
+    });
+    return () => unsub();
   }, [db, user, toast]);
 
   const getStatusBadge = (status: ActivityStatus) => {
