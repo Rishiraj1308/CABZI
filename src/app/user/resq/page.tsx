@@ -160,7 +160,19 @@ export default function ResQPage() {
     localStorage.setItem('activeGarageRequestId', requestDocRef.id);
     toast({ title: "Request Sent!", description: "We are finding a nearby ResQ partner for you." });
   }
-  
+
+  const handleCancelServiceRequest = async () => {
+    if (!db || !activeGarageRequest) return;
+    const requestRef = doc(db, 'garageRequests', activeGarageRequest.id);
+    try {
+      await updateDoc(requestRef, { status: 'cancelled_by_driver' });
+      toast({ variant: 'destructive', title: 'Service Request Cancelled' });
+      resetFlow();
+    } catch (error) {
+      toast({ variant: 'destructive', title: 'Error', description: 'Could not cancel the request.' });
+    }
+  };
+
   const renderInitialView = () => (
      <Card className="bg-background/90 backdrop-blur-sm rounded-t-2xl shadow-2xl border-t-0">
         <CardHeader className="text-center">
@@ -257,7 +269,7 @@ export default function ResQPage() {
                             </AlertDialogHeader>
                             <AlertDialogFooter>
                                 <AlertDialogCancel>Go Back</AlertDialogCancel>
-                                <AlertDialogAction onClick={resetFlow} className="bg-destructive hover:bg-destructive/80">Yes, Cancel</AlertDialogAction>
+                                <AlertDialogAction onClick={handleCancelServiceRequest} className="bg-destructive hover:bg-destructive/80">Yes, Cancel</AlertDialogAction>
                             </AlertDialogFooter>
                         </AlertDialogContent>
                     </AlertDialog>
@@ -270,7 +282,7 @@ export default function ResQPage() {
         <RideStatus 
             ride={activeGarageRequest} 
             isGarageRequest 
-            onCancel={resetFlow} 
+            onCancel={handleCancelServiceRequest} 
             onDone={resetFlow} 
             onPayment={handleGaragePayment}
         />
@@ -302,4 +314,3 @@ export default function ResQPage() {
     </div>
   );
 }
-    
