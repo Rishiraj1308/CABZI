@@ -204,7 +204,7 @@ export default function EmergencyButtons({ serviceType, liveMapRef, pickupCoords
         createdAt: serverTimestamp(),
     };
     const requestDocRef = await addDoc(collection(db, 'garageRequests'), requestData);
-
+    
     localStorage.setItem('activeGarageRequestId', requestDocRef.id);
     setActiveGarageRequest({ id: requestDocRef.id, ...requestData });
     toast({ title: "Request Sent!", description: "We are finding a nearby ResQ partner for you." });
@@ -284,6 +284,7 @@ export default function EmergencyButtons({ serviceType, liveMapRef, pickupCoords
 
   return (
     <div className="p-4">
+        <Button onClick={onBack} variant="ghost" size="icon" className="absolute top-2 left-2 h-8 w-8 bg-background/50 backdrop-blur-sm"><ArrowLeft className="w-5 h-5"/></Button>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
                 <Button variant="ghost" className={`w-full h-24 flex-col gap-1 text-lg font-bold ${serviceType === 'cure' ? 'text-red-600' : 'text-amber-600'}`}>
@@ -316,3 +317,4 @@ export default function EmergencyButtons({ serviceType, liveMapRef, pickupCoords
     </div>
   );
 }
+

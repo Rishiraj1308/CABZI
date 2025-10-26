@@ -137,7 +137,7 @@ export default function BookRidePage() {
             unsubscribers.forEach(unsub => unsub());
         };
 
-    }, [db, session, resetFlow]);
+    }, [db, session, resetFlow, activeAmbulanceCase, activeGarageRequest]);
 
     return (
         <div className="h-full w-full flex flex-col">
@@ -197,4 +197,3 @@ export default function BookRidePage() {
         </div>
     );
 }
-
