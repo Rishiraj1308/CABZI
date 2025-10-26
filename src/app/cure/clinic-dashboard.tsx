@@ -5,11 +5,10 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Stethoscope, Calendar, Users, BarChart, FileText, Clock, UserCheck, UserPlus, MoreHorizontal, Trash2, Phone } from 'lucide-react';
-import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useDb } from '@/firebase/client-provider';
-import { collection, query, where, onSnapshot, Timestamp, orderBy, getDocs, doc, updateDoc, deleteDoc } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, Timestamp, orderBy, getDocs, doc, updateDoc, deleteDoc, addDoc, serverTimestamp, writeBatch, limit } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { startOfDay, endOfDay } from 'date-fns';
@@ -32,6 +31,11 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
 const StatCard = ({ title, value, icon: Icon, isLoading }: { title: string, value: string, icon: React.ElementType, isLoading?: boolean }) => (
     <Card>
@@ -59,15 +63,47 @@ interface Doctor {
     name: string;
     specialization: string;
     isAvailable: boolean;
+    partnerId: string;
+    phone: string;
 }
+
+const doctorSpecializations = [
+  'Cardiology', 'Neurology', 'Orthopedics', 'Pediatrics', 'Oncology', 
+  'Gastroenterology', 'General Physician', 'Dermatology', 'ENT Specialist'
+];
+
+const initialDoctorState = {
+    fullName: '',
+    gender: '',
+    dob: '',
+    contactNumber: '',
+    emailAddress: '',
+    specialization: '',
+    qualifications: '',
+    experience: '',
+    department: '',
+    designation: '',
+    medicalRegNo: '',
+    regCouncil: '',
+    regYear: '',
+    consultationFee: '',
+};
 
 const ClinicDashboard = () => {
     const [appointments, setAppointments] = useState<Appointment[]>([]);
     const [doctors, setDoctors] = useState<Doctor[]>([]);
-    const [stats, setStats] = useState({ todayAppointments: 0, newPatients: 0 });
     const [isLoading, setIsLoading] = useState(true);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isAddDoctorDialogOpen, setIsAddDoctorDialogOpen] = useState(false);
+    const [newDoctorData, setNewDoctorData] = useState(initialDoctorState);
+    const [generatedCreds, setGeneratedCreds] = useState<{ id: string, pass: string, role: string } | null>(null);
+    const [isCredsDialogOpen, setIsCredsDialogOpen] = useState(false);
     const db = useDb();
     const { toast } = useToast();
+
+    const [hospitalId, setHospitalId] = useState<string | null>(null);
+    const [hospitalName, setHospitalName] = useState<string | null>(null);
+    
 
     useEffect(() => {
         if (!db) {
@@ -82,7 +118,10 @@ const ClinicDashboard = () => {
             return;
         };
 
-        const { partnerId } = JSON.parse(session);
+        const { partnerId, name } = JSON.parse(session);
+        setHospitalId(partnerId);
+        setHospitalName(name);
+
         if (!partnerId) {
             toast({ variant: 'destructive', title: 'Error', description: 'Partner ID is missing from session.' });
             setIsLoading(false);
@@ -103,7 +142,6 @@ const ClinicDashboard = () => {
         const unsubAppts = onSnapshot(apptQuery, (snapshot) => {
             const apptsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Appointment));
             setAppointments(apptsData);
-            setStats(prev => ({...prev, todayAppointments: apptsData.length}));
         }, (error) => {
             console.error("Error fetching appointments: ", error);
             toast({ variant: 'destructive', title: "Error", description: 'Could not fetch appointments.' });
@@ -113,9 +151,8 @@ const ClinicDashboard = () => {
         const unsubDoctors = onSnapshot(doctorsQuery, (snapshot) => {
             const doctorsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Doctor));
             setDoctors(doctorsData);
+            setIsLoading(false);
         });
-
-        setIsLoading(false); 
 
         return () => {
             unsubAppts();
@@ -124,6 +161,17 @@ const ClinicDashboard = () => {
 
     }, [db, toast]);
     
+    const stats = useMemo(() => {
+        const checkedInCount = appointments.filter(a => a.status === 'In Queue').length;
+        const waitingCount = appointments.filter(a => a.status === 'Confirmed').length;
+        const avgWaitTime = checkedInCount > 0 ? 15 : 0; // Mock calculation
+        return {
+            todayAppointments: appointments.length,
+            waiting: waitingCount,
+            avgWaitTime,
+        }
+    }, [appointments]);
+
     const handleCheckIn = async (appointmentId: string) => {
         if (!db) return;
         const apptRef = doc(db, 'appointments', appointmentId);
@@ -134,20 +182,75 @@ const ClinicDashboard = () => {
             toast({ variant: 'destructive', title: 'Check-in Failed' });
         }
     };
+
+    const handleAddDoctor = async (event: React.FormEvent<HTMLFormElement>) => {
+        event.preventDefault();
+        if (!db || !hospitalId || !hospitalName) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Database or hospital information is missing.' });
+            return;
+        }
+        setIsSubmitting(true);
+      
+        const { fullName: name, contactNumber: phone, emailAddress: email, ...restOfData } = newDoctorData;
+      
+        if (!name || !phone || !email || !restOfData.specialization) {
+            toast({ variant: 'destructive', title: 'Missing Required Fields' });
+            setIsSubmitting(false);
+            return;
+        }
+        
+        const hospitalDoctorsRef = collection(db, `ambulances/${hospitalId}/doctors`);
+        const globalDoctorsRef = collection(db, 'doctors');
+
+        try {
+            const q = query(globalDoctorsRef, where("phone", "==", phone), limit(1));
+            const phoneCheckSnapshot = await getDocs(q);
+
+            if (!phoneCheckSnapshot.empty) {
+                throw new Error("A doctor with this phone number is already registered.");
+            }
+
+            const partnerId = `CZD-${phone.slice(-4)}${name.split(' ')[0].slice(0, 2).toUpperCase()}`;
+            const password = `cAbZ@${Math.floor(1000 + Math.random() * 9000)}`;
+            
+            const batch = writeBatch(db);
+            
+            const newDoctorDocRefInHospital = doc(hospitalDoctorsRef);
+            const doctorData = { id: newDoctorDocRefInHospital.id, name, phone, email, ...restOfData, partnerId, password, createdAt: serverTimestamp(), docStatus: 'Pending', hospitalId, hospitalName };
+            batch.set(newDoctorDocRefInHospital, doctorData);
+
+            const newDoctorDocRefGlobal = doc(globalDoctorsRef, newDoctorDocRefInHospital.id);
+            batch.set(newDoctorDocRefGlobal, doctorData);
+
+            await batch.commit();
+
+            setGeneratedCreds({ id: partnerId, pass: password, role: 'Doctor' });
+            setIsAddDoctorDialogOpen(false);
+            setIsCredsDialogOpen(true);
+            toast({ title: 'Doctor Record Created!', description: `Dr. ${name}'s credentials are now available.` });
+            setNewDoctorData(initialDoctorState);
+      
+        } catch (error: any) {
+            console.error('Error adding doctor:', error);
+            toast({ variant: 'destructive', title: 'Error Adding Doctor', description: error.message || 'An unexpected error occurred.' });
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
     
     const handleDeleteDoctor = async (doctorId: string, doctorName: string) => {
-        const session = localStorage.getItem('curocity-cure-session');
-        if (!db || !session) return;
-        const { partnerId } = JSON.parse(session);
-        if (!partnerId) return;
-
-        const doctorRef = doc(db, `ambulances/${partnerId}/doctors`, doctorId);
+        if (!db || !hospitalId) return;
+        const doctorRef = doc(db, `ambulances/${hospitalId}/doctors`, doctorId);
         try {
           await deleteDoc(doctorRef);
           toast({ variant: 'destructive', title: 'Doctor Removed', description: `Dr. ${doctorName} has been removed from the roster.` });
         } catch (error) {
            toast({ variant: 'destructive', title: 'Error', description: 'Could not remove the doctor.' });
         }
+    };
+
+    const handleFormChange = (field: keyof typeof newDoctorData, value: any) => {
+        setNewDoctorData(prev => ({ ...prev, [field]: value }));
     };
     
     const queue = useMemo(() => {
@@ -164,8 +267,8 @@ const ClinicDashboard = () => {
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 <StatCard title="Today's Appointments" value={`${stats.todayAppointments}`} icon={Calendar} isLoading={isLoading} />
-                <StatCard title="New Patients (Today)" value={`${stats.newPatients}`} icon={UserCheck} isLoading={isLoading} />
-                <StatCard title="Avg. Wait Time" value="15 min" icon={Clock} isLoading={isLoading} />
+                <StatCard title="Patients Waiting" value={`${stats.waiting}`} icon={Users} isLoading={isLoading} />
+                <StatCard title="Avg. Wait Time" value={`${stats.avgWaitTime} min`} icon={Clock} isLoading={isLoading} />
             </div>
             
             <Tabs defaultValue="appointments" className="w-full">
@@ -188,20 +291,20 @@ const ClinicDashboard = () => {
                                        const queueNumber = queue.findIndex(q => q.id === appt.id);
                                        return (
                                            <div key={appt.id} className="flex items-center gap-4 p-3 rounded-lg bg-muted/50">
-                                               {queueNumber !== -1 ? (
-                                                    <div className="w-10 h-10 flex flex-col items-center justify-center bg-primary text-primary-foreground rounded-lg">
+                                               {appt.status === 'In Queue' && queueNumber !== -1 ? (
+                                                    <div className="w-12 h-12 flex flex-col items-center justify-center bg-primary text-primary-foreground rounded-lg">
                                                        <span className="text-xs -mb-1">Queue</span>
-                                                       <span className="font-bold text-lg">{queueNumber + 1}</span>
+                                                       <span className="font-bold text-xl">{queueNumber + 1}</span>
                                                    </div>
                                                ) : (
-                                                   <Avatar className="h-9 w-9"><AvatarFallback>{appt.patientName.substring(0,1)}</AvatarFallback></Avatar>
+                                                    <div className="w-12 text-center">
+                                                        <p className="font-bold text-sm">{new Date(appt.appointmentDate.seconds * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })}</p>
+                                                    </div>
                                                )}
                                                <div className="flex-1">
                                                     <p className="font-semibold">{appt.patientName}</p>
-                                                    <p className="text-xs text-muted-foreground">{appt.appointmentDate.toDate().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                                                    <p className="text-xs text-muted-foreground">{appt.doctorName}</p>
                                                </div>
-                                               <div className="text-sm text-muted-foreground">{appt.doctorName}</div>
-                                               <Badge variant={appt.status === 'In Queue' ? 'default' : 'secondary'}>{appt.status}</Badge>
                                                <Button variant="outline" size="sm" onClick={() => handleCheckIn(appt.id)} disabled={appt.status !== 'Confirmed'}>Check-in</Button>
                                            </div>
                                        )
@@ -213,7 +316,7 @@ const ClinicDashboard = () => {
                         </CardContent>
                     </Card>
                 </TabsContent>
-                <TabsContent value="schedules" className="mt-4">
+                 <TabsContent value="schedules" className="mt-4">
                     <Card>
                         <CardHeader>
                             <CardTitle>Doctor Schedules</CardTitle>
@@ -228,11 +331,45 @@ const ClinicDashboard = () => {
                      <Card>
                         <CardHeader className="flex flex-row items-center justify-between">
                             <CardTitle>Doctor Roster</CardTitle>
-                             <Button asChild>
-                                <Link href="/cure/doctors">
-                                    <UserPlus className="mr-2 h-4 w-4"/> Add / Manage Doctors
-                                </Link>
-                            </Button>
+                             <Dialog open={isAddDoctorDialogOpen} onOpenChange={(isOpen) => {
+                                setIsAddDoctorDialogOpen(isOpen);
+                                if (!isOpen) { setNewDoctorData(initialDoctorState); }
+                            }}>
+                                <DialogTrigger asChild>
+                                    <Button><UserPlus className="mr-2 h-4 w-4"/> Add Doctor</Button>
+                                </DialogTrigger>
+                                <DialogContent className="max-w-4xl">
+                                <DialogHeader>
+                                    <DialogTitle>Add New Doctor</DialogTitle>
+                                    <DialogDescription>Enter the details for the new doctor to add them to your hospital's roster.</DialogDescription>
+                                </DialogHeader>
+                                <form onSubmit={handleAddDoctor} className="max-h-[80vh] overflow-y-auto pr-6">
+                                    <div className="space-y-6 py-4">
+                                        <div className="space-y-4">
+                                        <h3 className="text-lg font-semibold border-b pb-2">Basic Information</h3>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+                                            <div className="space-y-2"><Label>Full Name</Label><Input name="fullName" required value={newDoctorData.fullName} onChange={e => handleFormChange('fullName', e.target.value)} /></div>
+                                            <div className="space-y-2"><Label>Gender</Label><Select name="gender" required onValueChange={v => handleFormChange('gender', v)} value={newDoctorData.gender}><SelectTrigger><SelectValue placeholder="Select Gender"/></SelectTrigger><SelectContent><SelectItem value="male">Male</SelectItem><SelectItem value="female">Female</SelectItem><SelectItem value="other">Other</SelectItem></SelectContent></Select></div>
+                                            <div className="space-y-2"><Label>Contact Number</Label><div className="flex items-center gap-0 rounded-md border border-input focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2"><span className="pl-3 text-muted-foreground text-sm">+91</span><Input id="contactNumber" name="contactNumber" type="tel" maxLength={10} placeholder="12345 67890" required value={newDoctorData.contactNumber} onChange={e => handleFormChange('contactNumber', e.target.value)} className="border-0 h-9 focus-visible:ring-0 focus-visible:ring-offset-0 flex-1"/></div></div>
+                                            <div className="space-y-2"><Label>Email Address</Label><Input name="emailAddress" type="email" required value={newDoctorData.emailAddress} onChange={e => handleFormChange('emailAddress', e.target.value)} /></div>
+                                        </div>
+                                        </div>
+                                        <div className="space-y-4">
+                                        <h3 className="text-lg font-semibold border-b pb-2">Professional Details</h3>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+                                            <div className="space-y-2"><Label>Specialization</Label><Select name="specialization" required onValueChange={v => handleFormChange('specialization', v)} value={newDoctorData.specialization}><SelectTrigger><SelectValue placeholder="Select Specialization"/></SelectTrigger><SelectContent>{doctorSpecializations.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent></Select></div>
+                                            <div className="space-y-2"><Label>Qualifications</Label><Input name="qualifications" placeholder="MBBS, MD" required value={newDoctorData.qualifications} onChange={e => handleFormChange('qualifications', e.target.value)} /></div>
+                                            <div className="space-y-2"><Label>Experience (years)</Label><Input name="experience" type="number" required value={newDoctorData.experience} onChange={e => handleFormChange('experience', e.target.value)} /></div>
+                                            <div className="space-y-2"><Label>Consultation Fee (INR)</Label><Input name="consultationFee" type="number" placeholder="e.g., 800" required value={newDoctorData.consultationFee} onChange={e => handleFormChange('consultationFee', e.target.value)} /></div>
+                                        </div>
+                                        </div>
+                                    </div>
+                                    <DialogFooter className="pt-6">
+                                    <Button type="submit" disabled={isSubmitting}>{isSubmitting ? "Adding..." : "Add Doctor & Generate Credentials"}</Button>
+                                    </DialogFooter>
+                                </form>
+                                </DialogContent>
+                            </Dialog>
                         </CardHeader>
                         <CardContent>
                             <Table>
@@ -301,8 +438,20 @@ const ClinicDashboard = () => {
                     </Card>
                 </TabsContent>
             </Tabs>
+             <AlertDialog open={isCredsDialogOpen} onOpenChange={(isOpen) => { if(!isOpen) setGeneratedCreds(null); setIsCredsDialogOpen(isOpen); }}>
+                <AlertDialogContent>
+                    <AlertDialogHeader><AlertDialogTitle>{generatedCreds?.role || 'Staff'} Added!</AlertDialogTitle><AlertDialogDescription>Share these credentials with the new staff member.</AlertDialogDescription></AlertDialogHeader>
+                    <div className="space-y-4 my-4">
+                        <div className="space-y-1"><Label htmlFor="partnerId">Partner ID</Label><Input id="partnerId" value={generatedCreds?.id ?? ''} readOnly /></div>
+                        <div className="space-y-1"><Label htmlFor="tempPass">Temporary Password</Label><Input id="tempPass" value={generatedCreds?.pass ?? ''} readOnly /></div>
+                    </div>
+                    <AlertDialogFooter><AlertDialogAction onClick={() => { setGeneratedCreds(null); setIsCredsDialogOpen(false); }}>Close</AlertDialogAction></AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     );
 };
 
 export default ClinicDashboard;
+
+    
