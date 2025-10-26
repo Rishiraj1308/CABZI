@@ -343,6 +343,7 @@ export default function RideStatus({
         case 'accepted': return 'Partner is on the way';
         case 'in-progress': return 'Trip in Progress';
         case 'payment_pending': return 'Payment & Rating';
+        case 'bill_sent': return 'Job Card Approval';
         case 'completed': return 'Trip Finished';
         default: return 'Ride Status';
     }
