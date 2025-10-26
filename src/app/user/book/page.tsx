@@ -58,7 +58,7 @@ export default function BookRidePage() {
             variants={containerVariants}
         >
             {/* Header Section */}
-            <header className="bg-gradient-to-br from-green-500 to-primary p-4 relative text-primary-foreground overflow-hidden">
+            <header className="bg-gradient-to-br from-green-500 to-primary p-4 relative text-primary-foreground">
                 <div className="container mx-auto">
                     <motion.div variants={itemVariants}>
                         <Button variant="ghost" size="icon" className="hover:bg-white/10" onClick={() => router.back()}>
@@ -74,19 +74,19 @@ export default function BookRidePage() {
                     initial={{ x: 100, opacity: 0 }}
                     animate={{ x: 0, opacity: 1 }}
                     transition={{ delay: 0.2, type: 'spring', stiffness: 50 }}
-                    className="absolute -bottom-4 right-0 w-48 h-28"
+                    className="absolute -bottom-4 right-0 w-48 h-28 z-20"
                  >
                     <Image src="/car.svg" alt="Car" layout="fill" objectFit="contain" className="opacity-90" data-ai-hint="car illustration" />
                 </motion.div>
             </header>
 
             {/* Content Section */}
-            <div className="flex-1 container mx-auto p-4 -mt-16 z-10">
+            <div className="flex-1 container mx-auto p-4 space-y-6 relative z-10">
                  <motion.div 
                     initial={{ y: 50, opacity: 0 }}
                     animate={{ y: 0, opacity: 1 }}
                     transition={{ delay: 0.3, type: 'spring' }}
-                    className="space-y-6"
+                    className="space-y-6 -mt-20"
                 >
                     {/* Search Card */}
                     <Card className="shadow-lg">
