@@ -160,17 +160,13 @@
     font-family: var(--font-poppins), sans-serif;
 }
 
-@keyframes route-blink {
-  0%, 100% {
-    stroke-opacity: 0.8;
-    stroke-width: 5;
-  }
-  50% {
-    stroke-opacity: 0.3;
-    stroke-width: 6;
+@keyframes electric-flow {
+  to {
+    stroke-dashoffset: -20;
   }
 }
 
-.route-blink-animate {
-  animation: route-blink 2s ease-in-out infinite;
+.route-electric-flow {
+  stroke-dasharray: 10 10;
+  animation: electric-flow 1s linear infinite;
 }

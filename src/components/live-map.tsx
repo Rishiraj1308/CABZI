@@ -262,30 +262,14 @@ const LiveMap = forwardRef<any, LiveMapProps>((props, ref) => {
         if (props.routeGeometry && props.routeGeometry.coordinates) {
             const routeCoords = props.routeGeometry.coordinates.map((coord: number[]) => [coord[1], coord[0]]);
             
-            routeLayerRef.current = L.polyline([], {
+            routeLayerRef.current = L.polyline(routeCoords, {
                 color: 'hsl(var(--primary))',
                 weight: 5,
                 opacity: 0.8,
-                className: 'route-blink-animate',
+                className: 'route-electric-flow',
+                dashArray: '10, 10'
             }).addTo(map);
 
-            let currentIndex = 0;
-            const totalPoints = routeCoords.length;
-            const animationDuration = 1000; // 1 second total animation time
-            const pointsPerFrame = Math.max(1, Math.floor(totalPoints / (animationDuration / (1000/60))));
-
-            const animate = () => {
-                if (currentIndex < totalPoints) {
-                    const nextIndex = Math.min(currentIndex + pointsPerFrame, totalPoints);
-                    for (let i = currentIndex; i < nextIndex; i++) {
-                        routeLayerRef.current?.addLatLng(routeCoords[i]);
-                    }
-                    currentIndex = nextIndex;
-                    animationFrameRef.current = requestAnimationFrame(animate);
-                }
-            };
-
-            animate();
             if (props.driverLocation && props.riderLocation) {
                  map.flyToBounds(L.latLngBounds(routeCoords), { padding: [50, 50], maxZoom: 16 });
             } else if (!props.isTripInProgress && routeCoords.length > 0) {
