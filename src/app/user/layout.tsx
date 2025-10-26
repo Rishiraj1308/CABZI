@@ -28,7 +28,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { useFirebase } from '@/firebase/client-provider';
 import { doc, updateDoc } from 'firebase/firestore';
-import { AnimatePresence, motion } from 'framer-motion';
+import { ClientSessionProvider } from '@/components/client-session-provider';
 
 
 const navItems = [
@@ -98,7 +98,6 @@ export default function UserLayout({
   const [isMounted, setIsMounted] = useState(false);
   const [open, setOpen] = useState(false);
   const router = useRouter();
-  const pathname = usePathname();
   const { toast } = useToast();
   
   const { user, isUserLoading, db, auth } = useFirebase();
@@ -199,8 +198,8 @@ export default function UserLayout({
                   <DropdownMenuTrigger asChild>
                   <Button variant="secondary" className="relative h-10 w-10 rounded-full shadow-lg">
                       <Avatar className="h-9 w-9">
-                          <AvatarImage src={user?.photoURL || 'https://placehold.co/100x100.png'} alt={user?.displayName || 'User'} data-ai-hint="customer portrait" />
-                          <AvatarFallback>{getInitials(user?.displayName).toUpperCase()}</AvatarFallback>
+                      <AvatarImage src={user?.photoURL || 'https://placehold.co/100x100.png'} alt={user?.displayName || 'User'} data-ai-hint="customer portrait" />
+                      <AvatarFallback>{getInitials(user?.displayName).toUpperCase()}</AvatarFallback>
                       </Avatar>
                   </Button>
                   </DropdownMenuTrigger>
@@ -237,17 +236,9 @@ export default function UserLayout({
           </div>
       </header>
       <main className="flex-1 flex flex-col">
-           <AnimatePresence mode="wait">
-              <motion.div
-                key={pathname}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.3 }}
-              >
+           <ClientSessionProvider>
                 {children}
-              </motion.div>
-            </AnimatePresence>
+           </ClientSessionProvider>
       </main>
       <Toaster />
     </div>
