@@ -1,19 +1,19 @@
+
 'use client'
 
-import React, { useState, useEffect, useCallback, useRef } from 'react'
+import React, { useState, useEffect, useCallback, useRef, Suspense } from 'react'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
-import { ArrowLeft, Search, LocateFixed, MapPin, Building } from 'lucide-react'
-import { useToast } from '@/hooks/use-toast'
-import { searchPlace } from '@/lib/routing'
+import { ArrowLeft, Search } from 'lucide-react'
+import { searchPlace, getRoute } from '@/lib/routing'
 import dynamic from 'next/dynamic'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Skeleton } from '@/components/ui/skeleton'
+import { Card, CardContent } from '@/components/ui/card'
 
 const LiveMap = dynamic(() => import('@/components/live-map'), { 
     ssr: false,
-    loading: () => <div className="w-full h-full bg-muted flex items-center justify-center"><p>Loading Map...</p></div>
+    loading: () => <Skeleton className="w-full h-full bg-muted" />,
 });
 
 interface Place {
@@ -21,30 +21,20 @@ interface Place {
     display_name: string;
     lat: string;
     lon: string;
-    address: {
-        road?: string;
-        suburb?: string;
-        city?: string;
-        state?: string;
-        postcode?: string;
-        country?: string;
-        amenity?: string;
-        office?: string;
-        building?: string;
-    };
 }
 
-
-export default function BookRideMapPage() {
+function BookRideMapComponent() {
     const router = useRouter();
     const searchParams = useSearchParams();
-    const { toast } = useToast();
-    const [searchQuery, setSearchQuery] = useState(searchParams.get('search') || '');
+    const [searchQuery, setSearchQuery] = useState('');
     const [searchResults, setSearchResults] = useState<Place[]>([]);
-    const [selectedPlace, setSelectedPlace] = useState<Place | null>(null);
-    const [mapCenter, setMapCenter] = useState<{lat: number, lon: number}>({ lat: 28.6139, lon: 77.2090 });
-    const [nearbyPOIs, setNearbyPOIs] = useState<Place[]>([]);
     const [isSearching, setIsSearching] = useState(false);
+    
+    const [userLocation, setUserLocation] = useState<{ lat: number, lon: number } | null>(null);
+    const [destination, setDestination] = useState<{ lat: number, lon: number } | null>(null);
+    const [routeGeometry, setRouteGeometry] = useState(null);
+    const [destinationName, setDestinationName] = useState('');
+    
     const liveMapRef = useRef<any>(null);
 
 
@@ -52,104 +42,130 @@ export default function BookRideMapPage() {
         if(query.length < 3) return;
         setIsSearching(true);
         const results = await searchPlace(query);
-        setSearchResults(results);
-        if (results && results.length > 0) {
-            handleSelectPlace(results[0]);
-        }
+        setSearchResults(results || []);
         setIsSearching(false);
     }, []);
-    
-    const handleSelectPlace = (place: Place) => {
-        setSelectedPlace(place);
-        setMapCenter({ lat: parseFloat(place.lat), lon: parseFloat(place.lon) });
-        setSearchQuery(place.display_name.split(',')[0]); // Update search bar with main name
-        setSearchResults([]);
-        fetchNearbyPOIs(parseFloat(place.lat), parseFloat(place.lon), place.place_id);
-    }
-    
-    const fetchNearbyPOIs = async (lat: number, lon: number, excludeId: string) => {
-        const poiQuery = `${selectedPlace?.address.amenity || selectedPlace?.address.office || selectedPlace?.display_name.split(',')[0]}`;
-        const results = await searchPlace(poiQuery);
-        setNearbyPOIs(results.filter((p: Place) => p.place_id !== excludeId).slice(0, 4));
-    }
 
+    const handleSelectPlace = useCallback((place: Place) => {
+        const destCoords = { lat: parseFloat(place.lat), lon: parseFloat(place.lon) };
+        setDestination(destCoords);
+        setDestinationName(place.display_name);
+        setSearchQuery(place.display_name.split(',')[0]);
+        setSearchResults([]);
+    }, []);
+
+    useEffect(() => {
+        // Get user's current location once
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                setUserLocation({
+                    lat: position.coords.latitude,
+                    lon: position.coords.longitude
+                });
+            },
+            () => {
+                // Fallback to a default location if user denies permission
+                setUserLocation({ lat: 28.6139, lon: 77.2090 });
+            }
+        );
+    }, []);
+
+    useEffect(() => {
+        // Fetch route when both user location and destination are set
+        const fetchRoute = async () => {
+            if (userLocation && destination) {
+                try {
+                    const routeData = await getRoute(userLocation, destination);
+                    if (routeData.routes && routeData.routes.length > 0) {
+                        setRouteGeometry(routeData.routes[0].geometry);
+                    }
+                } catch (error) {
+                    console.error("Failed to fetch route:", error);
+                }
+            }
+        };
+
+        fetchRoute();
+    }, [userLocation, destination]);
+    
+    // Effect to handle initial search from query params
     useEffect(() => {
         const initialSearch = searchParams.get('search');
         if (initialSearch) {
+            setSearchQuery(initialSearch);
             handleSearch(initialSearch);
         }
-    }, [searchParams, handleSearch]);
-
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [searchParams]);
 
     return (
         <div className="h-screen w-screen flex flex-col bg-background">
-            <div className="absolute top-4 left-4 z-10">
-                <Button variant="outline" size="icon" className="rounded-full shadow-lg" onClick={() => router.back()}>
-                    <ArrowLeft className="w-5 h-5"/>
-                </Button>
-            </div>
-            
-             <div className="absolute top-4 right-4 z-10 w-[calc(100%-6rem)] md:w-auto md:min-w-96">
-                <Card className="shadow-lg">
-                    <CardContent className="p-2">
-                         <div className="relative">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                            <Input
-                                placeholder="Search for a destination..."
-                                className="pl-10 border-0 focus-visible:ring-0 text-base"
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                onKeyDown={(e) => e.key === 'Enter' && handleSearch(searchQuery)}
-                            />
-                        </div>
-                    </CardContent>
-                </Card>
-                 {searchResults.length > 0 && (
-                    <Card className="mt-2 shadow-lg max-h-60 overflow-y-auto">
-                        <CardContent className="p-2 space-y-1">
-                            {searchResults.map(place => (
-                                <div key={place.place_id} onClick={() => handleSelectPlace(place)} className="p-2 rounded-md hover:bg-muted cursor-pointer">
-                                    <p className="font-semibold text-sm">{place.display_name.split(',')[0]}</p>
-                                    <p className="text-xs text-muted-foreground">{place.display_name.split(',').slice(1).join(',')}</p>
+            <header className="absolute top-0 left-0 right-0 z-10 p-4">
+                <div className="flex items-start gap-4">
+                    <Button variant="outline" size="icon" className="rounded-full shadow-lg shrink-0" onClick={() => router.back()}>
+                        <ArrowLeft className="w-5 h-5"/>
+                    </Button>
+                    <div className="w-full">
+                        <Card className="shadow-lg">
+                            <CardContent className="p-2">
+                                <div className="relative">
+                                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                    <Input
+                                        placeholder="Search for a destination..."
+                                        className="pl-10 border-0 focus-visible:ring-0 text-base"
+                                        value={searchQuery}
+                                        onChange={(e) => setSearchQuery(e.target.value)}
+                                        onKeyDown={(e) => e.key === 'Enter' && handleSearch(searchQuery)}
+                                    />
                                 </div>
-                            ))}
-                        </CardContent>
-                    </Card>
-                )}
-            </div>
+                            </CardContent>
+                        </Card>
+                        {searchResults.length > 0 && (
+                            <Card className="mt-2 shadow-lg max-h-60 overflow-y-auto">
+                                <CardContent className="p-2 space-y-1">
+                                    {searchResults.map(place => (
+                                        <div key={place.place_id} onClick={() => handleSelectPlace(place)} className="p-2 rounded-md hover:bg-muted cursor-pointer">
+                                            <p className="font-semibold text-sm">{place.display_name.split(',')[0]}</p>
+                                            <p className="text-xs text-muted-foreground">{place.display_name.split(',').slice(1).join(',')}</p>
+                                        </div>
+                                    ))}
+                                </CardContent>
+                            </Card>
+                        )}
+                    </div>
+                </div>
+            </header>
 
             <div className="flex-1">
-                <LiveMap ref={liveMapRef} riderLocation={mapCenter} />
+                <LiveMap 
+                    ref={liveMapRef} 
+                    riderLocation={userLocation}
+                    routeGeometry={routeGeometry}
+                />
             </div>
             
-            {selectedPlace && (
-                <div className="absolute bottom-0 left-0 right-0 z-10 p-4">
+             {destination && (
+                <div className="absolute bottom-0 left-0 right-0 z-10 p-4 bg-gradient-to-t from-background via-background/80 to-transparent">
                     <Card className="shadow-2xl animate-fade-in">
-                        <CardHeader>
-                            <CardTitle>{selectedPlace.display_name.split(',')[0]}</CardTitle>
-                            <CardDescription>{selectedPlace.display_name}</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <h4 className="text-sm font-semibold mb-2">Nearby Points of Interest</h4>
-                             <div className="space-y-2">
-                               {nearbyPOIs.map(poi => (
-                                   <div key={poi.place_id} className="flex items-center gap-3 p-2 rounded-md bg-muted/50 text-sm">
-                                       <Building className="w-4 h-4 text-muted-foreground"/>
-                                       <div className="flex-1">
-                                         <p className="font-medium">{poi.display_name.split(',')[0]}</p>
-                                         <p className="text-xs text-muted-foreground">{poi.address.road || poi.address.suburb}</p>
-                                       </div>
-                                       <p className="text-xs font-semibold">{poi.lat.slice(0,6)}, {poi.lon.slice(0,6)}</p>
-                                   </div>
-                               ))}
+                        <CardContent className="p-4 flex items-center justify-between gap-4">
+                           <div className="flex-1">
+                                <p className="text-sm text-muted-foreground">Destination</p>
+                                <h3 className="font-bold text-lg leading-tight">{destinationName}</h3>
                            </div>
+                           <Button size="lg" className="w-full max-w-40">Confirm Ride</Button>
                         </CardContent>
-                        <CardFooter>
-                            <Button size="lg" className="w-full bg-green-600 hover:bg-green-700">Choose This Destination</Button>
-                        </CardFooter>
                     </Card>
                 </div>
             )}
         </div>
     )
 }
+
+export default function BookRideMapPage() {
+    return (
+        <Suspense fallback={<Skeleton className="w-full h-screen" />}>
+            <BookRideMapComponent />
+        </Suspense>
+    );
+}
+
