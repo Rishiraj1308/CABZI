@@ -62,7 +62,8 @@ function BookRideMapComponent() {
 
                     const address = await getAddress(coords.lat, coords.lon);
                     if (address) {
-                        setOriginName(address.split(',')[0] || 'Current Location');
+                        const shortAddress = address.split(',')[0] || 'Current Location';
+                        setOriginName(shortAddress);
                     }
                 },
                 () => {
@@ -103,15 +104,9 @@ function BookRideMapComponent() {
     }, [userLocation, destination]);
 
     return (
-        <div className="h-screen w-screen flex flex-col">
-            <header className="p-4 shrink-0">
-                <Button variant="outline" size="icon" className="rounded-full shadow-lg" onClick={() => router.back()}>
-                    <ArrowLeft className="w-5 h-5"/>
-                </Button>
-            </header>
-
-            {/* Map occupies top part of the screen */}
-            <div className="h-2/3 w-full">
+        <div className="h-screen w-screen relative">
+            {/* Map Layer */}
+            <div className="absolute inset-0 z-0">
                 <LiveMap 
                     ref={liveMapRef} 
                     riderLocation={userLocation}
@@ -119,19 +114,32 @@ function BookRideMapComponent() {
                 />
             </div>
             
-            {/* Confirmation card occupies the bottom part */}
-            <div className="flex-1 p-4 flex flex-col justify-center">
-                {destination && (
-                    <Card className="shadow-2xl animate-fade-in w-full max-w-lg mx-auto">
-                        <CardContent className="p-4 flex items-center justify-between gap-4">
-                            <div className="flex-1">
-                                <p className="text-sm text-muted-foreground">Your Trip</p>
-                                <h3 className="font-bold text-lg leading-tight line-clamp-2">{originName} to {destinationName}</h3>
-                            </div>
-                            <Button size="lg" className="h-12 text-base">Confirm Ride</Button>
-                        </CardContent>
-                    </Card>
-                )}
+            {/* UI Overlay Layer */}
+            <div className="absolute inset-0 z-10 flex flex-col p-4 pointer-events-none">
+                {/* Header */}
+                <header className="shrink-0">
+                    <Button variant="outline" size="icon" className="rounded-full shadow-lg pointer-events-auto" onClick={() => router.back()}>
+                        <ArrowLeft className="w-5 h-5"/>
+                    </Button>
+                </header>
+
+                {/* Spacer */}
+                <div className="flex-grow" />
+
+                {/* Footer Confirmation Card */}
+                <footer className="shrink-0 pointer-events-auto">
+                    {destination && (
+                        <Card className="shadow-2xl animate-fade-in w-full max-w-lg mx-auto">
+                            <CardContent className="p-4 flex items-center justify-between gap-4">
+                                <div className="flex-1">
+                                    <p className="text-sm text-muted-foreground">Your Trip</p>
+                                    <h3 className="font-bold text-lg leading-tight line-clamp-2">{originName} to {destinationName}</h3>
+                                </div>
+                                <Button size="lg" className="h-12 text-base">Confirm Ride</Button>
+                            </CardContent>
+                        </Card>
+                    )}
+                </footer>
             </div>
         </div>
     )
