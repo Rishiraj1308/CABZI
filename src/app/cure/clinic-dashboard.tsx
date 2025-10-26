@@ -4,12 +4,12 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Stethoscope, Calendar, Users, BarChart, FileText, Clock, UserCheck, UserPlus, MoreHorizontal, Trash2 } from 'lucide-react';
+import { Stethoscope, Calendar, Users, BarChart, FileText, Clock, UserCheck, UserPlus, MoreHorizontal, Trash2, Phone } from 'lucide-react';
 import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useDb } from '@/firebase/client-provider';
-import { collection, query, where, onSnapshot, Timestamp, orderBy, getDocs, doc, updateDoc } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, Timestamp, orderBy, getDocs, doc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { endOfDay, startOfDay } from 'date-fns';
@@ -45,6 +45,7 @@ interface Appointment {
     appointmentDate: Timestamp;
     appointmentTime: string;
     status: 'Pending' | 'Confirmed' | 'In Queue' | 'Completed' | 'Cancelled';
+    doctorName: string;
 }
 
 interface Doctor {
@@ -53,6 +54,9 @@ interface Doctor {
     specialization: string;
     isAvailable: boolean;
 }
+
+const timeSlots = ['09:00 AM', '10:00 AM', '11:00 AM', '12:00 PM', '02:00 PM', '03:00 PM', '04:00 PM'];
+
 
 const ClinicDashboard = () => {
     const [appointments, setAppointments] = useState<Appointment[]>([]);
@@ -128,6 +132,21 @@ const ClinicDashboard = () => {
         }
     };
     
+    const handleDeleteDoctor = async (doctorId: string, doctorName: string) => {
+        const session = localStorage.getItem('curocity-cure-session');
+        if (!db || !session) return;
+        const { partnerId } = JSON.parse(session);
+        if (!partnerId) return;
+
+        const doctorRef = doc(db, `ambulances/${partnerId}/doctors`, doctorId);
+        try {
+          await deleteDoc(doctorRef);
+          toast({ variant: 'destructive', title: 'Doctor Removed', description: `Dr. ${doctorName} has been removed from the roster.` });
+        } catch (error) {
+           toast({ variant: 'destructive', title: 'Error', description: 'Could not remove the doctor.' });
+        }
+    };
+    
     const queue = useMemo(() => {
         return appointments.filter(a => a.status === 'In Queue').sort((a,b) => a.appointmentDate.seconds - b.appointmentDate.seconds);
     }, [appointments]);
@@ -196,7 +215,7 @@ const ClinicDashboard = () => {
                             <CardTitle>Doctor Roster</CardTitle>
                              <Button asChild>
                                 <Link href="/cure/doctors">
-                                    <UserPlus className="mr-2 h-4 w-4"/> Manage Roster
+                                    <UserPlus className="mr-2 h-4 w-4"/> Add / Manage Doctors
                                 </Link>
                             </Button>
                         </CardHeader>
@@ -207,6 +226,7 @@ const ClinicDashboard = () => {
                                         <TableHead>Doctor</TableHead>
                                         <TableHead>Specialization</TableHead>
                                         <TableHead>Status</TableHead>
+                                        <TableHead className="text-right">Actions</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
@@ -216,6 +236,7 @@ const ClinicDashboard = () => {
                                             <TableCell><Skeleton className="h-5 w-32" /></TableCell>
                                             <TableCell><Skeleton className="h-5 w-24" /></TableCell>
                                             <TableCell><Skeleton className="h-6 w-20 rounded-full" /></TableCell>
+                                            <TableCell className="text-right"><Skeleton className="h-8 w-8 rounded-full ml-auto" /></TableCell>
                                         </TableRow>
                                     ))
                                    ) : doctors.length > 0 ? (
@@ -228,11 +249,35 @@ const ClinicDashboard = () => {
                                                     {doctor.isAvailable ? 'Online' : 'Offline'}
                                                 </Badge>
                                             </TableCell>
+                                            <TableCell className="text-right">
+                                                 <AlertDialog>
+                                                     <DropdownMenu>
+                                                        <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
+                                                        <DropdownMenuContent>
+                                                            <AlertDialogTrigger asChild>
+                                                                <DropdownMenuItem className="text-destructive" onSelect={(e) => e.preventDefault()}>
+                                                                    <Trash2 className="mr-2 h-4 w-4"/> Remove
+                                                                </DropdownMenuItem>
+                                                            </AlertDialogTrigger>
+                                                        </DropdownMenuContent>
+                                                    </DropdownMenu>
+                                                     <AlertDialogContent>
+                                                        <AlertDialogHeader>
+                                                            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                                            <AlertDialogDescription>This will permanently remove Dr. {doctor.name} from your roster.</AlertDialogDescription>
+                                                        </AlertDialogHeader>
+                                                        <AlertDialogFooter>
+                                                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                            <AlertDialogAction onClick={() => handleDeleteDoctor(doctor.id, doctor.name)} className="bg-destructive hover:bg-destructive/90">Yes, Remove</AlertDialogAction>
+                                                        </AlertDialogFooter>
+                                                    </AlertDialogContent>
+                                                 </AlertDialog>
+                                            </TableCell>
                                         </TableRow>
                                      ))
                                    ) : (
                                     <TableRow>
-                                        <TableCell colSpan={3} className="text-center h-24">No doctors on roster.</TableCell>
+                                        <TableCell colSpan={4} className="text-center h-24">No doctors on roster.</TableCell>
                                     </TableRow>
                                    )}
                                 </TableBody>
