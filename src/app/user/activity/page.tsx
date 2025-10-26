@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { MapPin, History, Car, Ambulance, Calendar } from 'lucide-react'
+import { MapPin, History, Car, Ambulance, Calendar, Wrench } from 'lucide-react'
 import { useFirebase } from '@/firebase/client-provider'
 import { collection, query, where, orderBy, onSnapshot, Timestamp } from 'firebase/firestore'
 import { useToast } from '@/hooks/use-toast'
@@ -13,7 +13,7 @@ type ActivityStatus = 'Completed' | 'Cancelled' | 'Pending' | 'Confirmed' | stri
 
 interface ActivityItem {
     id: string;
-    type: 'Ride' | 'Appointment' | 'Emergency';
+    type: 'Ride' | 'Appointment' | 'Emergency' | 'ResQ';
     title: string;
     description: string;
     date: Date;
@@ -42,52 +42,70 @@ export default function MyActivityPage() {
     const queries = [
         query(collection(db, 'rides'), where('riderId', '==', userId), orderBy('createdAt', 'desc')),
         query(collection(db, 'appointments'), where('patientId', '==', userId), orderBy('createdAt', 'desc')),
-        query(collection(db, 'emergencyCases'), where('riderId', '==', userId), orderBy('createdAt', 'desc'))
+        query(collection(db, 'emergencyCases'), where('riderId', '==', userId), orderBy('createdAt', 'desc')),
+        query(collection(db, 'garageRequests'), where('driverId', '==', userId), orderBy('createdAt', 'desc')) // New query for ResQ
     ];
     
     const unsubs = queries.map((q, index) => {
         return onSnapshot(q, (querySnapshot) => {
             const newActivities: ActivityItem[] = querySnapshot.docs.map(doc => {
                 const data = doc.data();
-                if (index === 0) { // Rides
-                    return {
-                        id: doc.id,
-                        type: 'Ride',
-                        title: `Ride to ${data.destination?.address || 'destination'}`,
-                        description: `From: ${data.pickup?.address || 'start'}`,
-                        date: (data.createdAt as Timestamp).toDate(),
-                        status: data.status.charAt(0).toUpperCase() + data.status.slice(1).replace(/_/g, ' '),
-                        fare: data.fare,
-                        icon: Car,
-                        color: 'text-primary'
-                    };
-                } else if (index === 1) { // Appointments
-                    return {
-                        id: doc.id,
-                        type: 'Appointment',
-                        title: `Appointment with ${data.doctorName}`,
-                        description: data.hospitalName,
-                        date: (data.appointmentDate as Timestamp).toDate(),
-                        status: data.status,
-                        icon: Calendar,
-                        color: 'text-blue-500'
-                    };
-                } else { // Emergency Cases
-                     return {
-                        id: doc.id,
-                        type: 'Emergency',
-                        title: `SOS Case: ${data.caseId}`,
-                        description: `Assigned to: ${data.assignedPartner?.name || 'Searching...'}`,
-                        date: (data.createdAt as Timestamp).toDate(),
-                        status: data.status.charAt(0).toUpperCase() + data.status.slice(1).replace(/_/g, ' '),
-                        icon: Ambulance,
-                        color: 'text-red-500'
-                    };
+                switch (index) {
+                    case 0: // Rides
+                        return {
+                            id: doc.id,
+                            type: 'Ride',
+                            title: `Ride to ${data.destination?.address || 'destination'}`,
+                            description: `From: ${data.pickup?.address || 'start'}`,
+                            date: (data.createdAt as Timestamp).toDate(),
+                            status: data.status.charAt(0).toUpperCase() + data.status.slice(1).replace(/_/g, ' '),
+                            fare: data.fare,
+                            icon: Car,
+                            color: 'text-primary'
+                        };
+                    case 1: // Appointments
+                        return {
+                            id: doc.id,
+                            type: 'Appointment',
+                            title: `Appointment with ${data.doctorName}`,
+                            description: data.hospitalName,
+                            date: (data.appointmentDate as Timestamp).toDate(),
+                            status: data.status,
+                            icon: Calendar,
+                            color: 'text-blue-500'
+                        };
+                    case 2: // Emergency Cases
+                         return {
+                            id: doc.id,
+                            type: 'Emergency',
+                            title: `SOS Case: ${data.caseId}`,
+                            description: `Assigned to: ${data.assignedPartner?.name || 'Searching...'}`,
+                            date: (data.createdAt as Timestamp).toDate(),
+                            status: data.status.charAt(0).toUpperCase() + data.status.slice(1).replace(/_/g, ' '),
+                            icon: Ambulance,
+                            color: 'text-red-500'
+                        };
+                    case 3: // ResQ Requests
+                        return {
+                            id: doc.id,
+                            type: 'ResQ',
+                            title: `ResQ Request: ${data.issue}`,
+                            description: `Mechanic: ${data.mechanicName || 'Searching...'}`,
+                            date: (data.createdAt as Timestamp).toDate(),
+                            status: data.status.charAt(0).toUpperCase() + data.status.slice(1).replace(/_/g, ' '),
+                            fare: data.totalAmount,
+                            icon: Wrench,
+                            color: 'text-amber-500'
+                        };
+                    default:
+                        // This should not happen
+                        return null as any;
                 }
-            });
+            }).filter(Boolean); // Filter out any nulls
 
             setActivities(prev => {
-                const typeToUpdate = index === 0 ? 'Ride' : index === 1 ? 'Appointment' : 'Emergency';
+                const activityTypes = ['Ride', 'Appointment', 'Emergency', 'ResQ'];
+                const typeToUpdate = activityTypes[index];
                 const otherActivities = prev.filter(act => act.type !== typeToUpdate);
                 const all = [...otherActivities, ...newActivities].sort((a, b) => b.date.getTime() - a.date.getTime());
                 return all;
@@ -109,7 +127,7 @@ export default function MyActivityPage() {
     if (lowerStatus.includes('completed')) return <Badge className="bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-200">{status}</Badge>;
     if (lowerStatus.includes('cancel')) return <Badge variant="destructive">{status}</Badge>;
     if (lowerStatus.includes('pending') || lowerStatus.includes('searching')) return <Badge className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-200">{status}</Badge>;
-    if (lowerStatus.includes('confirmed') || lowerStatus.includes('accepted') || lowerStatus.includes('transit')) return <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200">{status}</Badge>;
+    if (lowerStatus.includes('confirmed') || lowerStatus.includes('accepted') || lowerStatus.includes('transit') || lowerStatus.includes('progress') || lowerStatus.includes('bill')) return <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200">{status}</Badge>;
     return <Badge variant="secondary">{status}</Badge>;
   };
 
