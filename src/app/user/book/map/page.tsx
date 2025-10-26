@@ -114,7 +114,7 @@ function BookRideMapComponent() {
 
     return (
         <div className="h-screen w-screen flex flex-col bg-background">
-            <header className="absolute top-0 left-0 right-0 z-10 p-4">
+            <header className="absolute top-0 left-0 right-0 z-20 p-4">
                 <div className="flex items-start gap-4">
                     <Button variant="outline" size="icon" className="rounded-full shadow-lg shrink-0" onClick={() => router.back()}>
                         <ArrowLeft className="w-5 h-5"/>
@@ -150,7 +150,7 @@ function BookRideMapComponent() {
                 </div>
             </header>
 
-            <div className="flex-1">
+            <div className="flex-1 z-0">
                 <LiveMap 
                     ref={liveMapRef} 
                     riderLocation={userLocation}
@@ -159,7 +159,7 @@ function BookRideMapComponent() {
             </div>
             
              {destination && (
-                <div className="absolute bottom-0 left-0 right-0 z-10 p-4">
+                <div className="absolute bottom-0 left-0 right-0 z-20 p-4">
                      <div className="absolute top-0 right-6 -translate-y-1/2 flex flex-col gap-2">
                         <Button variant="outline" size="icon" className="rounded-full shadow-lg h-12 w-12"><MessageSquare className="w-6 h-6"/></Button>
                         <Button variant="outline" size="icon" className="rounded-full shadow-lg h-12 w-12"><Shield className="w-6 h-6"/></Button>
@@ -186,4 +186,3 @@ export default function BookRideMapPage() {
         </Suspense>
     );
 }
-
