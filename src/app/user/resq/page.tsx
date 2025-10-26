@@ -1,4 +1,3 @@
-
 'use client'
 
 import React, { useState, useEffect, useCallback } from 'react'
@@ -202,7 +201,7 @@ export default function ResQPage() {
      <Card className="max-w-xl mx-auto mt-8 bg-white/80 dark:bg-background/80 backdrop-blur-md shadow-xl rounded-3xl">
         <CardHeader className="p-8">
             <div className="flex justify-between items-center">
-                <div className="mx-auto w-16 h-16 rounded-full bg-amber-500/10 flex items-center justify-center mb-2 border-4 border-amber-500/20">
+                <div className="w-16 h-16 rounded-full bg-amber-500/10 flex items-center justify-center mb-2 border-4 border-amber-500/20">
                     <Wrench className="w-8 h-8 text-amber-500"/>
                 </div>
                 <div className="text-right">
