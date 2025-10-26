@@ -361,11 +361,11 @@ export default function RideStatus({
         layout
         initial={{ y: 50, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        exit={{ y: 50, opacity: 0 }}
-        transition={{ type: 'spring', stiffness: 100 }}
+        transition={{ type: 'spring', stiffness: 100, damping: 15 }}
+        className="w-full max-w-md mx-auto"
     >
-        <Card className="w-full max-w-md mx-auto shadow-2xl">
-            <CardHeader className="p-4 flex-row items-center justify-between">
+        <Card className="shadow-2xl overflow-hidden">
+            <CardHeader className="p-4 flex-row items-center justify-between bg-background/50 backdrop-blur-sm">
                 <div className="flex items-center gap-3">
                     <div className={cn("p-2 rounded-full", isAmbulanceCase ? 'bg-destructive/10' : isGarageRequest ? 'bg-amber-500/10' : 'bg-primary/10')}>
                     {getActiveRideIcon()}
@@ -393,7 +393,7 @@ export default function RideStatus({
             {renderContent()}
             </CardContent>
             {ride.status !== 'completed' && ride.status !== 'payment_pending' && (ride as any).status !== 'bill_sent' && (
-                <CardFooter className="p-2">
+                <CardFooter className="p-2 border-t">
                     <AlertDialog>
                         <AlertDialogTrigger asChild>
                             <Button variant="link" size="sm" className="w-full text-muted-foreground">Cancel {isGarageRequest ? 'Request' : isAmbulanceCase ? 'Case' : 'Ride'}</Button>
