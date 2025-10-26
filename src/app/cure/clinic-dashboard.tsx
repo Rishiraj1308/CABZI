@@ -4,7 +4,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Stethoscope, Calendar, Users, BarChart, FileText, Clock, UserCheck, UserPlus, MoreHorizontal, Trash2, Phone } from 'lucide-react';
+import { Stethoscope, Calendar, Users, BarChart, FileText, Clock, UserCheck, UserPlus, MoreHorizontal, Trash2, Phone, ArrowLeft } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useDb } from '@/firebase/client-provider';
@@ -36,6 +36,9 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Progress } from '@/components/ui/progress';
+import { Switch } from '@/components/ui/switch';
+import { cn } from '@/lib/utils';
 
 const StatCard = ({ title, value, icon: Icon, isLoading }: { title: string, value: string, icon: React.ElementType, isLoading?: boolean }) => (
     <Card>
@@ -98,6 +101,7 @@ const ClinicDashboard = () => {
     const [newDoctorData, setNewDoctorData] = useState(initialDoctorState);
     const [generatedCreds, setGeneratedCreds] = useState<{ id: string, pass: string, role: string } | null>(null);
     const [isCredsDialogOpen, setIsCredsDialogOpen] = useState(false);
+    const [currentFormStep, setCurrentFormStep] = useState(1);
     const db = useDb();
     const { toast } = useToast();
 
@@ -216,7 +220,7 @@ const ClinicDashboard = () => {
             const batch = writeBatch(db);
             
             const newDoctorDocRefInHospital = doc(hospitalDoctorsRef);
-            const doctorData = { id: newDoctorDocRefInHospital.id, name, phone, email, ...restOfData, partnerId, password, createdAt: serverTimestamp(), docStatus: 'Pending', hospitalId, hospitalName };
+            const doctorData = { id: newDoctorDocRefInHospital.id, name, phone, email, ...restOfData, partnerId, password, createdAt: serverTimestamp(), docStatus: 'Pending', hospitalId, hospitalName, isAvailable: false };
             batch.set(newDoctorDocRefInHospital, doctorData);
 
             const newDoctorDocRefGlobal = doc(globalDoctorsRef, newDoctorDocRefInHospital.id);
@@ -226,6 +230,7 @@ const ClinicDashboard = () => {
 
             setGeneratedCreds({ id: partnerId, pass: password, role: 'Doctor' });
             setIsAddDoctorDialogOpen(false);
+            setCurrentFormStep(1);
             setIsCredsDialogOpen(true);
             toast({ title: 'Doctor Record Created!', description: `Dr. ${name}'s credentials are now available.` });
             setNewDoctorData(initialDoctorState);
@@ -249,6 +254,16 @@ const ClinicDashboard = () => {
         }
     };
 
+    const handleToggleAvailability = async (doctorId: string, isAvailable: boolean) => {
+        if (!db || !hospitalId) return;
+        const doctorRef = doc(db, `ambulances/${hospitalId}/doctors`, doctorId);
+        try {
+            await updateDoc(doctorRef, { isAvailable });
+        } catch (error) {
+            toast({ variant: 'destructive', title: 'Update Failed' });
+        }
+    };
+
     const handleFormChange = (field: keyof typeof newDoctorData, value: any) => {
         setNewDoctorData(prev => ({ ...prev, [field]: value }));
     };
@@ -256,6 +271,36 @@ const ClinicDashboard = () => {
     const queue = useMemo(() => {
         return appointments.filter(a => a.status === 'In Queue').sort((a,b) => a.appointmentDate.seconds - b.appointmentDate.seconds);
     }, [appointments]);
+
+
+    const renderAddDoctorForm = () => {
+        switch(currentFormStep) {
+            case 1:
+                return (
+                    <div className="space-y-4">
+                        <h3 className="text-lg font-semibold border-b pb-2">Basic Information</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+                            <div className="space-y-2"><Label>Full Name</Label><Input name="fullName" required value={newDoctorData.fullName} onChange={e => handleFormChange('fullName', e.target.value)} /></div>
+                            <div className="space-y-2"><Label>Gender</Label><Select name="gender" required onValueChange={v => handleFormChange('gender', v)} value={newDoctorData.gender}><SelectTrigger><SelectValue placeholder="Select Gender"/></SelectTrigger><SelectContent><SelectItem value="male">Male</SelectItem><SelectItem value="female">Female</SelectItem><SelectItem value="other">Other</SelectItem></SelectContent></Select></div>
+                            <div className="space-y-2"><Label>Contact Number</Label><div className="flex items-center gap-0 rounded-md border border-input focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2"><span className="pl-3 text-muted-foreground text-sm">+91</span><Input id="contactNumber" name="contactNumber" type="tel" maxLength={10} placeholder="12345 67890" required value={newDoctorData.contactNumber} onChange={e => handleFormChange('contactNumber', e.target.value)} className="border-0 h-9 focus-visible:ring-0 focus-visible:ring-offset-0 flex-1"/></div></div>
+                            <div className="space-y-2"><Label>Email Address</Label><Input name="emailAddress" type="email" required value={newDoctorData.emailAddress} onChange={e => handleFormChange('emailAddress', e.target.value)} /></div>
+                        </div>
+                    </div>
+                )
+            case 2:
+                 return (
+                    <div className="space-y-4">
+                        <h3 className="text-lg font-semibold border-b pb-2">Professional Details</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+                            <div className="space-y-2"><Label>Specialization</Label><Select name="specialization" required onValueChange={v => handleFormChange('specialization', v)} value={newDoctorData.specialization}><SelectTrigger><SelectValue placeholder="Select Specialization"/></SelectTrigger><SelectContent>{doctorSpecializations.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent></Select></div>
+                            <div className="space-y-2"><Label>Qualifications</Label><Input name="qualifications" placeholder="MBBS, MD" required value={newDoctorData.qualifications} onChange={e => handleFormChange('qualifications', e.target.value)} /></div>
+                            <div className="space-y-2"><Label>Experience (years)</Label><Input name="experience" type="number" required value={newDoctorData.experience} onChange={e => handleFormChange('experience', e.target.value)} /></div>
+                            <div className="space-y-2"><Label>Consultation Fee (INR)</Label><Input name="consultationFee" type="number" placeholder="e.g., 800" required value={newDoctorData.consultationFee} onChange={e => handleFormChange('consultationFee', e.target.value)} /></div>
+                        </div>
+                    </div>
+                 )
+        }
+    }
 
 
     return (
@@ -320,7 +365,7 @@ const ClinicDashboard = () => {
                     <Card>
                         <CardHeader>
                             <CardTitle>Doctor Schedules</CardTitle>
-                            <CardDescription>This is a placeholder. Functionality to manage schedules will be added soon.</CardDescription>
+                            <CardDescription>View and manage doctor availability for the upcoming week.</CardDescription>
                         </CardHeader>
                         <CardContent className="h-48 flex items-center justify-center">
                             <p className="text-muted-foreground">Doctor schedule management coming soon.</p>
@@ -333,7 +378,7 @@ const ClinicDashboard = () => {
                             <CardTitle>Doctor Roster</CardTitle>
                              <Dialog open={isAddDoctorDialogOpen} onOpenChange={(isOpen) => {
                                 setIsAddDoctorDialogOpen(isOpen);
-                                if (!isOpen) { setNewDoctorData(initialDoctorState); }
+                                if (!isOpen) { setCurrentFormStep(1); setNewDoctorData(initialDoctorState); }
                             }}>
                                 <DialogTrigger asChild>
                                     <Button><UserPlus className="mr-2 h-4 w-4"/> Add Doctor</Button>
@@ -342,30 +387,15 @@ const ClinicDashboard = () => {
                                 <DialogHeader>
                                     <DialogTitle>Add New Doctor</DialogTitle>
                                     <DialogDescription>Enter the details for the new doctor to add them to your hospital's roster.</DialogDescription>
+                                     <Progress value={(currentFormStep / 2) * 100} className="w-full mt-2" />
                                 </DialogHeader>
                                 <form onSubmit={handleAddDoctor} className="max-h-[80vh] overflow-y-auto pr-6">
-                                    <div className="space-y-6 py-4">
-                                        <div className="space-y-4">
-                                        <h3 className="text-lg font-semibold border-b pb-2">Basic Information</h3>
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
-                                            <div className="space-y-2"><Label>Full Name</Label><Input name="fullName" required value={newDoctorData.fullName} onChange={e => handleFormChange('fullName', e.target.value)} /></div>
-                                            <div className="space-y-2"><Label>Gender</Label><Select name="gender" required onValueChange={v => handleFormChange('gender', v)} value={newDoctorData.gender}><SelectTrigger><SelectValue placeholder="Select Gender"/></SelectTrigger><SelectContent><SelectItem value="male">Male</SelectItem><SelectItem value="female">Female</SelectItem><SelectItem value="other">Other</SelectItem></SelectContent></Select></div>
-                                            <div className="space-y-2"><Label>Contact Number</Label><div className="flex items-center gap-0 rounded-md border border-input focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2"><span className="pl-3 text-muted-foreground text-sm">+91</span><Input id="contactNumber" name="contactNumber" type="tel" maxLength={10} placeholder="12345 67890" required value={newDoctorData.contactNumber} onChange={e => handleFormChange('contactNumber', e.target.value)} className="border-0 h-9 focus-visible:ring-0 focus-visible:ring-offset-0 flex-1"/></div></div>
-                                            <div className="space-y-2"><Label>Email Address</Label><Input name="emailAddress" type="email" required value={newDoctorData.emailAddress} onChange={e => handleFormChange('emailAddress', e.target.value)} /></div>
-                                        </div>
-                                        </div>
-                                        <div className="space-y-4">
-                                        <h3 className="text-lg font-semibold border-b pb-2">Professional Details</h3>
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
-                                            <div className="space-y-2"><Label>Specialization</Label><Select name="specialization" required onValueChange={v => handleFormChange('specialization', v)} value={newDoctorData.specialization}><SelectTrigger><SelectValue placeholder="Select Specialization"/></SelectTrigger><SelectContent>{doctorSpecializations.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent></Select></div>
-                                            <div className="space-y-2"><Label>Qualifications</Label><Input name="qualifications" placeholder="MBBS, MD" required value={newDoctorData.qualifications} onChange={e => handleFormChange('qualifications', e.target.value)} /></div>
-                                            <div className="space-y-2"><Label>Experience (years)</Label><Input name="experience" type="number" required value={newDoctorData.experience} onChange={e => handleFormChange('experience', e.target.value)} /></div>
-                                            <div className="space-y-2"><Label>Consultation Fee (INR)</Label><Input name="consultationFee" type="number" placeholder="e.g., 800" required value={newDoctorData.consultationFee} onChange={e => handleFormChange('consultationFee', e.target.value)} /></div>
-                                        </div>
-                                        </div>
+                                    <div className="py-4">
+                                       {renderAddDoctorForm()}
                                     </div>
                                     <DialogFooter className="pt-6">
-                                    <Button type="submit" disabled={isSubmitting}>{isSubmitting ? "Adding..." : "Add Doctor & Generate Credentials"}</Button>
+                                      {currentFormStep > 1 && <Button type="button" variant="outline" onClick={() => setCurrentFormStep(1)}><ArrowLeft className="w-4 h-4 mr-2"/>Previous</Button>}
+                                      {currentFormStep < 2 ? <Button type="button" onClick={() => setCurrentFormStep(2)}>Next Step</Button> : <Button type="submit" disabled={isSubmitting}>{isSubmitting ? "Adding..." : "Add Doctor & Generate Credentials"}</Button>}
                                     </DialogFooter>
                                 </form>
                                 </DialogContent>
@@ -397,9 +427,17 @@ const ClinicDashboard = () => {
                                             <TableCell className="font-medium">Dr. {doctor.name}</TableCell>
                                             <TableCell><Badge variant="secondary">{doctor.specialization}</Badge></TableCell>
                                             <TableCell>
-                                                <Badge variant={doctor.isAvailable ? 'default' : 'outline'} className={doctor.isAvailable ? 'bg-green-100 text-green-800' : ''}>
-                                                    {doctor.isAvailable ? 'Online' : 'Offline'}
-                                                </Badge>
+                                                <div className="flex items-center gap-2">
+                                                    <Switch 
+                                                        id={`avail-${doctor.id}`} 
+                                                        checked={doctor.isAvailable} 
+                                                        onCheckedChange={(checked) => handleToggleAvailability(doctor.id, checked)}
+                                                        className="data-[state=checked]:bg-green-500"
+                                                    />
+                                                    <Label htmlFor={`avail-${doctor.id}`} className={cn("text-xs", doctor.isAvailable ? 'text-green-600' : 'text-muted-foreground')}>
+                                                        {doctor.isAvailable ? 'Online' : 'Offline'}
+                                                    </Label>
+                                                </div>
                                             </TableCell>
                                             <TableCell className="text-right">
                                                  <AlertDialog>
@@ -453,5 +491,3 @@ const ClinicDashboard = () => {
 };
 
 export default ClinicDashboard;
-
-    
