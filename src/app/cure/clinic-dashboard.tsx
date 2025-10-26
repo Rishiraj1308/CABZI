@@ -1,6 +1,7 @@
+
 'use client'
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Stethoscope, Calendar, Users, BarChart, FileText, Clock, UserCheck } from 'lucide-react';
@@ -112,6 +113,10 @@ const ClinicDashboard = () => {
             toast({ variant: 'destructive', title: 'Check-in Failed' });
         }
     };
+    
+    const queue = useMemo(() => {
+        return appointments.filter(a => a.status === 'In Queue').sort((a,b) => a.appointmentDate.seconds - b.appointmentDate.seconds);
+    }, [appointments]);
 
 
     return (
@@ -137,18 +142,28 @@ const ClinicDashboard = () => {
                            {isLoading ? (
                                 Array.from({length: 3}).map((_, i) => <Skeleton key={i} className="h-16 w-full" />)
                            ) : appointments.length > 0 ? (
-                               appointments.map(appt => (
-                                   <div key={appt.id} className="flex items-center gap-4 p-3 rounded-lg bg-muted/50">
-                                       <Avatar className="h-9 w-9"><AvatarFallback>{appt.patientName.substring(0,1)}</AvatarFallback></Avatar>
-                                       <div className="flex-1">
-                                            <p className="font-semibold">{appt.patientName}</p>
-                                            <p className="text-xs text-muted-foreground">{appt.appointmentDate.toDate().toLocaleDateString()}</p>
+                               appointments.map(appt => {
+                                   const queueNumber = queue.findIndex(q => q.id === appt.id);
+                                   return (
+                                       <div key={appt.id} className="flex items-center gap-4 p-3 rounded-lg bg-muted/50">
+                                           {queueNumber !== -1 ? (
+                                                <div className="w-10 h-10 flex flex-col items-center justify-center bg-primary text-primary-foreground rounded-lg">
+                                                   <span className="text-xs -mb-1">Queue</span>
+                                                   <span className="font-bold text-lg">{queueNumber + 1}</span>
+                                               </div>
+                                           ) : (
+                                               <Avatar className="h-9 w-9"><AvatarFallback>{appt.patientName.substring(0,1)}</AvatarFallback></Avatar>
+                                           )}
+                                           <div className="flex-1">
+                                                <p className="font-semibold">{appt.patientName}</p>
+                                                <p className="text-xs text-muted-foreground">{appt.appointmentDate.toDate().toLocaleDateString()}</p>
+                                           </div>
+                                           <div className="text-sm text-muted-foreground">{appt.appointmentTime}</div>
+                                           <Badge variant={appt.status === 'In Queue' ? 'default' : 'secondary'}>{appt.status}</Badge>
+                                           <Button variant="outline" size="sm" onClick={() => handleCheckIn(appt.id)} disabled={appt.status !== 'Confirmed'}>Check-in</Button>
                                        </div>
-                                       <div className="text-sm text-muted-foreground">{appt.appointmentTime}</div>
-                                       <Badge variant={appt.status === 'In Queue' ? 'default' : 'secondary'}>{appt.status}</Badge>
-                                       <Button variant="outline" size="sm" onClick={() => handleCheckIn(appt.id)} disabled={appt.status !== 'Confirmed'}>Check-in</Button>
-                                   </div>
-                               ))
+                                   )
+                               })
                            ) : (
                                 <div className="text-center py-10 text-muted-foreground">No new appointment requests.</div>
                            )}
