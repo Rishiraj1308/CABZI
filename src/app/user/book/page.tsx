@@ -96,7 +96,7 @@ export default function BookRidePage() {
             return false;
         }
 
-        const checkAndSubscribe = async () => {
+        const checkAndSubscribe = () => {
             const rideId = localStorage.getItem('activeRideId');
             if (rideId) {
                 const rideRef = doc(db, 'rides', rideId);
@@ -121,7 +121,7 @@ export default function BookRidePage() {
             unsubscribers.push(unsubCure);
 
             const qResq = query(collection(db, "garageRequests"), where("driverId", "==", session.userId), where("status", "in", ["pending", "accepted", "in_progress", "bill_sent"]));
-            const unsubResq = onSnapshot(qResq, (snapshot) => {
+             const unsubResq = onSnapshot(qResq, (snapshot) => {
                 if (!snapshot.empty) {
                     if (handleActiveDoc(snapshot.docs[0], 'garage')) return;
                 } else if (activeGarageRequest) {
@@ -137,7 +137,7 @@ export default function BookRidePage() {
             unsubscribers.forEach(unsub => unsub());
         };
 
-    }, [db, session, resetFlow, activeAmbulanceCase, activeGarageRequest]);
+    }, [db, session, resetFlow]);
 
     return (
         <div className="h-full w-full flex flex-col">
@@ -197,3 +197,4 @@ export default function BookRidePage() {
         </div>
     );
 }
+
