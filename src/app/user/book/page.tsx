@@ -52,20 +52,20 @@ export default function BookRidePage() {
 
     return (
         <motion.div 
-            className="h-screen w-screen flex flex-col bg-background overflow-hidden"
+            className="h-screen w-screen flex flex-col bg-muted/30 overflow-hidden"
             initial="hidden"
             animate="visible"
             variants={containerVariants}
         >
             {/* Header Section */}
-            <header className="bg-gradient-to-br from-green-500 to-primary p-4 pt-6 relative text-primary-foreground overflow-hidden">
+            <header className="bg-gradient-to-br from-green-500 to-primary p-4 relative text-primary-foreground overflow-hidden">
                 <div className="container mx-auto">
                     <motion.div variants={itemVariants}>
                         <Button variant="ghost" size="icon" className="hover:bg-white/10" onClick={() => router.back()}>
                             <ArrowLeft className="w-5 h-5"/>
                         </Button>
                     </motion.div>
-                    <motion.div variants={itemVariants} className="pt-8 pb-16 text-left">
+                    <motion.div variants={itemVariants} className="pt-8 pb-24 text-left">
                         <h1 className="text-4xl font-bold">Transport</h1>
                         <p className="opacity-80 mt-1">Wherever you're going, let's get you there!</p>
                     </motion.div>
@@ -81,39 +81,32 @@ export default function BookRidePage() {
             </header>
 
             {/* Content Section */}
-            <motion.div 
-                className="flex-1 bg-muted/30 rounded-t-3xl -mt-8 p-4 space-y-6"
-                variants={itemVariants}
-            >
-                <div className="container mx-auto">
+            <div className="flex-1 container mx-auto p-4 -mt-16 z-10">
+                 <motion.div 
+                    initial={{ y: 50, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    transition={{ delay: 0.3, type: 'spring' }}
+                    className="space-y-6"
+                >
                     {/* Search Card */}
-                    <motion.div
-                        initial={{ y: 50, opacity: 0 }}
-                        animate={{ y: 0, opacity: 1 }}
-                        transition={{ delay: 0.3, type: 'spring' }}
-                    >
-                        <Card className="shadow-2xl -mt-12">
-                            <CardContent className="p-3 space-y-1">
-                                <div className="flex items-center gap-4 p-2 rounded-lg">
-                                    <div className="w-2.5 h-2.5 rounded-full bg-green-500 ring-4 ring-green-500/20"/>
-                                    <p className="font-semibold text-base text-muted-foreground">Current Location</p>
-                                </div>
-                                <div className="border-l-2 border-dotted border-border h-4 ml-[13px]"></div>
-                                <Link href="/user/book/map" className="flex items-center gap-4 p-2 rounded-lg hover:bg-muted">
+                    <Card className="shadow-lg">
+                        <CardContent className="p-3 space-y-1">
+                            <div className="flex items-center gap-4 p-2 rounded-lg">
+                                <div className="w-2.5 h-2.5 rounded-full bg-green-500 ring-4 ring-green-500/20"/>
+                                <p className="font-semibold text-base text-muted-foreground">Current Location</p>
+                            </div>
+                            <div className="border-l-2 border-dotted border-border h-4 ml-[13px]"></div>
+                             <Link href="/user/book/map" passHref>
+                                <div className="flex items-center gap-4 p-2 rounded-lg hover:bg-muted cursor-pointer">
                                     <div className="w-2.5 h-2.5 rounded-full bg-red-500 ring-4 ring-red-500/20"/>
                                     <p className="font-semibold text-base">Where to?</p>
-                                </Link>
-                            </CardContent>
-                        </Card>
-                    </motion.div>
+                                </div>
+                            </Link>
+                        </CardContent>
+                    </Card>
                     
                     {/* Recent Trips */}
-                    <motion.div 
-                        className="space-y-2 mt-8"
-                        variants={containerVariants}
-                        initial="hidden"
-                        animate="visible"
-                    >
+                    <div className="space-y-2 mt-8">
                         <h3 className="font-bold text-lg">Recent Trips</h3>
                         {recentTrips.map((trip, index) => (
                             <motion.div 
@@ -136,9 +129,9 @@ export default function BookRidePage() {
                                 </div>
                             </motion.div>
                         ))}
-                    </motion.div>
-                </div>
-            </motion.div>
+                    </div>
+                </motion.div>
+            </div>
         </motion.div>
     );
 }
