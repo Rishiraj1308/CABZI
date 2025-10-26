@@ -1,12 +1,11 @@
-
 'use client'
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { ArrowLeft, MapPin } from 'lucide-react';
+import { ArrowLeft, Map, MapPin } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
@@ -37,6 +36,7 @@ const recentTrips = [
 
 export default function BookRidePage() {
     const router = useRouter();
+    const [destination, setDestination] = useState('');
 
     const containerVariants = {
         hidden: { opacity: 0 },
@@ -51,6 +51,12 @@ export default function BookRidePage() {
         visible: { opacity: 1, y: 0 }
     };
 
+    const handleSearch = () => {
+        if (destination.trim()) {
+            router.push(`/user/book/map?search=${encodeURIComponent(destination)}`);
+        }
+    }
+
     return (
         <motion.div 
             className="h-screen w-screen flex flex-col bg-muted/30 overflow-hidden"
@@ -58,7 +64,6 @@ export default function BookRidePage() {
             animate="visible"
             variants={containerVariants}
         >
-            {/* Header Section */}
             <header className="bg-gradient-to-br from-green-500 to-primary p-4 relative text-primary-foreground">
                 <div className="container mx-auto">
                     <motion.div variants={itemVariants}>
@@ -81,7 +86,6 @@ export default function BookRidePage() {
                 </motion.div>
             </header>
 
-            {/* Content Section */}
             <div className="flex-1 container mx-auto p-4 space-y-6 relative z-10 -mt-20">
                  <motion.div 
                     initial={{ y: 50, opacity: 0 }}
@@ -89,7 +93,6 @@ export default function BookRidePage() {
                     transition={{ delay: 0.3, type: 'spring' }}
                     className="space-y-6"
                 >
-                    {/* Search Card */}
                     <Card className="shadow-lg">
                         <CardContent className="p-3 space-y-1">
                             <div className="flex items-center gap-4 p-2 rounded-lg">
@@ -97,18 +100,19 @@ export default function BookRidePage() {
                                 <p className="font-semibold text-base text-muted-foreground">Current Location</p>
                             </div>
                             <div className="border-l-2 border-dotted border-border h-4 ml-[13px]"></div>
-                             <div className="flex items-center gap-4 p-2 rounded-lg">
+                            <div className="flex items-center gap-4 p-2 rounded-lg">
                                 <div className="w-2.5 h-2.5 rounded-full bg-red-500 ring-4 ring-red-500/20"/>
                                 <Input
                                     placeholder="Where to?"
                                     className="border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 text-base font-semibold p-0 h-auto"
-                                    onFocus={() => router.push('/user/book/map')}
+                                    value={destination}
+                                    onChange={(e) => setDestination(e.target.value)}
+                                    onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
                                 />
                             </div>
                         </CardContent>
                     </Card>
                     
-                    {/* Recent Trips */}
                     <div className="space-y-2 mt-8">
                         <h3 className="font-bold text-lg">Recent Trips</h3>
                         {recentTrips.map((trip, index) => (

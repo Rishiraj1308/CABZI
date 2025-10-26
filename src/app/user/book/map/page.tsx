@@ -1,15 +1,14 @@
-
 'use client'
 
 import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle, CardFooter, CardDescription } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { ArrowLeft, Search, LocateFixed, MapPin, Building } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { searchPlace } from '@/lib/routing'
 import dynamic from 'next/dynamic'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { Skeleton } from '@/components/ui/skeleton'
 
 const LiveMap = dynamic(() => import('@/components/live-map'), { 
@@ -38,8 +37,9 @@ interface Place {
 
 export default function BookRideMapPage() {
     const router = useRouter();
+    const searchParams = useSearchParams();
     const { toast } = useToast();
-    const [searchQuery, setSearchQuery] = useState('');
+    const [searchQuery, setSearchQuery] = useState(searchParams.get('search') || '');
     const [searchResults, setSearchResults] = useState<Place[]>([]);
     const [selectedPlace, setSelectedPlace] = useState<Place | null>(null);
     const [mapCenter, setMapCenter] = useState<{lat: number, lon: number}>({ lat: 28.6139, lon: 77.2090 });
@@ -48,26 +48,38 @@ export default function BookRideMapPage() {
     const liveMapRef = useRef<any>(null);
 
 
-    const handleSearch = async () => {
-        if(searchQuery.length < 3) return;
+    const handleSearch = useCallback(async (query: string) => {
+        if(query.length < 3) return;
         setIsSearching(true);
-        const results = await searchPlace(searchQuery);
+        const results = await searchPlace(query);
         setSearchResults(results);
+        if (results && results.length > 0) {
+            handleSelectPlace(results[0]);
+        }
         setIsSearching(false);
-    }
+    }, []);
     
     const handleSelectPlace = (place: Place) => {
         setSelectedPlace(place);
         setMapCenter({ lat: parseFloat(place.lat), lon: parseFloat(place.lon) });
+        setSearchQuery(place.display_name.split(',')[0]); // Update search bar with main name
         setSearchResults([]);
-        fetchNearbyPOIs(parseFloat(place.lat), parseFloat(place.lon));
+        fetchNearbyPOIs(parseFloat(place.lat), parseFloat(place.lon), place.place_id);
     }
     
-    const fetchNearbyPOIs = async (lat: number, lon: number) => {
+    const fetchNearbyPOIs = async (lat: number, lon: number, excludeId: string) => {
         const poiQuery = `${selectedPlace?.address.amenity || selectedPlace?.address.office || selectedPlace?.display_name.split(',')[0]}`;
         const results = await searchPlace(poiQuery);
-        setNearbyPOIs(results.filter((p: Place) => p.place_id !== selectedPlace?.place_id).slice(0, 4));
+        setNearbyPOIs(results.filter((p: Place) => p.place_id !== excludeId).slice(0, 4));
     }
+
+    useEffect(() => {
+        const initialSearch = searchParams.get('search');
+        if (initialSearch) {
+            handleSearch(initialSearch);
+        }
+    }, [searchParams, handleSearch]);
+
 
     return (
         <div className="h-screen w-screen flex flex-col bg-background">
@@ -87,7 +99,7 @@ export default function BookRideMapPage() {
                                 className="pl-10 border-0 focus-visible:ring-0 text-base"
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                                onKeyDown={(e) => e.key === 'Enter' && handleSearch(searchQuery)}
                             />
                         </div>
                     </CardContent>
