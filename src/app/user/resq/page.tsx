@@ -198,15 +198,15 @@ export default function ResQPage() {
   };
 
   const renderInitialView = () => (
-     <Card className="max-w-xl mx-auto mt-8 bg-background/90 backdrop-blur-sm">
-        <CardHeader className="text-center">
+     <Card className="max-w-xl mx-auto mt-8 bg-white/80 backdrop-blur-md shadow-xl shadow-orange-100 rounded-3xl">
+        <CardHeader className="text-center p-8">
             <div className="mx-auto w-16 h-16 rounded-full bg-amber-500/10 flex items-center justify-center mb-2 border-4 border-amber-500/20">
                 <Wrench className="w-8 h-8 text-amber-500"/>
             </div>
           <CardTitle className="text-2xl">Roadside Assistance</CardTitle>
           <CardDescription>Vehicle trouble? Get quick help for tyre, battery, towing & more.</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-4 px-8">
             <motion.div 
                 className="grid grid-cols-3 gap-3"
                 initial={{ opacity: 0 }}
@@ -243,7 +243,7 @@ export default function ResQPage() {
               </div>
           </div>
         </CardContent>
-        <CardFooter className="grid grid-cols-1 gap-2">
+        <CardFooter className="grid grid-cols-1 gap-2 p-8">
             <Button
                 size="lg"
                 disabled={!selectedIssue}
@@ -325,5 +325,3 @@ export default function ResQPage() {
     </div>
   );
 }
-
-    
