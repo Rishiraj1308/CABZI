@@ -2,7 +2,7 @@
 'use client'
 
 import React, { useState, useEffect, useCallback } from 'react'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import { useFirebase } from '@/firebase/client-provider'
 import { getDoc, doc, onSnapshot, query, collection, where, updateDoc, GeoPoint, serverTimestamp, addDoc } from 'firebase/firestore'
 import type { GarageRequest, ClientSession } from '@/lib/types'
@@ -199,9 +199,9 @@ export default function ResQPage() {
   };
 
   const renderInitialView = () => (
-     <Card className="max-w-xl mx-auto mt-8 bg-white/80 dark:bg-background/80 backdrop-blur-md shadow-xl shadow-orange-100 dark:shadow-orange-500/10 rounded-3xl">
+     <Card className="max-w-xl mx-auto mt-8 bg-white/80 dark:bg-background/80 backdrop-blur-md shadow-xl shadow-orange-glow rounded-3xl">
         <CardHeader className="p-8">
-            <div className="flex justify-between items-start">
+             <div className="flex justify-between items-center">
                 <div className="p-3 rounded-full bg-amber-500/10 border-4 border-amber-500/20">
                     <Wrench className="w-8 h-8 text-amber-500"/>
                 </div>
@@ -228,7 +228,7 @@ export default function ResQPage() {
                       key={item.id}
                       onClick={() => setSelectedIssue(item.label)}
                       className={cn(
-                        "flex flex-col items-center justify-center p-6 bg-orange-50 dark:bg-orange-900/20 rounded-2xl hover:bg-orange-100 dark:hover:bg-orange-900/30 transition-all cursor-pointer shadow-sm hover:shadow-md",
+                        "flex flex-col items-center justify-center p-6 bg-orange-50 dark:bg-orange-900/20 rounded-2xl hover:bg-orange-100 dark:hover:bg-orange-900/30 transition-all cursor-pointer shadow-orange-glow hover:-translate-y-1",
                         selectedIssue === item.label && "ring-2 ring-orange-500 bg-orange-100 dark:bg-orange-900/30"
                       )}
                       whileHover={{ scale: 1.05 }}
@@ -307,7 +307,9 @@ export default function ResQPage() {
   return (
     <div className="h-full w-full relative flex flex-col p-4 md:p-6 items-center justify-center">
         <div className="w-full">
-          {activeGarageRequest ? renderActiveRequest() : renderInitialView()}
+          <AnimatePresence mode="wait">
+            {activeGarageRequest ? renderActiveRequest() : renderInitialView()}
+          </AnimatePresence>
         </div>
         <div className="fixed bottom-6 right-6 z-20 flex flex-col gap-3">
              <Dialog>

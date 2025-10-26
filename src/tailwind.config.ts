@@ -18,7 +18,7 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: ['var(--font-sans)'],
+        sans: ['var(--font-inter)'],
         headline: ['var(--font-poppins)'],
       },
       fontWeight: {
@@ -64,6 +64,9 @@ export default {
         md: 'calc(var(--radius) - 2px)',
         sm: 'calc(var(--radius) - 4px)',
       },
+      boxShadow: {
+        'orange-glow': '0 4px 10px rgba(255, 165, 0, 0.08)',
+      },
       keyframes: {
         'accordion-down': {
           from: {
@@ -95,7 +98,7 @@ export default {
                 opacity: '.7',
             },
         },
-         'text-gradient-animation': {
+        'text-gradient-animation': {
           '0%': { backgroundPosition: '0% 50%' },
           '50%': { backgroundPosition: '100% 50%' },
           '100%': { backgroundPosition: '0% 50%' },
