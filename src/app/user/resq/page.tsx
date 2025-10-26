@@ -1,3 +1,4 @@
+
 'use client'
 
 import React, { useState, useEffect, useCallback } from 'react'
@@ -201,8 +202,12 @@ export default function ResQPage() {
      <Card className="max-w-xl mx-auto mt-8 bg-white/80 dark:bg-background/80 backdrop-blur-md shadow-xl rounded-3xl">
         <CardHeader className="p-8">
             <div className="flex justify-between items-center">
-                <div className="w-16 h-16 rounded-full bg-amber-500/10 flex items-center justify-center mb-2 border-4 border-amber-500/20">
+                <div className="w-16 h-16 rounded-full bg-amber-500/10 flex items-center justify-center border-4 border-amber-500/20">
                     <Wrench className="w-8 h-8 text-amber-500"/>
+                </div>
+                <div className="text-center">
+                    <CardTitle className="text-2xl font-bold text-gray-800 dark:text-gray-200 leading-snug">Roadside Assistance</CardTitle>
+                    <CardDescription className="text-sm text-gray-500 dark:text-gray-400 mt-1 leading-snug">Vehicle trouble? Get quick help for tyre, battery, towing & more.</CardDescription>
                 </div>
                 <div className="text-right">
                     <div className="text-xs text-muted-foreground flex items-center justify-end gap-1">
@@ -214,10 +219,6 @@ export default function ResQPage() {
                     </div>
                     <div className="text-sm font-semibold">~10-15 mins</div>
                 </div>
-            </div>
-            <div className="text-center pt-4">
-              <CardTitle className="text-2xl font-bold text-gray-800 dark:text-gray-200 leading-snug">Roadside Assistance</CardTitle>
-              <CardDescription className="text-sm text-gray-500 dark:text-gray-400 mt-1 leading-snug">Vehicle trouble? Get quick help for tyre, battery, towing & more.</CardDescription>
             </div>
         </CardHeader>
         <CardContent className="space-y-4 px-8">
