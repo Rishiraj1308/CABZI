@@ -1,4 +1,3 @@
-
 'use client'
 
 import React, { useState, useEffect, useRef, useCallback } from 'react'
@@ -81,59 +80,49 @@ export default function BookRidePage() {
     }, [pickup.address]);
 
     useEffect(() => {
-        const checkActiveServices = async () => {
-            if (!db || !session?.userId) return;
+        if (!db || !session?.userId) return;
 
-            // Define a generic unsubscriber
-            let unsubscribe: (() => void) | null = null;
-            
-            // Function to handle active documents
-            const handleActiveDoc = (docSnap: any, type: 'ride' | 'garage' | 'ambulance') => {
-                 if (docSnap.exists() && !['completed', 'cancelled_by_driver', 'cancelled_by_rider', 'cancelled_by_mechanic', 'cancelled_by_admin', 'cancelled_by_partner'].includes(docSnap.data().status)) {
-                    const data = { id: docSnap.id, ...docSnap.data() };
-                    if (type === 'ride') setActiveRide(data as RideData);
-                    if (type === 'garage') setActiveGarageRequest(data as GarageRequest);
-                    if (type === 'ambulance') setActiveAmbulanceCase(data as AmbulanceCase);
-                    return true;
+        let unsubscribers: (() => void)[] = [];
+
+        const handleActiveDoc = (docSnap: any, type: 'ride' | 'garage' | 'ambulance') => {
+            if (docSnap.exists() && !['completed', 'cancelled_by_driver', 'cancelled_by_rider', 'cancelled_by_mechanic', 'cancelled_by_admin', 'cancelled_by_partner'].includes(docSnap.data().status)) {
+                const data = { id: docSnap.id, ...docSnap.data() };
+                if (type === 'ride') setActiveRide(data as RideData);
+                if (type === 'garage') setActiveGarageRequest(data as GarageRequest);
+                if (type === 'ambulance') setActiveAmbulanceCase(data as AmbulanceCase);
+                return true;
+            }
+            return false;
+        }
+
+        const rideId = localStorage.getItem('activeRideId');
+        if (rideId) {
+            const rideRef = doc(db, 'rides', rideId);
+            const unsub = onSnapshot(rideRef, (docSnap) => {
+                if (!handleActiveDoc(docSnap, 'ride')) {
+                    resetFlow();
                 }
-                return false;
-            }
-
-            // Check for active ride first from local storage
-            const rideId = localStorage.getItem('activeRideId');
-            if (rideId) {
-                const rideRef = doc(db, 'rides', rideId);
-                unsubscribe = onSnapshot(rideRef, (docSnap) => {
-                   if (!handleActiveDoc(docSnap, 'ride')) {
-                        resetFlow();
-                   }
-                });
-                return unsubscribe;
-            }
-            
-            // Check for active ambulance case
+            });
+            unsubscribers.push(unsub);
+        } else {
+             // If there's no active ride, check for other services
             const qCure = query(collection(db, "emergencyCases"), where("riderId", "==", session.userId), where("status", "not-in", ["completed", "cancelled_by_rider", "cancelled_by_partner", "cancelled_by_admin"]));
             const unsubCure = onSnapshot(qCure, (snapshot) => {
                 if (!snapshot.empty) handleActiveDoc(snapshot.docs[0], 'ambulance');
             });
+            unsubscribers.push(unsubCure);
 
-            // Check for active garage request
             const qResq = query(collection(db, "garageRequests"), where("driverId", "==", session.userId), where("status", "not-in", ["completed", "cancelled_by_driver", "cancelled_by_mechanic"]));
             const unsubResq = onSnapshot(qResq, (snapshot) => {
                 if (!snapshot.empty) handleActiveDoc(snapshot.docs[0], 'garage');
             });
-            
-            return () => {
-                unsubCure();
-                unsubResq();
-                if(unsubscribe) unsubscribe();
-            }
+            unsubscribers.push(unsubResq);
+        }
+
+        return () => {
+            unsubscribers.forEach(unsub => unsub());
         };
 
-        const unsubscribe = checkActiveServices();
-        return () => {
-            if (unsubscribe) unsubscribe();
-        }
     }, [db, session, resetFlow]);
 
     return (
