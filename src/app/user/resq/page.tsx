@@ -1,4 +1,3 @@
-
 'use client'
 
 import React, { useState, useEffect, useRef, useCallback } from 'react'
@@ -36,6 +35,7 @@ export default function ResQPage() {
   const [session, setSession] = useState<ClientSession | null>(null);
   const [activeGarageRequest, setActiveGarageRequest] = useState<GarageRequest | null>(null);
   const [currentUserLocation, setCurrentUserLocation] = useState<{ lat: number; lon: number } | null>(null);
+  const [locationAddress, setLocationAddress] = useState('Locating...');
   const [selectedIssue, setSelectedIssue] = useState('');
 
   const liveMapRef = useRef<any>(null);
@@ -66,6 +66,7 @@ export default function ResQPage() {
   
   const handleLocationFound = useCallback((address: string, coords: { lat: number; lon: number }) => {
     setCurrentUserLocation(coords);
+    setLocationAddress(address);
   }, []);
 
   useEffect(() => {
@@ -195,15 +196,15 @@ export default function ResQPage() {
                 ))}
             </motion.div>
             <div className="flex items-center justify-between p-3 border rounded-lg bg-muted">
-                <div>
-                    <div className="text-xs text-muted-foreground">Location</div>
-                    <div className="text-sm font-semibold">Current GPS location</div>
-                </div>
-                <div className="text-right">
-                    <div className="text-xs text-muted-foreground">ETA</div>
-                    <div className="text-sm font-semibold">~ 10-15 mins</div>
-                </div>
-            </div>
+              <div>
+                  <div className="text-xs text-muted-foreground">Location</div>
+                  <div className="text-sm font-semibold truncate">{locationAddress}</div>
+              </div>
+              <div className="text-right">
+                  <div className="text-xs text-muted-foreground">ETA</div>
+                  <div className="text-sm font-semibold">~ 10-15 mins</div>
+              </div>
+          </div>
         </CardContent>
         <CardFooter className="grid grid-cols-1 gap-2">
             <Button
