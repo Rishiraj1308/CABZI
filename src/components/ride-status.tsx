@@ -259,10 +259,14 @@ export default function RideStatus({
                     <h3 className="text-3xl font-bold mt-4">Finding you a ride...</h3>
                     <p className="text-muted-foreground">This will only take a moment.</p>
                      <MotionDiv
-                        initial={{ x: 100, opacity: 0 }}
-                        animate={{ x: 0, opacity: 1 }}
-                        transition={{ delay: 0.2, type: 'spring', stiffness: 50 }}
-                        className="absolute -bottom-8 right-0 w-48 h-28 z-0"
+                        animate={{ x: [-20, 20, -20] }}
+                        transition={{
+                            duration: 2,
+                            ease: "easeInOut",
+                            repeat: Infinity,
+                            repeatType: "loop"
+                        }}
+                        className="absolute bottom-0 w-48 h-28 z-0"
                      >
                         <Image src="/car.svg" alt="Car" layout="fill" objectFit="contain" className="opacity-70" data-ai-hint="car illustration" />
                     </MotionDiv>
