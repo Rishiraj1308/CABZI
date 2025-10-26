@@ -31,6 +31,7 @@ import { doc, updateDoc } from 'firebase/firestore';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { searchPlace } from '@/lib/routing'
+import { MotionDiv, AnimatePresence } from '@/components/ui/motion-div';
 
 
 const navItems = [
@@ -162,6 +163,7 @@ export default function UserLayout({
   const [isMounted, setIsMounted] = useState(false);
   const [open, setOpen] = useState(false);
   const router = useRouter();
+  const pathname = usePathname();
   const { toast } = useToast();
   
   const { user, isUserLoading, db, auth } = useFirebase();
@@ -192,6 +194,28 @@ export default function UserLayout({
     const names = name.split(' ');
     return names.length > 1 ? names[0][0] + names[1][0] : name.substring(0, 2);
   }
+  
+  const pageVariants = {
+    initial: {
+      opacity: 0,
+      scale: 0.98,
+    },
+    in: {
+      opacity: 1,
+      scale: 1,
+    },
+    out: {
+      opacity: 0,
+      scale: 1.02,
+    },
+  };
+
+  const pageTransition = {
+    type: 'tween',
+    ease: 'anticipate',
+    duration: 0.4,
+  };
+
 
   if (!isMounted || isUserLoading) {
     return null; // Or a loading spinner
@@ -301,7 +325,18 @@ export default function UserLayout({
         </div>
       </header>
       <main className="flex-1 flex flex-col">
-          {children}
+          <AnimatePresence mode="wait">
+            <MotionDiv 
+              key={pathname}
+              initial="initial"
+              animate="in"
+              exit="out"
+              variants={pageVariants}
+              transition={pageTransition}
+            >
+              {children}
+            </MotionDiv>
+          </AnimatePresence>
       </main>
       <Toaster />
     </div>
