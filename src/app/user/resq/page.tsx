@@ -1,4 +1,3 @@
-
 'use client'
 
 import React, { useState, useEffect, useRef, useCallback } from 'react'
@@ -6,17 +5,17 @@ import dynamic from 'next/dynamic'
 import { motion } from 'framer-motion'
 import { useFirebase } from '@/firebase/client-provider'
 import { getDoc, doc, onSnapshot, query, collection, where, updateDoc, GeoPoint, serverTimestamp, addDoc } from 'firebase/firestore'
-import type { RideData, AmbulanceCase, GarageRequest, ClientSession } from '@/lib/types'
+import type { GarageRequest, ClientSession } from '@/lib/types'
 import { useToast } from '@/hooks/use-toast'
-
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card'
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
-import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 import RideStatus from '@/components/ride-status'
-import { Wrench } from 'lucide-react'
+import { Wrench, Zap, Fuel, Car, MoreHorizontal, MessageSquare, Phone, Navigation } from 'lucide-react'
 import { runTransaction } from 'firebase/firestore'
 import SearchingIndicator from '@/components/ui/searching-indicator'
+import { cn } from '@/lib/utils'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+
 
 const LiveMap = dynamic(() => import('@/components/live-map'), {
   ssr: false,
@@ -24,17 +23,17 @@ const LiveMap = dynamic(() => import('@/components/live-map'), {
 });
 
 const commonIssues = [
-    { id: 'flat_tyre', label: 'Flat Tyre / Puncture' },
-    { id: 'battery_jumpstart', label: 'Battery Jump-Start' },
-    { id: 'engine_trouble', label: 'Minor Engine Trouble' },
-    { id: 'towing_required', label: 'Towing Required' },
-    { id: 'other', label: 'Other Issue' },
+    { id: 'flat_tyre', label: 'Flat Tyre', icon: () => <div className="text-xl">🛞</div> },
+    { id: 'battery_jumpstart', label: 'Jump Start', icon: () => <Zap className="w-6 h-6" /> },
+    { id: 'towing_required', label: 'Towing', icon: () => <Car className="w-6 h-6" /> },
+    { id: 'fuel_delivery', label: 'Fuel Refill', icon: () => <Fuel className="w-6 h-6" /> },
+    { id: 'minor_repair', label: 'Minor Repair', icon: () => <div className="text-xl">🔩</div> },
+    { id: 'other', label: 'Other', icon: () => <MoreHorizontal className="w-6 h-6" /> },
 ]
 
 export default function ResQPage() {
   const [session, setSession] = useState<ClientSession | null>(null);
   const [activeGarageRequest, setActiveGarageRequest] = useState<GarageRequest | null>(null);
-  const [isRequestingSos, setIsRequestingSos] = useState(false);
   const [currentUserLocation, setCurrentUserLocation] = useState<{ lat: number; lon: number } | null>(null);
   const [selectedIssue, setSelectedIssue] = useState('');
 
@@ -61,7 +60,6 @@ export default function ResQPage() {
 
   const resetFlow = useCallback(() => {
     setActiveGarageRequest(null);
-    setIsRequestingSos(false);
     localStorage.removeItem('activeGarageRequestId');
   }, []);
   
@@ -82,19 +80,20 @@ export default function ResQPage() {
       if (!snapshot.empty) {
         const requestDoc = snapshot.docs[0];
         const requestData = { id: requestDoc.id, ...requestDoc.data() };
-        setActiveGarageRequest(requestData as GarageRequest);
-        localStorage.setItem('activeGarageRequestId', requestDoc.id);
-
-        if (requestData.status === 'accepted' && activeGarageRequest?.status !== 'accepted') {
-          toast({ title: "ResQ Partner Assigned!", description: `${requestData.mechanicName} is on the way.` });
+        
+        if (activeGarageRequest?.status !== 'accepted' && requestData.status === 'accepted') {
+            toast({ title: "ResQ Partner Assigned!", description: `${requestData.mechanicName} is on the way.` });
         }
-        if (requestData.status === 'bill_sent' && activeGarageRequest?.status !== 'bill_sent') {
+        if (activeGarageRequest?.status !== 'bill_sent' && requestData.status === 'bill_sent') {
             toast({
                 title: "Job Card Ready for Approval",
                 description: `Please review and approve the job card from ${requestData.mechanicName}.`,
                 duration: 9000
             });
         }
+        
+        setActiveGarageRequest(requestData as GarageRequest);
+        localStorage.setItem('activeGarageRequestId', requestDoc.id);
       } else {
         resetFlow();
       }
@@ -154,43 +153,95 @@ export default function ResQPage() {
     };
     const requestDocRef = await addDoc(collection(db, 'garageRequests'), requestData);
     
-    setActiveGarageRequest({ id: requestDocRef.id, ...requestData });
+    setActiveGarageRequest({ id: requestDocRef.id, ...requestData, status: 'pending' });
     localStorage.setItem('activeGarageRequestId', requestDocRef.id);
     toast({ title: "Request Sent!", description: "We are finding a nearby ResQ partner for you." });
   }
 
   const renderInitialView = () => (
-      <Card className="rounded-t-2xl shadow-2xl">
-          <CardHeader>
-              <div className="flex items-center gap-3">
-                  <div className="p-3 bg-amber-500/10 rounded-full">
-                      <Wrench className="w-6 h-6 text-amber-500"/>
-                  </div>
-                  <div>
-                    <CardTitle>Roadside Assistance</CardTitle>
-                    <CardDescription>Vehicle trouble? Select your issue to find help.</CardDescription>
-                  </div>
-              </div>
-          </CardHeader>
-          <CardContent>
-            <RadioGroup onValueChange={setSelectedIssue} value={selectedIssue}>
-              <div className="space-y-2">
-                {commonIssues.map(issue => (
-                  <div key={issue.id} className="flex items-center space-x-2 p-3 bg-muted rounded-lg">
-                    <RadioGroupItem value={issue.label} id={issue.id} />
-                    <Label htmlFor={issue.id} className="font-normal w-full cursor-pointer">{issue.label}</Label>
-                  </div>
+     <div className="bg-white/95 backdrop-blur-md rounded-2xl shadow-xl border border-slate-100 overflow-hidden">
+        {/* Header */}
+        <div className="px-5 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-11 h-11 rounded-xl bg-amber-500 flex items-center justify-center text-white">
+              <Wrench className="w-5 h-5"/>
+            </div>
+            <div>
+              <div className="text-sm text-slate-600 font-semibold">Roadside Assistance</div>
+              <div className="text-xs text-slate-400">Quick help for tyre, battery, towing & more</div>
+            </div>
+          </div>
+          {activeGarageRequest && <div className="text-xs text-slate-500">Help is on the way</div>}
+        </div>
+
+        <div className="px-5 pb-5">
+            <div className="space-y-4">
+              <div className="grid grid-cols-3 gap-3">
+                {commonIssues.map((item) => (
+                  <button
+                    key={item.key}
+                    onClick={() => setSelectedIssue(item.label)}
+                    className={cn(
+                        'flex flex-col items-center justify-center gap-2 p-3 rounded-xl border transition-shadow duration-150 focus:outline-none',
+                        selectedIssue === item.label ? 'bg-amber-50 border-amber-300 shadow-md ring-2 ring-amber-200' : 'bg-white border-slate-100 hover:shadow-sm'
+                    )}>
+                    <div className="text-2xl text-amber-600"><item.icon/></div>
+                    <div className="text-xs text-slate-700 font-medium">{item.label}</div>
+                  </button>
                 ))}
               </div>
-            </RadioGroup>
-          </CardContent>
-          <CardFooter>
-              <Button size="lg" className="w-full" onClick={handleRequestMechanic} disabled={!selectedIssue}>
+
+              <div className="flex items-center justify-between p-3 border rounded-lg bg-slate-50">
+                <div>
+                  <div className="text-xs text-slate-500">Location</div>
+                  <div className="text-sm font-medium text-slate-700">Current GPS location</div>
+                </div>
+                <div className="text-right">
+                  <div className="text-xs text-slate-500">ETA</div>
+                  <div className="text-sm font-medium text-slate-700">~ 10-15 mins</div>
+                </div>
+              </div>
+
+              <div className="pt-2">
+                <Button
+                  size="lg"
+                  disabled={!selectedIssue}
+                  onClick={handleRequestMechanic}
+                  className="w-full bg-amber-500 hover:bg-amber-600 text-white font-semibold">
                   Request Help Now
-              </Button>
-          </CardFooter>
-      </Card>
+                </Button>
+              </div>
+            </div>
+        </div>
+      </div>
   )
+
+  const renderActiveRequest = () => {
+    if(!activeGarageRequest) return null;
+
+    if (activeGarageRequest.status === 'pending') {
+        return (
+            <Card>
+                 <CardContent className="py-10 text-center">
+                    <SearchingIndicator partnerType="resq" />
+                    <h3 className="text-2xl font-bold mt-4">Finding a Mechanic...</h3>
+                    <p className="text-muted-foreground">Contacting nearby ResQ partners.</p>
+                </CardContent>
+            </Card>
+        )
+    }
+    
+    // Once accepted, the RideStatus component takes over
+    return (
+        <RideStatus 
+            ride={activeGarageRequest} 
+            isGarageRequest 
+            onCancel={resetFlow} 
+            onDone={resetFlow} 
+            onPayment={handleGaragePayment}
+        />
+    )
+  }
 
   return (
     <div className="h-full w-full relative flex flex-col">
@@ -203,27 +254,15 @@ export default function ResQPage() {
          />
       </div>
 
-      <div className="absolute bottom-0 left-0 right-0 z-10">
+      <div className="absolute bottom-0 left-0 right-0 p-4 z-10">
         <motion.div
           initial={{ y: '100%', opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           exit={{ y: '100%', opacity: 0 }}
           transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-          className="mx-auto max-w-lg w-full"
+          className="mx-auto max-w-xl w-full"
         >
-          {activeGarageRequest ? (
-            <div className="p-1">
-                <RideStatus 
-                    ride={activeGarageRequest as any} 
-                    isGarageRequest 
-                    onCancel={resetFlow} 
-                    onDone={resetFlow} 
-                    onPayment={handleGaragePayment}
-                />
-            </div>
-          ) : (
-            renderInitialView()
-          )}
+          {activeGarageRequest ? renderActiveRequest() : renderInitialView()}
         </motion.div>
       </div>
     </div>
