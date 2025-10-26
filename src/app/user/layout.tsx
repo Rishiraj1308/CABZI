@@ -28,7 +28,6 @@ import {
 } from "@/components/ui/alert-dialog"
 import { useFirebase } from '@/firebase/client-provider';
 import { doc, updateDoc } from 'firebase/firestore';
-import { ClientSessionProvider } from '@/components/client-session-provider';
 
 
 const navItems = [
@@ -236,9 +235,7 @@ export default function UserLayout({
           </div>
       </header>
       <main className="flex-1 flex flex-col">
-           <ClientSessionProvider>
-                {children}
-           </ClientSessionProvider>
+          {children}
       </main>
       <Toaster />
     </div>

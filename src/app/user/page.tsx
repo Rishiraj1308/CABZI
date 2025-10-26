@@ -5,7 +5,6 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Car, Wrench, Ambulance, Calendar, FlaskConical } from 'lucide-react';
 import Link from 'next/link';
-import { MotionDiv } from '@/components/ui/motion-div';
 import { useToast } from '@/hooks/use-toast';
 
 const serviceCards = [
@@ -16,7 +15,6 @@ const serviceCards = [
         href: '/user/book',
         color: 'text-primary',
         category: 'Mobility & Transport',
-        layoutId: 'path-card'
     },
      {
         title: 'ResQ',
@@ -25,7 +23,6 @@ const serviceCards = [
         href: '/user/resq',
         color: 'text-amber-500',
         category: 'Mobility & Transport',
-        layoutId: 'resq-card'
     },
     {
         title: 'Emergency SOS',
@@ -34,7 +31,6 @@ const serviceCards = [
         href: '/user/book', // SOS logic will be on the book page
         color: 'text-red-500',
         category: 'Health & Safety',
-        layoutId: 'cure-card'
     },
      {
         title: 'Book Appointment',
@@ -43,7 +39,6 @@ const serviceCards = [
         href: '/user/book-appointment',
         color: 'text-blue-500',
         category: 'Health & Safety',
-        layoutId: 'appointment-card'
     },
     {
         title: 'Lab Tests',
@@ -52,7 +47,6 @@ const serviceCards = [
         href: '#',
         color: 'text-purple-500',
         category: 'Health & Safety',
-        layoutId: 'labs-card'
     },
 ];
 
@@ -67,29 +61,6 @@ export default function UserDashboard() {
         return acc;
     }, {} as Record<string, typeof serviceCards>);
 
-    const containerVariants = {
-        hidden: { opacity: 0 },
-        visible: {
-            opacity: 1,
-            transition: {
-                staggerChildren: 0.1
-            }
-        }
-    };
-
-    const itemVariants = {
-        hidden: { y: 20, opacity: 0 },
-        visible: {
-            y: 0,
-            opacity: 1,
-            transition: {
-                type: "spring",
-                stiffness: 100,
-                damping: 10,
-            }
-        }
-    };
-
     return (
         <div className="p-4 md:p-6 space-y-8">
              <div className="animate-fade-in text-center md:text-left">
@@ -97,24 +68,13 @@ export default function UserDashboard() {
                 <p className="text-muted-foreground">Choose a service to get started.</p>
             </div>
             
-            <MotionDiv 
-                className="space-y-8"
-                variants={containerVariants}
-                initial="hidden"
-                animate="visible"
-            >
+            <div className="space-y-8">
                 {Object.entries(servicesByCat).map(([category, services]) => (
                     <div key={category}>
                         <h3 className="text-xl font-bold mb-4 px-2">{category}</h3>
                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                             {services.map((service) => (
-                                <MotionDiv
-                                    layoutId={service.layoutId}
-                                    key={service.title}
-                                    variants={itemVariants}
-                                    whileHover={{ y: -5, scale: 1.05 }}
-                                    transition={{ type: "spring", stiffness: 300 }}
-                                >
+                                <div key={service.title}>
                                     <Link href={service.href} legacyBehavior>
                                         <a onClick={(e) => {
                                             if (service.href === '#') {
@@ -122,22 +82,22 @@ export default function UserDashboard() {
                                                 toast({ title: 'Coming Soon!', description: 'This feature is under development.' });
                                             }
                                         }}>
-                                            <Card className="h-full transition-all text-center bg-background/80 backdrop-blur-sm hover:shadow-2xl hover:border-primary/50">
-                                                 <CardContent className="p-2 flex flex-col items-center justify-center gap-2">
-                                                    <div className="p-1 bg-muted rounded-full">
-                                                      <service.icon className={`w-4 h-4 ${service.color}`} />
+                                            <Card className="h-full transition-all text-center bg-background/80 backdrop-blur-sm hover:shadow-lg hover:border-primary/50">
+                                                 <CardContent className="p-4 flex flex-col items-center justify-center gap-2">
+                                                    <div className="p-3 bg-muted rounded-full">
+                                                      <service.icon className={`w-6 h-6 ${service.color}`} />
                                                     </div>
                                                     <p className="font-semibold text-sm">{service.title}</p>
                                                 </CardContent>
                                             </Card>
                                         </a>
                                     </Link>
-                                </MotionDiv>
+                                </div>
                             ))}
                         </div>
                     </div>
                 ))}
-            </MotionDiv>
+            </div>
         </div>
     );
 }
