@@ -13,8 +13,7 @@ import { Wrench, Zap, Fuel, Car, MoreHorizontal, LifeBuoy, Phone, Shield, Locate
 import { runTransaction } from 'firebase/firestore'
 import SearchingIndicator from '@/components/ui/searching-indicator'
 import { cn } from '@/lib/utils'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
-import { AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from '@/components/ui/alert-dialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription, DialogFooter } from '@/components/ui/dialog'
 
 
 const commonIssues = [
@@ -90,6 +89,7 @@ export default function ResQPage() {
   const resetFlow = useCallback(() => {
     setActiveGarageRequest(null);
     localStorage.removeItem('activeGarageRequestId');
+    setSelectedIssue('');
   }, []);
 
   useEffect(() => {
@@ -196,7 +196,7 @@ export default function ResQPage() {
   };
 
   const renderInitialView = () => (
-     <Card className="max-w-xl mx-auto mt-8 bg-white/80 backdrop-blur-md shadow-xl shadow-orange-100 rounded-3xl">
+     <Card className="max-w-xl mx-auto mt-8 bg-white/80 dark:bg-background/80 backdrop-blur-md shadow-xl shadow-orange-100 dark:shadow-orange-500/10 rounded-3xl">
         <CardHeader className="p-8">
             <div className="flex justify-between items-start">
                 <div className="mx-auto w-16 h-16 rounded-full bg-amber-500/10 flex items-center justify-center mb-2 border-4 border-amber-500/20">
@@ -213,8 +213,8 @@ export default function ResQPage() {
                     <div className="text-sm font-semibold">~10-15 mins</div>
                 </div>
             </div>
-          <CardTitle className="text-2xl font-bold text-gray-800 leading-snug">Roadside Assistance</CardTitle>
-          <CardDescription className="text-sm text-gray-500 mt-1 leading-snug">Vehicle trouble? Get quick help for tyre, battery, towing & more.</CardDescription>
+          <CardTitle className="text-center text-2xl font-bold text-gray-800 dark:text-gray-200 leading-snug">Roadside Assistance</CardTitle>
+          <CardDescription className="text-center text-sm text-gray-500 dark:text-gray-400 mt-1 leading-snug">Vehicle trouble? Get quick help for tyre, battery, towing & more.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4 px-8">
             <div className="grid grid-cols-3 gap-6 mt-6">
@@ -223,19 +223,19 @@ export default function ResQPage() {
                       key={item.id}
                       onClick={() => setSelectedIssue(item.label)}
                       className={cn(
-                        "flex flex-col items-center justify-center p-6 bg-orange-50 rounded-2xl hover:bg-orange-100 transition-all cursor-pointer shadow-sm hover:shadow-md",
-                        selectedIssue === item.label && "ring-2 ring-orange-500 bg-orange-100"
+                        "flex flex-col items-center justify-center p-6 bg-orange-50 dark:bg-orange-900/20 rounded-2xl hover:bg-orange-100 dark:hover:bg-orange-900/30 transition-all cursor-pointer shadow-sm hover:shadow-md",
+                        selectedIssue === item.label && "ring-2 ring-orange-500 bg-orange-100 dark:bg-orange-900/30"
                       )}
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
                     >
                         <item.icon className="text-orange-500 w-8 h-8 mb-3" />
-                        <span className="font-medium text-gray-800 text-center text-sm">{item.label}</span>
+                        <span className="font-medium text-gray-800 dark:text-gray-200 text-center text-sm">{item.label}</span>
                     </motion.div>
                 ))}
             </div>
         </CardContent>
-        <CardFooter className="grid grid-cols-1 gap-2 p-8">
+        <CardFooter className="p-8">
             <Button
                 size="lg"
                 disabled={!selectedIssue}
@@ -243,7 +243,7 @@ export default function ResQPage() {
                 className={cn(
                     "w-full font-semibold rounded-full h-12 text-lg bg-gradient-to-r from-orange-500 to-yellow-400 text-white transition-all duration-300",
                     "hover:shadow-lg hover:shadow-yellow-500/50",
-                    "disabled:from-gray-400 disabled:to-gray-300 disabled:shadow-none",
+                    "disabled:from-gray-400 disabled:to-gray-300 disabled:shadow-none disabled:cursor-not-allowed",
                     selectedIssue && "btn-glow"
                 )}>
                 Request Assistance
@@ -304,21 +304,35 @@ export default function ResQPage() {
         <div className="w-full">
           {activeGarageRequest ? renderActiveRequest() : renderInitialView()}
         </div>
-         <Dialog>
-            <DialogTrigger asChild>
-                 <Button variant="ghost" size="sm" className="fixed bottom-6 right-6 h-auto p-3 rounded-full shadow-2xl bg-background/80 backdrop-blur-md">
-                     <Shield className="w-4 h-4 mr-2"/> Safety Toolkit
-                 </Button>
-            </DialogTrigger>
-            <DialogContent>
-                <DialogHeader><DialogTitle>Safety Toolkit</DialogTitle></DialogHeader>
-                 <div className="py-4 space-y-2">
-                    <Button variant="outline" className="w-full justify-start gap-2" onClick={() => toast({title: "Coming Soon!"})}><MessageSquare className="w-4 h-4"/> Share Live Location</Button>
-                    <Button variant="outline" className="w-full justify-start gap-2"><a href="tel:1800-XXX-XXXX"><Phone className="w-4 h-4"/> Contact Support</a></Button>
-                    <Button variant="destructive" className="w-full justify-start gap-2"><a href="tel:112"><Siren className="w-4 h-4"/> Emergency SOS</a></Button>
-                </div>
-            </DialogContent>
-        </Dialog>
+        <div className="fixed bottom-6 right-6 z-20 flex flex-col gap-3">
+             <Dialog>
+                <DialogTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-14 w-14 rounded-full shadow-2xl bg-background/80 backdrop-blur-md">
+                        <MessageSquare className="w-6 h-6"/>
+                        <span className="sr-only">Help</span>
+                    </Button>
+                </DialogTrigger>
+                 <DialogContent>
+                    <DialogHeader><DialogTitle>Live Support</DialogTitle><DialogDescription>This feature is coming soon.</DialogDescription></DialogHeader>
+                </DialogContent>
+            </Dialog>
+            <Dialog>
+                <DialogTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-14 w-14 rounded-full shadow-2xl bg-background/80 backdrop-blur-md">
+                        <Shield className="w-6 h-6"/>
+                        <span className="sr-only">Safety Toolkit</span>
+                    </Button>
+                </DialogTrigger>
+                <DialogContent>
+                    <DialogHeader><DialogTitle>Safety Toolkit</DialogTitle></DialogHeader>
+                    <div className="py-4 space-y-2">
+                        <Button variant="outline" className="w-full justify-start gap-2" onClick={() => toast({title: "Coming Soon!"})}><MessageSquare className="w-4 h-4"/> Share Live Location</Button>
+                        <Button variant="outline" className="w-full justify-start gap-2"><a href="tel:1800-XXX-XXXX"><Phone className="w-4 h-4"/> Contact Support</a></Button>
+                        <Button variant="destructive" className="w-full justify-start gap-2"><a href="tel:112"><Siren className="w-4 h-4"/> Emergency SOS</a></Button>
+                    </div>
+                </DialogContent>
+            </Dialog>
+        </div>
     </div>
   );
 }
