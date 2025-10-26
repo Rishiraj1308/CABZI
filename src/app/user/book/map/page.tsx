@@ -17,7 +17,7 @@ import { cn } from '@/lib/utils'
 import { BikeIcon, AutoIcon, CabIcon } from '@/components/icons'
 import { HeartHandshake, Clock, IndianRupee, Shield } from 'lucide-react'
 import SearchingIndicator from '@/components/ui/searching-indicator'
-import { motion, AnimatePresence } from '@/components/ui/motion-div'
+import { motion, AnimatePresence } from 'framer-motion'
 
 const LiveMap = dynamic(() => import('@/components/live-map'), {
     ssr: false,
@@ -327,3 +327,5 @@ export default function BookRideMapPage() {
         </Suspense>
     );
 }
+
+    
