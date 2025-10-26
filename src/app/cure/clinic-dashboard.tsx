@@ -8,7 +8,7 @@ import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useDb } from '@/firebase/client-provider';
-import { collection, query, where, onSnapshot, Timestamp, orderBy, getDocs } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, Timestamp, orderBy, getDocs, doc, updateDoc } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { endOfDay, startOfDay } from 'date-fns';
@@ -101,6 +101,18 @@ const ClinicDashboard = () => {
         };
 
     }, [db, toast]);
+    
+    const handleCheckIn = async (appointmentId: string) => {
+        if (!db) return;
+        const apptRef = doc(db, 'appointments', appointmentId);
+        try {
+            await updateDoc(apptRef, { status: 'In Queue' });
+            toast({ title: 'Patient Checked In', description: 'The patient has been added to the queue.' });
+        } catch (error) {
+            toast({ variant: 'destructive', title: 'Check-in Failed' });
+        }
+    };
+
 
     return (
         <div className="space-y-6">
@@ -134,7 +146,7 @@ const ClinicDashboard = () => {
                                        </div>
                                        <div className="text-sm text-muted-foreground">{appt.appointmentTime}</div>
                                        <Badge variant={appt.status === 'In Queue' ? 'default' : 'secondary'}>{appt.status}</Badge>
-                                       <Button variant="outline" size="sm">Check-in</Button>
+                                       <Button variant="outline" size="sm" onClick={() => handleCheckIn(appt.id)} disabled={appt.status !== 'Confirmed'}>Check-in</Button>
                                    </div>
                                ))
                            ) : (
