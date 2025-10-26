@@ -1,8 +1,10 @@
+
 'use client'
 
-import React from 'react'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle, CardFooter, CardDescription } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
 import { ArrowLeft, Map, Clock, MapPin } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
@@ -38,13 +40,13 @@ export default function BookRidePage() {
     return (
         <div className="h-screen w-screen flex flex-col bg-background overflow-hidden">
             {/* Header Section */}
-            <div className="bg-primary text-primary-foreground p-4 pt-6 relative">
+            <div className="bg-green-500 text-white p-4 pt-6 relative">
                 <div className="container mx-auto">
                     <div className="flex justify-between items-center">
-                        <Button variant="ghost" size="icon" className="text-primary-foreground hover:bg-primary-foreground/10" onClick={() => router.back()}>
+                        <Button variant="ghost" size="icon" className="text-white hover:bg-white/10" onClick={() => router.back()}>
                             <ArrowLeft className="w-5 h-5"/>
                         </Button>
-                        <Button asChild variant="ghost" className="text-primary-foreground hover:bg-primary-foreground/10">
+                        <Button asChild variant="ghost" className="text-white hover:bg-white/10">
                             <Link href="/user/book/map">
                                 <Map className="w-5 h-5 mr-2"/> Map
                             </Link>
@@ -52,7 +54,7 @@ export default function BookRidePage() {
                     </div>
                     <div className="pt-8 pb-16 text-left">
                         <h1 className="text-3xl font-bold">Transport</h1>
-                        <p className="text-primary-foreground/80">Wherever you're going, let's get you there!</p>
+                        <p className="opacity-80">Wherever you're going, let's get you there!</p>
                     </div>
                 </div>
                  <div className="absolute -bottom-1 right-4 w-40 h-24">
@@ -61,7 +63,7 @@ export default function BookRidePage() {
             </div>
 
             {/* Content Section */}
-            <div className="flex-1 bg-background rounded-t-2xl -mt-8 p-4 space-y-6">
+            <div className="flex-1 bg-background rounded-t-3xl -mt-8 p-4 space-y-6">
                 <div className="container mx-auto">
                     {/* Search Card */}
                     <Card className="shadow-lg -mt-12">
