@@ -297,7 +297,7 @@ export default function RideStatus({
                             }}
                             className="w-48 h-28 z-0 mx-auto"
                         >
-                            <Image src="/car.svg" alt="Car" layout="fill" objectFit="contain" className="opacity-70 scale-x-[-1]" data-ai-hint="car illustration" />
+                            <Image src="/car.svg" alt="Car" layout="fill" objectFit="contain" className="opacity-70" data-ai-hint="car illustration" />
                         </motion.div>
                     ) : (
                         <motion.div
@@ -310,7 +310,7 @@ export default function RideStatus({
                         >
                             <CardHeader className="p-0 text-center">
                                 <CardTitle>Driver is on the way!</CardTitle>
-                                <CardDescription className="flex items-center justify-center gap-1"><Clock className="w-3 h-3"/> {rideData.driverEta ? `Arriving in ${Math.ceil(rideData.driverEta)} min` : 'Calculating ETA...'</CardDescription>
+                                <CardDescription className="flex items-center justify-center gap-1"><Clock className="w-3 h-3"/> {rideData.driverEta ? `Arriving in ${Math.ceil(rideData.driverEta)} min` : 'Calculating ETA...'}</CardDescription>
                             </CardHeader>
                             <div className="p-3 rounded-lg bg-muted flex items-center gap-3">
                                 <Avatar className="w-12 h-12"><AvatarImage src={rideData.driverDetails?.photoUrl} alt={rideData.driverDetails?.name} /><AvatarFallback>{rideData.driverDetails?.name?.substring(0,2)}</AvatarFallback></Avatar>
@@ -329,7 +329,7 @@ export default function RideStatus({
           <div className="space-y-4 animate-fade-in">
               <CardHeader className="p-0">
                 <CardTitle>Trip to Destination</CardTitle>
-                <CardDescription className="flex items-center gap-1"><Clock className="w-3 h-3"/>ETA: {rideData.driverEta ? `${Math.ceil(rideData.driverEta)} min` : 'Calculating...'</CardDescription>
+                <CardDescription className="flex items-center gap-1"><Clock className="w-3 h-3"/>ETA: {rideData.driverEta ? `${Math.ceil(rideData.driverEta)} min` : 'Calculating...'}</CardDescription>
               </CardHeader>
                 <div className="p-4 rounded-lg bg-muted flex items-start gap-3">
                     <MapPin className="w-5 h-5 text-primary mt-1 flex-shrink-0" />
@@ -463,5 +463,3 @@ export default function RideStatus({
     </motion.div>
   );
 }
-
-    
