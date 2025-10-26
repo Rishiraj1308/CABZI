@@ -4,7 +4,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Stethoscope, Calendar, Users, BarChart, FileText, Clock, UserCheck } from 'lucide-react';
+import { Stethoscope, Calendar, Users, BarChart, FileText, Clock, UserCheck, UserPlus, MoreHorizontal, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -13,6 +13,19 @@ import { collection, query, where, onSnapshot, Timestamp, orderBy, getDocs, doc,
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { endOfDay, startOfDay } from 'date-fns';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 
 const StatCard = ({ title, value, icon: Icon, isLoading }: { title: string, value: string, icon: React.ElementType, isLoading?: boolean }) => (
     <Card>
@@ -37,6 +50,7 @@ interface Appointment {
 interface Doctor {
     id: string;
     name: string;
+    specialization: string;
     isAvailable: boolean;
 }
 
@@ -57,14 +71,14 @@ const ClinicDashboard = () => {
         const session = localStorage.getItem('curocity-cure-session');
         if (!session) {
             toast({ variant: 'destructive', title: 'Error', description: 'Session not found. Please log in again.' });
-            setIsLoading(false); // Ensure loading is stopped
+            setIsLoading(false); 
             return;
         };
 
         const { partnerId } = JSON.parse(session);
         if (!partnerId) {
             toast({ variant: 'destructive', title: 'Error', description: 'Partner ID is missing from session.' });
-            setIsLoading(false); // Ensure loading is stopped
+            setIsLoading(false);
             return;
         }
         
@@ -94,7 +108,7 @@ const ClinicDashboard = () => {
             setDoctors(doctorsData);
         });
 
-        setIsLoading(false); // Stop loading after setting up listeners
+        setIsLoading(false); 
 
         return () => {
             unsubAppts();
@@ -132,70 +146,101 @@ const ClinicDashboard = () => {
                 <StatCard title="Avg. Wait Time" value="15 min" icon={Clock} isLoading={isLoading} />
             </div>
             
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <Card className="lg:col-span-2">
-                    <CardHeader>
-                        <CardTitle>Upcoming Appointment Queue</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                       <div className="space-y-3 max-h-96 overflow-y-auto pr-2">
-                           {isLoading ? (
-                                Array.from({length: 3}).map((_, i) => <Skeleton key={i} className="h-16 w-full" />)
-                           ) : appointments.length > 0 ? (
-                               appointments.map(appt => {
-                                   const queueNumber = queue.findIndex(q => q.id === appt.id);
-                                   return (
-                                       <div key={appt.id} className="flex items-center gap-4 p-3 rounded-lg bg-muted/50">
-                                           {queueNumber !== -1 ? (
-                                                <div className="w-10 h-10 flex flex-col items-center justify-center bg-primary text-primary-foreground rounded-lg">
-                                                   <span className="text-xs -mb-1">Queue</span>
-                                                   <span className="font-bold text-lg">{queueNumber + 1}</span>
+            <Tabs defaultValue="appointments" className="w-full">
+                <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="appointments">Appointment Queue</TabsTrigger>
+                    <TabsTrigger value="doctors">Doctor Roster</TabsTrigger>
+                </TabsList>
+                <TabsContent value="appointments" className="mt-4">
+                     <Card>
+                        <CardHeader>
+                            <CardTitle>Upcoming Appointment Queue</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                           <div className="space-y-3 max-h-96 overflow-y-auto pr-2">
+                               {isLoading ? (
+                                    Array.from({length: 3}).map((_, i) => <Skeleton key={i} className="h-16 w-full" />)
+                               ) : appointments.length > 0 ? (
+                                   appointments.map(appt => {
+                                       const queueNumber = queue.findIndex(q => q.id === appt.id);
+                                       return (
+                                           <div key={appt.id} className="flex items-center gap-4 p-3 rounded-lg bg-muted/50">
+                                               {queueNumber !== -1 ? (
+                                                    <div className="w-10 h-10 flex flex-col items-center justify-center bg-primary text-primary-foreground rounded-lg">
+                                                       <span className="text-xs -mb-1">Queue</span>
+                                                       <span className="font-bold text-lg">{queueNumber + 1}</span>
+                                                   </div>
+                                               ) : (
+                                                   <Avatar className="h-9 w-9"><AvatarFallback>{appt.patientName.substring(0,1)}</AvatarFallback></Avatar>
+                                               )}
+                                               <div className="flex-1">
+                                                    <p className="font-semibold">{appt.patientName}</p>
+                                                    <p className="text-xs text-muted-foreground">{appt.appointmentDate.toDate().toLocaleDateString()}</p>
                                                </div>
-                                           ) : (
-                                               <Avatar className="h-9 w-9"><AvatarFallback>{appt.patientName.substring(0,1)}</AvatarFallback></Avatar>
-                                           )}
-                                           <div className="flex-1">
-                                                <p className="font-semibold">{appt.patientName}</p>
-                                                <p className="text-xs text-muted-foreground">{appt.appointmentDate.toDate().toLocaleDateString()}</p>
+                                               <div className="text-sm text-muted-foreground">{appt.appointmentTime}</div>
+                                               <Badge variant={appt.status === 'In Queue' ? 'default' : 'secondary'}>{appt.status}</Badge>
+                                               <Button variant="outline" size="sm" onClick={() => handleCheckIn(appt.id)} disabled={appt.status !== 'Confirmed'}>Check-in</Button>
                                            </div>
-                                           <div className="text-sm text-muted-foreground">{appt.appointmentTime}</div>
-                                           <Badge variant={appt.status === 'In Queue' ? 'default' : 'secondary'}>{appt.status}</Badge>
-                                           <Button variant="outline" size="sm" onClick={() => handleCheckIn(appt.id)} disabled={appt.status !== 'Confirmed'}>Check-in</Button>
-                                       </div>
-                                   )
-                               })
-                           ) : (
-                                <div className="text-center py-10 text-muted-foreground">No new appointment requests.</div>
-                           )}
-                       </div>
-                    </CardContent>
-                </Card>
-                 <Card>
-                    <CardHeader>
-                        <CardTitle>Doctor Roster</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                       <div className="space-y-3">
-                             {isLoading ? (
-                                Array.from({length: 3}).map((_, i) => <Skeleton key={i} className="h-8 w-full" />)
-                           ) : doctors.length > 0 ? (
-                                doctors.map(doc => (
-                                    <div key={doc.id} className="flex items-center gap-3">
-                                        <div className={`w-2 h-2 rounded-full ${doc.isAvailable ? 'bg-green-500' : 'bg-gray-400'}`}></div>
-                                        <span className="flex-1 font-medium text-sm">Dr. {doc.name}</span>
-                                        <Badge variant="outline">{doc.isAvailable ? 'Online' : 'Offline'}</Badge>
-                                    </div>
-                                ))
-                           ) : (
-                                <div className="text-center py-10 text-muted-foreground">No doctors on roster.</div>
-                           )}
-                       </div>
-                        <Button variant="outline" className="w-full mt-4" asChild>
-                            <Link href="/cure/doctors">Manage Roster</Link>
-                        </Button>
-                    </CardContent>
-                </Card>
-            </div>
+                                       )
+                                   })
+                               ) : (
+                                    <div className="text-center py-10 text-muted-foreground">No new appointment requests.</div>
+                               )}
+                           </div>
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+                <TabsContent value="doctors" className="mt-4">
+                     <Card>
+                        <CardHeader className="flex flex-row items-center justify-between">
+                            <CardTitle>Doctor Roster</CardTitle>
+                             <Button asChild>
+                                <Link href="/cure/doctors">
+                                    <UserPlus className="mr-2 h-4 w-4"/> Manage Roster
+                                </Link>
+                            </Button>
+                        </CardHeader>
+                        <CardContent>
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>Doctor</TableHead>
+                                        <TableHead>Specialization</TableHead>
+                                        <TableHead>Status</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                   {isLoading ? (
+                                     Array.from({ length: 3 }).map((_, i) => (
+                                        <TableRow key={i}>
+                                            <TableCell><Skeleton className="h-5 w-32" /></TableCell>
+                                            <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+                                            <TableCell><Skeleton className="h-6 w-20 rounded-full" /></TableCell>
+                                        </TableRow>
+                                    ))
+                                   ) : doctors.length > 0 ? (
+                                     doctors.map(doctor => (
+                                        <TableRow key={doctor.id}>
+                                            <TableCell className="font-medium">Dr. {doctor.name}</TableCell>
+                                            <TableCell><Badge variant="secondary">{doctor.specialization}</Badge></TableCell>
+                                            <TableCell>
+                                                <Badge variant={doctor.isAvailable ? 'default' : 'outline'} className={doctor.isAvailable ? 'bg-green-100 text-green-800' : ''}>
+                                                    {doctor.isAvailable ? 'Online' : 'Offline'}
+                                                </Badge>
+                                            </TableCell>
+                                        </TableRow>
+                                     ))
+                                   ) : (
+                                    <TableRow>
+                                        <TableCell colSpan={3} className="text-center h-24">No doctors on roster.</TableCell>
+                                    </TableRow>
+                                   )}
+                                </TableBody>
+                            </Table>
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+            </Tabs>
         </div>
     );
 };
