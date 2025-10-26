@@ -10,7 +10,7 @@ import { useToast } from '@/hooks/use-toast'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import RideStatus from '@/components/ride-status'
-import { Wrench, Zap, Fuel, Car, MoreHorizontal, LifeBuoy, Phone, Share2, Siren, Shield, LocateFixed, MessageSquare } from 'lucide-react'
+import { Wrench, Zap, Fuel, Car, MoreHorizontal, LifeBuoy, Phone, Shield, LocateFixed, MessageSquare } from 'lucide-react'
 import { runTransaction } from 'firebase/firestore'
 import SearchingIndicator from '@/components/ui/searching-indicator'
 import { cn } from '@/lib/utils'
@@ -194,13 +194,6 @@ export default function ResQPage() {
     } catch (error) {
       toast({ variant: 'destructive', title: 'Error', description: 'Could not cancel the request.' });
     }
-  };
-
-  const handleShareRide = () => {
-    toast({
-        title: "Share Location",
-        description: "This feature will be available soon!",
-    });
   };
 
   const renderInitialView = () => (
