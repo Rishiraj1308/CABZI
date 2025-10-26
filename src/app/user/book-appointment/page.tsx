@@ -267,6 +267,19 @@ export default function BookAppointmentPage() {
           <CardTitle className="text-3xl md:text-4xl font-extrabold tracking-tight">Find the Right Care, Instantly.</CardTitle>
           <CardDescription className="text-lg mt-2">Search by doctor, specialization, or symptoms.</CardDescription>
       </div>
+      
+       <div className="max-w-xl mx-auto w-full">
+            <div className="relative">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                <Input
+                    id="doctor-search"
+                    placeholder="Search by doctor name, hospital, or specialization..."
+                    className="pl-12 h-12 text-base rounded-full shadow-lg"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                />
+            </div>
+        </div>
 
       <div className="space-y-4">
           <Label className="font-semibold text-lg">Search by Common Symptoms</Label>
