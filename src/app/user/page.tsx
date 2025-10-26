@@ -34,7 +34,7 @@ const serviceCards = [
         title: 'Emergency SOS',
         description: 'Dispatch the nearest ambulance.',
         icon: Ambulance,
-        href: '/user/book', // SOS logic will be on the book page
+        href: '/user/book?sos=true',
         color: 'text-red-500',
         category: 'Health & Safety',
     },
@@ -170,11 +170,7 @@ export default function UserDashboard() {
     };
     
     if (isLoading) {
-        return (
-             <div className="p-4 md:p-6 space-y-8 pt-12">
-                <div className="text-center md:text-left"><h2 className="text-3xl font-bold tracking-tight">Loading Dashboard...</h2></div>
-            </div>
-        )
+        return null;
     }
     
     // If there is any active service, render the status component
@@ -217,9 +213,6 @@ export default function UserDashboard() {
                                             if (service.href === '#') {
                                                 e.preventDefault();
                                                 toast({ title: 'Coming Soon!', description: 'This feature is under development.' });
-                                            } else if (service.title === 'Emergency SOS') {
-                                                e.preventDefault();
-                                                router.push('/user/book?sos=true');
                                             }
                                         }}>
                                             <Card className="h-full transition-all text-center bg-background/80 backdrop-blur-sm hover:shadow-lg hover:border-primary/50">
