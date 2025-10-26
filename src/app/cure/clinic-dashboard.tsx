@@ -12,7 +12,7 @@ import { useDb } from '@/firebase/client-provider';
 import { collection, query, where, onSnapshot, Timestamp, orderBy, getDocs, doc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
-import { endOfDay, startOfDay } from 'date-fns';
+import { startOfDay, endOfDay } from 'date-fns';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import {
@@ -26,6 +26,12 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
 const StatCard = ({ title, value, icon: Icon, isLoading }: { title: string, value: string, icon: React.ElementType, isLoading?: boolean }) => (
     <Card>
@@ -55,9 +61,6 @@ interface Doctor {
     isAvailable: boolean;
 }
 
-const timeSlots = ['09:00 AM', '10:00 AM', '11:00 AM', '12:00 PM', '02:00 PM', '03:00 PM', '04:00 PM'];
-
-
 const ClinicDashboard = () => {
     const [appointments, setAppointments] = useState<Appointment[]>([]);
     const [doctors, setDoctors] = useState<Doctor[]>([]);
@@ -86,17 +89,17 @@ const ClinicDashboard = () => {
             return;
         }
         
-        const today = new Date();
-        const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 0, 0, 0);
-        const endOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59);
+        const todayStart = startOfDay(new Date());
+        const todayEnd = endOfDay(new Date());
 
         const apptQuery = query(
             collection(db, 'appointments'),
             where('hospitalId', '==', partnerId),
-            where('appointmentDate', '>=', startOfToday),
-            where('appointmentDate', '<=', endOfToday),
+            where('appointmentDate', '>=', todayStart),
+            where('appointmentDate', '<=', todayEnd),
             orderBy('appointmentDate', 'asc')
         );
+
         const unsubAppts = onSnapshot(apptQuery, (snapshot) => {
             const apptsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Appointment));
             setAppointments(apptsData);
@@ -194,16 +197,16 @@ const ClinicDashboard = () => {
                                                )}
                                                <div className="flex-1">
                                                     <p className="font-semibold">{appt.patientName}</p>
-                                                    <p className="text-xs text-muted-foreground">{appt.appointmentDate.toDate().toLocaleDateString()}</p>
+                                                    <p className="text-xs text-muted-foreground">{appt.appointmentDate.toDate().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
                                                </div>
-                                               <div className="text-sm text-muted-foreground">{appt.appointmentTime}</div>
+                                               <div className="text-sm text-muted-foreground">{appt.doctorName}</div>
                                                <Badge variant={appt.status === 'In Queue' ? 'default' : 'secondary'}>{appt.status}</Badge>
                                                <Button variant="outline" size="sm" onClick={() => handleCheckIn(appt.id)} disabled={appt.status !== 'Confirmed'}>Check-in</Button>
                                            </div>
                                        )
                                    })
                                ) : (
-                                    <div className="text-center py-10 text-muted-foreground">No new appointment requests.</div>
+                                    <div className="text-center py-10 text-muted-foreground">No appointments for today.</div>
                                )}
                            </div>
                         </CardContent>
