@@ -1,228 +1,106 @@
 'use client'
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState } from 'react';
+import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { ArrowLeft, Search, MapPin, MoreVertical, LocateFixed } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import dynamic from 'next/dynamic';
-import { Skeleton } from '@/components/ui/skeleton';
-import { useToast } from '@/hooks/use-toast';
+import { ArrowLeft, Clock, Map, MapPin } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { searchPlace } from '@/lib/routing';
-import { useFirebase } from '@/firebase/client-provider';
+import Image from 'next/image';
 
-const LiveMap = dynamic(() => import('@/components/live-map'), {
-    ssr: false,
-    loading: () => <div className="w-full h-full bg-muted flex items-center justify-center"><p>Loading Map...</p></div>
-});
-
-
-interface Place {
-    place_id: string;
-    display_name: string;
-    lat: string;
-    lon: string;
-    [key: string]: any; // Allow other properties
-}
-
-interface POI {
-    place_id: string;
-    display_name: string;
-    distance: string;
-}
+const recentTrips = [
+    {
+        icon: MapPin,
+        title: "Connaught Place",
+        description: "New Delhi, Delhi",
+        distance: "5.2 km",
+        time: "15 min"
+    },
+    {
+        icon: MapPin,
+        title: "Indira Gandhi International Airport",
+        description: "New Delhi, Delhi",
+        distance: "18.7 km",
+        time: "45 min"
+    },
+    {
+        icon: MapPin,
+        title: "Select Citywalk",
+        description: "Saket, New Delhi",
+        distance: "12.1 km",
+        time: "30 min"
+    },
+]
 
 export default function BookRidePage() {
     const router = useRouter();
-    const { toast } = useToast();
-    const [searchQuery, setSearchQuery] = useState('');
-    const [searchResults, setSearchResults] = useState<Place[]>([]);
-    const [selectedPlace, setSelectedPlace] = useState<Place | null>(null);
-    const [nearbyPois, setNearbyPois] = useState<POI[]>([]);
-    const [isSearching, setIsSearching] = useState(false);
-    const [userCoords, setUserCoords] = useState<{lat: number, lon: number} | null>(null);
-    const mapRef = useRef<any>(null);
-    const { user } = useFirebase();
-
-    useEffect(() => {
-        if (!user) {
-            router.push('/login?role=user');
-        }
-    }, [user, router]);
     
-    useEffect(() => {
-        if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(pos => {
-                setUserCoords({ lat: pos.coords.latitude, lon: pos.coords.longitude });
-            });
-        }
-    }, []);
-
-    const fetchPois = useCallback(async (place: Place) => {
-        if (!userCoords) return;
-        
-        setIsSearching(true);
-        try {
-            // A simple way to get POIs is to search for common terms near the selected place
-            const poiQuery = `(gate, pickup, drop-off, entry, exit) near ${place.display_name}`;
-            const results = await searchPlace(poiQuery);
-            if (results && results.length > 0) {
-                 const pois = results.map((poi: Place) => {
-                     const distanceInKm = getDistance(
-                         userCoords.lat,
-                         userCoords.lon,
-                         parseFloat(poi.lat),
-                         parseFloat(poi.lon)
-                     );
-                     return {
-                         place_id: poi.place_id,
-                         display_name: poi.display_name.split(',')[0], // Keep it short
-                         distance: `${distanceInKm.toFixed(1)}km`
-                     };
-                 }).slice(0, 5); // Limit to 5 POIs
-                 setNearbyPois(pois);
-            } else {
-                 setNearbyPois([]);
-            }
-        } catch (error) {
-            setNearbyPois([]);
-        } finally {
-            setIsSearching(false);
-        }
-    }, [userCoords]);
-
-
-    const handleSearch = useCallback(async (query: string) => {
-        if (query.length < 3) {
-            setSearchResults([]);
-            return;
-        }
-        setIsSearching(true);
-        try {
-            const results = await searchPlace(query);
-            setSearchResults(results || []);
-        } catch (error) {
-            toast({ variant: 'destructive', title: 'Search Failed' });
-        } finally {
-            setIsSearching(false);
-        }
-    }, [toast]);
-
-    const handleSelectPlace = (place: Place) => {
-        setSelectedPlace(place);
-        setSearchResults([]);
-        setSearchQuery(place.display_name.split(',')[0]);
-        if (mapRef.current) {
-            mapRef.current.flyTo([parseFloat(place.lat), parseFloat(place.lon)], 16);
-        }
-        fetchPois(place);
-    };
-    
-    const handleLocateMe = () => {
-        if(mapRef.current) {
-            mapRef.current.locate();
-        }
-    }
-
-    const getDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
-        const R = 6371; // km
-        const dLat = (lat2 - lat1) * Math.PI / 180;
-        const dLon = (lon2 - lon1) * Math.PI / 180;
-        const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
-        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-        return R * c;
-    };
-
-
     return (
-    <div className="h-screen w-screen flex flex-col bg-muted relative">
-        <div className="absolute inset-0 z-0">
-             <LiveMap ref={mapRef} />
-        </div>
-
-        <div className="absolute inset-0 z-10 flex flex-col pointer-events-none">
-            <div className="p-4 flex items-center gap-2 pointer-events-auto">
-                 <Button variant="outline" size="icon" className="rounded-full bg-background/80 backdrop-blur-sm" onClick={() => router.back()}>
+        <div className="h-screen w-screen flex flex-col bg-muted overflow-hidden">
+            {/* Header Section */}
+            <div className="bg-green-100 dark:bg-green-900/30 p-4 pt-6 relative">
+                <Button variant="ghost" size="icon" className="absolute top-4 left-4" onClick={() => router.back()}>
                     <ArrowLeft className="w-5 h-5"/>
-                 </Button>
-                 <div className="relative flex-1">
-                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                     <Input 
-                        placeholder="Search for a destination..." 
-                        className="pl-10 h-11 rounded-full shadow-md bg-background/80 backdrop-blur-sm"
-                        value={searchQuery}
-                        onChange={(e) => { setSearchQuery(e.target.value); handleSearch(e.target.value); }}
-                     />
-                 </div>
+                </Button>
+                 <Button variant="ghost" className="absolute top-4 right-4">
+                    <Map className="w-5 h-5 mr-2"/> Map
+                </Button>
+                <div className="pt-12 text-left">
+                    <h1 className="text-3xl font-bold">Transport</h1>
+                    <p className="text-muted-foreground">Wherever you&apos;re going, let&apos;s get you there!</p>
+                </div>
+                 <div className="absolute -bottom-10 right-4">
+                    <Image src="/car.svg" alt="Car" width={160} height={100} className="opacity-80" data-ai-hint="car illustration" />
+                </div>
             </div>
-            
-            {searchResults.length > 0 && (
-                <Card className="mx-4 mt-2 shadow-lg pointer-events-auto">
-                    <CardContent className="p-2 max-h-60 overflow-y-auto">
-                        {isSearching ? <Skeleton className="h-20 w-full" /> : (
-                            searchResults.map(place => (
-                                <div key={place.place_id} onClick={() => handleSelectPlace(place)} className="p-2 flex items-start gap-3 rounded-md hover:bg-muted cursor-pointer">
-                                    <MapPin className="w-5 h-5 text-muted-foreground mt-1"/>
-                                    <div>
-                                        <p className="font-semibold text-sm">{place.display_name.split(',')[0]}</p>
-                                        <p className="text-xs text-muted-foreground">{place.display_name.split(',').slice(1,4).join(',')}</p>
-                                    </div>
-                                </div>
-                            ))
-                        )}
+
+            {/* Content Section */}
+            <div className="flex-1 bg-background rounded-t-3xl -mt-4 p-4 space-y-6">
+                {/* Search Card */}
+                <Card className="shadow-lg -mt-12">
+                    <CardContent className="p-3 flex items-center gap-3">
+                         <div className="flex items-center gap-2 p-2 bg-muted rounded-lg flex-1">
+                             <div className="w-2.5 h-2.5 rounded-full bg-red-500 ring-2 ring-red-500/30"/>
+                             <p className="font-semibold text-lg">Where to?</p>
+                        </div>
+                        <Button variant="secondary" className="h-full">
+                            <Clock className="w-4 h-4 mr-2"/>
+                            Later
+                        </Button>
                     </CardContent>
                 </Card>
-            )}
-
-            <div className="absolute top-1/2 right-4 -translate-y-1/2 pointer-events-auto">
-                <Button variant="outline" size="icon" className="rounded-full bg-background/80 backdrop-blur-sm" onClick={handleLocateMe}>
-                    <LocateFixed className="w-5 h-5"/>
-                </Button>
-            </div>
-
-            {selectedPlace && (
-                <div className="mt-auto pointer-events-auto">
-                    <Card className="rounded-b-none rounded-t-2xl shadow-2xl">
-                        <CardHeader>
-                            <CardTitle className="flex justify-between items-start">
-                                <div>
-                                    <p className="text-xl">{selectedPlace.display_name.split(',')[0]}</p>
-                                    <p className="text-xs text-muted-foreground font-normal">{selectedPlace.display_name.split(',').slice(1,3).join(',')}</p>
-                                </div>
-                                 <Button variant="ghost" size="icon"><MoreVertical className="w-5 h-5"/></Button>
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-2">
-                             {isSearching ? <Skeleton className="h-16 w-full" /> : 
-                                nearbyPois.length > 0 ? (
-                                    nearbyPois.map(poi => (
-                                        <div key={poi.place_id} className="flex items-center gap-4 p-3 rounded-lg hover:bg-muted cursor-pointer">
-                                            <MapPin className="w-6 h-6 text-primary mt-1"/>
-                                            <div>
-                                                <p className="font-semibold">{poi.display_name}</p>
-                                                <p className="text-sm text-muted-foreground">{poi.distance} from your location</p>
-                                            </div>
-                                        </div>
-                                    ))
-                                ) : (
-                                    // Default/Fallback when no POIs found
-                                    <div className="flex items-center gap-4 p-3 rounded-lg hover:bg-muted cursor-pointer">
-                                        <MapPin className="w-6 h-6 text-primary mt-1"/>
-                                        <div>
-                                            <p className="font-semibold">Main Entrance</p>
-                                            <p className="text-sm text-muted-foreground">Default drop-off point</p>
-                                        </div>
-                                    </div>
-                                )
-                             }
-                        </CardContent>
-                        <CardFooter>
-                            <Button size="lg" className="w-full" onClick={() => toast({ title: 'Feature Coming Soon!', description: 'Ride confirmation flow will be enabled soon.' })}>Choose This Destination</Button>
-                        </CardFooter>
-                    </Card>
+                
+                {/* Recent Trips */}
+                <div className="space-y-4">
+                    <h3 className="font-bold text-lg">Recent Trips</h3>
+                    {recentTrips.map((trip) => (
+                        <div key={trip.title} className="flex items-center gap-4 p-3 rounded-lg hover:bg-muted cursor-pointer">
+                            <div className="p-3 bg-muted rounded-full">
+                                <trip.icon className="w-5 h-5 text-muted-foreground" />
+                            </div>
+                            <div className="flex-1">
+                                <p className="font-semibold">{trip.title}</p>
+                                <p className="text-sm text-muted-foreground">{trip.description}</p>
+                            </div>
+                             <div className="text-right">
+                                <p className="text-sm font-semibold">{trip.distance}</p>
+                                <p className="text-xs text-muted-foreground">{trip.time}</p>
+                            </div>
+                        </div>
+                    ))}
                 </div>
-            )}
+
+                {/* More ways to travel */}
+                 <div className="pt-4">
+                    <h3 className="font-bold text-lg">More ways to travel</h3>
+                    <div className="mt-2 p-4 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center gap-4">
+                        <div className="text-4xl">👨‍👩‍👧‍👦</div>
+                        <div>
+                            <p className="font-bold">Travel with friends in group rides!</p>
+                            <p className="text-sm text-muted-foreground">Save money and the environment.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
-    </div>
-  );
+    )
 }
