@@ -10,7 +10,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card'
 import { useFirebase } from '@/firebase/client-provider'
-import { GeoPoint } from 'firebase/firestore'
+import { GeoPoint, addDoc, collection, serverTimestamp } from 'firebase/firestore'
 import { useToast } from '@/hooks/use-toast'
 import type { RideData, ClientSession } from '@/lib/types'
 import { cn } from '@/lib/utils'
@@ -40,14 +40,14 @@ const fareConfig: {[key: string]: { base: number, perKm: number, serviceFee: num
     'Bike': { base: 20, perKm: 5, serviceFee: 0 },
     'Auto': { base: 30, perKm: 8, serviceFee: 0 }, 
     'Cab (Lite)': { base: 40, perKm: 10, serviceFee: 20 },
-    'Cabzi Pink': { base: 50, perKm: 12, serviceFee: 30 },
+    'Curocity Pink': { base: 50, perKm: 12, serviceFee: 30 },
 }
 
 const initialRideTypes: RideTypeInfo[] = [
     { name: 'Bike', description: 'Quick and affordable for solo trips', icon: BikeIcon, eta: '...', fare: '...' },
     { name: 'Auto', description: 'The classic three-wheeler for city travel', icon: AutoIcon, eta: '...', fare: '...' },
     { name: 'Cab (Lite)', description: 'Affordable sedans for everyday rides', icon: CabIcon, eta: '...', fare: '...' },
-    { name: 'Cabzi Pink', description: 'A safe ride option exclusively for women, with women partners.', icon: HeartHandshake, eta: '...', fare: '...' },
+    { name: 'Curocity Pink', description: 'A safe ride option exclusively for women, with women partners.', icon: HeartHandshake, eta: '...', fare: '...' },
 ]
 
 
@@ -167,58 +167,66 @@ function BookRideMapComponent() {
 
 
     return (
-        <div className="h-screen w-screen flex flex-col bg-muted">
-            {/* Top Half: Map */}
-            <div className="flex-1 relative">
-                <Button variant="outline" size="icon" className="absolute top-4 left-4 z-10 rounded-full shadow-lg" onClick={() => router.back()}>
-                    <ArrowLeft className="w-5 h-5"/>
-                </Button>
+        <div className="h-screen w-screen flex flex-col bg-background">
+            {/* Full-screen map container */}
+            <div className="flex-1 w-full h-full relative">
                 <LiveMap
                     riderLocation={userLocation}
                     routeGeometry={routeGeometry}
                 />
             </div>
+            {/* UI overlay */}
+            <div className="absolute inset-0 z-10 pointer-events-none">
+                 <div className="h-full w-full flex flex-col justify-between p-4">
+                     {/* Top buttons */}
+                    <div className="pointer-events-auto">
+                        <Button variant="outline" size="icon" className="rounded-full shadow-lg" onClick={() => router.back()}>
+                            <ArrowLeft className="w-5 h-5"/>
+                        </Button>
+                    </div>
 
-            {/* Bottom Half: Ride Options */}
-            <div className="flex-1 flex flex-col p-4 bg-background rounded-t-2xl shadow-inner-top -mt-4 z-10 overflow-y-auto">
-                 <CardHeader className="p-2 text-center">
-                    <CardTitle>Select a Ride</CardTitle>
-                    <CardDescription>Choose your preferred ride type for this trip.</CardDescription>
-                </CardHeader>
-                <CardContent className="flex-1 space-y-3">
-                     {isLoading ? (
-                        Array.from({length: 4}).map((_, i) => <Skeleton key={i} className="h-16 w-full" />)
-                    ) : (
-                        rideTypes.map(rt => (
-                            <Card 
-                              key={rt.name} 
-                              onClick={() => rt.fare !== 'N/A' && setSelectedRide(rt.name)}
-                              className={cn(
-                                "flex items-center p-3 gap-3 cursor-pointer transition-all", 
-                                selectedRide === rt.name && 'ring-2 ring-primary shadow-lg', 
-                                rt.fare === 'N/A' && 'opacity-40 cursor-not-allowed',
-                                rt.name === 'Cabzi Pink' && 'bg-pink-500/5',
-                                rt.name === 'Cabzi Pink' && selectedRide === rt.name && 'ring-pink-500'
-                                
-                                )}>
-                                <rt.icon className={cn("w-10 h-10 flex-shrink-0", rt.name === 'Cabzi Pink' ? 'text-pink-500' : 'text-primary')} />
-                                <div className="flex-1">
-                                    <p className="font-bold">{rt.name}</p>
-                                    <p className="text-xs text-muted-foreground">{rt.description}</p>
-                                </div>
-                                <div className="text-right">
-                                    <p className="font-bold text-lg">{rt.fare}</p>
-                                    <p className="text-xs flex items-center justify-end gap-1"><Clock className="w-3 h-3"/> {rt.eta}</p>
-                                </div>
-                            </Card>
-                        ))
-                    )}
-                </CardContent>
-                 <CardFooter className="pt-4">
-                    <Button size="lg" className="w-full h-12 text-base font-bold" disabled={isLoading}>
-                       Confirm {selectedRide}
-                    </Button>
-                </CardFooter>
+                    {/* Bottom ride selection card */}
+                     <Card className="pointer-events-auto shadow-2xl animate-fade-in">
+                         <CardHeader className="text-center">
+                            <CardTitle>Select a Ride</CardTitle>
+                            <CardDescription>Choose your preferred ride type for this trip.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-3 max-h-[40vh] overflow-y-auto">
+                            {isLoading ? (
+                                Array.from({length: 4}).map((_, i) => <Skeleton key={i} className="h-16 w-full" />)
+                            ) : (
+                                rideTypes.map(rt => (
+                                    <Card 
+                                      key={rt.name} 
+                                      onClick={() => rt.fare !== 'N/A' && setSelectedRide(rt.name)}
+                                      className={cn(
+                                        "flex items-center p-3 gap-3 cursor-pointer transition-all", 
+                                        selectedRide === rt.name && 'ring-2 ring-primary', 
+                                        rt.fare === 'N/A' && 'opacity-40 cursor-not-allowed',
+                                        rt.name === 'Curocity Pink' && 'bg-pink-500/5',
+                                        rt.name === 'Curocity Pink' && selectedRide === rt.name && 'ring-pink-500'
+                                        
+                                        )}>
+                                        <rt.icon className={cn("w-10 h-10 flex-shrink-0", rt.name === 'Curocity Pink' ? 'text-pink-500' : 'text-primary')} />
+                                        <div className="flex-1">
+                                            <p className="font-bold">{rt.name}</p>
+                                            <p className="text-xs text-muted-foreground">{rt.description}</p>
+                                        </div>
+                                        <div className="text-right">
+                                            <p className="font-bold text-lg">{rt.fare}</p>
+                                            <p className="text-xs flex items-center justify-end gap-1"><Clock className="w-3 h-3"/> {rt.eta}</p>
+                                        </div>
+                                    </Card>
+                                ))
+                            )}
+                        </CardContent>
+                         <CardFooter className="pt-4">
+                            <Button size="lg" className="w-full h-12 text-base font-bold" disabled={isLoading}>
+                               Confirm {selectedRide}
+                            </Button>
+                        </CardFooter>
+                    </Card>
+                </div>
             </div>
         </div>
     )
@@ -231,4 +239,3 @@ export default function BookRideMapPage() {
         </Suspense>
     );
 }
-
