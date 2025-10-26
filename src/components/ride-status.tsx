@@ -1,7 +1,6 @@
-
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import {
   Card,
@@ -55,7 +54,7 @@ import { cn } from '@/lib/utils';
 import SearchingIndicator from '@/components/ui/searching-indicator';
 import type { RideData } from '@/lib/types';
 import type { AmbulanceCase } from '@/lib/types';
-import { MotionDiv } from './ui/motion-div';
+import { motion, AnimatePresence } from 'framer-motion';
 
 
 interface Props {
@@ -81,6 +80,27 @@ export default function RideStatus({
 }: Props) {
   const { toast } = useToast();
   const [isPaying, setIsPaying] = useState(false);
+  const [showDriverDetails, setShowDriverDetails] = useState(false);
+  
+  const prevStatusRef = React.useRef<string | null>(null);
+
+  useEffect(() => {
+    // When ride status changes from 'searching' to 'accepted', trigger the animation sequence.
+    if (prevStatusRef.current === 'searching' && ride.status === 'accepted') {
+      setShowDriverDetails(false); // Make sure details are hidden initially
+      // The car animation will play for about 2 seconds, then we show the details.
+      const timer = setTimeout(() => {
+        setShowDriverDetails(true);
+      }, 2000);
+      return () => clearTimeout(timer);
+    } else if (ride.status === 'accepted') {
+      // If the component mounts and the status is already 'accepted', just show the details directly.
+      setShowDriverDetails(true);
+    }
+    
+    prevStatusRef.current = ride.status;
+  }, [ride.status]);
+
 
   if (!ride) return null;
 
@@ -258,39 +278,53 @@ export default function RideStatus({
                     <SearchingIndicator partnerType="path" />
                     <h3 className="text-3xl font-bold mt-4">Finding you a ride...</h3>
                     <p className="text-muted-foreground">This will only take a moment.</p>
-                     <MotionDiv
-                        style={{ scaleX: -1 }}
-                        animate={{ x: ["-110%", "20%", "20%", "120%"] }}
-                        transition={{
-                            duration: 4,
-                            ease: "easeInOut",
-                            repeat: Infinity,
-                            repeatType: "loop",
-                            times: [0, 0.4, 0.6, 1]
-                        }}
-                        className="absolute bottom-0 w-48 h-28 z-0"
-                     >
-                        <Image src="/car.svg" alt="Car" layout="fill" objectFit="contain" className="opacity-70" data-ai-hint="car illustration" />
-                    </MotionDiv>
                 </div>
             );
         case "accepted":
              return (
-                 <div className="space-y-4 animate-fade-in">
-                    <CardHeader className="p-0">
-                        <CardTitle>Driver is on the way</CardTitle>
-                        <CardDescription className="flex items-center gap-1"><Clock className="w-3 h-3"/> {rideData.driverEta ? `Arriving in ${Math.ceil(rideData.driverEta)} min` : 'Calculating ETA...'}</CardDescription>
-                    </CardHeader>
-                    <div className="p-4 rounded-lg bg-muted flex items-center gap-3">
-                         <Avatar className="w-12 h-12"><AvatarImage src={rideData.driverDetails?.photoUrl} alt={rideData.driverDetails?.name} /><AvatarFallback>{rideData.driverDetails?.name?.substring(0,2)}</AvatarFallback></Avatar>
-                         <div className="flex-1">
-                             <p className="font-bold">{rideData.driverDetails?.name}</p>
-                             <p className="text-sm text-muted-foreground">{rideData.driverDetails?.vehicle} &bull; {rideData.driverDetails?.rating} <Star className="w-3 h-3 inline-block -mt-1 ml-0.5" /></p>
-                         </div>
-                         <p className="font-bold text-lg">OTP: {rideData.otp}</p>
-                    </div>
+                <div className="h-[260px] flex flex-col justify-center">
+                    <AnimatePresence mode="wait">
+                    {!showDriverDetails ? (
+                        <motion.div
+                            key="car"
+                            initial={{ x: "-110%" }}
+                            animate={{ x: ["-110%", "20%", "20%", "120%"] }}
+                            exit={{ opacity: 0 }}
+                            transition={{
+                                duration: 2,
+                                ease: "easeInOut",
+                                times: [0, 0.4, 0.8, 1]
+                            }}
+                            className="w-48 h-28 z-0 mx-auto"
+                        >
+                            <Image src="/car.svg" alt="Car" layout="fill" objectFit="contain" className="opacity-70 scale-x-[-1]" data-ai-hint="car illustration" />
+                        </motion.div>
+                    ) : (
+                        <motion.div
+                            key="details"
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -20 }}
+                            transition={{ duration: 0.5 }}
+                            className="space-y-4 animate-fade-in"
+                        >
+                            <CardHeader className="p-0 text-center">
+                                <CardTitle>Driver is on the way!</CardTitle>
+                                <CardDescription className="flex items-center justify-center gap-1"><Clock className="w-3 h-3"/> {rideData.driverEta ? `Arriving in ${Math.ceil(rideData.driverEta)} min` : 'Calculating ETA...'}</CardDescription>
+                            </CardHeader>
+                            <div className="p-3 rounded-lg bg-muted flex items-center gap-3">
+                                <Avatar className="w-12 h-12"><AvatarImage src={rideData.driverDetails?.photoUrl} alt={rideData.driverDetails?.name} /><AvatarFallback>{rideData.driverDetails?.name?.substring(0,2)}</AvatarFallback></Avatar>
+                                <div className="flex-1">
+                                    <p className="font-bold">{rideData.driverDetails?.name}</p>
+                                    <p className="text-sm text-muted-foreground">{rideData.driverDetails?.vehicle} &bull; {rideData.driverDetails?.rating} <Star className="w-3 h-3 inline-block -mt-1 ml-0.5" /></p>
+                                </div>
+                                <p className="font-bold text-lg">OTP: {rideData.otp}</p>
+                            </div>
+                        </motion.div>
+                    )}
+                    </AnimatePresence>
                 </div>
-             );
+            );
       case "in-progress":
         return (
           <div className="space-y-4 animate-fade-in">
@@ -387,7 +421,6 @@ export default function RideStatus({
                     </div>
                     <div>
                     <CardTitle className="text-lg">{getActiveRideTitle()}</CardTitle>
-                    {/* ID is hidden as per user request */}
                     </div>
                 </div>
                 <Dialog>
