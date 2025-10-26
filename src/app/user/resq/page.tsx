@@ -5,25 +5,38 @@ import React, { useState, useEffect, useRef, useCallback } from 'react'
 import dynamic from 'next/dynamic'
 import { motion } from 'framer-motion'
 import { useFirebase } from '@/firebase/client-provider'
-import { getDoc, doc, onSnapshot, query, collection, where, updateDoc } from 'firebase/firestore'
+import { getDoc, doc, onSnapshot, query, collection, where, updateDoc, GeoPoint, serverTimestamp, addDoc } from 'firebase/firestore'
 import type { RideData, AmbulanceCase, GarageRequest, ClientSession } from '@/lib/types'
 import { useToast } from '@/hooks/use-toast'
 
-import { Card } from '@/components/ui/card'
-import EmergencyButtons from '@/components/EmergencyButtons'
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card'
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
+import { Label } from '@/components/ui/label'
+import { Button } from '@/components/ui/button'
 import RideStatus from '@/components/ride-status'
+import { Wrench } from 'lucide-react'
 import { runTransaction } from 'firebase/firestore'
+import SearchingIndicator from '@/components/ui/searching-indicator'
 
 const LiveMap = dynamic(() => import('@/components/live-map'), {
   ssr: false,
   loading: () => <div className="w-full h-full bg-muted flex items-center justify-center"><p>Loading Map...</p></div>,
 });
 
+const commonIssues = [
+    { id: 'flat_tyre', label: 'Flat Tyre / Puncture' },
+    { id: 'battery_jumpstart', label: 'Battery Jump-Start' },
+    { id: 'engine_trouble', label: 'Minor Engine Trouble' },
+    { id: 'towing_required', label: 'Towing Required' },
+    { id: 'other', label: 'Other Issue' },
+]
+
 export default function ResQPage() {
   const [session, setSession] = useState<ClientSession | null>(null);
   const [activeGarageRequest, setActiveGarageRequest] = useState<GarageRequest | null>(null);
   const [isRequestingSos, setIsRequestingSos] = useState(false);
   const [currentUserLocation, setCurrentUserLocation] = useState<{ lat: number; lon: number } | null>(null);
+  const [selectedIssue, setSelectedIssue] = useState('');
 
   const liveMapRef = useRef<any>(null);
   const { user, db } = useFirebase();
@@ -83,18 +96,17 @@ export default function ResQPage() {
             });
         }
       } else {
-        setActiveGarageRequest(null);
-        localStorage.removeItem('activeGarageRequestId');
+        resetFlow();
       }
     });
 
     return () => unsubscribe();
-  }, [db, session?.userId, activeGarageRequest?.status, toast]);
+  }, [db, session?.userId, activeGarageRequest?.status, toast, resetFlow]);
   
   const handleGaragePayment = async (paymentMode: 'cash' | 'wallet') => {
     if (!db || !activeGarageRequest || !user || !activeGarageRequest.mechanicId) return;
 
-    const driverRef = doc(db, 'users', user.uid);
+    const driverRef = doc(db, 'users', user.uid); // Assuming driver is a user
     const garageRequestRef = doc(db, 'garageRequests', activeGarageRequest.id);
     const mechanicRef = doc(db, 'mechanics', activeGarageRequest.mechanicId);
 
@@ -105,7 +117,6 @@ export default function ResQPage() {
                 throw new Error("Wallet payment not implemented yet.");
             }
             
-            // Mark the job as completed
             transaction.update(garageRequestRef, { status: 'completed', paymentMode });
         });
 
@@ -114,8 +125,7 @@ export default function ResQPage() {
             description: `Thank you for using Curocity ResQ.`,
             className: "bg-green-600 text-white border-green-600"
         });
-
-        // The onSnapshot listener will handle UI update
+        resetFlow();
     } catch (error: any) {
         console.error("Garage payment failed:", error);
         toast({
@@ -126,6 +136,61 @@ export default function ResQPage() {
     }
   }
 
+  const handleRequestMechanic = async () => {
+    if (!db || !session || !currentUserLocation || !selectedIssue) {
+        toast({ variant: "destructive", title: "Error", description: "Could not get your location or user details." });
+        return;
+    }
+    const generatedOtp = Math.floor(1000 + Math.random() * 9000).toString();
+    const requestData = {
+        driverId: session.userId,
+        driverName: session.name,
+        driverPhone: session.phone,
+        issue: selectedIssue,
+        location: new GeoPoint(currentUserLocation.lat, currentUserLocation.lon),
+        status: 'pending' as const,
+        otp: generatedOtp,
+        createdAt: serverTimestamp(),
+    };
+    const requestDocRef = await addDoc(collection(db, 'garageRequests'), requestData);
+    
+    setActiveGarageRequest({ id: requestDocRef.id, ...requestData });
+    localStorage.setItem('activeGarageRequestId', requestDocRef.id);
+    toast({ title: "Request Sent!", description: "We are finding a nearby ResQ partner for you." });
+  }
+
+  const renderInitialView = () => (
+      <Card className="rounded-t-2xl shadow-2xl">
+          <CardHeader>
+              <div className="flex items-center gap-3">
+                  <div className="p-3 bg-amber-500/10 rounded-full">
+                      <Wrench className="w-6 h-6 text-amber-500"/>
+                  </div>
+                  <div>
+                    <CardTitle>Roadside Assistance</CardTitle>
+                    <CardDescription>Vehicle trouble? Select your issue to find help.</CardDescription>
+                  </div>
+              </div>
+          </CardHeader>
+          <CardContent>
+            <RadioGroup onValueChange={setSelectedIssue} value={selectedIssue}>
+              <div className="space-y-2">
+                {commonIssues.map(issue => (
+                  <div key={issue.id} className="flex items-center space-x-2 p-3 bg-muted rounded-lg">
+                    <RadioGroupItem value={issue.label} id={issue.id} />
+                    <Label htmlFor={issue.id} className="font-normal w-full cursor-pointer">{issue.label}</Label>
+                  </div>
+                ))}
+              </div>
+            </RadioGroup>
+          </CardContent>
+          <CardFooter>
+              <Button size="lg" className="w-full" onClick={handleRequestMechanic} disabled={!selectedIssue}>
+                  Request Help Now
+              </Button>
+          </CardFooter>
+      </Card>
+  )
 
   return (
     <div className="h-full w-full relative flex flex-col">
@@ -146,9 +211,8 @@ export default function ResQPage() {
           transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
           className="mx-auto max-w-lg w-full"
         >
-          <Card className="rounded-t-2xl shadow-2xl bg-background/80 backdrop-blur-sm border-t border-border/20">
-            {activeGarageRequest ? (
-              <div className="p-1">
+          {activeGarageRequest ? (
+            <div className="p-1">
                 <RideStatus 
                     ride={activeGarageRequest as any} 
                     isGarageRequest 
@@ -156,20 +220,10 @@ export default function ResQPage() {
                     onDone={resetFlow} 
                     onPayment={handleGaragePayment}
                 />
-              </div>
-            ) : (
-              <EmergencyButtons
-                serviceType="resq"
-                liveMapRef={liveMapRef}
-                pickupCoords={currentUserLocation}
-                setIsRequestingSos={setIsRequestingSos}
-                setActiveAmbulanceCase={() => {}} // Not used for ResQ
-                setActiveGarageRequest={setActiveGarageRequest}
-                onBack={resetFlow}
-                session={session}
-              />
-            )}
-          </Card>
+            </div>
+          ) : (
+            renderInitialView()
+          )}
         </motion.div>
       </div>
     </div>
