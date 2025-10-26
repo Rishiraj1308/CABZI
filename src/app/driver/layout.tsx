@@ -1,7 +1,7 @@
 
 'use client'
 
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { LayoutDashboard, Landmark, Gem, User, PanelLeft, LogOut, Sun, Moon, Wrench } from 'lucide-react'
@@ -107,7 +107,7 @@ function DriverLayoutContent({ children }: { children: React.ReactNode }) {
   }, [pathname]);
 
   useEffect(() => {
-    if (isAuthLoading) return; // Wait for Firebase auth state to be resolved.
+    if (isAuthLoading) return;
     
     const session = localStorage.getItem('curocity-session');
     if (!user || !session || !db) {
@@ -137,17 +137,7 @@ function DriverLayoutContent({ children }: { children: React.ReactNode }) {
 
     if (!partnerDocRef.current) return;
 
-    // ----- The Fix is Here: This block now runs only after user and session are confirmed -----
-    updateDoc(partnerDocRef.current, { isOnline: true, lastSeen: serverTimestamp() })
-     .catch(error => {
-        const permissionError = new FirestorePermissionError({
-            path: partnerDocRef.current.path,
-            operation: 'update',
-            requestResourceData: { isOnline: true }
-        });
-        errorEmitter.emit('permission-error', permissionError);
-    });
-
+    // This block now only sets up the listener. The update is moved.
     const unsubscribe = onSnapshot(partnerDocRef.current, (docSnap) => {
       if(docSnap.exists()){
           const data = docSnap.data();
@@ -178,6 +168,22 @@ function DriverLayoutContent({ children }: { children: React.ReactNode }) {
         const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
         return R * c; // in metres
     }
+    
+    // THE FIX: Wait for the first successful data fetch before updating online status.
+    const initialFetch = getDoc(partnerDocRef.current);
+    initialFetch.then(() => {
+        if(partnerDocRef.current){
+             updateDoc(partnerDocRef.current, { isOnline: true, lastSeen: serverTimestamp() })
+             .catch(error => {
+                const permissionError = new FirestorePermissionError({
+                    path: partnerDocRef.current.path,
+                    operation: 'update',
+                    requestResourceData: { isOnline: true }
+                });
+                errorEmitter.emit('permission-error', permissionError);
+            });
+        }
+    });
 
     if (navigator.geolocation) {
         watchId = navigator.geolocation.watchPosition(
