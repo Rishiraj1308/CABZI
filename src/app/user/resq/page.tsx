@@ -198,60 +198,48 @@ export default function ResQPage() {
 
 
   const renderInitialView = () => (
-     <Card className="max-w-xl mx-auto mt-8 bg-white/80 dark:bg-background/80 backdrop-blur-md shadow-xl rounded-3xl">
-        <CardHeader className="p-8">
-            <div className="flex justify-between items-center">
-                <div className="w-16 h-16 rounded-full bg-amber-500/10 flex items-center justify-center border-4 border-amber-500/20">
-                    <Wrench className="w-8 h-8 text-amber-500"/>
-                </div>
-                <div className="text-center">
-                    <CardTitle className="text-2xl font-bold text-gray-800 dark:text-gray-200 leading-snug">Roadside Assistance</CardTitle>
-                    <CardDescription className="text-sm text-gray-500 dark:text-gray-400 mt-1 leading-snug">Vehicle trouble? Get quick help for tyre, battery, towing & more.</CardDescription>
-                </div>
-                <div className="text-right">
-                    <div className="text-xs text-muted-foreground flex items-center justify-end gap-1">
-                        <span className="relative flex h-2 w-2">
-                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                            <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
-                        </span>
-                        ETA
-                    </div>
-                    <div className="text-sm font-semibold">~10-15 mins</div>
-                </div>
+     <div className="max-w-xl mx-auto w-full p-4 md:p-0">
+        <div className="text-center mb-8">
+            <div className="w-16 h-16 mx-auto rounded-full bg-amber-500/10 flex items-center justify-center border-4 border-amber-500/20">
+                <Wrench className="w-8 h-8 text-amber-500"/>
             </div>
-        </CardHeader>
-        <CardContent className="space-y-4 px-8">
-            <div className="grid grid-cols-3 gap-2">
-                {commonIssues.map((item) => (
-                    <div
-                      key={item.id}
-                      onClick={() => setSelectedIssue(item.label)}
-                      className={cn(
-                        "group flex flex-col items-center justify-center p-3 bg-background rounded-xl hover:bg-muted/80 transition-all cursor-pointer shadow-orange-glow",
-                        selectedIssue === item.label && "ring-2 ring-orange-500 bg-orange-100/50 dark:bg-orange-900/30"
-                      )}
-                    >
-                        <item.icon className="text-orange-500 w-6 h-6 mb-2 transition-all group-hover:text-orange-400 group-hover:drop-shadow-[0_0_4px_rgba(255,140,0,0.4)]" />
-                        <span className="font-medium text-gray-800 dark:text-gray-200 text-center text-xs">{item.label}</span>
-                    </div>
-                ))}
-            </div>
-        </CardContent>
-        <CardFooter className="p-8">
-            <Button
-                size="lg"
-                disabled={!selectedIssue}
-                onClick={handleRequestMechanic}
-                className={cn(
-                    "w-full font-semibold rounded-full h-12 text-lg bg-gradient-to-r from-orange-500 to-yellow-400 text-white transition-all duration-300",
-                    "hover:shadow-lg hover:shadow-yellow-500/50",
-                    "disabled:from-gray-400 disabled:to-gray-300 disabled:shadow-none disabled:cursor-not-allowed",
-                    selectedIssue && "btn-glow"
-                )}>
-                Request Assistance
-            </Button>
-        </CardFooter>
-      </Card>
+            <h1 className="text-3xl font-bold mt-4">Roadside Assistance</h1>
+            <p className="text-muted-foreground">Vehicle trouble? Get quick help.</p>
+        </div>
+
+        <Card>
+            <CardHeader>
+                <CardTitle>Select Service</CardTitle>
+                <CardDescription>Tell us what's wrong so we can find the right help.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                    {commonIssues.map((item) => (
+                        <div
+                        key={item.id}
+                        onClick={() => setSelectedIssue(item.label)}
+                        className={cn(
+                            "group flex flex-col items-center justify-center p-4 bg-muted/50 rounded-xl hover:shadow-orange-glow hover:-translate-y-1 transition-all cursor-pointer",
+                            selectedIssue === item.label && "ring-2 ring-orange-500 bg-orange-100/50 dark:bg-orange-900/30"
+                        )}
+                        >
+                            <item.icon className="text-orange-500 w-8 h-8 mb-2 transition-all group-hover:text-orange-400 group-hover:drop-shadow-[0_0_4px_rgba(255,140,0,0.4)]" />
+                            <span className="font-semibold text-center text-sm">{item.label}</span>
+                        </div>
+                    ))}
+                </div>
+            </CardContent>
+            <CardFooter>
+                 <Button
+                    size="lg"
+                    disabled={!selectedIssue}
+                    onClick={handleRequestMechanic}
+                    className="w-full font-semibold h-12 text-lg">
+                    Request Assistance
+                </Button>
+            </CardFooter>
+        </Card>
+      </div>
   )
 
   const renderActiveRequest = () => {
@@ -302,7 +290,7 @@ export default function ResQPage() {
   }
 
   return (
-    <div className="h-full w-full relative flex flex-col p-4 md:p-6 items-center justify-center bg-[linear-gradient(180deg,_#fffdf8_0%,_#fff6e9_100%)] dark:bg-[linear-gradient(180deg,_hsl(var(--background))_0%,_hsl(var(--muted))_100%)]">
+    <div className="h-full w-full relative flex flex-col items-center justify-center bg-[linear-gradient(180deg,_#fffdf8_0%,_#fff6e9_100%)] dark:bg-[linear-gradient(180deg,_hsl(var(--background))_0%,_hsl(var(--muted))_100%)]">
         <div className="w-full">
             {activeGarageRequest ? renderActiveRequest() : renderInitialView()}
         </div>
