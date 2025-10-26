@@ -26,7 +26,7 @@ import { useToast } from '@/hooks/use-toast'
 import BrandLogo from '@/components/brand-logo'
 import { useTheme } from 'next-themes'
 import { useFirebase } from '@/firebase/client-provider'
-import { doc, updateDoc, onSnapshot, serverTimestamp, getDoc, GeoPoint } from 'firebase/firestore'
+import { doc, updateDoc, onSnapshot, serverTimestamp, getDoc, GeoPoint, type DocumentReference } from 'firebase/firestore'
 import { Badge } from '@/components/ui/badge'
 import { MotionDiv } from '@/components/ui/motion-div'
 import { errorEmitter, FirestorePermissionError } from '@/lib/error-handling';
@@ -96,7 +96,7 @@ function DriverLayoutContent({ children }: { children: React.ReactNode }) {
   const { db, auth, user, isUserLoading: isAuthLoading } = useFirebase();
   const [isSessionLoading, setIsSessionLoading] = useState(true);
   
-  const partnerDocRef = useRef<any>(null);
+  const partnerDocRef = useRef<DocumentReference | null>(null);
   
   useEffect(() => {
     setIsMounted(true);
@@ -137,21 +137,6 @@ function DriverLayoutContent({ children }: { children: React.ReactNode }) {
 
     if (!partnerDocRef.current) return;
 
-    // This block now only sets up the listener. The update is moved.
-    const unsubscribe = onSnapshot(partnerDocRef.current, (docSnap) => {
-      if(docSnap.exists()){
-          const data = docSnap.data();
-          const partnerIsPink = data.isCabziPinkPartner || false;
-          setIsPinkPartner(partnerIsPink);
-
-          if (partnerIsPink) {
-              if (theme !== 'pink') setTheme('pink');
-          } else {
-              if (theme === 'pink') setTheme('system');
-          }
-      }
-    });
-
     let watchId: number | undefined;
     let lastSentLocation: { lat: number, lon: number } | null = null;
     const MIN_DISTANCE_THRESHOLD = 50; // in meters
@@ -159,63 +144,73 @@ function DriverLayoutContent({ children }: { children: React.ReactNode }) {
     let lastSentTime = 0;
 
     const getDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
-        const R = 6371e3; // metres
+        const R = 6371e3;
         const φ1 = lat1 * Math.PI/180;
         const φ2 = lat2 * Math.PI/180;
         const Δφ = (lat2-lat1) * Math.PI/180;
         const Δλ = (lon2-lon1) * Math.PI/180;
         const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) + Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ/2) * Math.sin(Δλ/2);
         const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-        return R * c; // in metres
+        return R * c;
     }
     
-    // THE FIX: Wait for the first successful data fetch before updating online status.
-    const initialFetch = getDoc(partnerDocRef.current);
-    initialFetch.then(() => {
-        if(partnerDocRef.current){
-             updateDoc(partnerDocRef.current, { isOnline: true, lastSeen: serverTimestamp() })
-             .catch(error => {
+    // Heartbeat function to update presence
+    const sendHeartbeat = (location?: GeoPoint) => {
+        if (partnerDocRef.current) {
+            const updateData: { lastSeen: FieldValue, isOnline: boolean, currentLocation?: GeoPoint | null } = {
+                lastSeen: serverTimestamp(),
+                isOnline: true,
+            };
+            if (location) {
+                updateData.currentLocation = location;
+            }
+            updateDoc(partnerDocRef.current, updateData).catch(error => {
                 const permissionError = new FirestorePermissionError({
-                    path: partnerDocRef.current.path,
+                    path: partnerDocRef.current!.path,
                     operation: 'update',
                     requestResourceData: { isOnline: true }
                 });
                 errorEmitter.emit('permission-error', permissionError);
             });
         }
-    });
+    };
+    
+    // Initial fetch and setup
+    getDoc(partnerDocRef.current).then((docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        const partnerIsPink = data.isCabziPinkPartner || false;
+        setIsPinkPartner(partnerIsPink);
 
-    if (navigator.geolocation) {
+        if (partnerIsPink && theme !== 'pink') setTheme('pink');
+        else if (!partnerIsPink && theme === 'pink') setTheme('system');
+        
+        // **THE FIX**: Send the first heartbeat *after* the first successful read.
+        sendHeartbeat();
+      }
+
+      // Start geolocation watcher
+      if (navigator.geolocation) {
         watchId = navigator.geolocation.watchPosition(
             (pos) => {
-                 if (partnerDocRef.current) {
-                    const now = Date.now();
-                    const newLocation = { lat: pos.coords.latitude, lon: pos.coords.longitude };
-                    
-                    const distanceMoved = lastSentLocation ? getDistance(lastSentLocation.lat, lastSentLocation.lon, newLocation.lat, newLocation.lon) : Infinity;
-                    
-                    if (distanceMoved > MIN_DISTANCE_THRESHOLD || now - lastSentTime > MIN_TIME_THRESHOLD) {
-                        updateDoc(partnerDocRef.current, {
-                            currentLocation: new GeoPoint(newLocation.lat, newLocation.lon),
-                            lastSeen: serverTimestamp()
-                        }).catch(error => {
-                            const permissionError = new FirestorePermissionError({
-                                path: partnerDocRef.current.path,
-                                operation: 'update',
-                                requestResourceData: { currentLocation: '...' }
-                            });
-                            errorEmitter.emit('permission-error', permissionError);
-                        });
-                        lastSentLocation = newLocation;
-                        lastSentTime = now;
-                    }
+                const newLocation = { lat: pos.coords.latitude, lon: pos.coords.longitude };
+                const now = Date.now();
+                const distanceMoved = lastSentLocation ? getDistance(lastSentLocation.lat, lastSentLocation.lon, newLocation.lat, newLocation.lon) : Infinity;
+                if (distanceMoved > MIN_DISTANCE_THRESHOLD || now - lastSentTime > MIN_TIME_THRESHOLD) {
+                    sendHeartbeat(new GeoPoint(newLocation.lat, newLocation.lon));
+                    lastSentLocation = newLocation;
+                    lastSentTime = now;
                 }
             },
             () => {},
             { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
         );
-    }
-    
+      }
+    });
+
+    // Set up a periodic heartbeat interval
+    const heartbeatInterval = setInterval(() => sendHeartbeat(), MIN_TIME_THRESHOLD);
+
     const handleBeforeUnload = () => {
         if(partnerDocRef.current) {
           updateDoc(partnerDocRef.current, { isOnline: false, lastSeen: serverTimestamp(), currentLocation: null });
@@ -224,7 +219,7 @@ function DriverLayoutContent({ children }: { children: React.ReactNode }) {
     window.addEventListener('beforeunload', handleBeforeUnload);
 
     return () => {
-        unsubscribe();
+        clearInterval(heartbeatInterval);
         if (watchId) navigator.geolocation.clearWatch(watchId);
         window.removeEventListener('beforeunload', handleBeforeUnload);
     };
