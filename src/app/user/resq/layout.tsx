@@ -56,59 +56,6 @@ function ThemeToggle() {
     )
 }
 
-function LocationDisplay() {
-  const [location, setLocation] = useState('Locating...');
-
-  useEffect(() => {
-    if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-            async (position) => {
-                const { latitude, longitude } = position.coords;
-                try {
-                    const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`);
-                    if (!response.ok) {
-                        setLocation('Location not found');
-                        return;
-                    }
-                    const data = await response.json();
-                    const address = data.address;
-                    const city = address.city || address.town || address.village || address.state_district || '';
-                    const area = address.suburb || address.neighbourhood || address.road || '';
-                    
-                    if (area && city) {
-                        setLocation(`${area}, ${city}`);
-                    } else if (city) {
-                         const state = address.state || '';
-                         setLocation(`${city}, ${state}`);
-                    }
-                    else if (data.display_name) {
-                        setLocation(data.display_name.split(',').slice(0, 2).join(', '));
-                    } else {
-                        setLocation('Location not found');
-                    }
-                } catch (error) {
-                    setLocation('Location API error');
-                }
-            }, 
-            () => {
-                // Gracefully handle location denial
-                setLocation('Location Unavailable');
-            },
-            { timeout: 10000 }
-        );
-    } else {
-        setLocation('Geolocation not supported');
-    }
-  }, []);
-  
-  return (
-    <div className="flex items-center gap-1.5">
-      <MapPin className="w-4 h-4 text-muted-foreground"/>
-      <span className="text-sm font-medium text-muted-foreground truncate">{location}</span>
-    </div>
-  )
-}
-
 export default function ResQLayout({
   children,
 }: {
@@ -181,7 +128,6 @@ export default function ResQLayout({
                               )}>
                                   <item.icon className="h-5 w-5 text-primary" />
                                   <span className="font-medium">{item.label}</span>
-                                  {item.comingSoon && <Badge variant="secondary">Coming Soon</Badge>}
                               </div>
                           );
 
@@ -206,7 +152,6 @@ export default function ResQLayout({
                       </nav>
                   </SheetContent>
               </Sheet>
-               <LocationDisplay />
           </div>
           <div className="flex items-center gap-2">
               <ThemeToggle />
