@@ -1,3 +1,4 @@
+
 'use client'
 
 import React, { useState, useEffect, useCallback } from 'react'
@@ -14,6 +15,8 @@ import { runTransaction } from 'firebase/firestore'
 import SearchingIndicator from '@/components/ui/searching-indicator'
 import { cn } from '@/lib/utils'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription, DialogFooter } from '@/components/ui/dialog'
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
+import { Label } from '@/components/ui/label'
 
 
 const commonIssues = [
@@ -199,7 +202,7 @@ export default function ResQPage() {
      <Card className="max-w-xl mx-auto mt-8 bg-white/80 dark:bg-background/80 backdrop-blur-md shadow-xl shadow-orange-100 dark:shadow-orange-500/10 rounded-3xl">
         <CardHeader className="p-8">
             <div className="flex justify-between items-start">
-                <div className="mx-auto w-16 h-16 rounded-full bg-amber-500/10 flex items-center justify-center mb-2 border-4 border-amber-500/20">
+                <div className="p-3 rounded-full bg-amber-500/10 border-4 border-amber-500/20">
                     <Wrench className="w-8 h-8 text-amber-500"/>
                 </div>
                 <div className="text-right">
@@ -213,8 +216,10 @@ export default function ResQPage() {
                     <div className="text-sm font-semibold">~10-15 mins</div>
                 </div>
             </div>
-          <CardTitle className="text-center text-2xl font-bold text-gray-800 dark:text-gray-200 leading-snug">Roadside Assistance</CardTitle>
-          <CardDescription className="text-center text-sm text-gray-500 dark:text-gray-400 mt-1 leading-snug">Vehicle trouble? Get quick help for tyre, battery, towing & more.</CardDescription>
+            <div className="text-center pt-4">
+              <CardTitle className="text-2xl font-bold text-gray-800 dark:text-gray-200 leading-snug">Roadside Assistance</CardTitle>
+              <CardDescription className="text-sm text-gray-500 dark:text-gray-400 mt-1 leading-snug">Vehicle trouble? Get quick help for tyre, battery, towing & more.</CardDescription>
+            </div>
         </CardHeader>
         <CardContent className="space-y-4 px-8">
             <div className="grid grid-cols-3 gap-6 mt-6">
