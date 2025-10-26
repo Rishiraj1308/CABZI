@@ -19,7 +19,7 @@ export default function BookRidePage() {
                 <h1 className="text-2xl font-bold">Transport</h1>
                 <Button variant="outline" className="bg-white/80 backdrop-blur-sm"><MapPin className="w-4 h-4 mr-2"/> Map</Button>
             </div>
-            <p className="text-lg text-foreground/80 mb-6">Wherever you&apos;re going, let&apos;s get you there!</p>
+            <p className="text-lg text-foreground/80 mb-6">Wherever you're going, let's get you there!</p>
 
             <div className="absolute -right-10 -bottom-5 w-48 h-24">
                  <Image src="/images/curocity-car-illustration.svg" alt="Car Illustration" width={192} height={96} data-ai-hint="car illustration" />
@@ -39,15 +39,20 @@ export default function BookRidePage() {
                 </CardContent>
             </Card>
 
-            {/* Saved Locations */}
-            <div className="space-y-4">
+            {/* Recent Trips */}
+             <div className="space-y-4">
+                <h3 className="font-bold">Recent Trips</h3>
                  <div className="flex items-center gap-4 cursor-pointer">
                     <div className="p-2.5 bg-muted rounded-full">
                         <MapPin className="w-5 h-5 text-muted-foreground" />
                     </div>
                     <div className="flex-1 border-b pb-4">
-                        <p className="font-semibold">Cebu South Bus Terminal</p>
-                        <p className="text-xs text-muted-foreground">Natalio Bacalso Avenue, Pahina Central...</p>
+                        <p className="font-semibold">Connaught Place</p>
+                        <p className="text-xs text-muted-foreground">New Delhi, Delhi</p>
+                    </div>
+                    <div className="text-right">
+                        <p className="text-sm font-semibold">5.2 km</p>
+                        <p className="text-xs text-muted-foreground">15 min</p>
                     </div>
                 </div>
                  <div className="flex items-center gap-4 cursor-pointer">
@@ -55,8 +60,12 @@ export default function BookRidePage() {
                         <MapPin className="w-5 h-5 text-muted-foreground" />
                     </div>
                     <div className="flex-1 border-b pb-4">
-                        <p className="font-semibold">Cebu Pier 1</p>
-                        <p className="text-xs text-muted-foreground">Quezon Boulevard, San Roque (Ciudad)...</p>
+                        <p className="font-semibold">Indira Gandhi International Airport</p>
+                        <p className="text-xs text-muted-foreground">New Delhi, Delhi</p>
+                    </div>
+                     <div className="text-right">
+                        <p className="text-sm font-semibold">21.8 km</p>
+                        <p className="text-xs text-muted-foreground">45 min</p>
                     </div>
                 </div>
                  <div className="flex items-center gap-4 cursor-pointer">
@@ -64,8 +73,12 @@ export default function BookRidePage() {
                         <MapPin className="w-5 h-5 text-muted-foreground" />
                     </div>
                     <div className="flex-1">
-                        <p className="font-semibold">Shangri-La Mactan, Cebu</p>
-                        <p className="text-xs text-muted-foreground">Punta Engano Rd, Mactan, Lapu-Lapu City...</p>
+                        <p className="font-semibold">Select Citywalk</p>
+                        <p className="text-xs text-muted-foreground">Saket, New Delhi</p>
+                    </div>
+                     <div className="text-right">
+                        <p className="text-sm font-semibold">12.5 km</p>
+                        <p className="text-xs text-muted-foreground">30 min</p>
                     </div>
                 </div>
             </div>
