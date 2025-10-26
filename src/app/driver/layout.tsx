@@ -93,7 +93,7 @@ function DriverLayoutContent({ children }: { children: React.ReactNode }) {
   const [userName, setUserName] = useState('');
   const [isPinkPartner, setIsPinkPartner] = useState(false);
   const { theme, setTheme } = useTheme();
-  const { db, auth } = useFirebase();
+  const { db, auth, user, isUserLoading: isAuthLoading } = useFirebase();
   const [isSessionLoading, setIsSessionLoading] = useState(true);
   
   const partnerDocRef = useRef<any>(null);
@@ -104,10 +104,17 @@ function DriverLayoutContent({ children }: { children: React.ReactNode }) {
       setIsSessionLoading(false);
       return;
     }
+  }, [pathname]);
 
+  useEffect(() => {
+    if (isAuthLoading) return; // Wait for Firebase auth state to be resolved.
+    
     const session = localStorage.getItem('curocity-session');
-    if (!session || !db) {
-        router.push('/login?role=driver');
+    if (!user || !session || !db) {
+        if (!pathname.includes('/driver/onboarding')) {
+            router.push('/login?role=driver');
+        }
+        setIsSessionLoading(false);
         return;
     }
 
@@ -130,6 +137,7 @@ function DriverLayoutContent({ children }: { children: React.ReactNode }) {
 
     if (!partnerDocRef.current) return;
 
+    // ----- The Fix is Here: This block now runs only after user and session are confirmed -----
     updateDoc(partnerDocRef.current, { isOnline: true, lastSeen: serverTimestamp() })
      .catch(error => {
         const permissionError = new FirestorePermissionError({
@@ -139,7 +147,6 @@ function DriverLayoutContent({ children }: { children: React.ReactNode }) {
         });
         errorEmitter.emit('permission-error', permissionError);
     });
-    
 
     const unsubscribe = onSnapshot(partnerDocRef.current, (docSnap) => {
       if(docSnap.exists()){
@@ -215,8 +222,7 @@ function DriverLayoutContent({ children }: { children: React.ReactNode }) {
         if (watchId) navigator.geolocation.clearWatch(watchId);
         window.removeEventListener('beforeunload', handleBeforeUnload);
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [router, pathname, db]);
+  }, [router, pathname, db, user, isAuthLoading, theme, setTheme]);
   
 
   const handleLogout = async () => {
