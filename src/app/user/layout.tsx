@@ -28,7 +28,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { useFirebase } from '@/firebase/client-provider';
 import { doc, updateDoc } from 'firebase/firestore';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { searchPlace } from '@/lib/routing'
 import { MotionDiv, AnimatePresence } from '@/components/ui/motion-div';
