@@ -1,3 +1,4 @@
+
 'use client'
 
 import React, { useState, useEffect, useRef } from 'react'
@@ -28,7 +29,7 @@ export default function CureDashboardPage() {
             return;
         }
 
-        const session = localStorage.getItem('cabzi-cure-session');
+        const session = localStorage.getItem('curocity-cure-session');
         if (session) {
             const { partnerId } = JSON.parse(session);
             setHospitalId(partnerId);
@@ -39,7 +40,8 @@ export default function CureDashboardPage() {
                 const unsubType = onSnapshot(hospitalRef, (docSnap) => {
                     if (docSnap.exists()) {
                         const data = docSnap.data();
-                        const type = data.clinicType?.toLowerCase() || 'hospital';
+                        // CORRECTED: Read from `clinicType` which is saved during onboarding
+                        const type = data.clinicType?.toLowerCase() || 'hospital'; 
                         
                         if (type.includes('clinic')) {
                             setFacilityType('clinic');
