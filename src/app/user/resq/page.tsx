@@ -202,7 +202,7 @@ export default function ResQPage() {
      <Card className="max-w-xl mx-auto mt-8 bg-white/80 dark:bg-background/80 backdrop-blur-md shadow-xl rounded-3xl">
         <CardHeader className="p-8">
             <div className="flex justify-between items-center">
-                <div className="p-3 rounded-full bg-amber-500/10 border-4 border-amber-500/20">
+                <div className="mx-auto w-16 h-16 rounded-full bg-amber-500/10 flex items-center justify-center mb-2 border-4 border-amber-500/20">
                     <Wrench className="w-8 h-8 text-amber-500"/>
                 </div>
                 <div className="text-right">
@@ -222,10 +222,6 @@ export default function ResQPage() {
             </div>
         </CardHeader>
         <CardContent className="space-y-4 px-8">
-            <div className="p-3 border rounded-lg bg-muted flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">{locationAddress}</span>
-                <Button variant="ghost" size="icon" onClick={fetchLocation}><LocateFixed className="w-4 h-4"/></Button>
-            </div>
             <div className="grid grid-cols-3 gap-2">
                 {commonIssues.map((item) => (
                     <motion.div
