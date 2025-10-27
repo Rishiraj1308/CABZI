@@ -9,6 +9,7 @@ import { FirebaseProviderClient, useFirebase } from '@/firebase/client-provider'
 
 function UnauthenticatedLayoutContent({ children }: { children: React.ReactNode }) {
   const router = useRouter();
+  const pathname = usePathname(); // Call usePathname unconditionally at the top
   const { user, isUserLoading } = useFirebase();
   const [showChildren, setShowChildren] = useState(false);
 
@@ -61,7 +62,7 @@ function UnauthenticatedLayoutContent({ children }: { children: React.ReactNode 
   return (
     <AnimatePresence mode="wait">
         <motion.div
-            key={usePathname()}
+            key={pathname}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
