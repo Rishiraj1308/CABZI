@@ -1,7 +1,7 @@
 
 'use client'
 
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
@@ -16,7 +16,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { useToast } from '@/hooks/use-toast'
-import { doc, updateDoc, GeoPoint, serverTimestamp, onSnapshot, collection, query, where, arrayUnion } from 'firebase/firestore'
+import { doc, updateDoc, GeoPoint, serverTimestamp, onSnapshot, collection, query, where, arrayUnion, getDoc } from 'firebase/firestore'
 import { useFirebase, useMessaging } from '@/firebase/client-provider'
 import dynamic from 'next/dynamic'
 import type { PartnerData, RideData, JobRequest } from '@/lib/types'
@@ -24,6 +24,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { onMessage } from 'firebase/messaging'
 import RideStatus from '@/components/ride-status'
 import SearchingIndicator from '@/components/ui/searching-indicator'
+import { Skeleton } from '@/components/ui/skeleton'
 
 const LiveMap = dynamic(() => import('@/components/live-map'), { 
     ssr: false,
@@ -40,21 +41,48 @@ const StatCard = ({ title, value, icon: Icon }: { title: string, value: string, 
     </Card>
 );
 
-export default function DriverDashboardPage({ partnerData, setPartnerData }: { partnerData: PartnerData | null, setPartnerData: (data: PartnerData) => void }) {
-    const [isOnline, setIsOnline] = useState(partnerData?.isOnline || false);
+export default function DriverDashboardPage() {
+    const [partnerData, setPartnerData] = useState<PartnerData | null>(null);
     const [jobRequest, setJobRequest] = useState<JobRequest | null>(null);
     const [activeRide, setActiveRide] = useState<RideData | null>(null);
     const [requestTimeout, setRequestTimeout] = useState(15);
     const requestTimerRef = useRef<NodeJS.Timeout | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
 
-    const { db } = useFirebase();
+    const { db, user } = useFirebase();
     const { toast } = useToast();
     const messaging = useMessaging();
     const liveMapRef = useRef<any>(null);
 
+    useEffect(() => {
+      if (!user) {
+        setIsLoading(false);
+        return;
+      }
+      
+      const session = localStorage.getItem('curocity-session');
+        if (session && db) {
+            const { partnerId } = JSON.parse(session);
+            const partnerRef = doc(db, 'partners', partnerId);
+
+            const unsubscribe = onSnapshot(partnerRef, (docSnap) => {
+                if (docSnap.exists()) {
+                    setPartnerData({ id: docSnap.id, ...docSnap.data() } as PartnerData);
+                } else {
+                    console.error("Partner document not found.");
+                }
+                setIsLoading(false);
+            });
+            return () => unsubscribe();
+        } else {
+             setIsLoading(false);
+        }
+
+    }, [user, db]);
+
     // This effect handles real-time job requests via FCM
     useEffect(() => {
-        if (!messaging || !isOnline || !partnerData?.id || activeRide || jobRequest) return;
+        if (!messaging || !partnerData?.isOnline || activeRide || jobRequest) return;
 
         const unsubscribe = onMessage(messaging, (payload) => {
             const { type, rideId } = payload.data || {};
@@ -68,7 +96,7 @@ export default function DriverDashboardPage({ partnerData, setPartnerData }: { p
             }
         });
         return () => unsubscribe();
-    }, [messaging, isOnline, partnerData, activeRide, jobRequest, db]);
+    }, [messaging, partnerData, activeRide, jobRequest, db]);
     
     // This effect tracks the status of an accepted ride
     useEffect(() => {
@@ -104,7 +132,6 @@ export default function DriverDashboardPage({ partnerData, setPartnerData }: { p
 
     const handleOnlineStatusChange = async (checked: boolean) => {
         if (!partnerData || !db) return;
-        setIsOnline(checked);
         const partnerRef = doc(db, 'partners', partnerData.id);
         try {
             await updateDoc(partnerRef, { 
@@ -116,7 +143,6 @@ export default function DriverDashboardPage({ partnerData, setPartnerData }: { p
             toast({ title: checked ? "You are now Online" : "You've gone Offline" });
         } catch (error) {
             toast({ variant: 'destructive', title: 'Error', description: 'Could not update your status.' });
-            setIsOnline(!checked);
         }
     }
     
@@ -152,6 +178,20 @@ export default function DriverDashboardPage({ partnerData, setPartnerData }: { p
         setActiveRide(null);
         localStorage.removeItem('activeRideId');
     }
+    
+    if(isLoading) {
+        return (
+             <div className="w-full h-full relative">
+                <Skeleton className="w-full h-full" />
+                 <div className="absolute top-4 right-4 z-10">
+                    <Skeleton className="h-10 w-32" />
+                 </div>
+                 <div className="absolute bottom-0 left-0 right-0 z-10">
+                    <Skeleton className="h-48 w-full max-w-2xl mx-auto rounded-t-2xl"/>
+                 </div>
+             </div>
+        )
+    }
 
     return (
         <div className="w-full h-full relative">
@@ -168,8 +208,8 @@ export default function DriverDashboardPage({ partnerData, setPartnerData }: { p
             <div className="absolute top-4 right-4 z-10">
                 <Card className="p-2 bg-background/80 backdrop-blur-sm flex items-center gap-2 shadow-lg">
                     <div className="flex items-center space-x-2">
-                        <Switch id="online-status" checked={isOnline} onCheckedChange={handleOnlineStatusChange} className="data-[state=checked]:bg-green-500" />
-                        <Label htmlFor="online-status" className="font-bold text-lg">{isOnline ? 'ONLINE' : 'OFFLINE'}</Label>
+                        <Switch id="online-status" checked={partnerData?.isOnline || false} onCheckedChange={handleOnlineStatusChange} className="data-[state=checked]:bg-green-500" />
+                        <Label htmlFor="online-status" className="font-bold text-lg">{partnerData?.isOnline ? 'ONLINE' : 'OFFLINE'}</Label>
                     </div>
                     <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => liveMapRef.current?.locate()}>
                         <LocateFixed className="w-5 h-5"/>
@@ -188,9 +228,9 @@ export default function DriverDashboardPage({ partnerData, setPartnerData }: { p
                         className="absolute bottom-0 left-0 right-0 z-10"
                     >
                         <Card className="w-full max-w-2xl mx-auto rounded-t-2xl rounded-b-none shadow-2xl p-4">
-                            {isOnline ? (
+                            {partnerData?.isOnline ? (
                                 <div className="text-center py-8">
-                                    <SearchingIndicator partnerType="path" />
+                                    <SearchingIndicator partnerType="path" className="w-32 h-32" />
                                     <h3 className="text-2xl font-bold mt-4">You are Online</h3>
                                     <p className="text-muted-foreground">Waiting for nearby ride requests...</p>
                                 </div>
@@ -199,7 +239,7 @@ export default function DriverDashboardPage({ partnerData, setPartnerData }: { p
                                  <CardHeader>
                                     <CardTitle>Welcome Back, {partnerData?.name || 'Partner'}!</CardTitle>
                                     <CardDescription>You are currently offline. Go online to start receiving rides.</CardDescription>
-                                </CardHeader>
+                                 </CardHeader>
                                 <CardContent className="grid grid-cols-3 gap-2">
                                     <StatCard title="Today's Rides" value={partnerData?.jobsToday?.toString() || '0'} icon={History} />
                                     <StatCard title="Today's Earnings" value={`₹${partnerData?.todaysEarnings?.toLocaleString() || '0'}`} icon={IndianRupee} />
@@ -251,3 +291,5 @@ export default function DriverDashboardPage({ partnerData, setPartnerData }: { p
         </div>
     );
 }
+
+    
