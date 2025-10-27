@@ -1,5 +1,4 @@
 
-
 'use client'
 
 import React, { useState, useEffect, useRef, useCallback } from 'react'
@@ -138,11 +137,8 @@ function DriverLayoutContent({ children }: { children: React.ReactNode }) {
       return;
     }
   
-    // Firebase user exists, now we can safely look for session data
     const session = localStorage.getItem('curocity-session');
     if (!session && !isOnboardingPage) {
-        // If there's a Firebase user but no session, it's an inconsistent state.
-        // It's safer to log out and start fresh.
         handleLogout();
         return;
     }
