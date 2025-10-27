@@ -9,6 +9,23 @@ export interface ClientSession {
     [key: string]: any; 
 }
 
+export interface PartnerData {
+    id: string;
+    name: string;
+    phone: string;
+    isOnline?: boolean;
+    isCabziPinkPartner?: boolean;
+    vehicleBrand?: string;
+    vehicleName?: string;
+    rating?: number;
+    photoUrl?: string;
+    currentLocation?: GeoPoint;
+    todaysEarnings?: number;
+    jobsToday?: number;
+    acceptanceRate?: number;
+    [key: string]: any;
+}
+
 
 export interface RideData {
     id: string;
@@ -16,9 +33,10 @@ export interface RideData {
     destination: { address: string; location: { latitude: number; longitude: number; } };
     status: "searching" | "accepted" | "in-progress" | "completed" | "cancelled_by_driver" | "cancelled_by_rider" | "payment_pending";
     otp?: string;
-    driverDetails?: { name: string; vehicle: string; rating: number; photoUrl: string; phone: string; };
+    driverDetails?: { name: string; vehicle: string; rating: number; photoUrl: string; phone: string; location?: GeoPoint };
     driverEta?: number | null;
     fare?: number;
+    routeGeometry?: any;
 }
 
 export interface AmbulanceCase {
@@ -39,9 +57,16 @@ export interface AmbulanceCase {
 
 export interface GarageRequest {
     id: string;
-    status: 'pending' | 'accepted' | 'in_progress' | 'completed' | 'cancelled_by_driver' | 'cancelled_by_mechanic';
+    status: 'pending' | 'accepted' | 'in_progress' | 'completed' | 'cancelled_by_driver' | 'cancelled_by_mechanic' | 'bill_sent' | 'payment_pending';
     mechanicName?: string;
     mechanicPhone?: string;
     eta?: number;
     partnerLocation?: GeoPoint | null;
+    billItems?: { description: string; amount: number }[];
+    totalAmount?: number;
+}
+
+
+export interface JobRequest extends RideData {
+    // This can be extended if job requests have more specific fields than rides
 }
