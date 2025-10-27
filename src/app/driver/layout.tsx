@@ -123,7 +123,9 @@ function DriverLayoutContent({ children }: { children: React.ReactNode }) {
   }, [auth, db, partnerData, router, toast, theme, setTheme]);
 
   useEffect(() => {
-    if (isAuthLoading) return;
+    if (isAuthLoading) {
+        return; // Wait for Firebase Auth to initialize
+    }
 
     const isOnboardingPage = pathname.includes('/driver/onboarding');
 
@@ -131,30 +133,32 @@ function DriverLayoutContent({ children }: { children: React.ReactNode }) {
         if (!isOnboardingPage) {
             router.push('/login?role=driver');
         }
-        setIsSessionLoading(false);
+        setIsSessionLoading(false); // Definitively stop loading
         return;
     }
 
     const session = localStorage.getItem('curocity-session');
     if (!session || !db) {
-        setIsSessionLoading(false);
         if (!isOnboardingPage) {
             router.push('/login?role=driver');
         }
+        setIsSessionLoading(false); // Definitively stop loading
         return;
     }
+
+    let unsubPartner: () => void = () => {};
 
     try {
         const sessionData = JSON.parse(session);
         if (!sessionData.role || sessionData.role !== 'driver' || !sessionData.partnerId) {
             router.push('/login?role=driver');
-            setIsSessionLoading(false);
+            setIsSessionLoading(false); // Definitively stop loading
             return;
         }
 
         const partnerDocRef = doc(db, 'partners', sessionData.partnerId);
 
-        const unsubPartner = onSnapshot(partnerDocRef, (docSnap) => {
+        unsubPartner = onSnapshot(partnerDocRef, (docSnap) => {
             if (docSnap.exists()) {
                 const data = docSnap.data();
                 const fetchedPartnerData = { id: docSnap.id, ...data } as PartnerData;
@@ -165,21 +169,24 @@ function DriverLayoutContent({ children }: { children: React.ReactNode }) {
 
                 setPartnerData(fetchedPartnerData);
             }
-            setIsSessionLoading(false);
+             // Ensure loading is stopped even if doc doesn't exist initially
+            setIsSessionLoading(false); 
         }, (error) => {
             console.error("Error with partner data snapshot:", error);
             toast({ variant: "destructive", title: "Error", description: "Could not load partner profile." });
-            setIsSessionLoading(false);
+            setIsSessionLoading(false); // Stop loading on error
         });
-
-        return () => unsubPartner();
 
     } catch (e) {
         localStorage.removeItem('curocity-session');
         router.push('/login?role=driver');
-        setIsSessionLoading(false);
+        setIsSessionLoading(false); // Stop loading on session parse error
     }
-  }, [isAuthLoading, user, db, router, pathname, toast, theme, setTheme]);
+
+    return () => unsubPartner(); // Cleanup snapshot listener
+
+}, [isAuthLoading, user, db, router, pathname, toast, theme, setTheme]);
+
 
   // Heartbeat effect
    useEffect(() => {
