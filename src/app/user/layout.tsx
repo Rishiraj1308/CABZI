@@ -32,6 +32,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Input } from '@/components/ui/input'
 import { searchPlace } from '@/lib/routing'
 import { MotionDiv, AnimatePresence } from '@/components/ui/motion-div';
+import { Skeleton } from '@/components/ui/skeleton';
 
 
 const navItems = [
@@ -175,8 +176,7 @@ export default function UserLayout({
         router.push('/login?role=user');
       }
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, isUserLoading]);
+  }, [user, isUserLoading, router]);
 
   const handleLogout = () => {
     if (!auth) return;
@@ -219,7 +219,20 @@ export default function UserLayout({
 
 
   if (!isMounted || isUserLoading) {
-    return null; // Or a loading spinner
+    return (
+      <div className="flex h-screen w-full flex-col">
+        <header className="flex h-16 items-center gap-4 border-b bg-background px-4 md:px-6">
+          <Skeleton className="h-10 w-28" />
+          <div className="ml-auto flex items-center gap-4">
+            <Skeleton className="h-10 w-10 rounded-full" />
+            <Skeleton className="h-10 w-10 rounded-full" />
+          </div>
+        </header>
+        <main className="flex-1 p-6">
+          <Skeleton className="h-full w-full" />
+        </main>
+      </div>
+    );
   }
   
   return (

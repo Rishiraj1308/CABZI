@@ -131,12 +131,11 @@ function DriverLayoutContent({ children }: { children: React.ReactNode }) {
     router.push('/');
   }, [auth, theme, setTheme, router, toast]);
 
-  // Effect to authenticate and set up partner document reference
+  // Combined effect to authenticate and manage online presence
   useEffect(() => {
     if (isAuthLoading) return;
 
-    const session = localStorage.getItem('curocity-session');
-    if (!user || !session || !db) {
+    if (!user) {
         if (!pathname.includes('/driver/onboarding')) {
             router.push('/login?role=driver');
         }
@@ -144,11 +143,19 @@ function DriverLayoutContent({ children }: { children: React.ReactNode }) {
         return;
     }
 
+    const session = localStorage.getItem('curocity-session');
+    if (!session || !db) {
+        router.push('/login?role=driver');
+        setIsSessionLoading(false);
+        return;
+    }
+    
     let sessionData;
     try {
         sessionData = JSON.parse(session);
         if(!sessionData.role || sessionData.role !== 'driver' || !sessionData.partnerId) {
             router.push('/login?role=driver');
+            setIsSessionLoading(false);
             return;
         }
         setUserName(sessionData.name);
@@ -156,59 +163,48 @@ function DriverLayoutContent({ children }: { children: React.ReactNode }) {
     } catch (e) {
         localStorage.removeItem('curocity-session');
         router.push('/login?role=driver');
+        setIsSessionLoading(false);
+        return;
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAuthLoading, user, db, pathname]);
-
-  // Effect to fetch partner data and manage online presence (heartbeat)
-  useEffect(() => {
-    if (!partnerDocRef.current) return;
-
-    let heartbeatInterval: NodeJS.Timeout;
     
-    // Set up the main data listener for the partner document
-    const unsubPartner = onSnapshot(partnerDocRef.current, (docSnap) => {
-      if (docSnap.exists()) {
-        if (!partnerData) { // Only do this on the first successful fetch
-            const data = docSnap.data();
-            const partnerIsPink = data.isCabziPinkPartner || false;
-            setIsPinkPartner(partnerIsPink);
-            if (partnerIsPink && theme !== 'pink') setTheme('pink');
-            else if (!partnerIsPink && theme === 'pink') setTheme('system');
-            
-            setPartnerData({ id: docSnap.id, ...data } as PartnerData);
-            setIsSessionLoading(false);
+    let heartbeatInterval: NodeJS.Timeout;
 
-            // Start the heartbeat after the first successful read
-            const sendHeartbeat = () => {
-                if (partnerDocRef.current) {
-                    updateDoc(partnerDocRef.current, { lastSeen: serverTimestamp(), isOnline: true }).catch(error => {
-                        errorEmitter.emit(
-                            'permission-error',
-                            new FirestorePermissionError({
+    const unsubPartner = onSnapshot(partnerDocRef.current, (docSnap) => {
+        if (docSnap.exists()) {
+            if (!partnerData) { // Only on the first successful fetch
+                const data = docSnap.data();
+                const partnerIsPink = data.isCabziPinkPartner || false;
+                setIsPinkPartner(partnerIsPink);
+                if (partnerIsPink && theme !== 'pink') setTheme('pink');
+                else if (!partnerIsPink && theme === 'pink') setTheme('system');
+                
+                setPartnerData({ id: docSnap.id, ...data } as PartnerData);
+                setIsSessionLoading(false);
+
+                // Start heartbeat AFTER first successful read.
+                heartbeatInterval = setInterval(() => {
+                    if (partnerDocRef.current) {
+                        updateDoc(partnerDocRef.current, { lastSeen: serverTimestamp(), isOnline: true }).catch(error => {
+                            errorEmitter.emit('permission-error', new FirestorePermissionError({
                                 path: partnerDocRef.current!.path,
                                 operation: 'update',
                                 requestResourceData: { isOnline: true }
-                            })
-                        );
-                    });
-                }
-            };
-            sendHeartbeat(); // Send first heartbeat immediately after data is confirmed
-            heartbeatInterval = setInterval(sendHeartbeat, 30000); // Then every 30 seconds
+                            }));
+                        });
+                    }
+                }, 30000); // Heartbeat every 30 seconds
+            }
+        } else {
+            handleLogout();
         }
-      } else {
-        // Document deleted, log the user out
-        handleLogout();
-      }
     }, (error) => {
       console.error("Error with partner data snapshot:", error);
       setIsSessionLoading(false);
     });
 
     const handleBeforeUnload = () => {
-        if(partnerDocRef.current) {
-          updateDoc(partnerDocRef.current, { isOnline: false, lastSeen: serverTimestamp(), currentLocation: null });
+        if (partnerDocRef.current) {
+            updateDoc(partnerDocRef.current, { isOnline: false, lastSeen: serverTimestamp(), currentLocation: null });
         }
     };
     window.addEventListener('beforeunload', handleBeforeUnload);
@@ -219,7 +215,7 @@ function DriverLayoutContent({ children }: { children: React.ReactNode }) {
         window.removeEventListener('beforeunload', handleBeforeUnload);
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [partnerDocRef.current]); 
+  }, [isAuthLoading, user, db]);
   
   if (pathname === '/driver/onboarding') {
     return (

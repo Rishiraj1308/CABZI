@@ -8,7 +8,9 @@ export default function UnauthenticatedRoot() {
     const router = useRouter()
 
     useEffect(() => {
-        router.replace('/home')
+        // This page should ideally not be reached. 
+        // The layout handles redirection, but as a fallback, we go to the main login page.
+        router.replace('/login?role=user')
     }, [router])
 
     return null

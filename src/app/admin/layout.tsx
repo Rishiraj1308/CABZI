@@ -59,8 +59,10 @@ export default function AdminLayout({
   const [adminName, setAdminName] = useState('Admin');
   const [adminRole, setAdminRole] = useState('');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
   
   useEffect(() => {
+    setIsMounted(true);
     if (typeof window !== 'undefined') {
         const session = localStorage.getItem('curocity-session');
         if (session) {
@@ -98,6 +100,8 @@ export default function AdminLayout({
     });
     router.push('/');
   }
+
+  if (!isMounted) return null;
 
   return (
     <div className="flex min-h-screen w-full flex-col">
