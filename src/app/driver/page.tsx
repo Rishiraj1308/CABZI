@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
-import { Star, History, IndianRupee, Power, LocateFixed, AlertTriangle, X } from 'lucide-react'
+import { Star, History, IndianRupee, Power, LocateFixed, AlertTriangle, X, Sparkles } from 'lucide-react'
 import {
   AlertDialog,
   AlertDialogContent,
@@ -26,20 +26,24 @@ import RideStatus from '@/components/ride-status'
 import SearchingIndicator from '@/components/ui/searching-indicator'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useDriver } from './layout' // Import the new context hook
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Sparkles } from 'lucide-react'
 
 const LiveMap = dynamic(() => import('@/components/live-map'), { 
     ssr: false,
     loading: () => <div className="w-full h-full bg-muted flex items-center justify-center"><p>Loading Map...</p></div>
 });
 
-const StatCard = ({ title, value, icon: Icon }: { title: string, value: string, icon: React.ElementType }) => (
-    <Card className="bg-transparent border-0 shadow-none">
-        <CardContent className="p-2 text-center">
-            <Icon className="w-6 h-6 mx-auto mb-1 text-muted-foreground"/>
-            <p className="font-bold text-lg">{value}</p>
-            <p className="text-xs text-muted-foreground">{title}</p>
+const StatCard = ({ title, value, icon: Icon, isLoading }: { title: string, value: string, icon: React.ElementType, isLoading?: boolean }) => (
+    <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">{title}</CardTitle>
+            <Icon className="h-4 w-4 text-muted-foreground" />
+        </CardHeader>
+        <CardContent>
+             {isLoading ? (
+                <Skeleton className="h-8 w-20" />
+            ) : (
+                <div className="text-2xl font-bold">{value}</div>
+            )}
         </CardContent>
     </Card>
 );
@@ -50,7 +54,7 @@ export default function DriverDashboardPage() {
     const [requestTimeout, setRequestTimeout] = useState(15);
     const requestTimerRef = useRef<NodeJS.Timeout | null>(null);
     
-    const { partnerData, isLoading } = useDriver(); // Use the context hook to get data
+    const { partnerData, isLoading: isDriverLoading } = useDriver(); 
 
     const { db } = useFirebase();
     const { toast } = useToast();
@@ -59,21 +63,6 @@ export default function DriverDashboardPage() {
 
     const isOnline = partnerData?.isOnline || false;
 
-    const getDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
-        const R = 6371e3; // metres
-        const φ1 = lat1 * Math.PI/180;
-        const φ2 = lat2 * Math.PI/180;
-        const Δφ = (lat2-lat1) * Math.PI/180;
-        const Δλ = (lon2-lon1) * Math.PI/180;
-
-        const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
-                  Math.cos(φ1) * Math.cos(φ2) *
-                  Math.sin(Δλ/2) * Math.sin(Δλ/2);
-        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-
-        return R * c; // in metres
-    }
-    
     const handleOnlineStatusChange = async (checked: boolean) => {
         if (!partnerData || !db) return;
         
@@ -128,96 +117,55 @@ export default function DriverDashboardPage() {
         setActiveRide(null);
         localStorage.removeItem('activeRideId');
     }
-    
-    if(isLoading) {
+
+    if (activeRide) {
         return (
-             <div className="w-full h-full relative">
-                <Skeleton className="w-full h-full" />
-                 <div className="absolute top-4 right-4 z-10">
-                    <Skeleton className="h-10 w-32" />
-                 </div>
-                 <div className="absolute bottom-0 left-0 right-0 z-10 p-4">
-                    <Skeleton className="h-48 w-full max-w-2xl mx-auto rounded-2xl"/>
-                 </div>
-             </div>
+             <div className="flex justify-center items-center h-full">
+                <RideStatus ride={activeRide} onCancel={resetAfterRide} onDone={resetAfterRide} />
+            </div>
         )
     }
 
     return (
-        <div className="w-full h-full relative flex flex-col">
-            <div className="flex-1 relative">
-                <div className="absolute inset-0 z-0">
-                    <LiveMap
-                        ref={liveMapRef}
-                        onLocationFound={(address, coords) => {
-                            if (partnerData && db && partnerData.isOnline) {
-                                const partnerRef = doc(db, 'partners', partnerData.id);
-                                updateDoc(partnerRef, { currentLocation: new GeoPoint(coords.lat, coords.lon) });
-                            }
-                        }}
-                        driverLocation={partnerData?.currentLocation as any}
-                    />
-                </div>
-                
-                <div className="absolute top-4 right-4 z-10">
-                    <Card className="p-2 bg-background/80 backdrop-blur-sm flex items-center gap-2 shadow-lg">
+        <div className="space-y-6">
+            <Card className="shadow-lg">
+                <CardHeader>
+                    <div className="flex justify-between items-center">
+                        <div>
+                            <CardTitle>Your Dashboard</CardTitle>
+                            <CardDescription>You are currently <span className={isOnline ? "font-bold text-green-600" : "font-bold text-destructive"}>{isOnline ? "Online" : "Offline"}</span>.</CardDescription>
+                        </div>
                         <div className="flex items-center space-x-2">
                             <Switch id="online-status" checked={isOnline} onCheckedChange={handleOnlineStatusChange} className="data-[state=checked]:bg-green-500" />
                             <Label htmlFor="online-status" className="font-bold text-lg">{isOnline ? 'ONLINE' : 'OFFLINE'}</Label>
                         </div>
-                        <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => liveMapRef.current?.locate()}>
-                            <LocateFixed className="w-5 h-5"/>
-                        </Button>
-                </Card>
-                </div>
-            </div>
-            
-            <div className="z-10 p-4">
-                 <AnimatePresence mode="wait">
-                    {activeRide ? (
-                        <motion.div
-                            key="ride-status-card"
-                            initial={{ y: "100%" }}
-                            animate={{ y: 0 }}
-                            exit={{ y: "100%" }}
-                            transition={{ type: 'spring', stiffness: 200, damping: 25 }}
-                        >
-                            <RideStatus ride={activeRide} onCancel={resetAfterRide} onDone={resetAfterRide} />
-                        </motion.div>
-                    ) : (
-                        <motion.div
-                            key="dashboard-card"
-                            initial={{ y: "100%" }}
-                            animate={{ y: 0 }}
-                            exit={{ y: "100%" }}
-                            transition={{ type: 'spring', stiffness: 200, damping: 25 }}
-                        >
-                            <Card className="w-full max-w-2xl mx-auto rounded-2xl shadow-2xl p-4">
-                                {isOnline ? (
-                                    <div className="text-center py-8">
-                                        <SearchingIndicator partnerType="path" className="w-32 h-32" />
-                                        <h3 className="text-2xl font-bold mt-4">You are Online</h3>
-                                        <p className="text-muted-foreground">Waiting for nearby ride requests...</p>
-                                    </div>
-                                ) : (
-                                    <>
-                                    <CardHeader>
-                                        <CardTitle>Welcome Back, {partnerData?.name || 'Partner'}!</CardTitle>
-                                        <CardDescription>You are currently offline. Go online to start receiving rides.</CardDescription>
-                                    </CardHeader>
-                                    <CardContent className="grid grid-cols-3 gap-2">
-                                        <StatCard title="Today's Rides" value={partnerData?.jobsToday?.toString() || '0'} icon={History} />
-                                        <StatCard title="Today's Earnings" value={`₹${partnerData?.todaysEarnings?.toLocaleString() || '0'}`} icon={IndianRupee} />
-                                        <StatCard title="Rating" value={partnerData?.rating?.toString() || 'N/A'} icon={Star} />
-                                    </CardContent>
-                                    </>
-                                )}
-                            </Card>
-                        </motion.div>
-                    )}
-                </AnimatePresence>
+                    </div>
+                </CardHeader>
+                {isOnline && (
+                     <CardContent className="text-center py-12">
+                        <SearchingIndicator partnerType="path" className="w-24 h-24" />
+                        <h3 className="text-xl font-bold mt-4">Waiting for Rides...</h3>
+                        <p className="text-muted-foreground text-sm">Your location is being shared to get nearby requests.</p>
+                     </CardContent>
+                )}
+            </Card>
+
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                <StatCard title="Today's Earnings" value={`₹${(partnerData?.todaysEarnings || 0).toLocaleString()}`} icon={IndianRupee} isLoading={isDriverLoading} />
+                <StatCard title="Today's Rides" value={partnerData?.jobsToday?.toString() || '0'} icon={History} isLoading={isDriverLoading} />
+                <StatCard title="Acceptance Rate" value={`${partnerData?.acceptanceRate || '95'}%`} icon={Power} isLoading={isDriverLoading} />
+                <StatCard title="Rating" value={partnerData?.rating?.toString() || '4.9'} icon={Star} isLoading={isDriverLoading} />
             </div>
 
+            <Card className="bg-gradient-to-r from-primary to-primary/90 text-primary-foreground border-none">
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2"><Sparkles className="text-yellow-300"/> AI Earnings Coach</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <p>Focus on the Cyber Hub area between 5 PM - 8 PM. High demand is expected, and you could earn up to 30% more.</p>
+                </CardContent>
+            </Card>
+            
             <AlertDialog open={!!jobRequest}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
