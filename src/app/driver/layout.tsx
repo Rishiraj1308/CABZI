@@ -117,19 +117,24 @@ function LocationDisplay() {
             async (position) => {
                 const { latitude, longitude } = position.coords;
                 try {
-                    const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`);
+                    // Added zoom=14 to get more specific locality info
+                    const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=14`);
                     if (!response.ok) {
                         setLocation('Location not found');
                         return;
                     }
                     const data = await response.json();
                     const address = data.address;
-                    const city = address.city || address.town || address.village;
-                    const state = address.state;
-                    if (city && state) {
-                        setLocation(`${city}, ${state}`);
+                    // Prioritize suburb/neighbourhood for better local accuracy
+                    const primaryLocation = address.suburb || address.neighbourhood || address.city || address.town || address.village;
+                    const secondaryLocation = address.city || address.state;
+
+                    if (primaryLocation && secondaryLocation && primaryLocation !== secondaryLocation) {
+                        setLocation(`${primaryLocation}, ${secondaryLocation}`);
+                    } else if (primaryLocation) {
+                        setLocation(primaryLocation);
                     } else {
-                        setLocation(data.display_name.split(',').slice(0, 3).join(', '));
+                        setLocation(data.display_name.split(',').slice(0, 2).join(', '));
                     }
                 } catch (error) {
                     setLocation('Location not found');

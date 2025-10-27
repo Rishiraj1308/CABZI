@@ -63,96 +63,49 @@ function ThemeToggle() {
 
 function LocationDisplay() {
   const [location, setLocation] = useState('Locating...');
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState<any[]>([]);
 
-  const getAddressFromCoords = useCallback(async (lat: number, lon: number) => {
-    try {
-      const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=14`);
-      if (!response.ok) return 'Location not found';
-      const data = await response.json();
-      const address = data.address;
-      const locationParts = [
-          address.suburb,
-          address.neighbourhood,
-          address.city,
-          address.town,
-          address.village,
-      ].filter(Boolean); 
-      return locationParts.slice(0, 2).join(', ') || 'Unknown Location';
-    } catch (error) {
-      return 'Could not fetch location';
+  useEffect(() => {
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+            async (position) => {
+                const { latitude, longitude } = position.coords;
+                try {
+                    const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=14`);
+                    if (!response.ok) {
+                        setLocation('Location not found');
+                        return;
+                    }
+                    const data = await response.json();
+                    const address = data.address;
+                    const primaryLocation = address.suburb || address.neighbourhood || address.city || address.town || address.village;
+                    const secondaryLocation = address.city || address.state;
+
+                    if (primaryLocation && secondaryLocation && primaryLocation !== secondaryLocation) {
+                        setLocation(`${primaryLocation}, ${secondaryLocation}`);
+                    } else if (primaryLocation) {
+                        setLocation(primaryLocation);
+                    } else {
+                        setLocation(data.display_name.split(',').slice(0, 2).join(', '));
+                    }
+                } catch (error) {
+                    setLocation('Location not found');
+                }
+            }, 
+            () => {
+                setLocation('Location Unavailable');
+            },
+            { timeout: 10000 }
+        );
+    } else {
+        setLocation('Geolocation not supported');
     }
   }, []);
   
-  useEffect(() => {
-    navigator.geolocation.getCurrentPosition(async (position) => {
-      const { latitude, longitude } = position.coords;
-      const address = await getAddressFromCoords(latitude, longitude);
-      setLocation(address);
-    }, () => {
-      setLocation('Location access denied');
-    });
-  }, [getAddressFromCoords]);
-  
-  useEffect(() => {
-    if (searchQuery.length < 3) {
-      setSearchResults([]);
-      return;
-    }
-    const handler = setTimeout(async () => {
-      const results = await searchPlace(searchQuery);
-      setSearchResults(results || []);
-    }, 500); // Debounce search
-    return () => clearTimeout(handler);
-  }, [searchQuery]);
-
-  const handleSelectLocation = (place: any) => {
-    const locationParts = [
-        place.address.suburb,
-        place.address.neighbourhood,
-        place.address.city,
-        place.address.town,
-        place.address.village,
-    ].filter(Boolean);
-    setLocation(locationParts.slice(0, 2).join(', ') || 'Unknown Location');
-    setIsDialogOpen(false);
-    setSearchQuery('');
-    setSearchResults([]);
-  };
-
   return (
-    <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-      <DialogTrigger asChild>
-        <button className="flex items-center gap-1.5 overflow-hidden text-left">
-          <MapPin className="w-4 h-4 text-muted-foreground flex-shrink-0"/>
-          <span className="text-sm font-medium text-muted-foreground truncate hover:text-primary transition-colors">{location}</span>
-        </button>
-      </DialogTrigger>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Set Your Location</DialogTitle>
-        </DialogHeader>
-        <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground"/>
-            <Input 
-                placeholder="Search for area, street name..."
-                className="pl-10"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-            />
-        </div>
-        <div className="space-y-2 max-h-60 overflow-y-auto">
-            {searchResults.map(place => (
-                <div key={place.place_id} onClick={() => handleSelectLocation(place)} className="p-2 rounded-md hover:bg-muted cursor-pointer">
-                    <p className="font-semibold text-sm">{place.display_name.split(',')[0]}</p>
-                    <p className="text-xs text-muted-foreground">{place.display_name.split(',').slice(1).join(',')}</p>
-                </div>
-            ))}
-        </div>
-      </DialogContent>
-    </Dialog>
+    <div className="flex items-center gap-2">
+      <MapPin className="w-4 h-4 text-muted-foreground"/>
+      <span className="text-sm font-medium text-muted-foreground truncate">{location}</span>
+    </div>
   )
 }
 
