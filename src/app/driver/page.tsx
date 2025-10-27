@@ -2,7 +2,7 @@
 'use client'
 
 import React, { useState, useEffect, useRef, useCallback } from 'react'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
@@ -111,7 +111,7 @@ export default function DriverDashboardPage() {
     
     // This effect manages the geolocation watcher based on online status.
     useEffect(() => {
-        if (partnerData?.isOnline) {
+        if (partnerData?.isOnline && partnerData.id) {
             if (navigator.geolocation && !locationWatchId.current) {
                 let lastSentLocation: { lat: number, lon: number } | null = null;
                 let lastSentTime = 0;
@@ -153,7 +153,7 @@ export default function DriverDashboardPage() {
         return () => {
             stopLocationWatch();
         };
-    }, [partnerData?.isOnline, partnerData?.id, db, toast]);
+    }, [partnerData, db, toast]);
 
 
     // This effect handles real-time job requests via FCM
