@@ -3,6 +3,7 @@
 
 import React from 'react';
 import { cn } from '@/lib/utils';
+import { Car, Wrench, Ambulance } from 'lucide-react';
 
 interface SearchingIndicatorProps {
   partnerType: 'path' | 'resq' | 'cure';
@@ -16,15 +17,22 @@ const colorClasses = {
     cure: 'text-red-600', // Red
 }
 
+const icons = {
+    path: Car,
+    resq: Wrench,
+    cure: Ambulance,
+}
+
 const SearchingIndicator: React.FC<SearchingIndicatorProps> = ({ partnerType, className, showHeartbeat = true }) => {
   const colorClass = colorClasses[partnerType];
+  const Icon = icons[partnerType];
   
   return (
     <div className={cn("relative w-24 h-24 mx-auto flex items-center justify-center", className)}>
       <div className="relative bg-transparent w-full h-full rounded-full flex items-center justify-center">
         <svg
-          width="80%"
-          height="80%"
+          width="100%"
+          height="100%"
           viewBox="0 0 24 24"
           fill="none"
           xmlns="http://www.w3.org/2000/svg"
@@ -78,6 +86,7 @@ const SearchingIndicator: React.FC<SearchingIndicatorProps> = ({ partnerType, cl
             className={cn(showHeartbeat && "heartbeat-line-animate")}
           />
         </svg>
+         <Icon className={cn("w-1/2 h-1/2 absolute text-foreground/50", colorClass)} style={{ opacity: 0.5 }} />
       </div>
     </div>
   );
