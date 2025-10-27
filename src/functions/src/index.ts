@@ -46,13 +46,17 @@ function getDistance(lat1: number, lon1: number, lat2: number, lon2: number) {
 const handleRideDispatch = async (rideData: any, rideId: string) => {
     let partnersQuery = db.collection('partners')
         .where('isOnline', '==', true)
-        .where('status', '==', 'online') // Ensure partner is not on a trip
-        .where('vehicleType', '==', rideData.rideType);
+        .where('status', '==', 'online'); // Ensure partner is not on a trip
 
-    // If ride type is "Cabzi Pink", filter for women partners who have opted in.
-    if (rideData.rideType === 'Cabzi Pink') {
+    // If ride type is "Curocity Pink", filter for women partners who have opted in.
+    if (rideData.rideType === 'Curocity Pink') {
         partnersQuery = partnersQuery.where('isCabziPinkPartner', '==', true)
                                    .where('gender', '==', 'female');
+    } else {
+        // For regular rides, match vehicle type more flexibly.
+        // E.g., a "Cab" driver can take "Cab (Lite)" or "Cab (Prime)" rides.
+        const rideTypeBase = rideData.rideType.split(' ')[0]; // Gets "Cab" from "Cab (Lite)"
+        partnersQuery = partnersQuery.where('vehicleType', '==', rideTypeBase);
     }
 
     const partnersSnapshot = await partnersQuery.get();
@@ -450,5 +454,7 @@ export const simulateHighDemand = onCall(async (request) => {
 
     return { success: true, message: `High demand alert triggered for ${zoneName}.` };
 });
+
+    
 
     
