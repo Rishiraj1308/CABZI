@@ -1,5 +1,4 @@
 
-
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
@@ -149,22 +148,27 @@ export default function LoginPage() {
 
     const collectionsToSearch = isUserLogin ? userCollections : partnerCollections;
     
-    let searchIdentifier: string | undefined;
-    
-    if (roleFromQuery === 'cure' && !identifier.includes('@')) {
-      searchIdentifier = identifier;
-    } else if (inputType === 'partnerId') {
-        searchIdentifier = identifier;
-    } else if (user.email) {
-        searchIdentifier = user.email;
-    } else if (user.phoneNumber) {
-        searchIdentifier = user.phoneNumber.replace('+91', '');
-    }
-    
-    if (!searchIdentifier) return false;
+    let searchField = '';
+    let searchValue = '';
 
-    for (const { name: colName, role, identifier: idField } of collectionsToSearch) {
-        const q = query(collection(db, colName), where(idField, "==", searchIdentifier), limit(1));
+    if (inputType === 'partnerId') {
+        searchField = 'partnerId';
+        searchValue = identifier;
+    } else if (user.email) {
+        searchField = 'email';
+        searchValue = user.email;
+    } else if (user.phoneNumber) {
+        searchField = 'phone';
+        searchValue = user.phoneNumber.replace('+91', '');
+    } else if (roleFromQuery === 'cure' && inputType === 'phone') {
+        searchField = 'phone';
+        searchValue = identifier;
+    } else {
+        return false;
+    }
+
+    for (const { name: colName, role } of collectionsToSearch) {
+        const q = query(collection(db, colName), where(searchField, "==", searchValue), limit(1));
         
         const snapshot = await getDocs(q);
 
@@ -182,7 +186,7 @@ export default function LoginPage() {
                 phone: userData.phone, 
                 email: userData.email,
                 name: userData.name,
-                partnerId: userDoc.id, // **THIS IS THE FIX** - We now save the document ID
+                partnerId: userDoc.id,
                 id: userDoc.id,
                 hospitalId: userData.hospitalId
             };
@@ -571,3 +575,4 @@ export default function LoginPage() {
   );
 }
 
+    
