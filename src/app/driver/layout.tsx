@@ -182,20 +182,19 @@ function DriverLayoutContent({ children }: { children: React.ReactNode }) {
                 setIsSessionLoading(false);
 
                 // Start heartbeat AFTER first successful read.
-                heartbeatInterval = setInterval(() => {
+                 heartbeatInterval = setInterval(() => {
                     if (partnerDocRef.current) {
                         updateDoc(partnerDocRef.current, { lastSeen: serverTimestamp(), isOnline: true }).catch(error => {
-                            errorEmitter.emit('permission-error', new FirestorePermissionError({
-                                path: partnerDocRef.current!.path,
-                                operation: 'update',
-                                requestResourceData: { isOnline: true }
-                            }));
+                            // This error might still happen occasionally, but it should be non-blocking.
+                            console.warn("Heartbeat update failed (non-critical):", error);
                         });
                     }
                 }, 30000); // Heartbeat every 30 seconds
             }
         } else {
-            handleLogout();
+             // If doc doesn't exist, it might be a new onboarding. Don't log out.
+             console.warn("Partner document not found, possibly a new onboarding.");
+             setIsSessionLoading(false);
         }
     }, (error) => {
       console.error("Error with partner data snapshot:", error);
