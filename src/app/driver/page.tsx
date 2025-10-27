@@ -15,7 +15,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from '@/hooks/use-toast'
 import { Skeleton } from '@/components/ui/skeleton'
 import dynamic from 'next/dynamic'
-import { useFirebase } from '@/firebase/client-provider'
+import { useFirebase, useFirestore, useMessaging } from '@/firebase/client-provider'
 import { collection, query, where, onSnapshot, doc, updateDoc, getDoc, serverTimestamp, GeoPoint, limit, runTransaction, addDoc, arrayUnion, orderBy, Timestamp, FieldValue } from 'firebase/firestore'
 import { useNotifications } from '@/context/NotificationContext'
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert'
@@ -737,7 +737,7 @@ export default function DriverDashboard({ partnerData, setPartnerData }: { partn
   const handlePinSubmit = () => {
       const storedPin = localStorage.getItem('curocity-user-pin');
       if (!storedPin) {
-          toast({ variant: 'destructive', title: 'PIN Not Set', description: 'Please set a UPI PIN from your profile first.' });
+          toast({ variant: 'destructive', title: 'PIN Not Set', description: 'Please set a UPI PIN from your wallet first.' });
           return;
       }
       if (enteredPin === storedPin) {
