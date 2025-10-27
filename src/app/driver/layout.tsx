@@ -114,7 +114,6 @@ function DriverLayoutContent({ children }: { children: React.ReactNode }) {
     }
     if (auth) auth.signOut();
     
-    // Clear all possible session keys
     localStorage.removeItem('curocity-session');
     localStorage.removeItem('curocity-resq-session');
     
@@ -129,13 +128,11 @@ function DriverLayoutContent({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (isAuthLoading) {
-        // Wait until Firebase has determined the auth state.
-        return;
+      return; 
     }
 
     const isOnboardingPage = pathname.includes('/driver/onboarding');
     
-    // The single source of truth: Firebase Auth state.
     if (!user) {
         if (!isOnboardingPage) {
             router.replace('/login?role=driver');
@@ -144,11 +141,8 @@ function DriverLayoutContent({ children }: { children: React.ReactNode }) {
         return;
     }
     
-    // If we have a Firebase user, now we can try to get our session data.
     const session = localStorage.getItem('curocity-session');
     if (!session) {
-         // This can happen in a race condition. The correct action is to logout
-         // to force a clean re-authentication flow.
          if (!isOnboardingPage) {
             handleLogout();
          }
@@ -215,7 +209,7 @@ function DriverLayoutContent({ children }: { children: React.ReactNode }) {
     return <>{children}<Toaster /></>
   }
   
-  if (!isMounted || isSessionLoading || isAuthLoading || !partnerData) {
+  if (!isMounted || isSessionLoading || isAuthLoading) {
      return (
       <div className="flex h-screen w-full flex-col">
         <header className="flex h-16 items-center gap-4 border-b bg-background px-4 md:px-6">

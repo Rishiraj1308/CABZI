@@ -1,4 +1,5 @@
 
+
 'use client'
 
 import React, { useState, useEffect } from 'react'
@@ -111,39 +112,51 @@ export default function DoctorLayout({ children }: { children: React.ReactNode }
   const [userName, setUserName] = useState('');
   const [hospitalId, setHospitalId] = useState<string | null>(null);
   const [doctorId, setDoctorId] = useState<string | null>(null);
-  const { auth } = useFirebase();
+  const { auth, user, isUserLoading } = useFirebase();
   const unreadCount = mockNotifications.filter(n => !n.read).length;
   const [isSessionLoading, setIsSessionLoading] = useState(true);
   
-  useEffect(() => {
-    const sessionString = localStorage.getItem('curocity-doctor-session');
-    if (sessionString) {
-        try {
-            const sessionData = JSON.parse(sessionString);
-            setUserName(sessionData.name);
-            setHospitalId(sessionData.hospitalId);
-            setDoctorId(sessionData.id); 
-        } catch (error) {
-            console.error("Failed to parse session, redirecting", error);
-            localStorage.removeItem('curocity-doctor-session');
-            router.push('/login?role=doctor');
-        }
-    } else {
-        router.push('/login?role=doctor');
-    }
-    setIsSessionLoading(false);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
   const handleLogout = async () => {
     if (auth) auth.signOut();
     localStorage.removeItem('curocity-doctor-session');
+    localStorage.removeItem('curocity-session');
     toast({
         title: 'Logged Out',
         description: 'You have been successfully logged out.'
     });
     router.push('/');
   }
+
+  useEffect(() => {
+    if (isUserLoading) return;
+    if (!user) {
+        router.push('/login?role=doctor');
+        setIsSessionLoading(false);
+        return;
+    }
+
+    const sessionString = localStorage.getItem('curocity-doctor-session');
+    if (sessionString) {
+        try {
+            const sessionData = JSON.parse(sessionString);
+             if (!sessionData.role || sessionData.role !== 'doctor') {
+                handleLogout();
+                return;
+            }
+            setUserName(sessionData.name);
+            setHospitalId(sessionData.hospitalId);
+            setDoctorId(sessionData.id); 
+        } catch (error) {
+            console.error("Failed to parse session, redirecting", error);
+            handleLogout();
+        }
+    } else {
+        handleLogout();
+    }
+    setIsSessionLoading(false);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, isUserLoading]);
+
 
   if (isSessionLoading) {
     return (

@@ -50,8 +50,29 @@ export default function CureLayout({ children }: { children: React.ReactNode }) 
   const [navItems, setNavItems] = useState<any[]>([]);
   const [isSessionLoading, setIsSessionLoading] = useState(true);
 
+  const handleLogout = async () => {
+    if(session && db) {
+        try {
+            const cureRef = doc(db, 'ambulances', session.partnerId);
+            await updateDoc(cureRef, { isOnline: false });
+        } catch (error) {
+          console.error("Failed to update logout status for cure partner:", error);
+        }
+    }
+    if (auth) auth.signOut();
+    localStorage.removeItem('curocity-cure-session');
+    localStorage.removeItem('curocity-session');
+    toast({
+        title: 'Logged Out',
+        description: 'You have been successfully logged out.'
+    });
+    router.push('/');
+  }
+
   useEffect(() => {
-    if (isUserLoading) return;
+    if (isUserLoading) {
+      return;
+    }
     
     const isOnboardingPage = pathname.includes('/cure/onboarding');
     if (!user) {
@@ -111,26 +132,8 @@ export default function CureLayout({ children }: { children: React.ReactNode }) 
     return () => unsubPartner();
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [db, user, isUserLoading]);
+  }, [db, user, isUserLoading, pathname]);
 
-  const handleLogout = async () => {
-    if(session && db) {
-        try {
-            const cureRef = doc(db, 'ambulances', session.partnerId);
-            await updateDoc(cureRef, { isOnline: false });
-        } catch (error) {
-          console.error("Failed to update logout status for cure partner:", error);
-        }
-    }
-    if (auth) auth.signOut();
-    localStorage.removeItem('curocity-cure-session');
-    localStorage.removeItem('curocity-session');
-    toast({
-        title: 'Logged Out',
-        description: 'You have been successfully logged out.'
-    });
-    router.push('/');
-  }
   
   function CureNav() {
     const pathname = usePathname()

@@ -114,9 +114,9 @@ export default function MechanicLayout({ children }: { children: React.ReactNode
           }
           setUserName(sessionData.name);
           mechanicDocRef.current = doc(db, 'mechanics', sessionData.partnerId);
-          setIsSessionLoading(false);
       } catch (e) {
           handleLogout();
+      } finally {
           setIsSessionLoading(false);
       }
 

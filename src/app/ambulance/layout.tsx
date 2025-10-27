@@ -76,28 +76,6 @@ export default function AmbulanceLayout({ children }: { children: React.ReactNod
   const { db, auth, user, isUserLoading } = useFirebase();
   const [isSessionLoading, setIsSessionLoading] = useState(true);
   
-  useEffect(() => {
-    if (isUserLoading) return;
-    if (!user) {
-        router.replace('/login?role=driver');
-        setIsSessionLoading(false);
-        return;
-    }
-
-    const sessionString = localStorage.getItem('curocity-ambulance-session');
-    if (sessionString) {
-        try {
-            setUserName(JSON.parse(sessionString).name);
-        } catch (error) {
-            handleLogout();
-        }
-    } else {
-        handleLogout();
-    }
-    setIsSessionLoading(false);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, isUserLoading]);
-
   const handleLogout = async () => {
     const sessionString = localStorage.getItem('curocity-ambulance-session');
     if(sessionString && db) {
@@ -124,6 +102,34 @@ export default function AmbulanceLayout({ children }: { children: React.ReactNod
     });
     router.push('/');
   }
+
+  useEffect(() => {
+    if (isUserLoading) return;
+    if (!user) {
+        router.replace('/login?role=driver');
+        setIsSessionLoading(false);
+        return;
+    }
+
+    const sessionString = localStorage.getItem('curocity-ambulance-session');
+    if (sessionString) {
+        try {
+            const sessionData = JSON.parse(sessionString);
+             if (!sessionData.role || sessionData.role !== 'ambulance') {
+                handleLogout();
+                return;
+            }
+            setUserName(sessionData.name);
+        } catch (error) {
+            handleLogout();
+        }
+    } else {
+        handleLogout();
+    }
+    setIsSessionLoading(false);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, isUserLoading]);
+
 
   if (isSessionLoading) {
     return (
