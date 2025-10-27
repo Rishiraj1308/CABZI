@@ -181,7 +181,7 @@ export default function LoginPage() {
                 phone: userData.phone, 
                 email: userData.email,
                 name: userData.name,
-                partnerId: role === 'cure' ? userDoc.id : userData.partnerId || userDoc.id, // Ensure partnerId is set correctly
+                partnerId: userDoc.id, // Correctly save the document ID as partnerId
                 id: userDoc.id,
                 hospitalId: userData.hospitalId
             };
