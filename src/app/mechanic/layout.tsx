@@ -29,7 +29,6 @@ import { useTheme } from 'next-themes'
 import { useFirebase } from '@/firebase/client-provider'
 import { doc, updateDoc, serverTimestamp, GeoPoint } from 'firebase/firestore'
 import { MotionDiv } from '@/components/ui/motion-div'
-import { errorEmitter, FirestorePermissionError } from '@/lib/error-handling';
 import { Skeleton } from '@/components/ui/skeleton'
 
 const navItems = [
@@ -85,117 +84,44 @@ export default function MechanicLayout({ children }: { children: React.ReactNode
   const router = useRouter();
   const { toast } = useToast();
   const [userName, setUserName] = useState('');
-  const { db, auth } = useFirebase();
+  const { db, auth, user, isUserLoading } = useFirebase();
   const mechanicDocRef = useRef<any>(null);
   const [isSessionLoading, setIsSessionLoading] = useState(true);
 
   useEffect(() => {
-    let watchId: number | undefined;
-    let lastSentLocation: { lat: number; lon: number } | null = null;
-    const MIN_DISTANCE_THRESHOLD = 50; // meters
-    const MIN_TIME_THRESHOLD = 30000; // 30 seconds
-    let lastSentTime = 0;
+      if (isUserLoading) return;
+      
+      const isOnboarding = pathname.includes('/mechanic/onboarding') || pathname.includes('/garage/onboarding');
+      if (!user) {
+          if (!isOnboarding) router.replace('/login?role=driver');
+          setIsSessionLoading(false);
+          return;
+      }
+      
+      const sessionString = localStorage.getItem('curocity-resq-session');
+      if (!sessionString || !db) {
+          if (!isOnboarding) handleLogout();
+          setIsSessionLoading(false);
+          return;
+      }
 
-    const getDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
-        const R = 6371e3; // metres
-        const φ1 = lat1 * Math.PI/180;
-        const φ2 = lat2 * Math.PI/180;
-        const Δφ = (lat2-lat1) * Math.PI/180;
-        const Δλ = (lon2-lon1) * Math.PI/180;
+      try {
+          const sessionData = JSON.parse(sessionString);
+          if (!sessionData.role || sessionData.role !== 'mechanic' || !sessionData.partnerId) {
+              if (!isOnboarding) handleLogout();
+              setIsSessionLoading(false);
+              return;
+          }
+          setUserName(sessionData.name);
+          mechanicDocRef.current = doc(db, 'mechanics', sessionData.partnerId);
+          setIsSessionLoading(false);
+      } catch (e) {
+          handleLogout();
+          setIsSessionLoading(false);
+      }
 
-        const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
-                  Math.cos(φ1) * Math.cos(φ2) *
-                  Math.sin(Δλ/2) * Math.sin(Δλ/2);
-        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-
-        return R * c; // in metres
-    }
-
-    if (pathname === '/mechanic/onboarding' || pathname === '/garage/onboarding') {
-      setIsSessionLoading(false);
-      return;
-    }
-
-    const sessionString = localStorage.getItem('curocity-resq-session');
-    if (sessionString && db) {
-        try {
-            const sessionData = JSON.parse(sessionString);
-            if (!sessionData.role || sessionData.role !== 'mechanic' || !sessionData.partnerId) {
-                router.push('/login?role=driver');
-                return;
-            }
-
-            setUserName(sessionData.name);
-            mechanicDocRef.current = doc(db, 'mechanics', sessionData.partnerId);
-             setIsSessionLoading(false);
-
-            updateDoc(mechanicDocRef.current, { isAvailable: true, lastOnline: serverTimestamp() })
-            .catch(error => {
-                const permissionError = new FirestorePermissionError({
-                    path: mechanicDocRef.current.path,
-                    operation: 'update',
-                    requestResourceData: { isAvailable: true }
-                });
-                errorEmitter.emit('permission-error', permissionError);
-            });
-
-            
-            if (navigator.geolocation) {
-                 watchId = navigator.geolocation.watchPosition(
-                    (pos) => {
-                        const newLocation = { lat: pos.coords.latitude, lon: pos.coords.longitude };
-                        const now = Date.now();
-                        
-                        if (mechanicDocRef.current) {
-                            const distanceMoved = lastSentLocation ? getDistance(lastSentLocation.lat, lastSentLocation.lon, newLocation.lat, newLocation.lon) : Infinity;
-
-                            if (distanceMoved > MIN_DISTANCE_THRESHOLD || now - lastSentTime > MIN_TIME_THRESHOLD) {
-                                updateDoc(mechanicDocRef.current, { 
-                                    currentLocation: new GeoPoint(newLocation.lat, newLocation.lon),
-                                    lastOnline: serverTimestamp() 
-                                }).catch(error => {
-                                    const permissionError = new FirestorePermissionError({
-                                        path: mechanicDocRef.current.path,
-                                        operation: 'update',
-                                        requestResourceData: { currentLocation: '...' }
-                                    });
-                                    errorEmitter.emit('permission-error', permissionError);
-                                });
-                                lastSentLocation = newLocation;
-                                lastSentTime = now;
-                            }
-                        }
-                    },
-                    () => {},
-                    { enableHighAccuracy: true }
-                );
-            }
-        } catch (error) {
-            console.error("Failed to parse session, redirecting", error);
-            localStorage.removeItem('curocity-resq-session');
-            router.push('/login?role=driver');
-        }
-    } else {
-        router.push('/login?role=driver');
-    }
-    
-    const handleBeforeUnload = () => {
-        if (mechanicDocRef.current) {
-            updateDoc(mechanicDocRef.current, { isAvailable: false, lastOnline: serverTimestamp(), currentLocation: null });
-        }
-    };
-    
-    window.addEventListener('beforeunload', handleBeforeUnload);
-
-    return () => {
-        window.removeEventListener('beforeunload', handleBeforeUnload);
-        if (watchId) navigator.geolocation.clearWatch(watchId);
-        if (mechanicDocRef.current) {
-            updateDoc(mechanicDocRef.current, { isAvailable: false, lastOnline: serverTimestamp(), currentLocation: null });
-        }
-    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pathname, db]);
+  }, [pathname, db, user, isUserLoading]);
 
   const handleLogout = async () => {
     if (mechanicDocRef.current) {

@@ -46,64 +46,72 @@ export default function CureLayout({ children }: { children: React.ReactNode }) 
   const router = useRouter();
   const { toast } = useToast();
   const [session, setSession] = useState<any>(null);
-  const { db, auth } = useFirebase();
+  const { db, auth, user, isUserLoading } = useFirebase();
   const [navItems, setNavItems] = useState<any[]>([]);
   const [isSessionLoading, setIsSessionLoading] = useState(true);
 
   useEffect(() => {
-    if (pathname === '/cure/onboarding') {
+    if (isUserLoading) return;
+    
+    const isOnboardingPage = pathname.includes('/cure/onboarding');
+    if (!user) {
+      if (!isOnboardingPage) router.replace('/login?role=driver');
       setIsSessionLoading(false);
       return;
     }
-    
+
     const sessionString = localStorage.getItem('curocity-cure-session');
-    if (sessionString && db) {
-        try {
-            const sessionData = JSON.parse(sessionString);
-            if (!sessionData.role || sessionData.role !== 'cure' || !sessionData.partnerId) {
-                router.push('/login?role=driver');
-                return;
-            }
-            setSession(sessionData);
-
-            const unsub = onSnapshot(doc(db, 'ambulances', sessionData.partnerId), (doc) => {
-                if (doc.exists()) {
-                    const data = doc.data();
-                    const isHospital = data.businessType?.toLowerCase().includes('hospital');
-
-                    if (isHospital) {
-                        setNavItems([
-                            { href: '/cure', label: 'Mission Control', icon: LayoutDashboard },
-                            { href: '/cure/fleet', label: 'Fleet & Staff', icon: UsersIcon },
-                            { href: '/cure/doctors', label: 'Doctors Roster', icon: Stethoscope },
-                            { href: '/cure/insurance', label: 'Insurance', icon: ShieldCheck },
-                            { href: '/cure/billing', label: 'Billing', icon: Landmark },
-                            { href: '/cure/analytics', label: 'Analytics', icon: BarChart },
-                            { href: '/cure/subscription', label: 'Subscription', icon: Gem },
-                        ]);
-                    } else {
-                        // Clinic navigation
-                        setNavItems([
-                            { href: '/cure', label: 'Dashboard', icon: LayoutDashboard },
-                            { href: '/cure/doctors', label: 'Appointments', icon: Stethoscope },
-                            { href: '/cure/billing', label: 'Billing', icon: Landmark },
-                            { href: '/cure/subscription', label: 'Subscription', icon: Gem },
-                        ]);
-                    }
-                }
-                setIsSessionLoading(false);
-            });
-            return () => unsub();
-        } catch (error) {
-            console.error("Failed to parse session, redirecting", error);
-            localStorage.removeItem('curocity-cure-session');
-            router.push('/login?role=driver');
-        }
-    } else {
-        router.push('/login?role=driver');
+    if (!sessionString || !db) {
+        if (!isOnboardingPage) handleLogout();
+        setIsSessionLoading(false);
+        return;
     }
+
+    let unsubPartner: () => void = () => {};
+    try {
+        const sessionData = JSON.parse(sessionString);
+        if (!sessionData.role || sessionData.role !== 'cure' || !sessionData.partnerId) {
+            if (!isOnboardingPage) handleLogout();
+            setIsSessionLoading(false);
+            return;
+        }
+        setSession(sessionData);
+
+        const partnerRef = doc(db, 'ambulances', sessionData.partnerId);
+        unsubPartner = onSnapshot(partnerRef, (doc) => {
+            if (doc.exists()) {
+                const data = doc.data();
+                const isHospital = data.businessType?.toLowerCase().includes('hospital');
+                const menu = isHospital
+                    ? [
+                        { href: '/cure', label: 'Mission Control', icon: LayoutDashboard },
+                        { href: '/cure/fleet', label: 'Fleet & Staff', icon: UsersIcon },
+                        { href: '/cure/doctors', label: 'Doctors Roster', icon: Stethoscope },
+                        { href: '/cure/insurance', label: 'Insurance', icon: ShieldCheck },
+                        { href: '/cure/billing', label: 'Billing', icon: Landmark },
+                        { href: '/cure/analytics', label: 'Analytics', icon: BarChart },
+                        { href: '/cure/subscription', label: 'Subscription', icon: Gem },
+                      ]
+                    : [
+                        { href: '/cure', label: 'Dashboard', icon: LayoutDashboard },
+                        { href: '/cure/doctors', label: 'Appointments', icon: Stethoscope },
+                        { href: '/cure/billing', label: 'Billing', icon: Landmark },
+                        { href: '/cure/subscription', label: 'Subscription', icon: Gem },
+                      ];
+                setNavItems(menu);
+            }
+            setIsSessionLoading(false);
+        });
+
+    } catch (e) {
+        handleLogout();
+        setIsSessionLoading(false);
+    }
+    
+    return () => unsubPartner();
+
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [db]);
+  }, [db, user, isUserLoading]);
 
   const handleLogout = async () => {
     if(session && db) {
