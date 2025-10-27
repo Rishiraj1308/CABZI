@@ -25,6 +25,7 @@ import { onMessage } from 'firebase/messaging'
 import RideStatus from '@/components/ride-status'
 import SearchingIndicator from '@/components/ui/searching-indicator'
 import { Skeleton } from '@/components/ui/skeleton'
+import { useDriver } from './layout' // Import the new context hook
 
 const LiveMap = dynamic(() => import('@/components/live-map'), { 
     ssr: false,
@@ -41,22 +42,19 @@ const StatCard = ({ title, value, icon: Icon }: { title: string, value: string, 
     </Card>
 );
 
-// The `partnerData` prop is passed down from the layout.
-export default function DriverDashboardPage({ partnerData }: { partnerData: PartnerData | null }) {
+export default function DriverDashboardPage() {
     const [jobRequest, setJobRequest] = useState<JobRequest | null>(null);
     const [activeRide, setActiveRide] = useState<RideData | null>(null);
     const [requestTimeout, setRequestTimeout] = useState(15);
     const requestTimerRef = useRef<NodeJS.Timeout | null>(null);
     
-    // The isLoading state is now derived from the presence of partnerData prop
-    const isLoading = !partnerData;
+    const { partnerData, isLoading } = useDriver(); // Use the context hook to get data
 
     const { db } = useFirebase();
     const { toast } = useToast();
     const messaging = useMessaging();
     const liveMapRef = useRef<any>(null);
 
-    // This local state now reflects the prop passed from the layout.
     const isOnline = partnerData?.isOnline || false;
 
     const getDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
@@ -242,4 +240,3 @@ export default function DriverDashboardPage({ partnerData }: { partnerData: Part
         </div>
     );
 }
-
