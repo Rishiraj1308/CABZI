@@ -45,8 +45,7 @@ function getDistance(lat1: number, lon1: number, lat2: number, lon2: number) {
 
 const handleRideDispatch = async (rideData: any, rideId: string) => {
     let partnersQuery = db.collection('partners')
-        .where('isOnline', '==', true)
-        .where('status', '==', 'online'); // Ensure partner is not on a trip
+        .where('isOnline', '==', true);
 
     // If ride type is "Curocity Pink", filter for women partners who have opted in.
     if (rideData.rideType === 'Curocity Pink') {
@@ -454,6 +453,8 @@ export const simulateHighDemand = onCall(async (request) => {
 
     return { success: true, message: `High demand alert triggered for ${zoneName}.` };
 });
+
+    
 
     
 
