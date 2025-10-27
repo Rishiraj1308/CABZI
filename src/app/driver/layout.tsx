@@ -124,6 +124,7 @@ function DriverLayoutContent({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (isAuthLoading) return;
+    
     if (!user) {
       if (!pathname.includes('/driver/onboarding')) {
         router.push('/login?role=driver');
@@ -134,7 +135,10 @@ function DriverLayoutContent({ children }: { children: React.ReactNode }) {
 
     const session = localStorage.getItem('curocity-session');
     if (!session || !db) {
-        setIsSessionLoading(false);
+        setIsSessionLoading(false); // No session, stop loading
+        if (!pathname.includes('/driver/onboarding')) {
+           router.push('/login?role=driver');
+        }
         return;
     }
     
@@ -161,7 +165,7 @@ function DriverLayoutContent({ children }: { children: React.ReactNode }) {
                 setPartnerData(fetchedPartnerData);
             } else {
                  console.warn("Partner document not found. This might be a new onboarding.");
-                 // We don't log out here, we just wait for the doc to be created.
+                 // Don't log out, just wait for doc to be created.
             }
             setIsSessionLoading(false);
         }, (error) => {
@@ -178,7 +182,7 @@ function DriverLayoutContent({ children }: { children: React.ReactNode }) {
         setIsSessionLoading(false);
         return;
     }
-  }, [isAuthLoading, user, db, router, toast, theme, setTheme]);
+  }, [isAuthLoading, user, db, router, toast, theme, setTheme, pathname]);
 
   // Heartbeat effect
    useEffect(() => {
@@ -202,7 +206,7 @@ function DriverLayoutContent({ children }: { children: React.ReactNode }) {
     return <>{children}<Toaster /></>
   }
   
-  if (isSessionLoading || !isMounted) {
+  if (!isMounted || isSessionLoading || isAuthLoading) {
      return (
       <div className="flex h-screen w-full flex-col">
         <header className="flex h-16 items-center gap-4 border-b bg-background px-4 md:px-6">
@@ -217,6 +221,11 @@ function DriverLayoutContent({ children }: { children: React.ReactNode }) {
         </main>
       </div>
     );
+  }
+  
+  if (!user) {
+    // This case is handled by the useEffect redirect, but as a fallback:
+    return null;
   }
 
   const getInitials = (name: string) => {
@@ -311,11 +320,10 @@ function DriverLayoutContent({ children }: { children: React.ReactNode }) {
               transition={{ duration: 0.5, ease: 'easeInOut' }}
               className="h-full relative"
             >
-              {/* Pass partnerData to children */}
               {React.Children.map(children, child => {
                 if (React.isValidElement(child)) {
                     // @ts-ignore
-                    return React.cloneElement(child, { partnerData, setPartnerData });
+                    return React.cloneElement(child, { partnerData });
                 }
                 return child;
               })}
