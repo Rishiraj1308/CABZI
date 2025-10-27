@@ -1,4 +1,5 @@
 
+
 'use client'
 
 import React, { useState, useEffect, useRef, useCallback } from 'react'
@@ -168,6 +169,10 @@ function DriverLayoutContent({ children }: { children: React.ReactNode }) {
                 else if (!isPink && theme === 'pink') setTheme('system');
 
                 setPartnerData(fetchedPartnerData);
+            } else {
+                 console.error("Partner document not found with ID:", sessionData.partnerId);
+                 toast({ variant: 'destructive', title: "Error", description: 'Your partner profile could not be loaded. Please re-login.' });
+                 handleLogout();
             }
              // Ensure loading is stopped even if doc doesn't exist initially
             setIsSessionLoading(false); 
@@ -185,19 +190,19 @@ function DriverLayoutContent({ children }: { children: React.ReactNode }) {
 
     return () => unsubPartner(); // Cleanup snapshot listener
 
-}, [isAuthLoading, user, db, router, pathname, toast, theme, setTheme]);
+  }, [isAuthLoading, user, db, router, pathname, toast, theme, setTheme, handleLogout]);
 
 
   // Heartbeat effect
    useEffect(() => {
     let heartbeatInterval: NodeJS.Timeout | null = null;
     
-    if (partnerData?.id && db) {
+    if (partnerData?.id && db && partnerData?.isOnline) { // Only run heartbeat if online
         heartbeatInterval = setInterval(() => {
-            setDoc(doc(db, 'partners', partnerData.id), { lastSeen: serverTimestamp(), isOnline: true }, { merge: true }).catch(error => {
+            setDoc(doc(db, 'partners', partnerData.id), { lastSeen: serverTimestamp() }, { merge: true }).catch(error => {
                 console.warn("Heartbeat update failed (non-critical):", error);
             });
-        }, 30000); // 30-second heartbeat
+        }, 60000); // 60-second heartbeat
     }
     
     return () => {
@@ -209,7 +214,7 @@ function DriverLayoutContent({ children }: { children: React.ReactNode }) {
     return <>{children}<Toaster /></>
   }
   
-  if (!isMounted || isSessionLoading || isAuthLoading) {
+  if (!isMounted || isSessionLoading || isAuthLoading || !partnerData) {
      return (
       <div className="flex h-screen w-full flex-col">
         <header className="flex h-16 items-center gap-4 border-b bg-background px-4 md:px-6">
@@ -333,7 +338,7 @@ function DriverLayoutContent({ children }: { children: React.ReactNode }) {
                     {React.Children.map(children, child => {
                         if (React.isValidElement(child)) {
                             // @ts-ignore
-                            return React.cloneElement(child, { partnerData, setPartnerData });
+                            return React.cloneElement(child, { partnerData });
                         }
                         return child;
                     })}

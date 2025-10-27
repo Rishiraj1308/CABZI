@@ -1,4 +1,5 @@
 
+
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
@@ -181,7 +182,7 @@ export default function LoginPage() {
                 phone: userData.phone, 
                 email: userData.email,
                 name: userData.name,
-                partnerId: userDoc.id, // Correctly save the document ID as partnerId
+                partnerId: userDoc.id, // **THIS IS THE FIX** - We now save the document ID
                 id: userDoc.id,
                 hospitalId: userData.hospitalId
             };
@@ -569,3 +570,4 @@ export default function LoginPage() {
       </div>
   );
 }
+
