@@ -186,7 +186,6 @@ export default function DriverDashboard() {
   const acceptedRideRef = useRef(acceptedRide);
   const watchIdRef = useRef<number | null>(null);
   const lastApiCallTimestamp = useRef<number>(0);
-  const liveMapRef = useRef<any>(null);
   const requestTimerRef = useRef<NodeJS.Timeout | null>(null);
   const earningsTimerRef = useRef<NodeJS.Timeout | null>(null);
   const notificationSoundRef = useRef<HTMLAudioElement | null>(null);
@@ -1064,7 +1063,7 @@ export default function DriverDashboard() {
      return (
        <div className="flex-1 flex flex-col gap-4">
             {!isOnline ? (
-                <Card className="text-center" onClick={() => handleAvailabilityChange(true)}>
+                <Card className="text-center cursor-pointer hover:bg-muted" onClick={() => handleAvailabilityChange(true)}>
                     <CardHeader className="items-center">
                         <Power className="w-12 h-12 text-destructive mb-2"/>
                         <CardTitle className="font-bold text-xl">You are OFFLINE</CardTitle>
@@ -1120,18 +1119,9 @@ export default function DriverDashboard() {
     <div className="h-full w-full flex flex-col bg-background">
         <div className="h-1/2">
            <LiveMap
-              ref={liveMapRef}
               driverLocation={partnerData?.currentLocation}
               riderLocation={riderLocation ?? activeGarageRequest?.location as any}
               routeGeometry={routeGeometry}
-              onLocationFound={(address, coords) => {
-                  if (db && partnerData) {
-                      const newGeoPoint = new GeoPoint(coords.lat, coords.lon);
-                      updateDoc(doc(db, 'partners', partnerData.id), {
-                          currentLocation: newGeoPoint,
-                      });
-                  }
-              }}
            />
            <div className="absolute top-4 right-4 z-10 flex flex-col gap-2">
                 <Card className="p-2 bg-background/80 backdrop-blur-sm flex items-center gap-2">
@@ -1175,3 +1165,5 @@ export default function DriverDashboard() {
     </div>
   )
 }
+
+    
