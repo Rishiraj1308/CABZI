@@ -151,6 +151,7 @@ function DriverLayoutContent({ children }: { children: React.ReactNode }) {
 
     try {
         const sessionData = JSON.parse(session);
+        // CRITICAL FIX: Use partnerId from session, not phone.
         if (!sessionData.role || sessionData.role !== 'driver' || !sessionData.partnerId) {
             router.push('/login?role=driver');
             setIsSessionLoading(false); // Definitively stop loading
