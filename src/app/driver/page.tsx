@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
-import { Star, History, IndianRupee, Power, AlertTriangle } from 'lucide-react'
+import { Star, History, IndianRupee, Power, AlertTriangle, Sparkles } from 'lucide-react'
 import {
   AlertDialog,
   AlertDialogContent,
@@ -16,7 +16,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { useToast } from '@/hooks/use-toast'
-import { doc, updateDoc, GeoPoint, serverTimestamp, onSnapshot, collection, query, where, arrayUnion, getDoc } from 'firebase/firestore'
+import { doc, updateDoc, GeoPoint, serverTimestamp, onSnapshot, collection, query, where, Timestamp } from 'firebase/firestore'
 import { useFirebase } from '@/firebase/client-provider'
 import dynamic from 'next/dynamic'
 import type { PartnerData, RideData, JobRequest } from '@/lib/types'
@@ -255,5 +255,3 @@ export default function DriverDashboardPage() {
         </div>
     );
 }
-
-    
