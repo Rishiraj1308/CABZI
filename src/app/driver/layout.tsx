@@ -128,7 +128,7 @@ function DriverLayoutContent({ children }: { children: React.ReactNode }) {
   }, [auth, db, partnerData, router, toast, theme, setTheme]);
 
   useEffect(() => {
-      if (isAuthLoading) return; // Wait until Firebase auth state is resolved
+      if (isAuthLoading) return;
 
       const isOnboardingPage = pathname.includes('/driver/onboarding');
       if (!user) {
@@ -138,23 +138,23 @@ function DriverLayoutContent({ children }: { children: React.ReactNode }) {
           setIsSessionLoading(false);
           return;
       }
-
+      
       const session = localStorage.getItem('curocity-session');
-      if (!session || !db) {
-          if (!isOnboardingPage) {
-              handleLogout(); // Force logout if session is missing but auth user exists
-          }
-          setIsSessionLoading(false);
-          return;
+      if (!session) {
+        // If Firebase says we have a user but local session is gone,
+        // it's better to log out to force a clean login.
+        if (!isOnboardingPage) handleLogout();
+        setIsSessionLoading(false);
+        return;
       }
 
       let unsubPartner: () => void = () => {};
       try {
           const sessionData = JSON.parse(session);
           if (!sessionData.role || sessionData.role !== 'driver' || !sessionData.partnerId) {
-              if (!isOnboardingPage) handleLogout();
-              setIsSessionLoading(false);
-              return;
+             if (!isOnboardingPage) handleLogout();
+             setIsSessionLoading(false);
+             return;
           }
 
           const partnerDocRef = doc(db, 'partners', sessionData.partnerId);
