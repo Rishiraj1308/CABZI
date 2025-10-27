@@ -181,14 +181,13 @@ export default function LoginPage() {
                 return false;
             }
             
-            // **THE FIX IS HERE:** Always use the document's real ID for partnerId in the session.
             const sessionData: any = { 
                 role: role,
                 phone: userData.phone, 
                 email: userData.email,
                 name: userData.name,
-                partnerId: userDoc.id, // Correctly assigns the document ID
-                id: userDoc.id, // Redundant but safe
+                partnerId: userDoc.id,
+                id: userDoc.id,
                 hospitalId: userData.hospitalId
             };
 
@@ -538,15 +537,16 @@ export default function LoginPage() {
               <CardTitle className="text-2xl mt-4">{getPageTitle()}</CardTitle>
               <CardDescription>
                 <AnimatePresence mode="wait">
-                    <motion.p
+                    <motion.span
                         key={step + roleFromQuery}
                         initial={{ opacity: 0, y: -10 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: 10 }}
                         transition={{ duration: 0.2 }}
+                        className="block"
                     >
                        {getPageDescription()}
-                    </motion.p>
+                    </motion.span>
                 </AnimatePresence>
               </CardDescription>
             </CardHeader>
@@ -575,5 +575,3 @@ export default function LoginPage() {
       </div>
   );
 }
-
-    
