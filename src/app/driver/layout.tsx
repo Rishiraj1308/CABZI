@@ -94,11 +94,11 @@ function DriverLayoutContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const { toast } = useToast();
-  const [isMounted, setIsMounted] = useState(false);
+  const [isMounted, setIsMounted(false);
   const { theme, setTheme } = useTheme();
   const { db, auth, user, isUserLoading: isAuthLoading } = useFirebase();
-  const [partnerData, setPartnerData] = useState<PartnerData | null>(null);
-  const [isSessionLoading, setIsSessionLoading] = useState(true);
+  const [partnerData, setPartnerData(null);
+  const [isSessionLoading, setIsSessionLoading(true);
   
   useEffect(() => {
     setIsMounted(true);
@@ -124,30 +124,29 @@ function DriverLayoutContent({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (isAuthLoading) return;
-    
+
     const isOnboardingPage = pathname.includes('/driver/onboarding');
 
     if (!user) {
-      if (!isOnboardingPage) {
-        router.push('/login?role=driver');
-      }
-      setIsSessionLoading(false);
-      return;
+        if (!isOnboardingPage) {
+            router.push('/login?role=driver');
+        }
+        setIsSessionLoading(false);
+        return;
     }
 
     const session = localStorage.getItem('curocity-session');
     if (!session || !db) {
         setIsSessionLoading(false);
         if (!isOnboardingPage) {
-           router.push('/login?role=driver');
+            router.push('/login?role=driver');
         }
         return;
     }
-    
-    let sessionData;
+
     try {
-        sessionData = JSON.parse(session);
-        if(!sessionData.role || sessionData.role !== 'driver' || !sessionData.partnerId) {
+        const sessionData = JSON.parse(session);
+        if (!sessionData.role || sessionData.role !== 'driver' || !sessionData.partnerId) {
             router.push('/login?role=driver');
             setIsSessionLoading(false);
             return;
@@ -159,20 +158,18 @@ function DriverLayoutContent({ children }: { children: React.ReactNode }) {
             if (docSnap.exists()) {
                 const data = docSnap.data();
                 const fetchedPartnerData = { id: docSnap.id, ...data } as PartnerData;
-                
+
                 const isPink = data.isCabziPinkPartner || false;
                 if (isPink && theme !== 'pink') setTheme('pink');
                 else if (!isPink && theme === 'pink') setTheme('system');
-                
+
                 setPartnerData(fetchedPartnerData);
-            } else {
-                 console.warn("Partner document not found. This might be a new onboarding.");
             }
             setIsSessionLoading(false);
         }, (error) => {
-          console.error("Error with partner data snapshot:", error);
-          toast({variant: "destructive", title: "Error", description: "Could not load partner profile."});
-          setIsSessionLoading(false);
+            console.error("Error with partner data snapshot:", error);
+            toast({ variant: "destructive", title: "Error", description: "Could not load partner profile." });
+            setIsSessionLoading(false);
         });
 
         return () => unsubPartner();
@@ -182,7 +179,7 @@ function DriverLayoutContent({ children }: { children: React.ReactNode }) {
         router.push('/login?role=driver');
         setIsSessionLoading(false);
     }
-  }, [isAuthLoading, user, db, router, toast, theme, setTheme, pathname]);
+}, [isAuthLoading, user, db, router, pathname, toast, theme, setTheme]);
 
   // Heartbeat effect
    useEffect(() => {
