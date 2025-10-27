@@ -53,6 +53,7 @@ export default function DriverDashboardPage() {
     const [activeRide, setActiveRide] = useState<RideData | null>(null);
     const [requestTimeout, setRequestTimeout] = useState(15);
     const requestTimerRef = useRef<NodeJS.Timeout | null>(null);
+    const notificationSoundRef = useRef<HTMLAudioElement | null>(null);
     
     const { partnerData, isLoading: isDriverLoading } = useDriver(); 
 
@@ -62,6 +63,51 @@ export default function DriverDashboardPage() {
     const liveMapRef = useRef<any>(null);
 
     const isOnline = partnerData?.isOnline || false;
+
+    // Effect to initialize notification sound
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            notificationSoundRef.current = new Audio('/sounds/notification.mp3');
+        }
+    }, []);
+
+    // Effect for handling incoming ride requests via FCM
+    useEffect(() => {
+        if (!messaging || !isOnline || !partnerData?.id || activeRide || jobRequest) return;
+
+        const unsubscribe = onMessage(messaging, (payload) => {
+            console.log('FCM Message received for Driver.', payload);
+            notificationSoundRef.current?.play().catch(e => console.error("Audio play failed:", e));
+
+            const { type, rideId, ...rideData } = payload.data || {};
+
+            if (type === 'new_ride_request' && rideId) {
+                // Ignore if already have a job or this ride is rejected
+                const rejectedBy = rideData.rejectedBy ? JSON.parse(rideData.rejectedBy) : [];
+                if (activeRide || jobRequest || rejectedBy.includes(partnerData.id)) {
+                    return;
+                }
+
+                const newJobRequest: JobRequest = {
+                    id: rideId,
+                    ...rideData,
+                    pickup: JSON.parse(rideData.pickupLocation || '{}'),
+                    destination: JSON.parse(rideData.destinationLocation || '{}'),
+                    fare: parseFloat(rideData.fare || '0'),
+                } as JobRequest;
+                
+                setJobRequest(newJobRequest);
+                
+                 toast({
+                    title: 'New Ride Request!',
+                    description: `From ${newJobRequest.pickup.address} to ${newJobRequest.destination.address}`,
+                    duration: 10000,
+                });
+            }
+        });
+
+        return () => unsubscribe();
+    }, [messaging, isOnline, partnerData, activeRide, jobRequest, toast]);
 
     const handleOnlineStatusChange = async (checked: boolean) => {
         if (!partnerData || !db) return;
