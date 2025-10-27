@@ -206,7 +206,7 @@ export default function OnboardingPage() {
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="aadhaar-number">Aadhaar Number</Label>
-                                <Input id="aadhaar-number" name="aadhaar-number" placeholder="e.g., 1234 5678 9012" required value={formData.aadhaarNumber} onChange={(e) => handleInputChange('aadhaarNumber', e.target.value)} />
+                                <Input id="aadhaar-number" name="aadhaar-number" placeholder="e.g., 1234 5678 9012" required value={formData.aadhaarNumber} onChange={(e) => handleInputChange('aadhaarNumber', e.target.value.replace(/\D/g, ''))} maxLength={12} />
                             </div>
                         </div>
                     </div>
