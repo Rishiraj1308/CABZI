@@ -26,11 +26,10 @@ import { useToast } from '@/hooks/use-toast'
 import BrandLogo from '@/components/brand-logo'
 import { useTheme } from 'next-themes'
 import { useFirebase } from '@/firebase/client-provider'
-import { doc, updateDoc, onSnapshot, serverTimestamp, getDoc, GeoPoint, type DocumentReference, type FieldValue, setDoc } from 'firebase/firestore'
+import { doc, setDoc, serverTimestamp, GeoPoint, type DocumentReference, onSnapshot } from 'firebase/firestore'
 import { Badge } from '@/components/ui/badge'
 import { MotionDiv } from '@/components/ui/motion-div'
-import { errorEmitter, FirestorePermissionError } from '@/lib/error-handling';
-import { NotificationsProvider, useNotifications } from '@/context/NotificationContext';
+import { NotificationsProvider } from '@/context/NotificationContext';
 import { Skeleton } from '@/components/ui/skeleton'
 
 interface PartnerData {
@@ -111,19 +110,14 @@ function DriverLayoutContent({ children }: { children: React.ReactNode }) {
 
   const handleLogout = useCallback(() => {
     if (partnerDocRef.current) {
-        try {
-            // Using setDoc with merge to avoid errors if doc doesn't exist yet
-            setDoc(partnerDocRef.current, { isOnline: false, lastSeen: serverTimestamp() }, { merge: true });
-        } catch (error) {
-            console.error("Failed to update logout status (non-critical):", error);
-        }
+        setDoc(partnerDocRef.current, { isOnline: false, lastSeen: serverTimestamp() }, { merge: true }).catch(error => {
+            console.warn("Failed to update status on logout (non-critical):", error);
+        });
     }
     if (auth) auth.signOut();
     localStorage.removeItem('curocity-session');
     
-    if (theme === 'pink') {
-        setTheme('system'); 
-    }
+    if (theme === 'pink') setTheme('system');
 
     toast({
         title: 'Logged Out',
@@ -132,21 +126,27 @@ function DriverLayoutContent({ children }: { children: React.ReactNode }) {
     router.push('/');
   }, [auth, theme, setTheme, router, toast]);
 
-  // Combined effect to authenticate and manage online presence
   useEffect(() => {
-    if (isAuthLoading) return;
-
+    if (isAuthLoading) {
+      return; 
+    }
     if (!user) {
-        if (!pathname.includes('/driver/onboarding')) {
-            router.push('/login?role=driver');
-        }
-        setIsSessionLoading(false);
-        return;
+      if (!pathname.includes('/driver/onboarding')) {
+        router.push('/login?role=driver');
+      }
+      setIsSessionLoading(false);
+      return;
     }
 
     const session = localStorage.getItem('curocity-session');
     if (!session || !db) {
-        router.push('/login?role=driver');
+        // Delay redirect to allow for session storage to be set on first login
+        setTimeout(() => {
+            const freshSession = localStorage.getItem('curocity-session');
+            if (!freshSession) {
+              router.push('/login?role=driver');
+            }
+        }, 1000);
         setIsSessionLoading(false);
         return;
     }
@@ -172,11 +172,11 @@ function DriverLayoutContent({ children }: { children: React.ReactNode }) {
 
     const unsubPartner = onSnapshot(partnerDocRef.current, (docSnap) => {
         if (docSnap.exists()) {
-            const data = docSnap.data();
-            const fetchedPartnerData = { id: docSnap.id, ...data } as PartnerData;
-
-            if (!partnerData) { // Only set these on the first load
+            if (!partnerData) { // This block runs only once on initial data load
+                const data = docSnap.data();
+                const fetchedPartnerData = { id: docSnap.id, ...data } as PartnerData;
                 const partnerIsPink = data.isCabziPinkPartner || false;
+
                 setIsPinkPartner(partnerIsPink);
                 if (partnerIsPink && theme !== 'pink') setTheme('pink');
                 else if (!partnerIsPink && theme === 'pink') setTheme('system');
@@ -184,25 +184,24 @@ function DriverLayoutContent({ children }: { children: React.ReactNode }) {
                 setPartnerData(fetchedPartnerData);
                 setIsSessionLoading(false);
 
-                 // Start heartbeat ONLY AFTER we confirm the document exists.
-                if (!heartbeatInterval && fetchedPartnerData) {
+                // Start heartbeat only after we confirm the document exists.
+                if (!heartbeatInterval) {
                     heartbeatInterval = setInterval(() => {
                         if (partnerDocRef.current) {
-                            // Use setDoc with merge to prevent "No document" error on first run for new users
                             setDoc(partnerDocRef.current, { lastSeen: serverTimestamp(), isOnline: true }, { merge: true }).catch(error => {
                                 console.warn("Heartbeat update failed (non-critical):", error);
                             });
                         }
-                    }, 30000);
+                    }, 30000); // 30-second heartbeat
                 }
             } else {
-                 setPartnerData(fetchedPartnerData); // Keep updating partner data
+                 // Subsequent updates
+                 setPartnerData({ id: docSnap.id, ...docSnap.data() } as PartnerData);
             }
-
         } else {
-             // This can happen briefly during onboarding.
-             console.warn("Partner document not found, possibly a new onboarding. Will retry on next heartbeat.");
-             setIsSessionLoading(false); // Allow UI to render but don't start heartbeats yet.
+             // For new users, doc might not exist immediately. We'll let the heartbeat handle creation.
+             console.warn("Partner document not found. Will be created by heartbeat if new.");
+             setIsSessionLoading(false);
         }
     }, (error) => {
       console.error("Error with partner data snapshot:", error);
@@ -211,7 +210,6 @@ function DriverLayoutContent({ children }: { children: React.ReactNode }) {
 
     const handleBeforeUnload = () => {
         if (partnerDocRef.current) {
-            // Use setDoc with merge to avoid errors if doc doesn't exist yet
             setDoc(partnerDocRef.current, { isOnline: false, lastSeen: serverTimestamp(), currentLocation: null }, { merge: true });
         }
     };
@@ -358,5 +356,3 @@ export default function DriverLayout({ children }: { children: React.ReactNode }
         </NotificationsProvider>
     );
 }
-
-    

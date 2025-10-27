@@ -5,40 +5,32 @@ import { Toaster } from '@/components/ui/toaster';
 import { useRouter, usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FirebaseProviderClient } from '@/firebase/client-provider';
+import { FirebaseProviderClient, useFirebase } from '@/firebase/client-provider';
 
-// This layout now checks for a single, unified session and redirects if found.
-export default function UnauthenticatedLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+function UnauthenticatedLayoutContent({ children }: { children: React.ReactNode }) {
   const router = useRouter();
-  const pathname = usePathname();
-  const [isMounted, setIsMounted] = useState(false);
+  const { user, isUserLoading } = useFirebase();
   const [showChildren, setShowChildren] = useState(false);
 
   useEffect(() => {
-    setIsMounted(true);
-    let redirected = false;
-    
-    // Check for a primary session first
-    const primarySession = localStorage.getItem('curocity-session');
-    if (primarySession) {
-        try {
-            const { role } = JSON.parse(primarySession);
-            if (role) {
-                 if (role === 'admin') router.replace('/admin');
-                 else router.replace(`/${role}`);
-                 redirected = true;
+    if (isUserLoading) return; // Wait until firebase auth state is known
+
+    if (user) {
+        // User is logged in with Firebase, check localStorage for role
+        const primarySession = localStorage.getItem('curocity-session');
+        if (primarySession) {
+            try {
+                const { role } = JSON.parse(primarySession);
+                if (role === 'admin') router.replace('/admin');
+                else router.replace(`/${role}`);
+                return;
+            } catch (e) {
+                console.error("Error parsing session:", e);
+                localStorage.removeItem('curocity-session');
             }
-        } catch (e) {
-            localStorage.removeItem('curocity-session');
         }
-    }
-    
-    // If no primary session, check for other partner sessions
-    if (!redirected) {
+        
+        // Check other partner sessions if primary is not found or invalid
         const partnerSessionKeys = ['curocity-resq-session', 'curocity-cure-session', 'curocity-ambulance-session', 'curocity-doctor-session'];
         for (const key of partnerSessionKeys) {
             const session = localStorage.getItem(key);
@@ -47,8 +39,7 @@ export default function UnauthenticatedLayout({
                     const { role } = JSON.parse(session);
                     if (role) {
                         router.replace(`/${role}`);
-                        redirected = true;
-                        break; 
+                        return;
                     }
                 } catch (e) {
                     localStorage.removeItem(key);
@@ -57,32 +48,41 @@ export default function UnauthenticatedLayout({
         }
     }
     
-    // If no valid session is found and no redirection happened, show the page content.
-    if (!redirected) {
-        setShowChildren(true);
-    }
+    // If no user or no valid session, show the login page
+    setShowChildren(true);
+    
+  }, [user, isUserLoading, router]);
 
-  // By removing `router` from the dependency array, we ensure this logic runs only once.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-  
-  if (!isMounted || !showChildren) {
-    return null; // Render nothing until redirection logic completes or decides to show children.
+  if (!showChildren) {
+    // Render a full-page loader or null to prevent flash of login page
+    return null; 
   }
 
   return (
-    <FirebaseProviderClient>
-      <AnimatePresence mode="wait">
+    <AnimatePresence mode="wait">
         <motion.div
-          key={pathname}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.5 }}
+            key={usePathname()}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.5 }}
         >
-          {children}
+            {children}
         </motion.div>
-      </AnimatePresence>
+    </AnimatePresence>
+  );
+}
+
+
+export default function UnauthenticatedLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  
+  return (
+    <FirebaseProviderClient>
+      <UnauthenticatedLayoutContent>{children}</UnauthenticatedLayoutContent>
       <Toaster />
     </FirebaseProviderClient>
   );
