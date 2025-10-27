@@ -19,7 +19,7 @@ import { useToast } from '@/hooks/use-toast'
 import { doc, updateDoc, GeoPoint, serverTimestamp, onSnapshot, collection, query, where, arrayUnion, getDoc } from 'firebase/firestore'
 import { useFirebase, useMessaging } from '@/firebase/client-provider'
 import dynamic from 'next/dynamic'
-import type { PartnerData, RideData, JobRequest } from '@/lib/types'
+import type { RideData, JobRequest } from '@/lib/types'
 import { AnimatePresence, motion } from 'framer-motion'
 import { onMessage } from 'firebase/messaging'
 import RideStatus from '@/components/ride-status'
@@ -74,38 +74,47 @@ export default function DriverDashboardPage() {
     // Effect for handling incoming ride requests via FCM
     useEffect(() => {
         if (!messaging || !isOnline || !partnerData?.id || activeRide || jobRequest) return;
-
+    
         const unsubscribe = onMessage(messaging, (payload) => {
             console.log('FCM Message received for Driver.', payload);
             notificationSoundRef.current?.play().catch(e => console.error("Audio play failed:", e));
-
-            const { type, rideId, ...rideData } = payload.data || {};
-
+    
+            const data = payload.data;
+            if (!data) return;
+    
+            const { type, rideId } = data;
+    
             if (type === 'new_ride_request' && rideId) {
-                // Ignore if already have a job or this ride is rejected
-                const rejectedBy = rideData.rejectedBy ? JSON.parse(rideData.rejectedBy) : [];
+                const rejectedBy = data.rejectedBy ? JSON.parse(data.rejectedBy) : [];
                 if (activeRide || jobRequest || rejectedBy.includes(partnerData.id)) {
                     return;
                 }
-
+    
                 const newJobRequest: JobRequest = {
                     id: rideId,
-                    ...rideData,
-                    pickup: JSON.parse(rideData.pickupLocation || '{}'),
-                    destination: JSON.parse(rideData.destinationLocation || '{}'),
-                    fare: parseFloat(rideData.fare || '0'),
+                    pickup: JSON.parse(data.pickupLocation || '{}'),
+                    destination: JSON.parse(data.destinationLocation || '{}'),
+                    fare: parseFloat(data.fare || '0'),
+                    pickupAddress: data.pickupAddress,
+                    destinationAddress: data.destinationAddress,
+                    rideType: data.rideType,
+                    status: data.status,
+                    riderName: data.riderName,
+                    riderId: data.riderId,
+                    riderGender: data.riderGender,
+                    otp: data.otp,
                 } as JobRequest;
                 
                 setJobRequest(newJobRequest);
                 
-                 toast({
+                toast({
                     title: 'New Ride Request!',
-                    description: `From ${newJobRequest.pickup.address} to ${newJobRequest.destination.address}`,
+                    description: `From ${newJobRequest.pickupAddress} to ${newJobRequest.destinationAddress}`,
                     duration: 10000,
                 });
             }
         });
-
+    
         return () => unsubscribe();
     }, [messaging, isOnline, partnerData, activeRide, jobRequest, toast]);
 
@@ -222,8 +231,8 @@ export default function DriverDashboardPage() {
                          <div className="absolute top-0 right-0 w-12 h-12 flex items-center justify-center rounded-full border-4 border-primary text-primary font-bold text-xl">
                             {requestTimeout}
                         </div>
-                        <div><Label>Pickup</Label><p className="font-semibold">{jobRequest?.pickup?.address}</p></div>
-                        <div><Label>Drop</Label><p className="font-semibold">{jobRequest?.destination?.address}</p></div>
+                        <div><Label>Pickup</Label><p className="font-semibold">{jobRequest?.pickupAddress}</p></div>
+                        <div><Label>Drop</Label><p className="font-semibold">{jobRequest?.destinationAddress}</p></div>
                         <div><Label>Estimated Fare</Label><p className="font-bold text-xl text-green-600">₹{jobRequest?.fare}</p></div>
                     </div>
                     <AlertDialogFooter className="grid grid-cols-2">
@@ -235,3 +244,5 @@ export default function DriverDashboardPage() {
         </div>
     );
 }
+
+    
