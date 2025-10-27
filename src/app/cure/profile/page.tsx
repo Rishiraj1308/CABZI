@@ -7,14 +7,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { CheckCircle, BadgeCheck, Ambulance, KeyRound, IndianRupee, Save } from 'lucide-react'
-import { useDb } from '@/firebase/client-provider'
+import { useDb, useFirebase } from '@/firebase/client-provider'
 import { collection, query, where, getDocs, doc, updateDoc } from 'firebase/firestore'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useToast } from '@/hooks/use-toast'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog"
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle, AlertDialogFooter } from "@/components/ui/alert-dialog"
 import type { Timestamp } from 'firebase/firestore'
 
 interface CurePartnerData {
@@ -187,37 +187,39 @@ export default function CureProfilePage() {
   return (
       <div className="grid gap-6">
           <h2 className="text-3xl font-bold tracking-tight">Cure Partner Profile</h2>
-          <Card>
-              <CardHeader>
-                  <CardTitle>Business Information</CardTitle>
-                  <CardDescription>Your details are verified and cannot be changed from the app.</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                   <div className="flex items-center gap-4">
-                      <Avatar className="w-16 h-16">
-                        <AvatarImage src="https://placehold.co/100x100.png" alt={partnerData?.name} data-ai-hint="hospital building" />
-                        <AvatarFallback>{getInitials(partnerData?.name || '').toUpperCase()}</AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1">
-                          <Label>Hospital / Clinic Name</Label>
-                          <Input value={partnerData?.name || '...'} disabled />
-                      </div>
-                  </div>
-                   <div className="grid md:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                          <Label>Contact Person</Label>
-                          <Input value={partnerData?.contactPerson || '...'} disabled />
-                      </div>
-                      <div className="space-y-2">
-                          <Label>Contact Phone Number</Label>
-                          <Input value={partnerData?.phone || '...'} disabled />
-                      </div>
-                       <div className="space-y-2">
-                          <Label>Govt. Registration No.</Label>
-                          <Input value={partnerData?.registrationNumber || '...'} disabled />
-                      </div>
-                  </div>
-              </CardContent>
+           <Card className="p-0.5 shadow-2xl relative overflow-hidden">
+                <div className="absolute -top-1/2 -left-1/2 w-[200%] h-[200%] bg-gradient-to-br from-primary via-primary/50 to-accent animate-[spin_10s_linear_infinite]"></div>
+              <div className="relative bg-background rounded-lg">
+                <CardHeader>
+                    <CardTitle>Business Information</CardTitle>
+                    <CardDescription>Your details are verified and cannot be changed from the app.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    <div className="flex items-center gap-4">
+                        <Avatar className="w-16 h-16">
+                            <AvatarImage src="https://placehold.co/100x100.png" alt={partnerData?.name} data-ai-hint="hospital building" />
+                            <AvatarFallback>{getInitials(partnerData?.name || '').toUpperCase()}</AvatarFallback>
+                        </Avatar>
+                        <div>
+                            <p className="text-2xl font-bold">{partnerData?.name}</p>
+                        </div>
+                    </div>
+                    <div className="grid md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <Label>Contact Person</Label>
+                            <Input value={partnerData?.contactPerson || '...'} disabled />
+                        </div>
+                        <div className="space-y-2">
+                            <Label>Contact Phone Number</Label>
+                            <Input value={partnerData?.phone || '...'} disabled />
+                        </div>
+                        <div className="space-y-2">
+                            <Label>Govt. Registration No.</Label>
+                            <Input value={partnerData?.registrationNumber || '...'} disabled />
+                        </div>
+                    </div>
+                </CardContent>
+              </div>
           </Card>
           <Card>
               <CardHeader>
@@ -242,93 +244,28 @@ export default function CureProfilePage() {
           </Card>
           <Card>
               <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                      <KeyRound className="w-5 h-5 text-primary"/>
-                      Security Settings
-                  </CardTitle>
-                  <CardDescription>Manage your account security, including your UPI PIN.</CardDescription>
+                  <div className="flex items-center gap-2">
+                      <Ambulance className="w-5 h-5 text-primary"/>
+                      <CardTitle>My Services</CardTitle>
+                  </div>
+                  <CardDescription>The list of ambulance services you offer.</CardDescription>
               </CardHeader>
               <CardContent>
-                  <Dialog open={isPinDialogOpen} onOpenChange={handlePinDialogChange}>
-                      <DialogTrigger asChild>
-                          <Button variant="outline" className="w-full">{isPinSet ? 'Change UPI PIN' : 'Set UPI PIN'}</Button>
-                      </DialogTrigger>
-                      <DialogContent>
-                           <DialogHeader>
-                              <DialogTitle>
-                                  {pinStep === 0 && 'Verify Old PIN'}
-                                  {pinStep === 1 && 'Create New UPI PIN'}
-                                  {pinStep === 2 && 'Confirm Your New PIN'}
-                              </DialogTitle>
-                          </DialogHeader>
-                          <div className="flex flex-col items-center justify-center gap-2 py-4">
-                              {pinStep === 0 && (
-                                   <Input id="old-pin" type="password" inputMode="numeric" maxLength={4} value={oldPin} onChange={(e) => setOldPin(e.target.value.replace(/\D/g, ''))} className="text-center text-2xl font-bold tracking-[1em] w-40" placeholder="••••" autoFocus />
-                              )}
-                              {pinStep === 1 && (
-                                   <Input id="new-pin" type="password" inputMode="numeric" maxLength={4} value={newPin} onChange={(e) => setNewPin(e.target.value.replace(/\D/g, ''))} className="text-center text-2xl font-bold tracking-[1em] w-40" placeholder="••••" autoFocus />
-                              )}
-                              {pinStep === 2 && (
-                                   <Input id="confirm-pin" type="password" inputMode="numeric" maxLength={4} value={confirmPin} onChange={(e) => setConfirmPin(e.target.value.replace(/\D/g, ''))} className="text-center text-2xl font-bold tracking-[1em] w-40" placeholder="••••" autoFocus />
-                              )}
-                              {pinStep === 0 && (
-                                  <AlertDialog>
-                                      <AlertDialogTrigger asChild>
-                                          <Button variant="link" className="text-xs h-auto p-0 mt-2">Forgot PIN?</Button>
-                                      </AlertDialogTrigger>
-                                      <AlertDialogContent>
-                                          <AlertDialogHeader>
-                                              <AlertDialogTitle>Forgot UPI PIN?</AlertDialogTitle>
-                                              <AlertDialogDescription>
-                                                 An OTP will be sent to your registered mobile number for verification.
-                                              </AlertDialogDescription>
-                                          </AlertDialogHeader>
-                                          <AlertDialogFooter>
-                                              <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                              <AlertDialogAction onClick={handleForgotPin}>Send OTP</AlertDialogAction>
-                                          </AlertDialogFooter>
-                                      </AlertDialogContent>
-                                  </AlertDialog>
-                              )}
-                          </div>
-                          <DialogFooter>
-                             {pinStep === 0 && <Button className="w-full" onClick={handlePinSubmit} disabled={oldPin.length !== 4}>Verify</Button>}
-                             {pinStep === 1 && <Button className="w-full" onClick={handlePinSubmit} disabled={newPin.length !== 4}>Next</Button>}
-                             {pinStep === 2 && (
-                                 <div className="w-full grid grid-cols-2 gap-4">
-                                      <Button variant="outline" onClick={() => setPinStep(1)}>Back</Button>
-                                      <Button className="w-full" onClick={handlePinSubmit} disabled={confirmPin.length !== 4}>Confirm</Button>
-                                  </div>
-                             )}
-                          </DialogFooter>
-                      </DialogContent>
-                  </Dialog>
+                  <div className="flex flex-wrap gap-2">
+                      {partnerData?.services && partnerData.services.length > 0 ? (
+                          partnerData.services.map(service => (
+                              <Badge key={service} variant="secondary" className="p-2 text-sm">
+                                  <BadgeCheck className="w-4 h-4 mr-1.5 text-green-600"/>
+                                  {service}
+                              </Badge>
+                          ))
+                      ) : (
+                          <p className="text-sm text-muted-foreground">No services have been configured for this facility yet.</p>
+                      )}
+                  </div>
+                   <Button variant="outline" className="w-full mt-4">Edit My Services</Button>
               </CardContent>
           </Card>
-          <Card>
-             <CardHeader>
-                 <div className="flex items-center gap-2">
-                     <Ambulance className="w-5 h-5 text-primary"/>
-                     <CardTitle>My Services</CardTitle>
-                 </div>
-                 <CardDescription>The list of ambulance services you offer.</CardDescription>
-             </CardHeader>
-             <CardContent>
-                 <div className="flex flex-wrap gap-2">
-                     {partnerData?.services && partnerData.services.length > 0 ? (
-                         partnerData.services.map(service => (
-                             <Badge key={service} variant="secondary" className="p-2 text-sm">
-                                 <BadgeCheck className="w-4 h-4 mr-1.5 text-green-600"/>
-                                 {service}
-                             </Badge>
-                         ))
-                     ) : (
-                         <p className="text-sm text-muted-foreground">No services have been configured for this facility yet.</p>
-                     )}
-                 </div>
-                  <Button variant="outline" className="w-full mt-4">Edit My Services</Button>
-             </CardContent>
-         </Card>
       </div>
   );
 }

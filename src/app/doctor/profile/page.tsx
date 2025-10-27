@@ -54,7 +54,7 @@ export default function DoctorProfilePage() {
     
     useEffect(() => {
         if (!db) return;
-        const session = localStorage.getItem('cabzi-doctor-session');
+        const session = localStorage.getItem('curocity-doctor-session');
         if (session) {
             const { partnerId, hospitalId } = JSON.parse(session);
 
@@ -108,7 +108,7 @@ export default function DoctorProfilePage() {
 
     const handleSaveAvailability = async () => {
         if (!profile || !db) return;
-        const session = localStorage.getItem('cabzi-doctor-session');
+        const session = localStorage.getItem('curocity-doctor-session');
         if (!session) return;
         const { hospitalId } = JSON.parse(session);
 
@@ -182,27 +182,30 @@ export default function DoctorProfilePage() {
             
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div className="lg:col-span-1 space-y-6">
-                    <Card>
-                        <CardHeader className="items-center text-center">
-                            <Avatar className="w-24 h-24 border-4 border-primary">
-                                <AvatarImage src="https://i.pravatar.cc/100?u=doctor-profile" alt={profile.name} data-ai-hint="doctor portrait"/>
-                                <AvatarFallback>{getInitials(profile.name).toUpperCase()}</AvatarFallback>
-                            </Avatar>
-                            <div className="pt-2">
-                                <CardTitle className="text-2xl">Dr. {profile.name}</CardTitle>
-                                <CardDescription>Partner ID: {profile.partnerId}</CardDescription>
-                            </div>
-                        </CardHeader>
-                        <CardContent className="space-y-2">
-                             <div className="flex items-center gap-2 p-2 bg-muted rounded-md text-sm">
-                                <Hospital className="w-4 h-4 text-muted-foreground"/>
-                                <span className="font-semibold">{profile.hospitalName}</span>
-                            </div>
-                             <div className="flex items-center gap-2 p-2 bg-muted rounded-md text-sm">
-                                <Briefcase className="w-4 h-4 text-muted-foreground"/>
-                                <span className="font-semibold">{profile.experience} years of experience</span>
-                            </div>
-                        </CardContent>
+                    <Card className="p-0.5 shadow-2xl relative overflow-hidden">
+                        <div className="absolute -top-1/2 -left-1/2 w-[200%] h-[200%] bg-gradient-to-br from-primary via-primary/50 to-accent animate-[spin_10s_linear_infinite]"></div>
+                        <div className="relative bg-background rounded-lg">
+                            <CardHeader className="items-center text-center">
+                                <Avatar className="w-24 h-24 border-4 border-primary mb-4">
+                                    <AvatarImage src={profile.photoUrl || `https://i.pravatar.cc/150?u=${profile.id}`} data-ai-hint="doctor portrait" />
+                                    <AvatarFallback>{getInitials(profile.name).toUpperCase()}</AvatarFallback>
+                                </Avatar>
+                                <div className="pt-2">
+                                    <CardTitle className="text-2xl">Dr. {profile.name}</CardTitle>
+                                    <CardDescription>Partner ID: {profile.partnerId}</CardDescription>
+                                </div>
+                            </CardHeader>
+                            <CardContent className="space-y-2">
+                                <div className="flex items-center gap-2 p-2 bg-muted rounded-md text-sm">
+                                    <Hospital className="w-4 h-4 text-muted-foreground"/>
+                                    <span className="font-semibold">{profile.hospitalName}</span>
+                                </div>
+                                <div className="flex items-center gap-2 p-2 bg-muted rounded-md text-sm">
+                                    <Briefcase className="w-4 h-4 text-muted-foreground"/>
+                                    <span className="font-semibold">{profile.experience} years of experience</span>
+                                </div>
+                            </CardContent>
+                        </div>
                     </Card>
                      <Card>
                         <CardHeader>

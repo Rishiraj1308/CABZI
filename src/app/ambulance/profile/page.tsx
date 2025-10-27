@@ -28,7 +28,7 @@ export default function AmbulanceProfilePage() {
 
     useEffect(() => {
         if (!db) return;
-        const session = localStorage.getItem('cabzi-ambulance-session');
+        const session = localStorage.getItem('curocity-ambulance-session');
         if (session) {
             const { partnerId } = JSON.parse(session);
             const q = query(collection(db, "ambulanceDrivers"), where("partnerId", "==", partnerId));
@@ -68,7 +68,9 @@ export default function AmbulanceProfilePage() {
     return (
         <div className="grid gap-6">
             <h2 className="text-3xl font-bold tracking-tight">My Profile</h2>
-            <Card>
+             <Card className="p-0.5 shadow-2xl relative overflow-hidden">
+                <div className="absolute -top-1/2 -left-1/2 w-[200%] h-[200%] bg-gradient-to-br from-primary via-primary/50 to-accent animate-[spin_10s_linear_infinite]"></div>
+              <div className="relative bg-background rounded-lg">
                 <CardHeader>
                     <div className="flex items-center gap-4">
                         <Avatar className="w-16 h-16 border-2 border-primary">
@@ -96,6 +98,7 @@ export default function AmbulanceProfilePage() {
                         </div>
                     </div>
                 </CardContent>
+              </div>
             </Card>
 
             <Card>

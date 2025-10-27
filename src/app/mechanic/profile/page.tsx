@@ -7,16 +7,25 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { CheckCircle, BadgeCheck, Wrench, KeyRound } from 'lucide-react'
+import { BadgeCheck, Wrench, KeyRound, Badge } from 'lucide-react'
 import { useDb, useFirebase } from '@/firebase/client-provider'
 import { collection, query, where, getDocs } from 'firebase/firestore'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useToast } from '@/hooks/use-toast'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Badge } from '@/components/ui/badge'
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger, AlertDialogFooter } from "@/components/ui/alert-dialog"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 import { signInWithPhoneNumber, RecaptchaVerifier, type ConfirmationResult } from 'firebase/auth'
+
 
 interface ResQPartnerData {
     name: string;
@@ -72,7 +81,7 @@ export default function ResQProfilePage() {
                      setIsLoading(false);
                 }
             } else {
-                setIsLoading(false);
+                 setIsLoading(false);
             }
         };
         fetchProfile();
@@ -106,7 +115,7 @@ export default function ResQProfilePage() {
             if (oldPin === storedPin) {
                 setPinStep(1);
             } else {
-                 toast({ variant: 'destructive', title: 'Incorrect PIN', description: 'The old PIN you entered is incorrect.' });
+                 toast({ variant: 'destructive', title: 'Incorrect PIN' });
             }
             return;
         }
@@ -184,35 +193,34 @@ export default function ResQProfilePage() {
 
   return (
       <div className="grid gap-6">
-           <div id="recaptcha-container-profile"></div>
+          <div id="recaptcha-container-profile"></div>
           <h2 className="text-3xl font-bold tracking-tight">My ResQ Profile</h2>
-          <Card>
-              <CardHeader>
-                  <CardTitle>Personal Information</CardTitle>
-                  <CardDescription>Your details are verified and cannot be changed from the app.</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                   <div className="flex items-center gap-4">
-                      <Avatar className="w-16 h-16">
-                        <AvatarImage src="https://placehold.co/100x100.png" alt={partnerData?.name} data-ai-hint="mechanic portrait" />
-                        <AvatarFallback>{getInitials(partnerData?.name || '').toUpperCase()}</AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1">
-                          <Label>Name</Label>
-                          <Input value={partnerData?.name || '...'} disabled />
-                      </div>
-                  </div>
-                   <div className="grid md:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                          <Label>Phone Number</Label>
-                          <Input value={partnerData?.phone || '...'} disabled />
-                      </div>
-                      <div className="space-y-2">
-                          <Label>Garage / Business Name</Label>
-                          <Input value={partnerData?.garageName || 'Individual Freelancer'} disabled />
-                      </div>
-                  </div>
-              </CardContent>
+          <Card className="p-0.5 shadow-2xl relative overflow-hidden">
+                <div className="absolute -top-1/2 -left-1/2 w-[200%] h-[200%] bg-gradient-to-br from-primary via-primary/50 to-accent animate-[spin_10s_linear_infinite]"></div>
+              <div className="relative bg-background rounded-lg">
+                <CardHeader>
+                    <CardTitle>Partner Information</CardTitle>
+                    <CardDescription>Your verified details as a Curocity ResQ Partner.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    <div className="flex items-center gap-4">
+                        <Avatar className="w-16 h-16">
+                            <AvatarImage src="https://placehold.co/100x100.png" alt={partnerData?.name} data-ai-hint="mechanic portrait"/>
+                            <AvatarFallback>{getInitials(partnerData?.name || '').toUpperCase()}</AvatarFallback>
+                        </Avatar>
+                        <div>
+                            <p className="text-2xl font-bold">{partnerData?.name}</p>
+                            <p className="text-muted-foreground">{partnerData?.garageName || 'Individual Freelancer'}</p>
+                        </div>
+                    </div>
+                    <div className="grid md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <Label>Phone Number</Label>
+                            <Input value={partnerData?.phone || '...'} disabled />
+                        </div>
+                    </div>
+                </CardContent>
+              </div>
           </Card>
           <Card>
               <CardHeader>

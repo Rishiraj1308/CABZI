@@ -239,24 +239,27 @@ export default function UserProfilePage() {
 
              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div className="lg:col-span-1 space-y-6">
-                     <Card>
-                        <CardHeader className="items-center text-center">
-                            <div className="relative">
-                                <Avatar className="w-24 h-24 border-4 border-primary">
-                                    <AvatarImage src={profileData.photoURL || 'https://placehold.co/100x100.png'} alt={profileData.name || ''} data-ai-hint="customer portrait" />
-                                    <AvatarFallback className="text-3xl">{getInitials(profileData.name).toUpperCase()}</AvatarFallback>
-                                </Avatar>
-                                <input type="file" ref={fileInputRef} onChange={handlePhotoUpload} accept="image/png, image/jpeg" className="hidden" />
-                                <Button variant="outline" size="icon" className="absolute -bottom-2 -right-2 rounded-full h-8 w-8 bg-background" onClick={() => fileInputRef.current?.click()} disabled={isUploading}>
-                                    {isUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Camera className="w-4 h-4"/>}
-                                    <span className="sr-only">Change photo</span>
-                                </Button>
-                            </div>
-                            <div className="pt-2">
-                                <CardTitle className="text-2xl">{profileData.name}</CardTitle>
-                                <CardDescription>Member since {profileData.createdAt ? profileData.createdAt.toDate().toLocaleDateString('en-US', { year: 'numeric', month: 'long' }) : '2024'}</CardDescription>
-                            </div>
-                        </CardHeader>
+                     <Card className="p-0.5 shadow-2xl relative overflow-hidden">
+                        <div className="absolute -top-1/2 -left-1/2 w-[200%] h-[200%] bg-gradient-to-br from-primary via-primary/50 to-accent animate-[spin_10s_linear_infinite]"></div>
+                        <div className="relative bg-background rounded-lg">
+                            <CardHeader className="items-center text-center">
+                                <div className="relative">
+                                    <Avatar className="w-24 h-24 border-4 border-primary">
+                                        <AvatarImage src={profileData.photoURL || 'https://placehold.co/100x100.png'} alt={profileData.name || ''} data-ai-hint="customer portrait" />
+                                        <AvatarFallback className="text-3xl">{getInitials(profileData.name).toUpperCase()}</AvatarFallback>
+                                    </Avatar>
+                                    <input type="file" ref={fileInputRef} onChange={handlePhotoUpload} accept="image/png, image/jpeg" className="hidden" />
+                                    <Button variant="outline" size="icon" className="absolute -bottom-2 -right-2 rounded-full h-8 w-8 bg-background" onClick={() => fileInputRef.current?.click()} disabled={isUploading}>
+                                        {isUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Camera className="w-4 h-4"/>}
+                                        <span className="sr-only">Change photo</span>
+                                    </Button>
+                                </div>
+                                <div className="pt-2">
+                                    <CardTitle className="text-2xl">{profileData.name}</CardTitle>
+                                    <CardDescription>Member since {profileData.createdAt ? profileData.createdAt.toDate().toLocaleDateString('en-US', { year: 'numeric', month: 'long' }) : '2024'}</CardDescription>
+                                </div>
+                            </CardHeader>
+                        </div>
                     </Card>
                      <Card>
                         <CardHeader>
@@ -284,27 +287,6 @@ export default function UserProfilePage() {
                     </Card>
                 </div>
                 <div className="lg:col-span-2 space-y-6">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2 text-lg"><Shield className="w-5 h-5 text-green-600"/> Emergency Contacts</CardTitle>
-                            <CardDescription>Add trusted contacts to notify during an SOS. This is a vital part of our CURE safety net.</CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-3">
-                            {/* Mocked Contact */}
-                            <div className="p-3 rounded-lg border flex items-center gap-3">
-                                <User className="w-5 h-5 text-muted-foreground"/>
-                                <div className="flex-1">
-                                    <p className="font-semibold">Abhishek Sharma</p>
-                                    <p className="text-xs text-muted-foreground">Father</p>
-                                </div>
-                                <Button variant="ghost" size="sm">Remove</Button>
-                            </div>
-                            <Button variant="outline" className="w-full border-dashed">
-                               <PlusCircle className="w-4 h-4 mr-2"/> Add Contact
-                            </Button>
-                        </CardContent>
-                    </Card>
-
                     <Card>
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2 text-lg"><HeartPulse className="w-5 h-5 text-destructive"/> Health &amp; Insurance</CardTitle>
@@ -344,58 +326,37 @@ export default function UserProfilePage() {
                             </Button>
                         </CardFooter>
                     </Card>
+
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2"><Settings className="w-5 h-5"/> Account Actions</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                    <Button variant="destructive" className="w-full">
+                                        <LogOut className="mr-2 h-4 w-4" /> Logout
+                                    </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                        <AlertDialogTitle>Are you sure you want to log out?</AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                            You will be returned to the home page and will need to log in again to book a ride.
+                                        </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                        <AlertDialogAction onClick={handleLogout} className="bg-destructive hover:bg-destructive/90">
+                                            Logout
+                                        </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                </AlertDialogContent>
+                            </AlertDialog>
+                        </CardContent>
+                    </Card>
                 </div>
             </div>
-
-            <Card>
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2"><Settings className="w-5 h-5"/> Account Settings</CardTitle>
-                     <CardDescription>Manage your saved locations, payment methods, and legal information.</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                    <div className="space-y-2">
-                        <Label>Saved Locations</Label>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="p-3 rounded-lg border flex items-center gap-3">
-                                <Home className="w-5 h-5 text-muted-foreground"/>
-                                <div className="flex-1"><p className="font-medium">Home</p><p className="text-xs text-muted-foreground">A-123, Sector 5, Noida</p></div>
-                                <Button variant="ghost" size="sm">Edit</Button>
-                            </div>
-                            <div className="p-3 rounded-lg border flex items-center gap-3">
-                                <Briefcase className="w-5 h-5 text-muted-foreground"/>
-                                <div className="flex-1"><p className="font-medium">Work</p><p className="text-xs text-muted-foreground">Cyber Hub, Gurgaon</p></div>
-                                <Button variant="ghost" size="sm">Edit</Button>
-                            </div>
-                        </div>
-                    </div>
-                     <Separator />
-                    <div className="flex flex-col md:flex-row gap-4">
-                        <Button asChild variant="ghost" className="w-full justify-start gap-2"><Link href="/terms"><FileText className="w-5 h-5"/> Terms of Service</Link></Button>
-                        <Button asChild variant="ghost" className="w-full justify-start gap-2"><Link href="/privacy"><FileText className="w-5 h-5"/> Privacy Policy</Link></Button>
-                        <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                                <Button variant="destructive" className="w-full md:w-auto">
-                                    <LogOut className="mr-2 h-4 w-4" /> Logout
-                                </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                                <AlertDialogHeader>
-                                    <AlertDialogTitle>Are you sure you want to log out?</AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                        You will be returned to the home page and will need to log in again to book a ride.
-                                    </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                    <AlertDialogAction onClick={handleLogout} className="bg-destructive hover:bg-destructive/90">
-                                        Logout
-                                    </AlertDialogAction>
-                                </AlertDialogFooter>
-                            </AlertDialogContent>
-                        </AlertDialog>
-                    </div>
-                </CardContent>
-            </Card>
         </div>
     )
 }
