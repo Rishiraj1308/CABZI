@@ -41,19 +41,27 @@ const StatCard = ({ title, value, icon: Icon }: { title: string, value: string, 
     </Card>
 );
 
-export default function DriverDashboardPage() {
-    const [partnerData, setPartnerData] = useState<PartnerData | null>(null);
+// The `partnerData` prop is passed down from the layout.
+export default function DriverDashboardPage({ partnerData: initialPartnerData }: { partnerData: PartnerData | null }) {
+    const [partnerData, setPartnerData] = useState<PartnerData | null>(initialPartnerData);
     const [jobRequest, setJobRequest] = useState<JobRequest | null>(null);
     const [activeRide, setActiveRide] = useState<RideData | null>(null);
     const [requestTimeout, setRequestTimeout] = useState(15);
     const requestTimerRef = useRef<NodeJS.Timeout | null>(null);
     const [isLoading, setIsLoading] = useState(true);
 
-    const { db, user } = useFirebase();
+    const { db } = useFirebase();
     const { toast } = useToast();
     const messaging = useMessaging();
     const liveMapRef = useRef<any>(null);
-    const locationWatchId = useRef<number | null>(null);
+
+    // Update local partnerData when the prop changes
+    useEffect(() => {
+        setPartnerData(initialPartnerData);
+        if (initialPartnerData) {
+            setIsLoading(false);
+        }
+    }, [initialPartnerData]);
 
     const getDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
         const R = 6371e3; // metres
@@ -69,149 +77,13 @@ export default function DriverDashboardPage() {
 
         return R * c; // in metres
     }
-
-    const stopLocationWatch = () => {
-      if (locationWatchId.current) {
-        navigator.geolocation.clearWatch(locationWatchId.current);
-        locationWatchId.current = null;
-      }
-    };
-
-
-    useEffect(() => {
-      if (!user) {
-        setIsLoading(false);
-        return;
-      }
-      
-      const session = localStorage.getItem('curocity-session');
-        if (session && db) {
-            const { partnerId } = JSON.parse(session);
-            if (!partnerId) {
-                toast({ variant: 'destructive', title: "Error", description: 'Invalid session. Could not find Partner ID.' });
-                setIsLoading(false);
-                return;
-            }
-
-            const partnerRef = doc(db, 'partners', partnerId);
-            const unsubscribe = onSnapshot(partnerRef, (docSnap) => {
-                if (docSnap.exists()) {
-                    setPartnerData({ id: docSnap.id, ...docSnap.data() } as PartnerData);
-                } else {
-                    toast({ variant: 'destructive', title: 'Error', description: 'Partner document not found.' });
-                }
-                setIsLoading(false);
-            });
-            return () => unsubscribe();
-        } else {
-             setIsLoading(false);
-        }
-
-    }, [user, db, toast]);
     
-    // This effect manages the geolocation watcher based on online status.
-    useEffect(() => {
-        if (partnerData?.isOnline && partnerData.id) {
-            if (navigator.geolocation && !locationWatchId.current) {
-                let lastSentLocation: { lat: number, lon: number } | null = null;
-                let lastSentTime = 0;
-
-                locationWatchId.current = navigator.geolocation.watchPosition(
-                    (position) => {
-                        const { latitude, longitude } = position.coords;
-                        const newLocation = { lat: latitude, lon: longitude };
-                        const partnerRef = doc(db, 'partners', partnerData.id);
-                        
-                        const distanceMoved = lastSentLocation 
-                            ? getDistance(lastSentLocation.lat, lastSentLocation.lon, newLocation.lat, newLocation.lon) 
-                            : Infinity;
-                        
-                        const timeElapsed = Date.now() - lastSentTime;
-
-                        // Update if moved more than 30 meters or if 30 seconds have passed
-                        if (distanceMoved > 30 || timeElapsed > 30000) {
-                            updateDoc(partnerRef, { 
-                                currentLocation: new GeoPoint(latitude, longitude),
-                                lastSeen: serverTimestamp() 
-                            }).catch(err => console.error("Failed to update location:", err));
-                            lastSentLocation = newLocation;
-                            lastSentTime = Date.now();
-                        }
-                    },
-                    (error) => {
-                        console.error("Geolocation error:", error);
-                        toast({ variant: 'destructive', title: "Location Error", description: "Could not track your location." });
-                    },
-                    { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-                );
-            }
-        } else {
-            stopLocationWatch();
-        }
-    
-        // Cleanup function for when the component unmounts or partnerData changes
-        return () => {
-            stopLocationWatch();
-        };
-    }, [partnerData, db, toast]);
-
-
-    // This effect handles real-time job requests via FCM
-    useEffect(() => {
-        if (!messaging || !partnerData?.isOnline || activeRide || jobRequest) return;
-
-        const unsubscribe = onMessage(messaging, (payload) => {
-            const { type, rideId } = payload.data || {};
-            if (type === 'new_ride_request' && rideId) {
-                const rideDocRef = doc(db, 'rides', rideId);
-                getDoc(rideDocRef).then(rideSnap => {
-                    if (rideSnap.exists()) {
-                        setJobRequest({ id: rideSnap.id, ...rideSnap.data() } as JobRequest);
-                    }
-                });
-            }
-        });
-        return () => unsubscribe();
-    }, [messaging, partnerData, activeRide, jobRequest, db]);
-    
-    // This effect tracks the status of an accepted ride
-    useEffect(() => {
-        if(!db || !activeRide?.id) return;
-        const rideRef = doc(db, 'rides', activeRide.id);
-        const unsubscribe = onSnapshot(rideRef, (docSnap) => {
-            if (docSnap.exists()) {
-                const status = docSnap.data().status;
-                if(status === 'completed' || status.startsWith('cancelled')) {
-                    setActiveRide(null);
-                    localStorage.removeItem('activeRideId');
-                } else {
-                    setActiveRide({ id: docSnap.id, ...docSnap.data() } as RideData);
-                }
-            }
-        });
-        return () => unsubscribe();
-    }, [db, activeRide?.id]);
-    
-     // Check for an active ride on initial load
-    useEffect(() => {
-        const activeRideId = localStorage.getItem('activeRideId');
-        if(activeRideId && db) {
-            const rideRef = doc(db, 'rides', activeRideId);
-            getDoc(rideRef).then(docSnap => {
-                if(docSnap.exists() && !['completed', 'cancelled_by_driver', 'cancelled_by_rider'].includes(docSnap.data().status)) {
-                    setActiveRide({ id: docSnap.id, ...docSnap.data()} as RideData);
-                }
-            })
-        }
-    }, [db]);
-
-
     const handleOnlineStatusChange = async (checked: boolean) => {
         if (!partnerData || !db) return;
-        
-        // Optimistically update UI
-        setPartnerData(prev => prev ? { ...prev, isOnline: checked, status: checked ? 'online' : 'offline' } : null);
 
+        // Optimistically update the UI
+        setPartnerData(prev => prev ? { ...prev, isOnline: checked, status: checked ? 'online' : 'offline' } : null);
+        
         const partnerRef = doc(db, 'partners', partnerData.id);
         try {
             await updateDoc(partnerRef, { 
@@ -223,9 +95,7 @@ export default function DriverDashboardPage() {
             if (checked) {
                 liveMapRef.current?.locate();
             } else {
-                // When going offline, also nullify the location in DB
                 await updateDoc(partnerRef, { currentLocation: null });
-                stopLocationWatch(); // Explicitly stop watching
             }
             toast({ title: checked ? "You are now Online" : "You've gone Offline" });
         } catch (error) {
