@@ -75,6 +75,15 @@ export default function OnboardingPage() {
                 toast({ variant: 'destructive', title: "Incomplete Details", description: "Please enter your PAN and Aadhaar number." });
                 return;
             }
+            const panRegex = /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/;
+            if (!panRegex.test(formData.panCard.toUpperCase())) {
+                toast({
+                    variant: 'destructive',
+                    title: 'Invalid PAN Format',
+                    description: 'Please enter a valid PAN card number (e.g., ABCDE1234F).',
+                });
+                return;
+            }
         }
         setCurrentStep(prev => prev + 1)
     };
