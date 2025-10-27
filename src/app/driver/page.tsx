@@ -132,6 +132,10 @@ export default function DriverDashboardPage() {
 
     const handleOnlineStatusChange = async (checked: boolean) => {
         if (!partnerData || !db) return;
+        
+        // Optimistically update the UI
+        setPartnerData(prev => prev ? { ...prev, isOnline: checked, status: checked ? 'online' : 'offline' } : null);
+
         const partnerRef = doc(db, 'partners', partnerData.id);
         try {
             await updateDoc(partnerRef, { 
@@ -142,7 +146,9 @@ export default function DriverDashboardPage() {
             if (checked) liveMapRef.current?.locate();
             toast({ title: checked ? "You are now Online" : "You've gone Offline" });
         } catch (error) {
-            toast({ variant: 'destructive', title: 'Error', description: 'Could not update your status.' });
+            toast({ variant: 'destructive', title: 'Error', description: 'Could not update your status. Please try again.' });
+            // Revert UI on failure
+            setPartnerData(prev => prev ? { ...prev, isOnline: !checked, status: !checked ? 'online' : 'offline' } : null);
         }
     }
     
@@ -153,7 +159,7 @@ export default function DriverDashboardPage() {
         const jobRef = doc(db, 'rides', jobRequest.id);
         try {
             await updateDoc(jobRef, { status: 'accepted', driverId: partnerData.id, driverName: partnerData.name, driverDetails: { name: partnerData.name, vehicle: `${partnerData.vehicleBrand} ${partnerData.vehicleName}`, rating: partnerData.rating, photoUrl: partnerData.photoUrl, phone: partnerData.phone, location: partnerData.currentLocation } });
-            setAcceptedJob({ id: jobRequest.id, ...jobRequest });
+            setActiveRide({ id: jobRequest.id, ...jobRequest } as RideData);
             setJobRequest(null);
             localStorage.setItem('activeRideId', jobRequest.id);
         } catch (error) {
@@ -292,4 +298,3 @@ export default function DriverDashboardPage() {
     );
 }
 
-    
