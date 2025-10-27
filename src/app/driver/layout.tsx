@@ -26,7 +26,7 @@ import { useToast } from '@/hooks/use-toast'
 import BrandLogo from '@/components/brand-logo'
 import { useTheme } from 'next-themes'
 import { useFirebase } from '@/firebase/client-provider'
-import { doc, setDoc, serverTimestamp, GeoPoint, type DocumentReference, onSnapshot } from 'firebase/firestore'
+import { doc, setDoc, serverTimestamp, GeoPoint, type DocumentReference, onSnapshot, getDoc } from 'firebase/firestore'
 import { Badge } from '@/components/ui/badge'
 import { MotionDiv } from '@/components/ui/motion-div'
 import { NotificationsProvider } from '@/context/NotificationContext';
@@ -35,9 +35,9 @@ import { Skeleton } from '@/components/ui/skeleton'
 interface PartnerData {
     id: string;
     isCabziPinkPartner?: boolean;
+    name: string;
     [key: string]: any;
 }
-
 
 const navItems = [
   { href: '/driver', label: 'Dashboard', icon: LayoutDashboard },
@@ -95,22 +95,18 @@ function DriverLayoutContent({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const { toast } = useToast();
   const [isMounted, setIsMounted] = useState(false);
-  const [userName, setUserName] = useState('');
-  const [isPinkPartner, setIsPinkPartner] = useState(false);
   const { theme, setTheme } = useTheme();
   const { db, auth, user, isUserLoading: isAuthLoading } = useFirebase();
   const [partnerData, setPartnerData] = useState<PartnerData | null>(null);
   const [isSessionLoading, setIsSessionLoading] = useState(true);
-  
-  const partnerDocRef = useRef<DocumentReference | null>(null);
   
   useEffect(() => {
     setIsMounted(true);
   }, []);
 
   const handleLogout = useCallback(() => {
-    if (partnerDocRef.current) {
-        setDoc(partnerDocRef.current, { isOnline: false, lastSeen: serverTimestamp() }, { merge: true }).catch(error => {
+    if (partnerData?.id && db) {
+        setDoc(doc(db, 'partners', partnerData.id), { isOnline: false, lastSeen: serverTimestamp() }, { merge: true }).catch(error => {
             console.warn("Failed to update status on logout (non-critical):", error);
         });
     }
@@ -124,12 +120,10 @@ function DriverLayoutContent({ children }: { children: React.ReactNode }) {
         description: 'You have been successfully logged out.'
     });
     router.push('/');
-  }, [auth, theme, setTheme, router, toast]);
+  }, [auth, db, partnerData, theme, setTheme, router, toast]);
 
   useEffect(() => {
-    if (isAuthLoading) {
-      return; 
-    }
+    if (isAuthLoading) return;
     if (!user) {
       if (!pathname.includes('/driver/onboarding')) {
         router.push('/login?role=driver');
@@ -140,13 +134,6 @@ function DriverLayoutContent({ children }: { children: React.ReactNode }) {
 
     const session = localStorage.getItem('curocity-session');
     if (!session || !db) {
-        // Delay redirect to allow for session storage to be set on first login
-        setTimeout(() => {
-            const freshSession = localStorage.getItem('curocity-session');
-            if (!freshSession) {
-              router.push('/login?role=driver');
-            }
-        }, 1000);
         setIsSessionLoading(false);
         return;
     }
@@ -159,77 +146,60 @@ function DriverLayoutContent({ children }: { children: React.ReactNode }) {
             setIsSessionLoading(false);
             return;
         }
-        setUserName(sessionData.name);
-        partnerDocRef.current = doc(db, 'partners', sessionData.partnerId);
+
+        const partnerDocRef = doc(db, 'partners', sessionData.partnerId);
+
+        const unsubPartner = onSnapshot(partnerDocRef, (docSnap) => {
+            if (docSnap.exists()) {
+                const data = docSnap.data();
+                const fetchedPartnerData = { id: docSnap.id, ...data } as PartnerData;
+                
+                const isPink = data.isCabziPinkPartner || false;
+                if (isPink && theme !== 'pink') setTheme('pink');
+                else if (!isPink && theme === 'pink') setTheme('system');
+                
+                setPartnerData(fetchedPartnerData);
+            } else {
+                 console.warn("Partner document not found. This might be a new onboarding.");
+                 // We don't log out here, we just wait for the doc to be created.
+            }
+            setIsSessionLoading(false);
+        }, (error) => {
+          console.error("Error with partner data snapshot:", error);
+          toast({variant: "destructive", title: "Error", description: "Could not load partner profile."});
+          setIsSessionLoading(false);
+        });
+
+        return () => unsubPartner();
+
     } catch (e) {
         localStorage.removeItem('curocity-session');
         router.push('/login?role=driver');
         setIsSessionLoading(false);
         return;
     }
-    
+  }, [isAuthLoading, user, db, router, toast, theme, setTheme]);
+
+  // Heartbeat effect
+   useEffect(() => {
     let heartbeatInterval: NodeJS.Timeout | null = null;
-
-    const unsubPartner = onSnapshot(partnerDocRef.current, (docSnap) => {
-        if (docSnap.exists()) {
-            if (!partnerData) { // This block runs only once on initial data load
-                const data = docSnap.data();
-                const fetchedPartnerData = { id: docSnap.id, ...data } as PartnerData;
-                const partnerIsPink = data.isCabziPinkPartner || false;
-
-                setIsPinkPartner(partnerIsPink);
-                if (partnerIsPink && theme !== 'pink') setTheme('pink');
-                else if (!partnerIsPink && theme === 'pink') setTheme('system');
-                
-                setPartnerData(fetchedPartnerData);
-                setIsSessionLoading(false);
-
-                // Start heartbeat only after we confirm the document exists.
-                if (!heartbeatInterval) {
-                    heartbeatInterval = setInterval(() => {
-                        if (partnerDocRef.current) {
-                            setDoc(partnerDocRef.current, { lastSeen: serverTimestamp(), isOnline: true }, { merge: true }).catch(error => {
-                                console.warn("Heartbeat update failed (non-critical):", error);
-                            });
-                        }
-                    }, 30000); // 30-second heartbeat
-                }
-            } else {
-                 // Subsequent updates
-                 setPartnerData({ id: docSnap.id, ...docSnap.data() } as PartnerData);
-            }
-        } else {
-             // For new users, doc might not exist immediately. We'll let the heartbeat handle creation.
-             console.warn("Partner document not found. Will be created by heartbeat if new.");
-             setIsSessionLoading(false);
-        }
-    }, (error) => {
-      console.error("Error with partner data snapshot:", error);
-      setIsSessionLoading(false);
-    });
-
-    const handleBeforeUnload = () => {
-        if (partnerDocRef.current) {
-            setDoc(partnerDocRef.current, { isOnline: false, lastSeen: serverTimestamp(), currentLocation: null }, { merge: true });
-        }
-    };
-    window.addEventListener('beforeunload', handleBeforeUnload);
-
+    
+    // Only start the heartbeat if we have confirmed the partnerData exists
+    if (partnerData?.id && db) {
+        heartbeatInterval = setInterval(() => {
+            setDoc(doc(db, 'partners', partnerData.id), { lastSeen: serverTimestamp(), isOnline: true }, { merge: true }).catch(error => {
+                console.warn("Heartbeat update failed (non-critical):", error);
+            });
+        }, 30000); // 30-second heartbeat
+    }
+    
     return () => {
-        unsubPartner();
         if (heartbeatInterval) clearInterval(heartbeatInterval);
-        window.removeEventListener('beforeunload', handleBeforeUnload);
-    };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAuthLoading, user, db]);
+    }
+  }, [partnerData, db]);
   
   if (pathname === '/driver/onboarding') {
-    return (
-      <>
-        {children}
-        <Toaster />
-      </>
-    )
+    return <>{children}<Toaster /></>
   }
   
   if (isSessionLoading || !isMounted) {
@@ -278,17 +248,17 @@ function DriverLayoutContent({ children }: { children: React.ReactNode }) {
                     </SheetTrigger>
                     <SheetContent side="left" className="p-0">
                         <SheetHeader className="p-6">
-                           <SheetTitle><LogoArea isPinkPartner={isPinkPartner} /></SheetTitle>
+                           <SheetTitle><LogoArea isPinkPartner={partnerData?.isCabziPinkPartner || false} /></SheetTitle>
                            <SheetDescription className="sr-only">Main menu for driver</SheetDescription>
                         </SheetHeader>
                          <div className="flex-1 overflow-auto py-2">
-                             <DriverNav isPinkPartner={isPinkPartner} />
+                             <DriverNav isPinkPartner={partnerData?.isCabziPinkPartner || false} />
                          </div>
                     </SheetContent>
                 </Sheet>
             </div>
             <div className="hidden md:block">
-                <LogoArea isPinkPartner={isPinkPartner} />
+                <LogoArea isPinkPartner={partnerData?.isCabziPinkPartner || false} />
             </div>
             <div className="ml-auto flex items-center gap-4">
                 <ThemeToggle />
@@ -296,8 +266,8 @@ function DriverLayoutContent({ children }: { children: React.ReactNode }) {
                   <DropdownMenuTrigger asChild>
                     <Button variant="secondary" size="icon" className="rounded-full">
                       <Avatar className="h-8 w-8">
-                        <AvatarImage src="https://i.pravatar.cc/40?u=driver" alt={userName} data-ai-hint="driver portrait" />
-                        <AvatarFallback>{getInitials(userName).toUpperCase()}</AvatarFallback>
+                        <AvatarImage src="https://i.pravatar.cc/40?u=driver" alt={partnerData?.name} data-ai-hint="driver portrait" />
+                        <AvatarFallback>{getInitials(partnerData?.name || '').toUpperCase()}</AvatarFallback>
                       </Avatar>
                       <span className="sr-only">Toggle user menu</span>
                     </Button>
@@ -341,7 +311,14 @@ function DriverLayoutContent({ children }: { children: React.ReactNode }) {
               transition={{ duration: 0.5, ease: 'easeInOut' }}
               className="h-full relative"
             >
-              {children}
+              {/* Pass partnerData to children */}
+              {React.Children.map(children, child => {
+                if (React.isValidElement(child)) {
+                    // @ts-ignore
+                    return React.cloneElement(child, { partnerData, setPartnerData });
+                }
+                return child;
+              })}
             </MotionDiv>
           </main>
         </div>

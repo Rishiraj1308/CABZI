@@ -15,7 +15,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from '@/hooks/use-toast'
 import { Skeleton } from '@/components/ui/skeleton'
 import dynamic from 'next/dynamic'
-import { useFirestore, useMessaging } from '@/firebase/client-provider'
+import { useFirebase } from '@/firebase/client-provider'
 import { collection, query, where, onSnapshot, doc, updateDoc, getDoc, serverTimestamp, GeoPoint, limit, runTransaction, addDoc, arrayUnion, orderBy, Timestamp, FieldValue } from 'firebase/firestore'
 import { useNotifications } from '@/context/NotificationContext'
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert'
@@ -43,9 +43,6 @@ const QrScanner = dynamic(() => import('@/components/ui/qr-scanner'), {
   ssr: false,
   loading: () => <div className="flex items-center justify-center w-full h-full bg-muted"><p>Loading Scanner...</p></div>
 })
-
-const Lottie = dynamic(() => import('lottie-react'), { ssr: false });
-import lottieFindingDriver from '@/components/ui/lottie-finding-driver.json';
 
 
 interface RideRequest {
@@ -102,6 +99,8 @@ interface PartnerData {
     isCabziPinkPartner?: boolean;
     subscription?: { planName: string };
     gender?: 'male' | 'female' | 'other';
+    status?: string;
+    isOnline?: boolean;
 }
 
 interface ChatMessage {
@@ -143,15 +142,14 @@ const commonIssues = [
 ]
 
 
-export default function DriverDashboard() {
+export default function DriverDashboard({ partnerData, setPartnerData }: { partnerData: PartnerData | null, setPartnerData: (data: PartnerData | null) => void}) {
   const [isMounted, setIsMounted] = useState(false);
   const [activeRideRequest, setActiveRideRequest] = useState<RideRequest | null>(null);
   const [acceptedRide, setAcceptedRide] = useState<RideRequest | null>(null);
   const [showOtpModal, setShowOtpModal] = useState(false);
   const [enteredOtp, setEnteredOtp] = useState('');
-  const [isOnline, setIsOnline] = useState(false);
+  const [isOnline, setIsOnline] = useState(partnerData?.isOnline || false);
   const [isLoading, setIsLoading] = useState(true);
-  const [partnerData, setPartnerData] = useState<PartnerData | null>(null);
   const [routeGeometry, setRouteGeometry] = useState<any>(null);
   const [routeInfo, setRouteInfo] = useState<RouteInfo | null>(null);
   const [riderLocation, setRiderLocation] = useState<{lat: number, lon: number} | null>(null);
@@ -184,73 +182,25 @@ export default function DriverDashboard() {
   const messaging = useMessaging();
   
   const acceptedRideRef = useRef(acceptedRide);
-  const watchIdRef = useRef<number | null>(null);
-  const lastApiCallTimestamp = useRef<number>(0);
   const requestTimerRef = useRef<NodeJS.Timeout | null>(null);
   const earningsTimerRef = useRef<NodeJS.Timeout | null>(null);
   const notificationSoundRef = useRef<HTMLAudioElement | null>(null);
 
   const { toast } = useToast()
+
+  useEffect(() => {
+    notificationSoundRef.current = new Audio('/sounds/notification.mp3');
+    setIsMounted(true);
+    if(partnerData) {
+        setIsOnline(partnerData.isOnline || false);
+        setIsLoading(false);
+    }
+  }, [partnerData]);
   
   useEffect(() => {
     acceptedRideRef.current = acceptedRide;
   }, [acceptedRide]);
 
-  // Effect for loading partner data
-  useEffect(() => {
-    notificationSoundRef.current = new Audio('/sounds/notification.mp3');
-    setIsMounted(true);
-    const session = localStorage.getItem('curocity-session');
-    if (!session || !db) {
-        setIsLoading(false);
-        return;
-    }
-    
-    const { partnerId } = JSON.parse(session);
-    if (!partnerId) {
-        toast({ variant: 'destructive', title: 'Error', description: 'Could not load your partner profile.' });
-        setIsLoading(false);
-        return;
-    }
-
-    const partnerDocRef = doc(db, "partners", partnerId);
-    
-    const unsubscribePartner = onSnapshot(partnerDocRef, (docSnap) => {
-        if (docSnap.exists()) {
-            const data = docSnap.data();
-            
-            setPartnerData({ 
-                id: docSnap.id,
-                partnerId: data.partnerId,
-                name: data.name,
-                phone: data.phone,
-                vehicleType: data.vehicleType, 
-                vehicleName: data.vehicleName,
-                vehicleNumber: data.vehicleNumber,
-                rating: data.rating || 4.9,
-                acceptanceRate: data.acceptanceRate || 100,
-                ridesToday: data.ridesToday || 0,
-                todaysEarnings: data.todaysEarnings || 0,
-                walletBalance: data.walletBalance || 0,
-                currentLocation: data.currentLocation ? { lat: data.currentLocation.latitude, lon: data.currentLocation.longitude } : undefined,
-                bankDetails: data.bankDetails,
-                upiId: data.upiId || `${data.phone}@curocity`,
-                qrCodeUrl: data.qrCodeUrl || `https://placehold.co/300x300/FBBF24/1E293B?text=CurocityUPI`,
-                isCabziPinkPartner: data.isCabziPinkPartner || false,
-                subscription: data.subscription,
-                gender: data.gender,
-            } as PartnerData);
-            setIsOnline(data.isOnline || false);
-        } else {
-            toast({ variant: 'destructive', title: 'Error', description: 'Could not load your partner profile.' });
-        }
-        setIsLoading(false);
-    });
-
-    return () => {
-        unsubscribePartner();
-    };
-  }, [toast, db]);
   
   // New simplified effect to listen for FCM messages
   useEffect(() => {
@@ -282,7 +232,7 @@ export default function DriverDashboard() {
     });
 
     return () => unsubscribe();
-  }, [isOnline, partnerData, db, acceptedRide, activeRideRequest, messaging]);
+  }, [isOnline, partnerData, acceptedRide, activeRideRequest, messaging]);
   
   
   useEffect(() => {
@@ -1165,5 +1115,3 @@ export default function DriverDashboard() {
     </div>
   )
 }
-
-    
