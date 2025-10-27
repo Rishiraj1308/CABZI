@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { CheckCircle, QrCode, Download, KeyRound } from 'lucide-react'
 import DriverIdCard from '@/components/driver-id-card'
 import { useFirebase } from '@/firebase/client-provider'
-import { collection, query, where, onSnapshot } from 'firebase/firestore'
+import { collection, query, where, onSnapshot, doc } from 'firebase/firestore'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useToast } from '@/hooks/use-toast'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
@@ -56,20 +56,25 @@ export default function ProfilePage() {
     const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
 
     useEffect(() => {
+        const storedPin = localStorage.getItem('curocity-user-pin');
+        if (storedPin) {
+            setIsPinSet(true);
+        }
+    }, []);
+
+    useEffect(() => {
+        let unsubscribe: (() => void) | undefined;
+    
         const fetchProfileData = () => {
             if (typeof window !== 'undefined' && db) {
                 const session = localStorage.getItem('curocity-session');
-                const storedPin = localStorage.getItem('curocity-user-pin');
-                if (storedPin) {
-                    setIsPinSet(true);
-                }
                 
                 if (session) {
                     const { phone } = JSON.parse(session);
                     const partnersRef = collection(db, "partners");
                     const q = query(partnersRef, where("phone", "==", phone));
                     
-                    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+                    unsubscribe = onSnapshot(q, (querySnapshot) => {
                         if (!querySnapshot.empty) {
                             const doc = querySnapshot.docs[0];
                             const data = doc.data();
@@ -80,9 +85,12 @@ export default function ProfilePage() {
                             } as PartnerData);
                         }
                         setIsLoading(false);
+                    }, (error) => {
+                         console.error("Error fetching partner data:", error);
+                         toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch your profile data.' });
+                         setIsLoading(false);
                     });
-                    
-                    return unsubscribe;
+
                 } else {
                      setIsLoading(false);
                 }
@@ -91,7 +99,8 @@ export default function ProfilePage() {
             }
         };
 
-        const unsubscribe = fetchProfileData();
+        fetchProfileData();
+
         return () => {
             if (unsubscribe) unsubscribe();
         }
@@ -440,4 +449,3 @@ export default function ProfilePage() {
 
     
 }
-
