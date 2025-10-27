@@ -26,6 +26,8 @@ import RideStatus from '@/components/ride-status'
 import SearchingIndicator from '@/components/ui/searching-indicator'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useDriver } from './layout' // Import the new context hook
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Sparkles } from 'lucide-react'
 
 const LiveMap = dynamic(() => import('@/components/live-map'), { 
     ssr: false,
