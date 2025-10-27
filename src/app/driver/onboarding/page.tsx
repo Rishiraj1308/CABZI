@@ -84,6 +84,15 @@ export default function OnboardingPage() {
                 });
                 return;
             }
+            const aadhaarRegex = /^\d{12}$/;
+            if (!aadhaarRegex.test(formData.aadhaarNumber)) {
+                toast({
+                    variant: 'destructive',
+                    title: 'Invalid Aadhaar Format',
+                    description: 'Please enter a valid 12-digit Aadhaar number.',
+                });
+                return;
+            }
         }
         setCurrentStep(prev => prev + 1)
     };
