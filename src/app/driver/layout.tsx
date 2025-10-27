@@ -37,6 +37,7 @@ interface PartnerData {
     id: string;
     isCabziPinkPartner?: boolean;
     name: string;
+    isOnline?: boolean;
     [key: string]: any;
 }
 
@@ -112,7 +113,10 @@ function DriverLayoutContent({ children }: { children: React.ReactNode }) {
         });
     }
     if (auth) auth.signOut();
+    
+    // Clear all possible session keys
     localStorage.removeItem('curocity-session');
+    localStorage.removeItem('curocity-resq-session');
     
     if (theme === 'pink') setTheme('system');
 
@@ -125,7 +129,7 @@ function DriverLayoutContent({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (isAuthLoading) {
-        return; // Wait for Firebase Auth to initialize
+        return; 
     }
 
     const isOnboardingPage = pathname.includes('/driver/onboarding');
@@ -134,7 +138,7 @@ function DriverLayoutContent({ children }: { children: React.ReactNode }) {
         if (!isOnboardingPage) {
             router.push('/login?role=driver');
         }
-        setIsSessionLoading(false); // Definitively stop loading
+        setIsSessionLoading(false);
         return;
     }
 
@@ -143,7 +147,7 @@ function DriverLayoutContent({ children }: { children: React.ReactNode }) {
         if (!isOnboardingPage) {
             router.push('/login?role=driver');
         }
-        setIsSessionLoading(false); // Definitively stop loading
+        setIsSessionLoading(false);
         return;
     }
 
@@ -151,10 +155,9 @@ function DriverLayoutContent({ children }: { children: React.ReactNode }) {
 
     try {
         const sessionData = JSON.parse(session);
-        // CRITICAL FIX: Use partnerId from session, not phone.
         if (!sessionData.role || sessionData.role !== 'driver' || !sessionData.partnerId) {
             router.push('/login?role=driver');
-            setIsSessionLoading(false); // Definitively stop loading
+            setIsSessionLoading(false);
             return;
         }
 
@@ -175,35 +178,34 @@ function DriverLayoutContent({ children }: { children: React.ReactNode }) {
                  toast({ variant: 'destructive', title: "Error", description: 'Your partner profile could not be loaded. Please re-login.' });
                  handleLogout();
             }
-             // Ensure loading is stopped even if doc doesn't exist initially
+             
             setIsSessionLoading(false); 
         }, (error) => {
             console.error("Error with partner data snapshot:", error);
             toast({ variant: "destructive", title: "Error", description: "Could not load partner profile." });
-            setIsSessionLoading(false); // Stop loading on error
+            setIsSessionLoading(false);
         });
 
     } catch (e) {
         localStorage.removeItem('curocity-session');
         router.push('/login?role=driver');
-        setIsSessionLoading(false); // Stop loading on session parse error
+        setIsSessionLoading(false);
     }
 
-    return () => unsubPartner(); // Cleanup snapshot listener
+    return () => unsubPartner();
 
   }, [isAuthLoading, user, db, router, pathname, toast, theme, setTheme, handleLogout]);
 
 
-  // Heartbeat effect
    useEffect(() => {
     let heartbeatInterval: NodeJS.Timeout | null = null;
     
-    if (partnerData?.id && db && partnerData?.isOnline) { // Only run heartbeat if online
+    if (partnerData?.id && db && partnerData?.isOnline) { 
         heartbeatInterval = setInterval(() => {
             setDoc(doc(db, 'partners', partnerData.id), { lastSeen: serverTimestamp() }, { merge: true }).catch(error => {
                 console.warn("Heartbeat update failed (non-critical):", error);
             });
-        }, 60000); // 60-second heartbeat
+        }, 60000); 
     }
     
     return () => {

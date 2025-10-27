@@ -1,4 +1,5 @@
 
+
 'use client'
 
 import React, { useState, useEffect } from 'react'
@@ -111,6 +112,7 @@ export default function AmbulanceLayout({ children }: { children: React.ReactNod
     }
     if (auth) auth.signOut();
     localStorage.removeItem('curocity-ambulance-session');
+    localStorage.removeItem('curocity-session');
     toast({
         title: 'Logged Out',
         description: 'You have been successfully logged out.'

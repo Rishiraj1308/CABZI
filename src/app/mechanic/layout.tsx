@@ -1,4 +1,5 @@
 
+
 'use client'
 
 import React, { useState, useEffect, useRef } from 'react'
@@ -206,6 +207,7 @@ export default function MechanicLayout({ children }: { children: React.ReactNode
     }
     if (auth) auth.signOut();
     localStorage.removeItem('curocity-resq-session');
+    localStorage.removeItem('curocity-session');
     toast({
         title: 'Logged Out',
         description: 'You have been successfully logged out.'
