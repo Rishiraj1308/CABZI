@@ -167,34 +167,40 @@ function DriverLayoutContent({ children }: { children: React.ReactNode }) {
         return;
     }
     
-    let heartbeatInterval: NodeJS.Timeout;
+    let heartbeatInterval: NodeJS.Timeout | null = null;
 
     const unsubPartner = onSnapshot(partnerDocRef.current, (docSnap) => {
         if (docSnap.exists()) {
-            if (!partnerData) { // Only on the first successful fetch
-                const data = docSnap.data();
+            const data = docSnap.data();
+            const fetchedPartnerData = { id: docSnap.id, ...data } as PartnerData;
+
+            if (!partnerData) { // Only set these on the first load
                 const partnerIsPink = data.isCabziPinkPartner || false;
                 setIsPinkPartner(partnerIsPink);
                 if (partnerIsPink && theme !== 'pink') setTheme('pink');
                 else if (!partnerIsPink && theme === 'pink') setTheme('system');
                 
-                setPartnerData({ id: docSnap.id, ...data } as PartnerData);
+                setPartnerData(fetchedPartnerData);
                 setIsSessionLoading(false);
+            } else {
+                 setPartnerData(fetchedPartnerData); // Keep updating partner data
+            }
 
-                // Start heartbeat AFTER first successful read.
-                 heartbeatInterval = setInterval(() => {
+            // Start heartbeat ONLY if it's not already running and we have valid data.
+            if (!heartbeatInterval && fetchedPartnerData) {
+                heartbeatInterval = setInterval(() => {
                     if (partnerDocRef.current) {
                         updateDoc(partnerDocRef.current, { lastSeen: serverTimestamp(), isOnline: true }).catch(error => {
-                            // This error might still happen occasionally, but it should be non-blocking.
                             console.warn("Heartbeat update failed (non-critical):", error);
                         });
                     }
-                }, 30000); // Heartbeat every 30 seconds
+                }, 30000);
             }
+
         } else {
-             // If doc doesn't exist, it might be a new onboarding. Don't log out.
-             console.warn("Partner document not found, possibly a new onboarding.");
-             setIsSessionLoading(false);
+             // This can happen briefly during onboarding.
+             console.warn("Partner document not found, possibly a new onboarding. Will retry.");
+             setIsSessionLoading(false); // Allow UI to render but don't start heartbeats.
         }
     }, (error) => {
       console.error("Error with partner data snapshot:", error);
@@ -210,7 +216,7 @@ function DriverLayoutContent({ children }: { children: React.ReactNode }) {
 
     return () => {
         unsubPartner();
-        clearInterval(heartbeatInterval);
+        if (heartbeatInterval) clearInterval(heartbeatInterval);
         window.removeEventListener('beforeunload', handleBeforeUnload);
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps

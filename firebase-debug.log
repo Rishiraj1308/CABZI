@@ -13191,3 +13191,13 @@ INFO: Detected non-HTTP/2 connection.
 [debug] [2025-10-27T10:20:22.911Z] Oct 27, 2025 10:20:22 AM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
 INFO: Detected HTTP/2 connection.
  {"metadata":{"emulator":{"name":"firestore"},"message":"Oct 27, 2025 10:20:22 AM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected HTTP/2 connection.\n"}}
+[debug] [2025-10-27T10:20:26.696Z] <<< [apiv2][status] PUT http://127.0.0.1:8080/emulator/v1/projects/demo-app:securityRules 200
+[debug] [2025-10-27T10:20:26.696Z] <<< [apiv2][body] PUT http://127.0.0.1:8080/emulator/v1/projects/demo-app:securityRules {"issues":[{"sourcePosition":{"fileName":"security.rules","line":133,"column":5,"currentOffset":5494,"endOffset":5494},"description":"The 'match' body must contain at least one declaration.","severity":"ERROR"}]}
+[warn] ⚠  firestore.rules:133:5 - ERROR The 'match' body must contain at least one declaration. 
+[info] ✔  firestore: Rules updated. 
+[debug] [2025-10-27T10:20:50.667Z] Oct 27, 2025 10:20:50 AM com.google.cloud.datastore.emulator.firestore.websocket.WebSocketChannelHandler initChannel
+INFO: Connected to new websocket client
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Oct 27, 2025 10:20:50 AM com.google.cloud.datastore.emulator.firestore.websocket.WebSocketChannelHandler initChannel\nINFO: Connected to new websocket client\n"}}
+[debug] [2025-10-27T10:22:52.947Z] Oct 27, 2025 10:22:52 AM com.google.cloud.datastore.emulator.firestore.websocket.WebSocketChannelHandler channelClosed
+INFO: Websocket client disconnected
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Oct 27, 2025 10:22:52 AM com.google.cloud.datastore.emulator.firestore.websocket.WebSocketChannelHandler channelClosed\nINFO: Websocket client disconnected\n"}}

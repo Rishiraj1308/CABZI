@@ -131,7 +131,7 @@ export default function OnboardingPage() {
             });
             
             toast({ title: "Onboarding Successful!", description: `Welcome, ${name}! Redirecting to login...` });
-            setTimeout(() => { router.push(`/login?role=driver&phone=${encodeURIComponent(phone)}`); }, 1500);
+            router.push(`/login?role=driver&phone=${encodeURIComponent(phone)}`);
 
         } catch (error) {
             console.error("Error during onboarding: ", error);
