@@ -1,3 +1,4 @@
+
 'use client'
 
 import { useEffect, useRef, forwardRef, useImperativeHandle, useCallback } from "react";
@@ -211,7 +212,9 @@ const LiveMap = forwardRef<any, LiveMapProps>((props, ref) => {
                     props.onLocationFound(address, { lat, lon: lng });
                 }
             });
-            mapInstanceRef.current?.flyTo([lat, lng], 16);
+             if (mapInstanceRef.current) {
+                mapInstanceRef.current.flyTo([lat, lng], 16);
+            }
         };
 
         map.on('locationfound', onFound);

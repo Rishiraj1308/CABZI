@@ -180,6 +180,7 @@ export default function DriverDashboard({ partnerData, setPartnerData }: { partn
 
   const db = useFirestore();
   const messaging = useMessaging();
+  const liveMapRef = useRef<any>(null);
   
   const acceptedRideRef = useRef(acceptedRide);
   const requestTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -261,6 +262,9 @@ export default function DriverDashboard({ partnerData, setPartnerData }: { partn
     const partnerRef = doc(db, "partners", partnerData.id);
     try {
         await updateDoc(partnerRef, { isOnline: checked });
+        if(checked) {
+            liveMapRef.current?.locate();
+        }
         toast({
             title: checked ? "You are now Online" : "You are now Offline",
             description: checked ? "Waiting for nearby ride requests." : "You will not receive new ride requests.",
@@ -1066,9 +1070,10 @@ export default function DriverDashboard({ partnerData, setPartnerData }: { partn
   };
 
   return (
-    <div className="h-full w-full flex flex-col bg-background">
-        <div className="h-1/2">
+    <div className="h-screen w-screen flex flex-col bg-background">
+        <div className="flex-1 relative">
            <LiveMap
+              ref={liveMapRef}
               driverLocation={partnerData?.currentLocation}
               riderLocation={riderLocation ?? activeGarageRequest?.location as any}
               routeGeometry={routeGeometry}
@@ -1083,8 +1088,10 @@ export default function DriverDashboard({ partnerData, setPartnerData }: { partn
             </div>
         </div>
 
-        <div className="h-1/2 bg-muted/30 rounded-t-2xl shadow-inner-top p-4 flex flex-col gap-4 overflow-y-auto">
-            {renderContent()}
+        <div className="z-10 -mt-4">
+            <Card className="rounded-t-2xl shadow-2xl p-4">
+                {renderContent()}
+            </Card>
         </div>
 
        <Dialog open={isPinDialogOpen} onOpenChange={setIsPinDialogOpen}>
