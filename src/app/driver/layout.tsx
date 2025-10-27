@@ -33,6 +33,12 @@ import { errorEmitter, FirestorePermissionError } from '@/lib/error-handling';
 import { NotificationsProvider, useNotifications } from '@/context/NotificationContext';
 import { Skeleton } from '@/components/ui/skeleton'
 
+interface PartnerData {
+    id: string;
+    isCabziPinkPartner?: boolean;
+    [key: string]: any;
+}
+
 
 const navItems = [
   { href: '/driver', label: 'Dashboard', icon: LayoutDashboard },
@@ -94,6 +100,7 @@ function DriverLayoutContent({ children }: { children: React.ReactNode }) {
   const [isPinkPartner, setIsPinkPartner] = useState(false);
   const { theme, setTheme } = useTheme();
   const { db, auth, user, isUserLoading: isAuthLoading } = useFirebase();
+  const [partnerData, setPartnerData] = useState<PartnerData | null>(null);
   const [isSessionLoading, setIsSessionLoading] = useState(true);
   
   const partnerDocRef = useRef<DocumentReference | null>(null);
@@ -106,6 +113,7 @@ function DriverLayoutContent({ children }: { children: React.ReactNode }) {
     }
   }, [pathname]);
 
+  // Effect 1: Authenticate user and set up partner document reference
   useEffect(() => {
     if (isAuthLoading) return;
     
@@ -130,19 +138,27 @@ function DriverLayoutContent({ children }: { children: React.ReactNode }) {
     } catch (e) {
         localStorage.removeItem('curocity-session');
         router.push('/login?role=driver');
-        return;
     } finally {
-        setIsSessionLoading(false);
+      // Defer session loading completion until data is fetched
     }
+  }, [router, pathname, db, user, isAuthLoading]);
 
-    if (!partnerDocRef.current) return;
+  // Effect 2: Fetch partner data and set up heartbeat AFTER authentication is established
+  useEffect(() => {
+    if (!partnerDocRef.current) {
+        // This can happen briefly while the first effect sets the ref
+        if (!isAuthLoading && !isSessionLoading) {
+          setIsSessionLoading(false);
+        }
+        return;
+    };
 
     let watchId: number | undefined;
     let lastSentLocation: { lat: number, lon: number } | null = null;
     const MIN_DISTANCE_THRESHOLD = 50; // in meters
     const MIN_TIME_THRESHOLD = 30000; // 30 seconds
     let lastSentTime = 0;
-
+    
     const getDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
         const R = 6371e3;
         const φ1 = lat1 * Math.PI/180;
@@ -154,7 +170,6 @@ function DriverLayoutContent({ children }: { children: React.ReactNode }) {
         return R * c;
     }
     
-    // Heartbeat function to update presence
     const sendHeartbeat = (location?: GeoPoint) => {
         if (partnerDocRef.current) {
             const updateData: { lastSeen: FieldValue, isOnline: boolean, currentLocation?: GeoPoint | null } = {
@@ -175,8 +190,8 @@ function DriverLayoutContent({ children }: { children: React.ReactNode }) {
         }
     };
     
-    // Initial fetch and setup
-    getDoc(partnerDocRef.current).then((docSnap) => {
+    // Set up the main data listener
+    const unsubPartner = onSnapshot(partnerDocRef.current, (docSnap) => {
       if (docSnap.exists()) {
         const data = docSnap.data();
         const partnerIsPink = data.isCabziPinkPartner || false;
@@ -184,29 +199,37 @@ function DriverLayoutContent({ children }: { children: React.ReactNode }) {
 
         if (partnerIsPink && theme !== 'pink') setTheme('pink');
         else if (!partnerIsPink && theme === 'pink') setTheme('system');
+        
+        if (!partnerData) { // This will only be true on the very first successful fetch
+          setPartnerData({ id: docSnap.id, ...data } as PartnerData);
+          setIsSessionLoading(false); // Mark loading as complete HERE
+
+          // Start geolocation watcher
+          if (navigator.geolocation) {
+              watchId = navigator.geolocation.watchPosition(
+                  (pos) => {
+                      const newLocation = { lat: pos.coords.latitude, lon: pos.coords.longitude };
+                      const now = Date.now();
+                      const distanceMoved = lastSentLocation ? getDistance(lastSentLocation.lat, lastSentLocation.lon, newLocation.lat, newLocation.lon) : Infinity;
+                      if (distanceMoved > MIN_DISTANCE_THRESHOLD || now - lastSentTime > MIN_TIME_THRESHOLD) {
+                          sendHeartbeat(new GeoPoint(newLocation.lat, newLocation.lon));
+                          lastSentLocation = newLocation;
+                          lastSentTime = now;
+                      }
+                  },
+                  () => {},
+                  { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+              );
+          }
+        }
+      } else {
+        // Handle case where partner document is deleted while they are logged in
+        handleLogout();
       }
+    }, (error) => {
+      console.error("Error with partner data snapshot:", error);
+      setIsSessionLoading(false);
     });
-
-    // Start geolocation watcher
-    if (navigator.geolocation) {
-        watchId = navigator.geolocation.watchPosition(
-            (pos) => {
-                const newLocation = { lat: pos.coords.latitude, lon: pos.coords.longitude };
-                const now = Date.now();
-                const distanceMoved = lastSentLocation ? getDistance(lastSentLocation.lat, lastSentLocation.lon, newLocation.lat, newLocation.lon) : Infinity;
-                if (distanceMoved > MIN_DISTANCE_THRESHOLD || now - lastSentTime > MIN_TIME_THRESHOLD) {
-                    sendHeartbeat(new GeoPoint(newLocation.lat, newLocation.lon));
-                    lastSentLocation = newLocation;
-                    lastSentTime = now;
-                }
-            },
-            () => {},
-            { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-        );
-    }
-
-    // Set up a periodic heartbeat interval
-    const heartbeatInterval = setInterval(() => sendHeartbeat(), MIN_TIME_THRESHOLD);
 
     const handleBeforeUnload = () => {
         if(partnerDocRef.current) {
@@ -216,17 +239,18 @@ function DriverLayoutContent({ children }: { children: React.ReactNode }) {
     window.addEventListener('beforeunload', handleBeforeUnload);
 
     return () => {
-        clearInterval(heartbeatInterval);
+        unsubPartner();
         if (watchId) navigator.geolocation.clearWatch(watchId);
         window.removeEventListener('beforeunload', handleBeforeUnload);
     };
-  }, [router, pathname, db, user, isAuthLoading, theme, setTheme]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [partnerDocRef.current]); // This effect depends only on the ref being set.
   
 
   const handleLogout = async () => {
     if (partnerDocRef.current) {
         try {
-            updateDoc(partnerDocRef.current, { isOnline: false, lastSeen: serverTimestamp() });
+            await updateDoc(partnerDocRef.current, { isOnline: false, lastSeen: serverTimestamp() });
         } catch (error) {
             console.error("Failed to update logout status (non-critical):", error);
         }
@@ -378,3 +402,5 @@ export default function DriverLayout({ children }: { children: React.ReactNode }
         </NotificationsProvider>
     );
 }
+
+    
