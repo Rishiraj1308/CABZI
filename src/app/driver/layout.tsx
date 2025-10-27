@@ -4,7 +4,7 @@
 import React, { useState, useEffect, useRef, useCallback, createContext, useContext } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { LayoutDashboard, Landmark, Gem, User, PanelLeft, LogOut, Sun, Moon, Wrench } from 'lucide-react'
+import { LayoutDashboard, Landmark, Gem, User, PanelLeft, LogOut, Sun, Moon, Wrench, MapPin } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Toaster } from '@/components/ui/toaster'
@@ -106,6 +106,51 @@ function ThemeToggle() {
             </DropdownMenuContent>
         </DropdownMenu>
     )
+}
+
+function LocationDisplay() {
+  const [location, setLocation] = useState('Locating...');
+
+  useEffect(() => {
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+            async (position) => {
+                const { latitude, longitude } = position.coords;
+                try {
+                    const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`);
+                    if (!response.ok) {
+                        setLocation('Location not found');
+                        return;
+                    }
+                    const data = await response.json();
+                    const address = data.address;
+                    const city = address.city || address.town || address.village;
+                    const state = address.state;
+                    if (city && state) {
+                        setLocation(`${city}, ${state}`);
+                    } else {
+                        setLocation(data.display_name.split(',').slice(0, 3).join(', '));
+                    }
+                } catch (error) {
+                    setLocation('Location not found');
+                }
+            }, 
+            () => {
+                setLocation('Location Unavailable');
+            },
+            { timeout: 10000 }
+        );
+    } else {
+        setLocation('Geolocation not supported');
+    }
+  }, []);
+  
+  return (
+    <div className="flex items-center gap-2">
+      <MapPin className="w-4 h-4 text-muted-foreground"/>
+      <span className="text-sm font-medium text-muted-foreground truncate">{location}</span>
+    </div>
+  )
 }
 
 function DriverLayoutContent({ children }: { children: React.ReactNode }) {
@@ -290,6 +335,9 @@ function DriverLayoutContent({ children }: { children: React.ReactNode }) {
                                </div>
                           </SheetContent>
                       </Sheet>
+                   </div>
+                   <div className="hidden md:block">
+                       <LocationDisplay />
                    </div>
                    <div className="flex w-full items-center gap-4 md:ml-auto md:gap-2 lg:gap-4 justify-end">
                       <ThemeToggle />
