@@ -53,6 +53,30 @@ export default function DriverDashboardPage() {
     const { toast } = useToast();
     const messaging = useMessaging();
     const liveMapRef = useRef<any>(null);
+    const locationWatchId = useRef<number | null>(null);
+
+    const getDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
+        const R = 6371e3; // metres
+        const φ1 = lat1 * Math.PI/180;
+        const φ2 = lat2 * Math.PI/180;
+        const Δφ = (lat2-lat1) * Math.PI/180;
+        const Δλ = (lon2-lon1) * Math.PI/180;
+
+        const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
+                  Math.cos(φ1) * Math.cos(φ2) *
+                  Math.sin(Δλ/2) * Math.sin(Δλ/2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+
+        return R * c; // in metres
+    }
+
+    const stopLocationWatch = () => {
+      if (locationWatchId.current) {
+        navigator.geolocation.clearWatch(locationWatchId.current);
+        locationWatchId.current = null;
+      }
+    };
+
 
     useEffect(() => {
       if (!user) {
@@ -63,13 +87,18 @@ export default function DriverDashboardPage() {
       const session = localStorage.getItem('curocity-session');
         if (session && db) {
             const { partnerId } = JSON.parse(session);
-            const partnerRef = doc(db, 'partners', partnerId);
+            if (!partnerId) {
+                toast({ variant: 'destructive', title: "Error", description: 'Invalid session. Could not find Partner ID.' });
+                setIsLoading(false);
+                return;
+            }
 
+            const partnerRef = doc(db, 'partners', partnerId);
             const unsubscribe = onSnapshot(partnerRef, (docSnap) => {
                 if (docSnap.exists()) {
                     setPartnerData({ id: docSnap.id, ...docSnap.data() } as PartnerData);
                 } else {
-                    console.error("Partner document not found.");
+                    toast({ variant: 'destructive', title: 'Error', description: 'Partner document not found.' });
                 }
                 setIsLoading(false);
             });
@@ -78,7 +107,54 @@ export default function DriverDashboardPage() {
              setIsLoading(false);
         }
 
-    }, [user, db]);
+    }, [user, db, toast]);
+    
+    // This effect manages the geolocation watcher based on online status.
+    useEffect(() => {
+        if (partnerData?.isOnline) {
+            if (navigator.geolocation && !locationWatchId.current) {
+                let lastSentLocation: { lat: number, lon: number } | null = null;
+                let lastSentTime = 0;
+
+                locationWatchId.current = navigator.geolocation.watchPosition(
+                    (position) => {
+                        const { latitude, longitude } = position.coords;
+                        const newLocation = { lat: latitude, lon: longitude };
+                        const partnerRef = doc(db, 'partners', partnerData.id);
+                        
+                        const distanceMoved = lastSentLocation 
+                            ? getDistance(lastSentLocation.lat, lastSentLocation.lon, newLocation.lat, newLocation.lon) 
+                            : Infinity;
+                        
+                        const timeElapsed = Date.now() - lastSentTime;
+
+                        // Update if moved more than 30 meters or if 30 seconds have passed
+                        if (distanceMoved > 30 || timeElapsed > 30000) {
+                            updateDoc(partnerRef, { 
+                                currentLocation: new GeoPoint(latitude, longitude),
+                                lastSeen: serverTimestamp() 
+                            }).catch(err => console.error("Failed to update location:", err));
+                            lastSentLocation = newLocation;
+                            lastSentTime = Date.now();
+                        }
+                    },
+                    (error) => {
+                        console.error("Geolocation error:", error);
+                        toast({ variant: 'destructive', title: "Location Error", description: "Could not track your location." });
+                    },
+                    { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+                );
+            }
+        } else {
+            stopLocationWatch();
+        }
+    
+        // Cleanup function for when the component unmounts or partnerData changes
+        return () => {
+            stopLocationWatch();
+        };
+    }, [partnerData?.isOnline, partnerData?.id, db, toast]);
+
 
     // This effect handles real-time job requests via FCM
     useEffect(() => {
@@ -133,7 +209,7 @@ export default function DriverDashboardPage() {
     const handleOnlineStatusChange = async (checked: boolean) => {
         if (!partnerData || !db) return;
         
-        // Optimistically update the UI
+        // Optimistically update UI
         setPartnerData(prev => prev ? { ...prev, isOnline: checked, status: checked ? 'online' : 'offline' } : null);
 
         const partnerRef = doc(db, 'partners', partnerData.id);
@@ -143,7 +219,14 @@ export default function DriverDashboardPage() {
                 status: checked ? 'online' : 'offline',
                 lastSeen: serverTimestamp() 
             });
-            if (checked) liveMapRef.current?.locate();
+
+            if (checked) {
+                liveMapRef.current?.locate();
+            } else {
+                // When going offline, also nullify the location in DB
+                await updateDoc(partnerRef, { currentLocation: null });
+                stopLocationWatch(); // Explicitly stop watching
+            }
             toast({ title: checked ? "You are now Online" : "You've gone Offline" });
         } catch (error) {
             toast({ variant: 'destructive', title: 'Error', description: 'Could not update your status. Please try again.' });
@@ -204,11 +287,12 @@ export default function DriverDashboardPage() {
             <LiveMap
                 ref={liveMapRef}
                 onLocationFound={(address, coords) => {
-                    if (partnerData && db) {
+                    if (partnerData && db && partnerData.isOnline) {
                         const partnerRef = doc(db, 'partners', partnerData.id);
                         updateDoc(partnerRef, { currentLocation: new GeoPoint(coords.lat, coords.lon) });
                     }
                 }}
+                driverLocation={partnerData?.currentLocation as any}
             />
             
             <div className="absolute top-4 right-4 z-10">
@@ -298,3 +382,4 @@ export default function DriverDashboardPage() {
     );
 }
 
+    
