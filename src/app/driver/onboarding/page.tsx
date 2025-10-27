@@ -32,6 +32,7 @@ export default function OnboardingPage() {
         name: '',
         phone: '',
         gender: '',
+        dob: '',
         panCard: '',
         aadhaarNumber: '',
         vehicleType: '',
@@ -60,8 +61,8 @@ export default function OnboardingPage() {
     const handleNextStep = () => {
          // Validation for current step before proceeding
         if (currentStep === 1) {
-            if (!formData.name || !formData.phone || !formData.gender) {
-                toast({ variant: 'destructive', title: "Incomplete Details", description: "Please fill out your name, phone, and gender." });
+            if (!formData.name || !formData.phone || !formData.gender || !formData.dob) {
+                toast({ variant: 'destructive', title: "Incomplete Details", description: "Please fill out your name, phone, gender and date of birth." });
                 return;
             }
             if (formData.phone.length !== 10) {
@@ -96,7 +97,7 @@ export default function OnboardingPage() {
             return;
         }
 
-        const { name, phone, gender, panCard, aadhaarNumber, vehicleType, vehicleName, vehicleNumber, drivingLicence } = formData;
+        const { name, phone, gender, dob, panCard, aadhaarNumber, vehicleType, vehicleName, vehicleNumber, drivingLicence } = formData;
 
         try {
             const collectionsToCheck = [ 'partners', 'mechanics', 'ambulances' ];
@@ -127,7 +128,7 @@ export default function OnboardingPage() {
             await addDoc(collection(db, "partners"), {
                 partnerId: partnerId,
                 curocityBankAccountNumber: curocityBankAccountNumber,
-                name, phone, gender, panCard, vehicleType, vehicleName, vehicleNumber, isCurocityPink, drivingLicence, aadhaarNumber, photoUrl,
+                name, phone, gender, dob, panCard, vehicleType, vehicleName, vehicleNumber, isCurocityPink, drivingLicence, aadhaarNumber, photoUrl,
                 status: 'pending_verification',
                 isOnline: false,
                 createdAt: serverTimestamp(),
@@ -161,13 +162,17 @@ export default function OnboardingPage() {
                                     <Input id="phone" name="phone" type="tel" maxLength={10} placeholder="12345 67890" required className="border-0 h-9 focus-visible:ring-0 focus-visible:ring-offset-0 flex-1" value={formData.phone} onChange={(e) => handleInputChange('phone', e.target.value)} />
                                 </div>
                             </div>
-                            <div className="space-y-2 md:col-span-2">
+                            <div className="space-y-2">
                                 <Label>Gender</Label>
                                 <RadioGroup name="gender" required className="flex gap-4 pt-2" value={formData.gender} onValueChange={handleGenderChange}>
                                     <div className="flex items-center space-x-2"><RadioGroupItem value="male" id="male" /><Label htmlFor="male">Male</Label></div>
                                     <div className="flex items-center space-x-2"><RadioGroupItem value="female" id="female" /><Label htmlFor="female">Female</Label></div>
                                     <div className="flex items-center space-x-2"><RadioGroupItem value="other" id="other" /><Label htmlFor="other">Other</Label></div>
                                 </RadioGroup>
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="dob">Date of Birth</Label>
+                                <Input id="dob" name="dob" type="date" required value={formData.dob} onChange={(e) => handleInputChange('dob', e.target.value)} />
                             </div>
                         </div>
                     </div>
