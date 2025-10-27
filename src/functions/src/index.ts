@@ -37,24 +37,25 @@ function getDistance(lat1: number, lon1: number, lat2: number, lon2: number) {
         Math.sin(dLat/2) * Math.sin(dLat/2) +
         Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
         Math.sin(dLon/2) * Math.sin(dLon/2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
     const d = R * c; // Distance in km
     return d;
 }
 
 const handleRideDispatch = async (rideData: any, rideId: string) => {
     let partnersQuery = db.collection('partners')
-        .where('isOnline', '==', true);
+        .where('isOnline', '==', true)
+        .where('status', '==', 'online');
 
-    // If ride type is "Curocity Pink", filter for women partners who have opted in.
+    // Flexible vehicle type matching
+    const rideTypeBase = rideData.rideType.split(' ')[0]; // Gets "Cab" from "Cab (Lite)"
+    partnersQuery = partnersQuery.where('vehicleType', '==', rideTypeBase);
+
+
+    // If ride type is "Curocity Pink", add more filters for women partners who have opted in.
     if (rideData.rideType === 'Curocity Pink') {
         partnersQuery = partnersQuery.where('isCabziPinkPartner', '==', true)
                                    .where('gender', '==', 'female');
-    } else {
-        // For regular rides, match vehicle type more flexibly.
-        // E.g., a "Cab" driver can take "Cab (Lite)" or "Cab (Prime)" rides.
-        const rideTypeBase = rideData.rideType.split(' ')[0]; // Gets "Cab" from "Cab (Lite)"
-        partnersQuery = partnersQuery.where('vehicleType', '==', rideTypeBase);
     }
 
     const partnersSnapshot = await partnersQuery.get();
