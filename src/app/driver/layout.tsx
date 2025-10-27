@@ -26,7 +26,7 @@ import { useToast } from '@/hooks/use-toast'
 import BrandLogo from '@/components/brand-logo'
 import { useTheme } from 'next-themes'
 import { useFirebase } from '@/firebase/client-provider'
-import { doc, updateDoc, onSnapshot, serverTimestamp, getDoc, GeoPoint, type DocumentReference, type FieldValue } from 'firebase/firestore'
+import { doc, updateDoc, onSnapshot, serverTimestamp, getDoc, GeoPoint, type DocumentReference, type FieldValue, setDoc } from 'firebase/firestore'
 import { Badge } from '@/components/ui/badge'
 import { MotionDiv } from '@/components/ui/motion-div'
 import { errorEmitter, FirestorePermissionError } from '@/lib/error-handling';
@@ -112,7 +112,8 @@ function DriverLayoutContent({ children }: { children: React.ReactNode }) {
   const handleLogout = useCallback(() => {
     if (partnerDocRef.current) {
         try {
-            updateDoc(partnerDocRef.current, { isOnline: false, lastSeen: serverTimestamp() });
+            // Using setDoc with merge to avoid errors if doc doesn't exist yet
+            setDoc(partnerDocRef.current, { isOnline: false, lastSeen: serverTimestamp() }, { merge: true });
         } catch (error) {
             console.error("Failed to update logout status (non-critical):", error);
         }
@@ -182,25 +183,26 @@ function DriverLayoutContent({ children }: { children: React.ReactNode }) {
                 
                 setPartnerData(fetchedPartnerData);
                 setIsSessionLoading(false);
+
+                 // Start heartbeat ONLY AFTER we confirm the document exists.
+                if (!heartbeatInterval && fetchedPartnerData) {
+                    heartbeatInterval = setInterval(() => {
+                        if (partnerDocRef.current) {
+                            // Use setDoc with merge to prevent "No document" error on first run for new users
+                            setDoc(partnerDocRef.current, { lastSeen: serverTimestamp(), isOnline: true }, { merge: true }).catch(error => {
+                                console.warn("Heartbeat update failed (non-critical):", error);
+                            });
+                        }
+                    }, 30000);
+                }
             } else {
                  setPartnerData(fetchedPartnerData); // Keep updating partner data
             }
 
-            // Start heartbeat ONLY if it's not already running and we have valid data.
-            if (!heartbeatInterval && fetchedPartnerData) {
-                heartbeatInterval = setInterval(() => {
-                    if (partnerDocRef.current) {
-                        updateDoc(partnerDocRef.current, { lastSeen: serverTimestamp(), isOnline: true }).catch(error => {
-                            console.warn("Heartbeat update failed (non-critical):", error);
-                        });
-                    }
-                }, 30000);
-            }
-
         } else {
              // This can happen briefly during onboarding.
-             console.warn("Partner document not found, possibly a new onboarding. Will retry.");
-             setIsSessionLoading(false); // Allow UI to render but don't start heartbeats.
+             console.warn("Partner document not found, possibly a new onboarding. Will retry on next heartbeat.");
+             setIsSessionLoading(false); // Allow UI to render but don't start heartbeats yet.
         }
     }, (error) => {
       console.error("Error with partner data snapshot:", error);
@@ -209,7 +211,8 @@ function DriverLayoutContent({ children }: { children: React.ReactNode }) {
 
     const handleBeforeUnload = () => {
         if (partnerDocRef.current) {
-            updateDoc(partnerDocRef.current, { isOnline: false, lastSeen: serverTimestamp(), currentLocation: null });
+            // Use setDoc with merge to avoid errors if doc doesn't exist yet
+            setDoc(partnerDocRef.current, { isOnline: false, lastSeen: serverTimestamp(), currentLocation: null }, { merge: true });
         }
     };
     window.addEventListener('beforeunload', handleBeforeUnload);
@@ -355,3 +358,5 @@ export default function DriverLayout({ children }: { children: React.ReactNode }
         </NotificationsProvider>
     );
 }
+
+    
