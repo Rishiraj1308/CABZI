@@ -136,87 +136,87 @@ export default function DriverDashboardPage() {
                  <div className="absolute top-4 right-4 z-10">
                     <Skeleton className="h-10 w-32" />
                  </div>
-                 <div className="absolute bottom-0 left-0 right-0 z-10">
-                    <Skeleton className="h-48 w-full max-w-2xl mx-auto rounded-t-2xl"/>
+                 <div className="absolute bottom-0 left-0 right-0 z-10 p-4">
+                    <Skeleton className="h-48 w-full max-w-2xl mx-auto rounded-2xl"/>
                  </div>
              </div>
         )
     }
 
     return (
-        <div className="w-full h-full relative">
-            <LiveMap
-                ref={liveMapRef}
-                onLocationFound={(address, coords) => {
-                    if (partnerData && db && partnerData.isOnline) {
-                        const partnerRef = doc(db, 'partners', partnerData.id);
-                        updateDoc(partnerRef, { currentLocation: new GeoPoint(coords.lat, coords.lon) });
-                    }
-                }}
-                driverLocation={partnerData?.currentLocation as any}
-            />
-            
-            <div className="absolute top-4 right-4 z-10">
-                <Card className="p-2 bg-background/80 backdrop-blur-sm flex items-center gap-2 shadow-lg">
-                    <div className="flex items-center space-x-2">
-                        <Switch id="online-status" checked={isOnline} onCheckedChange={handleOnlineStatusChange} className="data-[state=checked]:bg-green-500" />
-                        <Label htmlFor="online-status" className="font-bold text-lg">{isOnline ? 'ONLINE' : 'OFFLINE'}</Label>
-                    </div>
-                    <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => liveMapRef.current?.locate()}>
-                        <LocateFixed className="w-5 h-5"/>
-                    </Button>
-               </Card>
+        <div className="w-full h-full relative flex flex-col">
+            <div className="flex-1 relative">
+                <div className="absolute inset-0 z-0">
+                    <LiveMap
+                        ref={liveMapRef}
+                        onLocationFound={(address, coords) => {
+                            if (partnerData && db && partnerData.isOnline) {
+                                const partnerRef = doc(db, 'partners', partnerData.id);
+                                updateDoc(partnerRef, { currentLocation: new GeoPoint(coords.lat, coords.lon) });
+                            }
+                        }}
+                        driverLocation={partnerData?.currentLocation as any}
+                    />
+                </div>
+                
+                <div className="absolute top-4 right-4 z-10">
+                    <Card className="p-2 bg-background/80 backdrop-blur-sm flex items-center gap-2 shadow-lg">
+                        <div className="flex items-center space-x-2">
+                            <Switch id="online-status" checked={isOnline} onCheckedChange={handleOnlineStatusChange} className="data-[state=checked]:bg-green-500" />
+                            <Label htmlFor="online-status" className="font-bold text-lg">{isOnline ? 'ONLINE' : 'OFFLINE'}</Label>
+                        </div>
+                        <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => liveMapRef.current?.locate()}>
+                            <LocateFixed className="w-5 h-5"/>
+                        </Button>
+                </Card>
+                </div>
             </div>
             
-             <AnimatePresence>
-                {!activeRide && (
-                    <motion.div
-                        key="dashboard-card"
-                        initial={{ y: "100%" }}
-                        animate={{ y: 0 }}
-                        exit={{ y: "100%" }}
-                        transition={{ type: 'spring', stiffness: 200, damping: 25 }}
-                        className="absolute bottom-0 left-0 right-0 z-10"
-                    >
-                        <Card className="w-full max-w-2xl mx-auto rounded-t-2xl rounded-b-none shadow-2xl p-4">
-                            {isOnline ? (
-                                <div className="text-center py-8">
-                                    <SearchingIndicator partnerType="path" className="w-32 h-32" />
-                                    <h3 className="text-2xl font-bold mt-4">You are Online</h3>
-                                    <p className="text-muted-foreground">Waiting for nearby ride requests...</p>
-                                </div>
-                            ) : (
-                                <>
-                                 <CardHeader>
-                                    <CardTitle>Welcome Back, {partnerData?.name || 'Partner'}!</CardTitle>
-                                    <CardDescription>You are currently offline. Go online to start receiving rides.</CardDescription>
-                                 </CardHeader>
-                                <CardContent className="grid grid-cols-3 gap-2">
-                                    <StatCard title="Today's Rides" value={partnerData?.jobsToday?.toString() || '0'} icon={History} />
-                                    <StatCard title="Today's Earnings" value={`₹${partnerData?.todaysEarnings?.toLocaleString() || '0'}`} icon={IndianRupee} />
-                                    <StatCard title="Rating" value={partnerData?.rating?.toString() || 'N/A'} icon={Star} />
-                                </CardContent>
-                                </>
-                            )}
-                        </Card>
-                    </motion.div>
-                )}
-            </AnimatePresence>
-            
-            <AnimatePresence>
-                {activeRide && (
-                     <motion.div
-                        key="ride-status-card"
-                        initial={{ y: "100%" }}
-                        animate={{ y: 0 }}
-                        exit={{ y: "100%" }}
-                        transition={{ type: 'spring', stiffness: 200, damping: 25 }}
-                        className="absolute bottom-0 left-0 right-0 z-10 p-4"
-                    >
-                         <RideStatus ride={activeRide} onCancel={resetAfterRide} onDone={resetAfterRide} />
-                    </motion.div>
-                )}
-            </AnimatePresence>
+            <div className="z-10 p-4">
+                 <AnimatePresence mode="wait">
+                    {activeRide ? (
+                        <motion.div
+                            key="ride-status-card"
+                            initial={{ y: "100%" }}
+                            animate={{ y: 0 }}
+                            exit={{ y: "100%" }}
+                            transition={{ type: 'spring', stiffness: 200, damping: 25 }}
+                        >
+                            <RideStatus ride={activeRide} onCancel={resetAfterRide} onDone={resetAfterRide} />
+                        </motion.div>
+                    ) : (
+                        <motion.div
+                            key="dashboard-card"
+                            initial={{ y: "100%" }}
+                            animate={{ y: 0 }}
+                            exit={{ y: "100%" }}
+                            transition={{ type: 'spring', stiffness: 200, damping: 25 }}
+                        >
+                            <Card className="w-full max-w-2xl mx-auto rounded-2xl shadow-2xl p-4">
+                                {isOnline ? (
+                                    <div className="text-center py-8">
+                                        <SearchingIndicator partnerType="path" className="w-32 h-32" />
+                                        <h3 className="text-2xl font-bold mt-4">You are Online</h3>
+                                        <p className="text-muted-foreground">Waiting for nearby ride requests...</p>
+                                    </div>
+                                ) : (
+                                    <>
+                                    <CardHeader>
+                                        <CardTitle>Welcome Back, {partnerData?.name || 'Partner'}!</CardTitle>
+                                        <CardDescription>You are currently offline. Go online to start receiving rides.</CardDescription>
+                                    </CardHeader>
+                                    <CardContent className="grid grid-cols-3 gap-2">
+                                        <StatCard title="Today's Rides" value={partnerData?.jobsToday?.toString() || '0'} icon={History} />
+                                        <StatCard title="Today's Earnings" value={`₹${partnerData?.todaysEarnings?.toLocaleString() || '0'}`} icon={IndianRupee} />
+                                        <StatCard title="Rating" value={partnerData?.rating?.toString() || 'N/A'} icon={Star} />
+                                    </CardContent>
+                                    </>
+                                )}
+                            </Card>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+            </div>
 
             <AlertDialog open={!!jobRequest}>
                 <AlertDialogContent>
@@ -238,7 +238,6 @@ export default function DriverDashboardPage() {
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
-
         </div>
     );
 }
