@@ -20,6 +20,27 @@ import { cn } from '@/lib/utils'
 import { Progress } from '@/components/ui/progress'
 
 
+const vehicleBrands = [
+  'Maruti Suzuki',
+  'Hyundai',
+  'Tata',
+  'Mahindra',
+  'Toyota',
+  'Honda',
+  'Kia',
+  'Renault',
+  'MG',
+  'Volkswagen',
+  'Skoda',
+  'Nissan',
+  'Force Motors',
+  'Bajaj', // For Auto
+  'TVS',   // For Auto/Bike
+  'Hero',  // For Bike
+  'Royal Enfield', // For Bike
+  'Other',
+];
+
 export default function OnboardingPage() {
     const { toast } = useToast()
     const router = useRouter()
@@ -36,6 +57,7 @@ export default function OnboardingPage() {
         panCard: '',
         aadhaarNumber: '',
         vehicleType: '',
+        vehicleBrand: '',
         vehicleName: '',
         vehicleNumber: '',
         drivingLicence: '',
@@ -48,7 +70,11 @@ export default function OnboardingPage() {
     }, [])
 
     const handleInputChange = (field: keyof typeof formData, value: string) => {
-        setFormData(prev => ({...prev, [field]: value}));
+        if (field === 'aadhaarNumber') {
+            setFormData(prev => ({...prev, [field]: value.replace(/\D/g, '')}));
+        } else {
+            setFormData(prev => ({...prev, [field]: value}));
+        }
     }
 
     const handleGenderChange = (value: string) => {
@@ -103,7 +129,7 @@ export default function OnboardingPage() {
         e.preventDefault();
         setIsLoading(true);
         
-        if (!formData.vehicleType || !formData.vehicleName || !formData.vehicleNumber || !formData.drivingLicence) {
+        if (!formData.vehicleType || !formData.vehicleBrand || !formData.vehicleName || !formData.vehicleNumber || !formData.drivingLicence) {
              toast({ variant: 'destructive', title: "Incomplete Form", description: "Please fill all vehicle details on the final step." });
              setIsLoading(false);
              return;
@@ -115,7 +141,7 @@ export default function OnboardingPage() {
             return;
         }
 
-        const { name, phone, gender, dob, panCard, aadhaarNumber, vehicleType, vehicleName, vehicleNumber, drivingLicence } = formData;
+        const { name, phone, gender, dob, panCard, aadhaarNumber, vehicleType, vehicleBrand, vehicleName, vehicleNumber, drivingLicence } = formData;
 
         try {
             const collectionsToCheck = [ 'partners', 'mechanics', 'ambulances' ];
@@ -146,7 +172,7 @@ export default function OnboardingPage() {
             await addDoc(collection(db, "partners"), {
                 partnerId: partnerId,
                 curocityBankAccountNumber: curocityBankAccountNumber,
-                name, phone, gender, dob, panCard, vehicleType, vehicleName, vehicleNumber, isCurocityPink, drivingLicence, aadhaarNumber, photoUrl,
+                name, phone, gender, dob, panCard, vehicleType, vehicleBrand, vehicleName, vehicleNumber, isCurocityPink, drivingLicence, aadhaarNumber, photoUrl,
                 status: 'pending_verification',
                 isOnline: false,
                 createdAt: serverTimestamp(),
@@ -206,7 +232,7 @@ export default function OnboardingPage() {
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="aadhaar-number">Aadhaar Number</Label>
-                                <Input id="aadhaar-number" name="aadhaar-number" placeholder="e.g., 1234 5678 9012" required value={formData.aadhaarNumber} onChange={(e) => handleInputChange('aadhaarNumber', e.target.value.replace(/\D/g, ''))} maxLength={12} />
+                                <Input id="aadhaar-number" name="aadhaar-number" placeholder="e.g., 1234 5678 9012" required value={formData.aadhaarNumber} onChange={(e) => handleInputChange('aadhaarNumber', e.target.value)} maxLength={12} />
                             </div>
                         </div>
                     </div>
@@ -230,14 +256,25 @@ export default function OnboardingPage() {
                                 </Select>
                             </div>
                             <div className="space-y-2">
+                                <Label htmlFor="vehicle-brand">Vehicle Brand</Label>
+                                <Select name="vehicle-brand" required onValueChange={(value) => handleInputChange('vehicleBrand', value)} value={formData.vehicleBrand}>
+                                    <SelectTrigger><SelectValue placeholder="Select brand" /></SelectTrigger>
+                                    <SelectContent>
+                                        {vehicleBrands.map(brand => (
+                                            <SelectItem key={brand} value={brand}>{brand}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="space-y-2">
                                 <Label htmlFor="vehicle-name">Vehicle Model</Label>
-                                <Input id="vehicle-name" name="vehicle-name" placeholder="e.g., Maruti Suzuki Swift" required value={formData.vehicleName} onChange={(e) => handleInputChange('vehicleName', e.target.value)} />
+                                <Input id="vehicle-name" name="vehicle-name" placeholder="e.g., Swift Dzire" required value={formData.vehicleName} onChange={(e) => handleInputChange('vehicleName', e.target.value)} />
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="vehicle-number">Vehicle Number (RC)</Label>
                                 <Input id="vehicle-number" name="vehicle-number" placeholder="e.g., DL 01 AB 1234" required value={formData.vehicleNumber} onChange={(e) => handleInputChange('vehicleNumber', e.target.value)} />
                             </div>
-                            <div className="space-y-2">
+                             <div className="space-y-2 md:col-span-2">
                                 <Label htmlFor="driving-licence">Driving Licence Number</Label>
                                 <Input id="driving-licence" name="driving-licence" placeholder="e.g., DL1420110012345" required value={formData.drivingLicence} onChange={(e) => handleInputChange('drivingLicence', e.target.value)} />
                             </div>
