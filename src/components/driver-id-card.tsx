@@ -15,7 +15,7 @@ interface PartnerData {
     name: string;
     phone: string;
     partnerId: string;
-    cabziBankAccountNumber: string;
+    curocityBankAccountNumber: string;
     vehicleType: string;
     vehicleName: string;
     vehicleNumber: string;
@@ -28,7 +28,7 @@ export default function DriverIdCard() {
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-        const session = localStorage.getItem('cabzi-session');
+        const session = localStorage.getItem('curocity-session');
         if (session && db) {
             const { phone } = JSON.parse(session);
             const partnersRef = collection(db, "partners");
@@ -66,8 +66,15 @@ export default function DriverIdCard() {
                         <div className="flex-1 space-y-4">
                             <Skeleton className="h-8 w-48" />
                             <Skeleton className="h-5 w-32" />
-                            <div className="border-t pt-4">
-                                <Skeleton className="h-10 w-full" />
+                            <div className="border-t pt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                               <div className="space-y-2">
+                                 <Skeleton className="h-4 w-24" />
+                                 <Skeleton className="h-5 w-36" />
+                               </div>
+                               <div className="space-y-2">
+                                 <Skeleton className="h-4 w-16" />
+                                 <Skeleton className="h-5 w-28" />
+                               </div>
                             </div>
                         </div>
                     </div>
@@ -97,8 +104,8 @@ export default function DriverIdCard() {
                     </div>
                      <div className="mt-4 border-t pt-4 grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                          <div>
-                            <p className="text-muted-foreground flex items-center gap-1"><Landmark className="w-4 h-4" /> Cabzi Bank A/C No.</p>
-                            <p className="font-semibold font-mono">{partnerData?.cabziBankAccountNumber || '11xxxxxxxxxx'}</p>
+                            <p className="text-muted-foreground flex items-center gap-1"><Landmark className="w-4 h-4" /> Curocity Bank A/C No.</p>
+                            <p className="font-semibold font-mono">{partnerData?.curocityBankAccountNumber || '11xxxxxxxxxx'}</p>
                         </div>
                         <div>
                             <p className="text-muted-foreground">Vehicle</p>
