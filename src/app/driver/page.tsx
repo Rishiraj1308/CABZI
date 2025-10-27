@@ -1,12 +1,12 @@
 
 'use client'
 
-import React, { useState, useEffect, useRef, useCallback } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
-import { Star, History, IndianRupee, Power, LocateFixed, AlertTriangle, X, Sparkles } from 'lucide-react'
+import { Star, History, IndianRupee, Power, AlertTriangle } from 'lucide-react'
 import {
   AlertDialog,
   AlertDialogContent,
@@ -17,15 +17,14 @@ import {
 } from "@/components/ui/alert-dialog"
 import { useToast } from '@/hooks/use-toast'
 import { doc, updateDoc, GeoPoint, serverTimestamp, onSnapshot, collection, query, where, arrayUnion, getDoc } from 'firebase/firestore'
-import { useFirebase, useMessaging } from '@/firebase/client-provider'
+import { useFirebase } from '@/firebase/client-provider'
 import dynamic from 'next/dynamic'
-import type { RideData, JobRequest } from '@/lib/types'
+import type { PartnerData, RideData, JobRequest } from '@/lib/types'
 import { AnimatePresence, motion } from 'framer-motion'
-import { onMessage } from 'firebase/messaging'
 import RideStatus from '@/components/ride-status'
 import SearchingIndicator from '@/components/ui/searching-indicator'
 import { Skeleton } from '@/components/ui/skeleton'
-import { useDriver } from './layout' // Import the new context hook
+import { useDriver } from './layout'
 
 const LiveMap = dynamic(() => import('@/components/live-map'), { 
     ssr: false,
@@ -49,7 +48,7 @@ const StatCard = ({ title, value, icon: Icon, isLoading }: { title: string, valu
 );
 
 export default function DriverDashboardPage() {
-    const [jobRequest, setJobRequest] = useState<JobRequest | null>(null);
+    const [availableJobs, setAvailableJobs] = useState<JobRequest[]>([]);
     const [activeRide, setActiveRide] = useState<RideData | null>(null);
     const [requestTimeout, setRequestTimeout] = useState(15);
     const requestTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -59,65 +58,80 @@ export default function DriverDashboardPage() {
 
     const { db } = useFirebase();
     const { toast } = useToast();
-    const messaging = useMessaging();
     const liveMapRef = useRef<any>(null);
 
     const isOnline = partnerData?.isOnline || false;
+    const jobRequest = availableJobs.length > 0 ? availableJobs[0] : null;
 
-    // Effect to initialize notification sound
     useEffect(() => {
         if (typeof window !== 'undefined') {
             notificationSoundRef.current = new Audio('/sounds/notification.mp3');
         }
     }, []);
 
-    // Effect for handling incoming ride requests via FCM
+    // New onSnapshot listener for ride requests
     useEffect(() => {
-        if (!messaging || !isOnline || !partnerData?.id || activeRide || jobRequest) return;
-    
-        const unsubscribe = onMessage(messaging, (payload) => {
-            console.log('FCM Message received for Driver.', payload);
-            notificationSoundRef.current?.play().catch(e => console.error("Audio play failed:", e));
-    
-            const data = payload.data;
-            if (!data) return;
-    
-            const type = data.type;
-            const rideId = data.rideId;
-    
-            if (type === 'new_ride_request' && rideId) {
-                const rejectedBy = data.rejectedBy ? JSON.parse(data.rejectedBy) : [];
-                if (activeRide || jobRequest || rejectedBy.includes(partnerData.id)) {
-                    return;
+        if (!db || !isOnline || activeRide) return;
+
+        const twentySecondsAgo = Timestamp.fromMillis(Date.now() - 20000);
+        const ridesRef = collection(db, 'rides');
+        const q = query(
+            ridesRef, 
+            where('status', '==', 'searching'),
+            where('createdAt', '>=', twentySecondsAgo)
+        );
+
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            const newJobs: JobRequest[] = [];
+            let playSound = false;
+
+            snapshot.docChanges().forEach((change) => {
+                if (change.type === 'added') {
+                    const job = { id: change.doc.id, ...change.doc.data() } as JobRequest;
+                    
+                    // Simple distance check (you can make this more complex)
+                    // This is a rough check; a geo-query in the Cloud Function is better for production
+                    if (partnerData?.currentLocation && job.pickup) {
+                        // Assuming job.pickup is a GeoPoint. If not, this needs adjustment.
+                        const distance = getDistance(
+                            partnerData.currentLocation.latitude, partnerData.currentLocation.longitude,
+                            job.pickup.latitude, job.pickup.longitude
+                        );
+                        if (distance < 10) { // Only consider jobs within 10km
+                           newJobs.push(job);
+                           playSound = true; // A new relevant job has appeared
+                        }
+                    } else {
+                         newJobs.push(job);
+                         playSound = true;
+                    }
                 }
-    
-                const newJobRequest: JobRequest = {
-                    id: rideId,
-                    pickup: JSON.parse(data.pickupLocation || '{}'),
-                    destination: JSON.parse(data.destinationLocation || '{}'),
-                    fare: parseFloat(data.fare || '0'),
-                    pickupAddress: data.pickupAddress,
-                    destinationAddress: data.destinationAddress,
-                    rideType: data.rideType,
-                    status: data.status,
-                    riderName: data.riderName,
-                    riderId: data.riderId,
-                    riderGender: data.riderGender,
-                    otp: data.otp,
-                } as JobRequest;
-                
-                setJobRequest(newJobRequest);
-                
-                toast({
-                    title: 'New Ride Request!',
-                    description: `From ${newJobRequest.pickupAddress} to ${newJobRequest.destinationAddress}`,
-                    duration: 10000,
-                });
+            });
+
+            if (newJobs.length > 0) {
+                 setAvailableJobs(prevJobs => {
+                     const existingIds = new Set(prevJobs.map(j => j.id));
+                     const uniqueNewJobs = newJobs.filter(j => !existingIds.has(j.id));
+                     return [...uniqueNewJobs, ...prevJobs].sort((a,b) => b.createdAt.toMillis() - a.createdAt.toMillis());
+                 });
+                 if (playSound) {
+                    notificationSoundRef.current?.play().catch(e => console.error("Audio play failed:", e));
+                 }
             }
         });
-    
+
         return () => unsubscribe();
-    }, [messaging, isOnline, partnerData, activeRide, jobRequest, toast]);
+    }, [db, isOnline, activeRide, partnerData?.currentLocation]);
+
+    // Simple distance calculator
+    const getDistance = (lat1:number, lon1:number, lat2:number, lon2:number) => {
+      const R = 6371; // Radius of the earth in km
+      const dLat = (lat2-lat1) * Math.PI / 180;
+      const dLon = (lon2-lon1) * Math.PI / 180;
+      const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(lat1* Math.PI/180) * Math.cos(lat2* Math.PI/180) * Math.sin(dLon/2) * Math.sin(dLon/2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+      return R * c; // distance in km
+    }
 
     const handleOnlineStatusChange = async (checked: boolean) => {
         if (!partnerData || !db) return;
@@ -148,25 +162,21 @@ export default function DriverDashboardPage() {
         const jobRef = doc(db, 'rides', jobRequest.id);
         try {
             await updateDoc(jobRef, { status: 'accepted', driverId: partnerData.id, driverName: partnerData.name, driverDetails: { name: partnerData.name, vehicle: `${partnerData.vehicleBrand} ${partnerData.vehicleName}`, rating: partnerData.rating, photoUrl: partnerData.photoUrl, phone: partnerData.phone, location: partnerData.currentLocation } });
+            setAvailableJobs(prev => prev.filter(j => j.id !== jobRequest.id));
             setActiveRide({ id: jobRequest.id, ...jobRequest } as RideData);
-            setJobRequest(null);
             localStorage.setItem('activeRideId', jobRequest.id);
         } catch (error) {
             toast({ variant: 'destructive', title: 'Error', description: 'Could not accept job. It might have been taken.' });
-            setJobRequest(null);
+            setAvailableJobs(prev => prev.filter(j => j.id !== jobRequest.id));
         }
     }
     
     const handleDeclineJob = async (isTimeout = false) => {
-        if (!jobRequest || !partnerData || !db) return;
+        if (!jobRequest) return;
         if(requestTimerRef.current) clearInterval(requestTimerRef.current);
-
-        const jobRef = doc(db, 'rides', jobRequest.id);
-        await updateDoc(jobRef, { rejectedBy: arrayUnion(partnerData.id) });
-        
+        setAvailableJobs(prev => prev.filter(j => j.id !== jobRequest.id));
         if (!isTimeout) toast({ title: "Job Declined" });
         else toast({ variant: 'destructive', title: "Request Timed Out" });
-        setJobRequest(null);
     }
     
     const resetAfterRide = () => {
@@ -246,3 +256,4 @@ export default function DriverDashboardPage() {
     );
 }
 
+    

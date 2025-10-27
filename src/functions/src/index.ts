@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview This file contains server-side Cloud Functions for dispatching
@@ -44,14 +45,13 @@ function getDistance(lat1: number, lon1: number, lat2: number, lon2: number) {
 
 const handleRideDispatch = async (rideData: any, rideId: string) => {
     let partnersQuery = db.collection('partners')
-        .where('isOnline', '==', true)
-        .where('status', '==', 'online');
+        .where('isOnline', '==', true);
 
-    // Flexible vehicle type matching
     const rideTypeBase = rideData.rideType.split(' ')[0]; // Gets "Cab" from "Cab (Lite)"
-    partnersQuery = partnersQuery.where('vehicleType', '==', rideTypeBase);
-
-
+    if (rideTypeBase) {
+        partnersQuery = partnersQuery.where('vehicleType', '==', rideTypeBase);
+    }
+    
     // If ride type is "Curocity Pink", add more filters for women partners who have opted in.
     if (rideData.rideType === 'Curocity Pink') {
         partnersQuery = partnersQuery.where('isCabziPinkPartner', '==', true)
@@ -84,30 +84,25 @@ const handleRideDispatch = async (rideData: any, rideId: string) => {
 
     const tokens = nearbyPartners.map(p => p.fcmToken).filter((t): t is string => !!t);
     if (tokens.length > 0) {
-        // Create a serializable payload by converting complex objects to strings/numbers.
-        const payloadData = {
-            type: 'new_ride_request',
-            rideId: rideId,
-            pickupAddress: rideData.pickup.address,
-            destinationAddress: rideData.destination.address,
-            pickupLocation: JSON.stringify(rideData.pickup.location),
-            destinationLocation: JSON.stringify(rideData.destination.location),
-            createdAt: rideData.createdAt.toMillis().toString(),
-            fare: String(rideData.fare),
-            rideType: rideData.rideType,
-            status: rideData.status,
-            riderName: rideData.riderName,
-            riderId: rideData.riderId,
-            riderGender: rideData.riderGender,
-            otp: rideData.otp,
-        };
+        // Send a lightweight PING notification, not the full ride data.
+        const payload = {
+            notification: {
+              title: 'New Ride Request!',
+              body: 'A new ride is available nearby. Open the Curocity app to accept.'
+            },
+            data: {
+              type: 'new_ride_ping',
+              rideId: rideId, // Include rideId to potentially fetch later
+            },
+          };
 
         const message = {
-            data: payloadData,
+            data: payload.data,
+            notification: payload.notification,
             tokens: tokens,
         };
         await messaging.sendEachForMulticast(message);
-        console.log(`Ride request ${rideId} sent to ${tokens.length} partners.`);
+        console.log(`Ride PING for ${rideId} sent to ${tokens.length} partners.`);
     } else {
         console.log('No partners with FCM tokens found for this ride request.');
     }
@@ -453,9 +448,5 @@ export const simulateHighDemand = onCall(async (request) => {
 
     return { success: true, message: `High demand alert triggered for ${zoneName}.` };
 });
-
-    
-
-    
 
     
