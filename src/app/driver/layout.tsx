@@ -96,16 +96,11 @@ function DriverLayoutContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const { toast } = useToast();
-  const [isMounted, setIsMounted] = useState(false);
   const { theme, setTheme } = useTheme();
   const { db, auth, user, isUserLoading: isAuthLoading } = useFirebase();
   const [partnerData, setPartnerData] = useState<PartnerData | null>(null);
   const [isSessionLoading, setIsSessionLoading] = useState(true);
   
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
-
   const handleLogout = useCallback(() => {
     if (partnerData?.id && db) {
         setDoc(doc(db, 'partners', partnerData.id), { isOnline: false, lastSeen: serverTimestamp() }, { merge: true }).catch(error => {
@@ -127,67 +122,76 @@ function DriverLayoutContent({ children }: { children: React.ReactNode }) {
   }, [auth, db, partnerData, router, toast, theme, setTheme]);
 
   useEffect(() => {
+    let unsubPartner: (() => void) | undefined;
+  
     if (isAuthLoading) {
-      return; 
+      return;
     }
-
+  
     const isOnboardingPage = pathname.includes('/driver/onboarding');
-    
+  
     if (!user) {
-        if (!isOnboardingPage) {
-            router.replace('/login?role=driver');
-        }
-        setIsSessionLoading(false);
+      if (!isOnboardingPage) {
+        router.replace('/login?role=driver');
+      }
+      setIsSessionLoading(false);
+      return;
+    }
+  
+    // Firebase user exists, now we can safely look for session data
+    const session = localStorage.getItem('curocity-session');
+    if (!session && !isOnboardingPage) {
+        // If there's a Firebase user but no session, it's an inconsistent state.
+        // It's safer to log out and start fresh.
+        handleLogout();
         return;
     }
     
-    const session = localStorage.getItem('curocity-session');
-    if (!session) {
-         if (!isOnboardingPage) {
-            handleLogout();
-         }
-         setIsSessionLoading(false);
-         return;
-    }
+    if(session){
+        try {
+            const sessionData = JSON.parse(session);
+            if (!sessionData.role || sessionData.role !== 'driver' || !sessionData.partnerId) {
+                if (!isOnboardingPage) handleLogout();
+                setIsSessionLoading(false);
+                return;
+            }
 
-    let unsubPartner: () => void = () => {};
-    try {
-        const sessionData = JSON.parse(session);
-        if (!sessionData.role || sessionData.role !== 'driver' || !sessionData.partnerId) {
+            const partnerDocRef = doc(db, 'partners', sessionData.partnerId);
+            unsubPartner = onSnapshot(partnerDocRef, (docSnap) => {
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    const fetchedPartnerData = { id: docSnap.id, ...data } as PartnerData;
+
+                    const isPink = data.isCabziPinkPartner || false;
+                    if (isPink && theme !== 'pink') setTheme('pink');
+                    else if (!isPink && theme === 'pink') setTheme('system');
+
+                    setPartnerData(fetchedPartnerData);
+                } else {
+                    console.error("Partner document not found with ID:", sessionData.partnerId);
+                    if (!isOnboardingPage) handleLogout();
+                }
+                setIsSessionLoading(false);
+            }, (error) => {
+                console.error("Error with partner data snapshot:", error);
+                if (!isOnboardingPage) handleLogout();
+                setIsSessionLoading(false);
+            });
+        } catch (e) {
             if (!isOnboardingPage) handleLogout();
             setIsSessionLoading(false);
-            return;
         }
-
-        const partnerDocRef = doc(db, 'partners', sessionData.partnerId);
-        unsubPartner = onSnapshot(partnerDocRef, (docSnap) => {
-            if (docSnap.exists()) {
-                const data = docSnap.data();
-                const fetchedPartnerData = { id: docSnap.id, ...data } as PartnerData;
-
-                const isPink = data.isCabziPinkPartner || false;
-                if (isPink && theme !== 'pink') setTheme('pink');
-                else if (!isPink && theme === 'pink') setTheme('system');
-
-                setPartnerData(fetchedPartnerData);
-            } else {
-                console.error("Partner document not found with ID:", sessionData.partnerId);
-                toast({ variant: 'destructive', title: "Error", description: 'Your partner profile could not be loaded.' });
-                handleLogout();
-            }
-            setIsSessionLoading(false);
-        }, (error) => {
-            console.error("Error with partner data snapshot:", error);
-            toast({ variant: "destructive", title: "Error", description: "Could not load partner profile." });
-            setIsSessionLoading(false);
-        });
-    } catch (e) {
-        handleLogout();
-        setIsSessionLoading(false);
+    } else {
+         setIsSessionLoading(false);
     }
+  
+    return () => {
+      if (unsubPartner) {
+        unsubPartner();
+      }
+    };
+}, [isAuthLoading, user, db, router, pathname, handleLogout, theme, setTheme]);
 
-    return () => unsubPartner();
-}, [isAuthLoading, user, db, router, pathname, toast, theme, setTheme, handleLogout]);
 
    useEffect(() => {
     let heartbeatInterval: NodeJS.Timeout | null = null;
@@ -209,7 +213,7 @@ function DriverLayoutContent({ children }: { children: React.ReactNode }) {
     return <>{children}<Toaster /></>
   }
   
-  if (!isMounted || isSessionLoading || isAuthLoading) {
+  if (isAuthLoading || isSessionLoading) {
      return (
       <div className="flex h-screen w-full flex-col">
         <header className="flex h-16 items-center gap-4 border-b bg-background px-4 md:px-6">

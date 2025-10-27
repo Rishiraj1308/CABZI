@@ -2,7 +2,7 @@
 
 'use client'
 
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { LayoutDashboard, Landmark, History, User, PanelLeft, LogOut, Sun, Moon } from 'lucide-react'
@@ -88,6 +88,24 @@ export default function MechanicLayout({ children }: { children: React.ReactNode
   const mechanicDocRef = useRef<any>(null);
   const [isSessionLoading, setIsSessionLoading] = useState(true);
 
+  const handleLogout = useCallback(async () => {
+    if (mechanicDocRef.current) {
+        try {
+            await updateDoc(mechanicDocRef.current, { isAvailable: false, lastSeen: serverTimestamp() });
+        } catch (error) {
+            console.error("Failed to update logout status for mechanic:", error);
+        }
+    }
+    if (auth) auth.signOut();
+    localStorage.removeItem('curocity-resq-session');
+    localStorage.removeItem('curocity-session');
+    toast({
+        title: 'Logged Out',
+        description: 'You have been successfully logged out.'
+    });
+    router.push('/');
+  }, [auth, router, toast]);
+
   useEffect(() => {
       if (isUserLoading) return;
       
@@ -99,10 +117,10 @@ export default function MechanicLayout({ children }: { children: React.ReactNode
       }
       
       const sessionString = localStorage.getItem('curocity-resq-session');
-      if (!sessionString || !db) {
-          if (!isOnboarding) handleLogout();
-          setIsSessionLoading(false);
-          return;
+      if (!sessionString) {
+        if (!isOnboarding) handleLogout();
+        setIsSessionLoading(false);
+        return;
       }
 
       try {
@@ -120,26 +138,7 @@ export default function MechanicLayout({ children }: { children: React.ReactNode
           setIsSessionLoading(false);
       }
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pathname, db, user, isUserLoading]);
-
-  const handleLogout = async () => {
-    if (mechanicDocRef.current) {
-        try {
-            await updateDoc(mechanicDocRef.current, { isAvailable: false, lastSeen: serverTimestamp() });
-        } catch (error) {
-            console.error("Failed to update logout status for mechanic:", error);
-        }
-    }
-    if (auth) auth.signOut();
-    localStorage.removeItem('curocity-resq-session');
-    localStorage.removeItem('curocity-session');
-    toast({
-        title: 'Logged Out',
-        description: 'You have been successfully logged out.'
-    });
-    router.push('/');
-  }
+  }, [pathname, db, user, isUserLoading, router, handleLogout]);
 
   if (pathname === '/mechanic/onboarding' || pathname === '/garage/onboarding') {
     return (

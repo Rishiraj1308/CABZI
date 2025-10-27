@@ -2,7 +2,7 @@
 
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { LayoutDashboard, LogOut, Sun, Moon, Bell, Ambulance, NotebookText, User, PanelLeft, History, Gem, Landmark, Stethoscope, BarChart, ShieldCheck, Users as UsersIcon } from 'lucide-react'
@@ -50,7 +50,7 @@ export default function CureLayout({ children }: { children: React.ReactNode }) 
   const [navItems, setNavItems] = useState<any[]>([]);
   const [isSessionLoading, setIsSessionLoading] = useState(true);
 
-  const handleLogout = async () => {
+  const handleLogout = useCallback(async () => {
     if(session && db) {
         try {
             const cureRef = doc(db, 'ambulances', session.partnerId);
@@ -67,7 +67,7 @@ export default function CureLayout({ children }: { children: React.ReactNode }) 
         description: 'You have been successfully logged out.'
     });
     router.push('/');
-  }
+  }, [auth, db, router, session, toast]);
 
   useEffect(() => {
     if (isUserLoading) {
@@ -82,57 +82,60 @@ export default function CureLayout({ children }: { children: React.ReactNode }) 
     }
 
     const sessionString = localStorage.getItem('curocity-cure-session');
-    if (!sessionString || !db) {
-        if (!isOnboardingPage) handleLogout();
+    if (!sessionString && !isOnboardingPage) {
+        handleLogout();
         setIsSessionLoading(false);
         return;
     }
 
     let unsubPartner: () => void = () => {};
-    try {
-        const sessionData = JSON.parse(sessionString);
-        if (!sessionData.role || sessionData.role !== 'cure' || !sessionData.partnerId) {
-            if (!isOnboardingPage) handleLogout();
-            setIsSessionLoading(false);
-            return;
-        }
-        setSession(sessionData);
-
-        const partnerRef = doc(db, 'ambulances', sessionData.partnerId);
-        unsubPartner = onSnapshot(partnerRef, (doc) => {
-            if (doc.exists()) {
-                const data = doc.data();
-                const isHospital = data.businessType?.toLowerCase().includes('hospital');
-                const menu = isHospital
-                    ? [
-                        { href: '/cure', label: 'Mission Control', icon: LayoutDashboard },
-                        { href: '/cure/fleet', label: 'Fleet & Staff', icon: UsersIcon },
-                        { href: '/cure/doctors', label: 'Doctors Roster', icon: Stethoscope },
-                        { href: '/cure/insurance', label: 'Insurance', icon: ShieldCheck },
-                        { href: '/cure/billing', label: 'Billing', icon: Landmark },
-                        { href: '/cure/analytics', label: 'Analytics', icon: BarChart },
-                        { href: '/cure/subscription', label: 'Subscription', icon: Gem },
-                      ]
-                    : [
-                        { href: '/cure', label: 'Dashboard', icon: LayoutDashboard },
-                        { href: '/cure/doctors', label: 'Appointments', icon: Stethoscope },
-                        { href: '/cure/billing', label: 'Billing', icon: Landmark },
-                        { href: '/cure/subscription', label: 'Subscription', icon: Gem },
-                      ];
-                setNavItems(menu);
+    if(sessionString && db) {
+        try {
+            const sessionData = JSON.parse(sessionString);
+            if (!sessionData.role || sessionData.role !== 'cure' || !sessionData.partnerId) {
+                if (!isOnboardingPage) handleLogout();
+                setIsSessionLoading(false);
+                return;
             }
-            setIsSessionLoading(false);
-        });
+            setSession(sessionData);
 
-    } catch (e) {
-        handleLogout();
+            const partnerRef = doc(db, 'ambulances', sessionData.partnerId);
+            unsubPartner = onSnapshot(partnerRef, (doc) => {
+                if (doc.exists()) {
+                    const data = doc.data();
+                    const isHospital = data.businessType?.toLowerCase().includes('hospital');
+                    const menu = isHospital
+                        ? [
+                            { href: '/cure', label: 'Mission Control', icon: LayoutDashboard },
+                            { href: '/cure/fleet', label: 'Fleet & Staff', icon: UsersIcon },
+                            { href: '/cure/doctors', label: 'Doctors Roster', icon: Stethoscope },
+                            { href: '/cure/insurance', label: 'Insurance', icon: ShieldCheck },
+                            { href: '/cure/billing', label: 'Billing', icon: Landmark },
+                            { href: '/cure/analytics', label: 'Analytics', icon: BarChart },
+                            { href: '/cure/subscription', label: 'Subscription', icon: Gem },
+                          ]
+                        : [
+                            { href: '/cure', label: 'Dashboard', icon: LayoutDashboard },
+                            { href: '/cure/doctors', label: 'Appointments', icon: Stethoscope },
+                            { href: '/cure/billing', label: 'Billing', icon: Landmark },
+                            { href: '/cure/subscription', label: 'Subscription', icon: Gem },
+                          ];
+                    setNavItems(menu);
+                }
+                setIsSessionLoading(false);
+            });
+
+        } catch (e) {
+            handleLogout();
+            setIsSessionLoading(false);
+        }
+    } else {
         setIsSessionLoading(false);
     }
     
     return () => unsubPartner();
 
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [db, user, isUserLoading, pathname]);
+  }, [db, user, isUserLoading, pathname, router, handleLogout]);
 
   
   function CureNav() {

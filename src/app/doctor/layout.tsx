@@ -2,7 +2,7 @@
 
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { LogOut, Sun, Moon, LayoutDashboard, Calendar, User, PanelLeft, Bell, BarChart, Settings, Power } from 'lucide-react'
@@ -116,7 +116,7 @@ export default function DoctorLayout({ children }: { children: React.ReactNode }
   const unreadCount = mockNotifications.filter(n => !n.read).length;
   const [isSessionLoading, setIsSessionLoading] = useState(true);
   
-  const handleLogout = async () => {
+  const handleLogout = useCallback(() => {
     if (auth) auth.signOut();
     localStorage.removeItem('curocity-doctor-session');
     localStorage.removeItem('curocity-session');
@@ -125,7 +125,7 @@ export default function DoctorLayout({ children }: { children: React.ReactNode }
         description: 'You have been successfully logged out.'
     });
     router.push('/');
-  }
+  }, [auth, router, toast]);
 
   useEffect(() => {
     if (isUserLoading) return;
@@ -136,26 +136,25 @@ export default function DoctorLayout({ children }: { children: React.ReactNode }
     }
 
     const sessionString = localStorage.getItem('curocity-doctor-session');
-    if (sessionString) {
-        try {
-            const sessionData = JSON.parse(sessionString);
-             if (!sessionData.role || sessionData.role !== 'doctor') {
-                handleLogout();
-                return;
-            }
-            setUserName(sessionData.name);
-            setHospitalId(sessionData.hospitalId);
-            setDoctorId(sessionData.id); 
-        } catch (error) {
-            console.error("Failed to parse session, redirecting", error);
+    if (!sessionString) {
+        handleLogout();
+        return;
+    }
+    try {
+        const sessionData = JSON.parse(sessionString);
+         if (!sessionData.role || sessionData.role !== 'doctor') {
             handleLogout();
+            return;
         }
-    } else {
+        setUserName(sessionData.name);
+        setHospitalId(sessionData.hospitalId);
+        setDoctorId(sessionData.id); 
+    } catch (error) {
+        console.error("Failed to parse session, redirecting", error);
         handleLogout();
     }
     setIsSessionLoading(false);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, isUserLoading]);
+  }, [user, isUserLoading, router, handleLogout]);
 
 
   if (isSessionLoading) {

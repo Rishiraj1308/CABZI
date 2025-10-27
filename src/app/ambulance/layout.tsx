@@ -2,7 +2,7 @@
 
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { LogOut, Sun, Moon, Bell, Ambulance, LayoutDashboard, History, User, PanelLeft } from 'lucide-react'
@@ -76,7 +76,7 @@ export default function AmbulanceLayout({ children }: { children: React.ReactNod
   const { db, auth, user, isUserLoading } = useFirebase();
   const [isSessionLoading, setIsSessionLoading] = useState(true);
   
-  const handleLogout = async () => {
+  const handleLogout = useCallback(async () => {
     const sessionString = localStorage.getItem('curocity-ambulance-session');
     if(sessionString && db) {
         try {
@@ -101,7 +101,7 @@ export default function AmbulanceLayout({ children }: { children: React.ReactNod
         description: 'You have been successfully logged out.'
     });
     router.push('/');
-  }
+  }, [auth, db, router, toast]);
 
   useEffect(() => {
     if (isUserLoading) return;
@@ -112,23 +112,22 @@ export default function AmbulanceLayout({ children }: { children: React.ReactNod
     }
 
     const sessionString = localStorage.getItem('curocity-ambulance-session');
-    if (sessionString) {
-        try {
-            const sessionData = JSON.parse(sessionString);
-             if (!sessionData.role || sessionData.role !== 'ambulance') {
-                handleLogout();
-                return;
-            }
-            setUserName(sessionData.name);
-        } catch (error) {
+    if (!sessionString) {
+        handleLogout();
+        return;
+    }
+    try {
+        const sessionData = JSON.parse(sessionString);
+         if (!sessionData.role || sessionData.role !== 'ambulance') {
             handleLogout();
+            return;
         }
-    } else {
+        setUserName(sessionData.name);
+    } catch (error) {
         handleLogout();
     }
     setIsSessionLoading(false);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, isUserLoading]);
+  }, [user, isUserLoading, router, handleLogout]);
 
 
   if (isSessionLoading) {
