@@ -1,7 +1,7 @@
 
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { LifeBuoy, Phone, Shield, Wrench, Siren } from 'lucide-react'
@@ -13,8 +13,9 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Label } from '@/components/ui/label'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { useLanguage } from '@/hooks/use-language'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import SearchingIndicator from '@/components/ui/searching-indicator'
+import { useFirebase } from '@/firebase/client-provider'
+import type { ClientSession, GarageRequest } from '@/lib/types'
+import RideStatus from '@/components/ride-status'
 
 
 const LiveMap = dynamic(() => import('@/components/live-map'), { 
@@ -37,20 +38,11 @@ interface PartnerData {
     currentLocation?: { lat: number, lon: number };
 }
 
-interface GarageRequest {
-    id: string;
-    status: 'pending' | 'accepted' | 'in_progress' | 'completed' | 'cancelled_by_mechanic' | 'cancelled_by_driver' | 'payment_requested' | 'bill_sent';
-    mechanicId?: string;
-    mechanicName?: string;
-    mechanicLocation?: GeoPoint;
-    mechanicPhone?: string;
-    eta?: number;
-}
-
 
 export default function SupportPage() {
     const { toast } = useToast()
     const { t } = useLanguage();
+    const { user, db: firebaseDb } = useFirebase();
     const [partnerData, setPartnerData] = useState<PartnerData | null>(null);
     const [activeGarageRequest, setActiveGarageRequest] = useState<GarageRequest | null>(null);
     const [isIssueDialogOpen, setIsIssueDialogOpen] = useState(false);
@@ -58,52 +50,54 @@ export default function SupportPage() {
     const [mechanicLiveLocation, setMechanicLiveLocation] = useState<{lat: number, lon: number} | null>(null);
 
     useEffect(() => {
-        if (!db) return;
-        const session = localStorage.getItem('curocity-session');
-        if (session) {
-            const { partnerId } = JSON.parse(session);
-            const unsubPartner = onSnapshot(doc(db, 'partners', partnerId), (doc) => {
-                const data = doc.data();
-                if(data) {
-                    const loc = data.currentLocation;
-                    setPartnerData({ 
-                        id: doc.id,
-                        name: data.name,
-                        phone: data.phone,
-                        currentLocation: loc ? { lat: loc.latitude, lon: loc.longitude } : undefined,
-                     });
-                }
-            });
-            
-            const q = query(collection(db, "garageRequests"), where("driverId", "==", partnerId));
-            const unsubRequests = onSnapshot(q, (snapshot) => {
-                const requests = snapshot.docs
-                    .map(doc => ({ id: doc.id, ...doc.data() } as GarageRequest))
-                    .filter(req => req.status !== 'completed' && req.status !== 'cancelled_by_driver');
-                
-                if (requests.length > 0) {
-                    const currentRequest = requests[0];
-                    if (activeGarageRequest?.status !== 'accepted' && currentRequest.status === 'accepted') {
-                        toast({ title: "ResQ Partner Assigned!", description: `${currentRequest.mechanicName} is on the way.` });
-                    }
-                    setActiveGarageRequest(currentRequest);
-                } else {
-                    setActiveGarageRequest(null);
-                    setMechanicLiveLocation(null);
-                }
-            });
+        if (!firebaseDb || !user) return;
+        
+        // Fetch driver's data
+        const partnerRef = doc(firebaseDb, 'partners', user.uid);
+        const unsubPartner = onSnapshot(partnerRef, (doc) => {
+            const data = doc.data();
+            if(data) {
+                const loc = data.currentLocation;
+                setPartnerData({ 
+                    id: doc.id,
+                    name: data.name,
+                    phone: data.phone,
+                    currentLocation: loc ? { lat: loc.latitude, lon: loc.longitude } : undefined,
+                 });
+            }
+        });
 
-            return () => {
-                unsubPartner();
-                unsubRequests();
-            };
-        }
-    }, [toast, activeGarageRequest?.status]);
+        // Listen for active garage requests for this driver
+        const q = query(collection(firebaseDb, "garageRequests"), where("driverId", "==", user.uid), where("status", "not-in", ["completed", "cancelled_by_driver", "cancelled_by_mechanic"]));
+        const unsubRequests = onSnapshot(q, (snapshot) => {
+            if (!snapshot.empty) {
+                const requestDoc = snapshot.docs[0];
+                const requestData = { id: requestDoc.id, ...requestDoc.data() } as GarageRequest;
+
+                if (activeGarageRequest?.status !== 'accepted' && requestData.status === 'accepted') {
+                    toast({ title: "ResQ Partner Assigned!", description: `${requestData.mechanicName} is on the way.` });
+                }
+                setActiveGarageRequest(requestData);
+                localStorage.setItem('activeGarageRequestId', requestDoc.id);
+
+            } else {
+                setActiveGarageRequest(null);
+                setMechanicLiveLocation(null);
+                localStorage.removeItem('activeGarageRequestId');
+            }
+        });
+
+        return () => {
+            unsubPartner();
+            unsubRequests();
+        };
+    }, [firebaseDb, user, toast, activeGarageRequest?.status]);
+
 
     useEffect(() => {
         let unsubMechanic: (() => void) | undefined;
-        if (activeGarageRequest?.mechanicId) {
-            const mechanicRef = doc(db, 'mechanics', activeGarageRequest.mechanicId);
+        if (activeGarageRequest?.mechanicId && firebaseDb) {
+            const mechanicRef = doc(firebaseDb, 'mechanics', activeGarageRequest.mechanicId);
             unsubMechanic = onSnapshot(mechanicRef, (doc) => {
                 if (doc.exists()) {
                     const data = doc.data();
@@ -121,39 +115,36 @@ export default function SupportPage() {
                 unsubMechanic();
             }
         };
-    }, [activeGarageRequest?.mechanicId]);
+    }, [activeGarageRequest?.mechanicId, firebaseDb]);
 
     const handleRequestMechanic = async () => {
-        if (!db || !partnerData || !partnerData.currentLocation || !selectedIssue) {
+        if (!firebaseDb || !partnerData || !partnerData.currentLocation || !selectedIssue) {
             toast({ variant: "destructive", title: "Error", description: "Could not get your location or user details." });
             return;
         }
         const generatedOtp = Math.floor(1000 + Math.random() * 9000).toString();
-        const requestDocRef = await addDoc(collection(db, 'garageRequests'), {
+        const requestData = {
             driverId: partnerData.id,
             driverName: partnerData.name,
             driverPhone: partnerData.phone,
             issue: selectedIssue,
             location: new GeoPoint(partnerData.currentLocation.lat, partnerData.currentLocation.lon),
-            status: 'pending',
+            status: 'pending' as const,
             otp: generatedOtp,
             createdAt: serverTimestamp(),
-        });
-    
-        localStorage.setItem('activeGarageRequestId', requestDocRef.id);
+        };
+        await addDoc(collection(firebaseDb, 'garageRequests'), requestData);
+        
         toast({ title: "Request Sent!", description: "We are finding a nearby ResQ partner for you." });
         setIsIssueDialogOpen(false);
     }
     
-     const handleCancelServiceRequest = async () => {
-        if (!db || !activeGarageRequest) return;
-        const requestRef = doc(db, 'garageRequests', activeGarageRequest.id);
+    const handleCancelServiceRequest = async () => {
+        if (!firebaseDb || !activeGarageRequest) return;
+        const requestRef = doc(firebaseDb, 'garageRequests', activeGarageRequest.id);
         try {
           await updateDoc(requestRef, { status: 'cancelled_by_driver' });
           toast({ variant: 'destructive', title: 'Service Request Cancelled' });
-          setActiveGarageRequest(null);
-          setMechanicLiveLocation(null);
-          localStorage.removeItem('activeGarageRequestId');
         } catch (error) {
           toast({ variant: 'destructive', title: 'Error', description: 'Could not cancel the request.' });
         }
@@ -163,45 +154,13 @@ export default function SupportPage() {
     const renderGarageSupport = () => {
         if (activeGarageRequest) {
              return (
-                <Card>
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2"><Siren className="w-6 h-6 text-primary animate-pulse"/> SOS Garage Request Active</CardTitle>
-                        <CardDescription>Your request for assistance is in progress.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                         <div className="h-64 w-full rounded-md overflow-hidden border">
-                           <LiveMap driverLocation={mechanicLiveLocation} riderLocation={partnerData?.currentLocation} />
-                        </div>
-                        {activeGarageRequest.status === 'pending' && (
-                             <div className="text-center py-4">
-                                <SearchingIndicator partnerType="resq" />
-                                <p className="font-semibold mt-4 text-lg">Finding a ResQ partner near you...</p>
-                            </div>
-                        )}
-                        {activeGarageRequest.status === 'accepted' && (
-                             <div className="flex items-center gap-3 bg-muted p-3 rounded-lg">
-                                <Avatar className="w-12 h-12 border-2 border-primary">
-                                    <AvatarImage src={'https://placehold.co/100x100.png'} alt="Mechanic" data-ai-hint="mechanic portrait" />
-                                    <AvatarFallback>{activeGarageRequest.mechanicName?.substring(0,2)}</AvatarFallback>
-                                </Avatar>
-                                <div className="flex-1">
-                                    <p className="font-bold">{activeGarageRequest.mechanicName}</p>
-                                    <p className="text-sm text-muted-foreground">Is on the way.</p>
-                                </div>
-                                <div className="text-right">
-                                    {activeGarageRequest.eta && <p className="font-bold text-lg">{activeGarageRequest.eta} min</p>}
-                                    <p className="text-xs text-muted-foreground">ETA</p>
-                                </div>
-                                 <Button asChild variant="outline" size="icon" className="h-10 w-10 shrink-0">
-                                    <a href={`tel:${activeGarageRequest.mechanicPhone}`}><Phone className="w-4 h-4"/></a>
-                                </Button>
-                            </div>
-                        )}
-                    </CardContent>
-                    <CardFooter>
-                         <Button variant="destructive" className="w-full" onClick={handleCancelServiceRequest}>Cancel Request</Button>
-                    </CardFooter>
-                </Card>
+                <div className="flex justify-center items-center h-full">
+                    <RideStatus 
+                        ride={activeGarageRequest as any}
+                        isGarageRequest 
+                        onCancel={handleCancelServiceRequest}
+                    />
+                </div>
             )
         }
         
@@ -258,37 +217,42 @@ export default function SupportPage() {
     }
 
     return (
-        <div className="grid gap-6">
-            <h2 className="text-3xl font-bold tracking-tight">Help &amp; Support</h2>
+        <div className="grid gap-6 h-full">
             
-            {renderGarageSupport()}
+            {activeGarageRequest ? renderGarageSupport() : (
+                <>
+                    <h2 className="text-3xl font-bold tracking-tight">Help &amp; Support</h2>
+                    {renderGarageSupport()}
+                     <Card>
+                        <CardHeader>
+                            <div className='flex items-center gap-2'>
+                                <Shield className='w-6 h-6 text-primary'/>
+                                <CardTitle>Insurance Details</CardTitle>
+                            </div>
+                            <CardDescription>Your insurance status and support, based on your active subscription plan.</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="p-4 bg-muted rounded-lg text-center">
+                                <p className="font-semibold">Insurance Not Active</p>
+                                <p className="text-sm text-muted-foreground">Upgrade to the &quot;Pro&quot; plan to activate your free Accidental Insurance coverage.</p>
+                            </div>
+                        </CardContent>
+                    </Card>
 
-            <Card>
-                <CardHeader>
-                    <div className='flex items-center gap-2'>
-                        <Shield className='w-6 h-6 text-primary'/>
-                        <CardTitle>Insurance Details</CardTitle>
-                    </div>
-                    <CardDescription>Your insurance status and support, based on your active subscription plan.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                     <div className="p-4 bg-muted rounded-lg text-center">
-                        <p className="font-semibold">Insurance Not Active</p>
-                        <p className="text-sm text-muted-foreground">Upgrade to the &quot;Pro&quot; plan to activate your free Accidental Insurance coverage.</p>
-                    </div>
-                </CardContent>
-            </Card>
-
-            <Card>
-                <CardHeader>
-                    <CardTitle>Contact Support</CardTitle>
-                     <CardDescription>Need help with anything else? Our partner support team is here for you.</CardDescription>
-                </CardHeader>
-                <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                     <Button size="lg" variant="outline" onClick={() => toast({ title: t('toast_coming_soon') })}><LifeBuoy className="mr-2 h-5 w-5" /> Open Support Ticket</Button>
-                     <Button size="lg" asChild><a href="tel:1800-XXX-XXXX"><Phone className="mr-2 h-5 w-5" /> Call Helpline</a></Button>
-                </CardContent>
-            </Card>
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Contact Support</CardTitle>
+                            <CardDescription>Need help with anything else? Our partner support team is here for you.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <Button size="lg" variant="outline" onClick={() => toast({ title: t('toast_coming_soon') })}><LifeBuoy className="mr-2 h-5 w-5" /> Open Support Ticket</Button>
+                            <Button size="lg" asChild><a href="tel:1800-XXX-XXXX"><Phone className="mr-2 h-5 w-5" /> Call Helpline</a></Button>
+                        </CardContent>
+                    </Card>
+                </>
+            )}
         </div>
     )
 }
+
+    
