@@ -148,7 +148,7 @@ export default function DriverDashboard({ partnerData, setPartnerData }: { partn
   const [acceptedRide, setAcceptedRide] = useState<RideRequest | null>(null);
   const [showOtpModal, setShowOtpModal] = useState(false);
   const [enteredOtp, setEnteredOtp] = useState('');
-  const [isOnline, setIsOnline] = useState(partnerData?.isOnline || false);
+  const [isOnline, setIsOnline] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [routeGeometry, setRouteGeometry] = useState<any>(null);
   const [routeInfo, setRouteInfo] = useState<RouteInfo | null>(null);
@@ -189,14 +189,17 @@ export default function DriverDashboard({ partnerData, setPartnerData }: { partn
 
   const { toast } = useToast()
 
-  useEffect(() => {
-    notificationSoundRef.current = new Audio('/sounds/notification.mp3');
-    setIsMounted(true);
-    if(partnerData) {
-        setIsOnline(partnerData.isOnline || false);
-        setIsLoading(false);
-    }
-  }, [partnerData]);
+    useEffect(() => {
+        notificationSoundRef.current = new Audio('/sounds/notification.mp3');
+        setIsMounted(true);
+    }, []);
+
+    useEffect(() => {
+        if (partnerData) {
+            setIsOnline(partnerData.isOnline || false);
+            setIsLoading(false);
+        }
+    }, [partnerData]);
   
   useEffect(() => {
     acceptedRideRef.current = acceptedRide;
