@@ -55,7 +55,7 @@ import { cn } from '@/lib/utils';
 import SearchingIndicator from '@/components/ui/searching-indicator';
 import type { RideData } from '@/lib/types';
 import type { AmbulanceCase } from '@/lib/types';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 
 
 interface Props {
@@ -278,20 +278,21 @@ export default function RideStatus({
                 <div className="text-center py-10 flex flex-col items-center">
                     <SearchingIndicator partnerType="path" className="w-32 h-32" />
                     <h3 className="text-3xl font-bold mt-4">Finding you a ride...</h3>
-                    <p className="text-muted-foreground">This will only take a moment.</p>
+                    <p className="text-muted-foreground">Please wait while we connect you to a nearby partner.</p>
                 </div>
             );
         case "accepted":
              return (
-                <div className="h-[260px] flex flex-col justify-center">
+                <div className="h-[260px] flex flex-col justify-center overflow-hidden">
+                    <AnimatePresence mode="wait">
                     {!showDriverDetails ? (
                         <motion.div
                             key="car"
                             initial={{ x: "-110%" }}
-                            animate={{ x: ["-110%", "20%", "20%", "120%"] }}
+                            animate={{ x: ["-110%", "50%", "50%", "120%"], rotateY: [0, 0, 180, 180] }}
                             exit={{ opacity: 0 }}
                             transition={{
-                                duration: 2,
+                                duration: 2.5,
                                 ease: "easeInOut",
                                 times: [0, 0.4, 0.8, 1]
                             }}
@@ -322,6 +323,7 @@ export default function RideStatus({
                             </div>
                         </motion.div>
                     )}
+                    </AnimatePresence>
                 </div>
             );
       case "in-progress":
