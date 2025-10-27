@@ -128,64 +128,72 @@ function DriverLayoutContent({ children }: { children: React.ReactNode }) {
   }, [auth, db, partnerData, router, toast, theme, setTheme]);
 
   useEffect(() => {
-      if (isAuthLoading) return;
+    if (isAuthLoading) {
+        // Wait until Firebase has determined the auth state.
+        return;
+    }
 
-      const isOnboardingPage = pathname.includes('/driver/onboarding');
-      if (!user) {
-          if (!isOnboardingPage) {
-              router.replace('/login?role=driver');
-          }
-          setIsSessionLoading(false);
-          return;
-      }
-      
-      const session = localStorage.getItem('curocity-session');
-      if (!session) {
-        // If Firebase says we have a user but local session is gone,
-        // it's better to log out to force a clean login.
-        if (!isOnboardingPage) handleLogout();
+    const isOnboardingPage = pathname.includes('/driver/onboarding');
+    
+    // The single source of truth: Firebase Auth state.
+    if (!user) {
+        if (!isOnboardingPage) {
+            router.replace('/login?role=driver');
+        }
         setIsSessionLoading(false);
         return;
-      }
+    }
+    
+    // If we have a Firebase user, now we can try to get our session data.
+    const session = localStorage.getItem('curocity-session');
+    if (!session) {
+         // This can happen in a race condition. The correct action is to logout
+         // to force a clean re-authentication flow.
+         if (!isOnboardingPage) {
+            handleLogout();
+         }
+         setIsSessionLoading(false);
+         return;
+    }
 
-      let unsubPartner: () => void = () => {};
-      try {
-          const sessionData = JSON.parse(session);
-          if (!sessionData.role || sessionData.role !== 'driver' || !sessionData.partnerId) {
-             if (!isOnboardingPage) handleLogout();
-             setIsSessionLoading(false);
-             return;
-          }
+    let unsubPartner: () => void = () => {};
+    try {
+        const sessionData = JSON.parse(session);
+        if (!sessionData.role || sessionData.role !== 'driver' || !sessionData.partnerId) {
+            if (!isOnboardingPage) handleLogout();
+            setIsSessionLoading(false);
+            return;
+        }
 
-          const partnerDocRef = doc(db, 'partners', sessionData.partnerId);
-          unsubPartner = onSnapshot(partnerDocRef, (docSnap) => {
-              if (docSnap.exists()) {
-                  const data = docSnap.data();
-                  const fetchedPartnerData = { id: docSnap.id, ...data } as PartnerData;
+        const partnerDocRef = doc(db, 'partners', sessionData.partnerId);
+        unsubPartner = onSnapshot(partnerDocRef, (docSnap) => {
+            if (docSnap.exists()) {
+                const data = docSnap.data();
+                const fetchedPartnerData = { id: docSnap.id, ...data } as PartnerData;
 
-                  const isPink = data.isCabziPinkPartner || false;
-                  if (isPink && theme !== 'pink') setTheme('pink');
-                  else if (!isPink && theme === 'pink') setTheme('system');
+                const isPink = data.isCabziPinkPartner || false;
+                if (isPink && theme !== 'pink') setTheme('pink');
+                else if (!isPink && theme === 'pink') setTheme('system');
 
-                  setPartnerData(fetchedPartnerData);
-              } else {
-                  console.error("Partner document not found with ID:", sessionData.partnerId);
-                  toast({ variant: 'destructive', title: "Error", description: 'Your partner profile could not be loaded.' });
-                  handleLogout();
-              }
-              setIsSessionLoading(false);
-          }, (error) => {
-              console.error("Error with partner data snapshot:", error);
-              toast({ variant: "destructive", title: "Error", description: "Could not load partner profile." });
-              setIsSessionLoading(false);
-          });
-      } catch (e) {
-          handleLogout();
-          setIsSessionLoading(false);
-      }
+                setPartnerData(fetchedPartnerData);
+            } else {
+                console.error("Partner document not found with ID:", sessionData.partnerId);
+                toast({ variant: 'destructive', title: "Error", description: 'Your partner profile could not be loaded.' });
+                handleLogout();
+            }
+            setIsSessionLoading(false);
+        }, (error) => {
+            console.error("Error with partner data snapshot:", error);
+            toast({ variant: "destructive", title: "Error", description: "Could not load partner profile." });
+            setIsSessionLoading(false);
+        });
+    } catch (e) {
+        handleLogout();
+        setIsSessionLoading(false);
+    }
 
-      return () => unsubPartner();
-  }, [isAuthLoading, user, db, router, pathname, toast, theme, setTheme, handleLogout]);
+    return () => unsubPartner();
+}, [isAuthLoading, user, db, router, pathname, toast, theme, setTheme, handleLogout]);
 
    useEffect(() => {
     let heartbeatInterval: NodeJS.Timeout | null = null;
