@@ -82,7 +82,8 @@ export default function DriverDashboardPage() {
             const data = payload.data;
             if (!data) return;
     
-            const { type, rideId } = data;
+            const type = data.type;
+            const rideId = data.rideId;
     
             if (type === 'new_ride_request' && rideId) {
                 const rejectedBy = data.rejectedBy ? JSON.parse(data.rejectedBy) : [];
@@ -245,4 +246,3 @@ export default function DriverDashboardPage() {
     );
 }
 
-    
