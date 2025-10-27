@@ -193,7 +193,8 @@ export default function MechanicLayout({ children }: { children: React.ReactNode
             updateDoc(mechanicDocRef.current, { isAvailable: false, lastOnline: serverTimestamp(), currentLocation: null });
         }
     }
-  }, [router, pathname, db]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname, db]);
 
   const handleLogout = async () => {
     if (mechanicDocRef.current) {

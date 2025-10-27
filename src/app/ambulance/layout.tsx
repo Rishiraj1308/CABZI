@@ -76,22 +76,21 @@ export default function AmbulanceLayout({ children }: { children: React.ReactNod
   const [isSessionLoading, setIsSessionLoading] = useState(true);
   
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-        const sessionString = localStorage.getItem('curocity-ambulance-session');
-        if (sessionString) {
-            try {
-                setUserName(JSON.parse(sessionString).name);
-            } catch (error) {
-                console.error("Failed to parse session, redirecting", error);
-                localStorage.removeItem('curocity-ambulance-session');
-                router.push('/login?role=driver');
-            }
-        } else {
+    const sessionString = localStorage.getItem('curocity-ambulance-session');
+    if (sessionString) {
+        try {
+            setUserName(JSON.parse(sessionString).name);
+        } catch (error) {
+            console.error("Failed to parse session, redirecting", error);
+            localStorage.removeItem('curocity-ambulance-session');
             router.push('/login?role=driver');
         }
+    } else {
+        router.push('/login?role=driver');
     }
     setIsSessionLoading(false);
-  }, [router]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleLogout = async () => {
     const sessionString = localStorage.getItem('curocity-ambulance-session');

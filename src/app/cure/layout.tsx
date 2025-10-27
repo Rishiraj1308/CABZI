@@ -55,60 +55,54 @@ export default function CureLayout({ children }: { children: React.ReactNode }) 
       return;
     }
     
-    if (typeof window !== 'undefined') {
-        const sessionString = localStorage.getItem('curocity-cure-session');
-        if (sessionString) {
-            try {
-                const sessionData = JSON.parse(sessionString);
-                 if (!sessionData.role || sessionData.role !== 'cure' || !sessionData.partnerId) {
-                    router.push('/login?role=driver');
-                    return;
-                }
-                setSession(sessionData);
-
-                if (db && sessionData.partnerId) {
-                    const unsub = onSnapshot(doc(db, 'ambulances', sessionData.partnerId), (doc) => {
-                        if (doc.exists()) {
-                            const data = doc.data();
-                            const isHospital = data.businessType?.toLowerCase().includes('hospital');
-
-                            if (isHospital) {
-                                setNavItems([
-                                    { href: '/cure', label: 'Mission Control', icon: LayoutDashboard },
-                                    { href: '/cure/fleet', label: 'Fleet & Staff', icon: UsersIcon },
-                                    { href: '/cure/doctors', label: 'Doctors Roster', icon: Stethoscope },
-                                    { href: '/cure/insurance', label: 'Insurance', icon: ShieldCheck },
-                                    { href: '/cure/billing', label: 'Billing', icon: Landmark },
-                                    { href: '/cure/analytics', label: 'Analytics', icon: BarChart },
-                                    { href: '/cure/subscription', label: 'Subscription', icon: Gem },
-                                ]);
-                            } else {
-                                // Clinic navigation
-                                setNavItems([
-                                    { href: '/cure', label: 'Dashboard', icon: LayoutDashboard },
-                                    { href: '/cure/doctors', label: 'Appointments', icon: Stethoscope },
-                                    { href: '/cure/billing', label: 'Billing', icon: Landmark },
-                                    { href: '/cure/subscription', label: 'Subscription', icon: Gem },
-                                ]);
-                            }
-                        }
-                    });
-                    setIsSessionLoading(false);
-                    return () => unsub();
-                } else {
-                    setIsSessionLoading(false);
-                }
-
-            } catch (error) {
-                console.error("Failed to parse session, redirecting", error);
-                localStorage.removeItem('curocity-cure-session');
+    const sessionString = localStorage.getItem('curocity-cure-session');
+    if (sessionString && db) {
+        try {
+            const sessionData = JSON.parse(sessionString);
+            if (!sessionData.role || sessionData.role !== 'cure' || !sessionData.partnerId) {
                 router.push('/login?role=driver');
+                return;
             }
-        } else {
+            setSession(sessionData);
+
+            const unsub = onSnapshot(doc(db, 'ambulances', sessionData.partnerId), (doc) => {
+                if (doc.exists()) {
+                    const data = doc.data();
+                    const isHospital = data.businessType?.toLowerCase().includes('hospital');
+
+                    if (isHospital) {
+                        setNavItems([
+                            { href: '/cure', label: 'Mission Control', icon: LayoutDashboard },
+                            { href: '/cure/fleet', label: 'Fleet & Staff', icon: UsersIcon },
+                            { href: '/cure/doctors', label: 'Doctors Roster', icon: Stethoscope },
+                            { href: '/cure/insurance', label: 'Insurance', icon: ShieldCheck },
+                            { href: '/cure/billing', label: 'Billing', icon: Landmark },
+                            { href: '/cure/analytics', label: 'Analytics', icon: BarChart },
+                            { href: '/cure/subscription', label: 'Subscription', icon: Gem },
+                        ]);
+                    } else {
+                        // Clinic navigation
+                        setNavItems([
+                            { href: '/cure', label: 'Dashboard', icon: LayoutDashboard },
+                            { href: '/cure/doctors', label: 'Appointments', icon: Stethoscope },
+                            { href: '/cure/billing', label: 'Billing', icon: Landmark },
+                            { href: '/cure/subscription', label: 'Subscription', icon: Gem },
+                        ]);
+                    }
+                }
+                setIsSessionLoading(false);
+            });
+            return () => unsub();
+        } catch (error) {
+            console.error("Failed to parse session, redirecting", error);
+            localStorage.removeItem('curocity-cure-session');
             router.push('/login?role=driver');
         }
+    } else {
+        router.push('/login?role=driver');
     }
-  }, [router, pathname, db]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [db]);
 
   const handleLogout = async () => {
     if(session && db) {

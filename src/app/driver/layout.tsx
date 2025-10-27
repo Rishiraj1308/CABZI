@@ -107,16 +107,34 @@ function DriverLayoutContent({ children }: { children: React.ReactNode }) {
   
   useEffect(() => {
     setIsMounted(true);
-    if (pathname === '/driver/onboarding') {
-      setIsSessionLoading(false);
-      return;
-    }
-  }, [pathname]);
+  }, []);
 
-  // Effect 1: Authenticate user and set up partner document reference
+  const handleLogout = useCallback(() => {
+    if (partnerDocRef.current) {
+        try {
+            updateDoc(partnerDocRef.current, { isOnline: false, lastSeen: serverTimestamp() });
+        } catch (error) {
+            console.error("Failed to update logout status (non-critical):", error);
+        }
+    }
+    if (auth) auth.signOut();
+    localStorage.removeItem('curocity-session');
+    
+    if (theme === 'pink') {
+        setTheme('system'); 
+    }
+
+    toast({
+        title: 'Logged Out',
+        description: 'You have been successfully logged out.'
+    });
+    router.push('/');
+  }, [auth, theme, setTheme, router, toast]);
+
+  // Effect to authenticate and set up partner document reference
   useEffect(() => {
     if (isAuthLoading) return;
-    
+
     const session = localStorage.getItem('curocity-session');
     if (!user || !session || !db) {
         if (!pathname.includes('/driver/onboarding')) {
@@ -138,92 +156,49 @@ function DriverLayoutContent({ children }: { children: React.ReactNode }) {
     } catch (e) {
         localStorage.removeItem('curocity-session');
         router.push('/login?role=driver');
-    } finally {
-      // Defer session loading completion until data is fetched
     }
-  }, [router, pathname, db, user, isAuthLoading]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthLoading, user, db, pathname]);
 
-  // Effect 2: Fetch partner data and set up heartbeat AFTER authentication is established
+  // Effect to fetch partner data and manage online presence (heartbeat)
   useEffect(() => {
-    if (!partnerDocRef.current) {
-        // This can happen briefly while the first effect sets the ref
-        if (!isAuthLoading && !isSessionLoading) {
-          setIsSessionLoading(false);
-        }
-        return;
-    };
+    if (!partnerDocRef.current) return;
 
-    let watchId: number | undefined;
-    let lastSentLocation: { lat: number, lon: number } | null = null;
-    const MIN_DISTANCE_THRESHOLD = 50; // in meters
-    const MIN_TIME_THRESHOLD = 30000; // 30 seconds
-    let lastSentTime = 0;
+    let heartbeatInterval: NodeJS.Timeout;
     
-    const getDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
-        const R = 6371e3;
-        const φ1 = lat1 * Math.PI/180;
-        const φ2 = lat2 * Math.PI/180;
-        const Δφ = (lat2-lat1) * Math.PI/180;
-        const Δλ = (lon2-lon1) * Math.PI/180;
-        const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) + Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ/2) * Math.sin(Δλ/2);
-        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-        return R * c;
-    }
-    
-    const sendHeartbeat = (location?: GeoPoint) => {
-        if (partnerDocRef.current) {
-            const updateData: { lastSeen: FieldValue, isOnline: boolean, currentLocation?: GeoPoint | null } = {
-                lastSeen: serverTimestamp(),
-                isOnline: true,
-            };
-            if (location) {
-                updateData.currentLocation = location;
-            }
-            updateDoc(partnerDocRef.current, updateData).catch(error => {
-                const permissionError = new FirestorePermissionError({
-                    path: partnerDocRef.current!.path,
-                    operation: 'update',
-                    requestResourceData: { isOnline: true }
-                });
-                errorEmitter.emit('permission-error', permissionError);
-            });
-        }
-    };
-    
-    // Set up the main data listener
+    // Set up the main data listener for the partner document
     const unsubPartner = onSnapshot(partnerDocRef.current, (docSnap) => {
       if (docSnap.exists()) {
-        const data = docSnap.data();
-        const partnerIsPink = data.isCabziPinkPartner || false;
-        setIsPinkPartner(partnerIsPink);
+        if (!partnerData) { // Only do this on the first successful fetch
+            const data = docSnap.data();
+            const partnerIsPink = data.isCabziPinkPartner || false;
+            setIsPinkPartner(partnerIsPink);
+            if (partnerIsPink && theme !== 'pink') setTheme('pink');
+            else if (!partnerIsPink && theme === 'pink') setTheme('system');
+            
+            setPartnerData({ id: docSnap.id, ...data } as PartnerData);
+            setIsSessionLoading(false);
 
-        if (partnerIsPink && theme !== 'pink') setTheme('pink');
-        else if (!partnerIsPink && theme === 'pink') setTheme('system');
-        
-        if (!partnerData) { // This will only be true on the very first successful fetch
-          setPartnerData({ id: docSnap.id, ...data } as PartnerData);
-          setIsSessionLoading(false); // Mark loading as complete HERE
-
-          // Start geolocation watcher
-          if (navigator.geolocation) {
-              watchId = navigator.geolocation.watchPosition(
-                  (pos) => {
-                      const newLocation = { lat: pos.coords.latitude, lon: pos.coords.longitude };
-                      const now = Date.now();
-                      const distanceMoved = lastSentLocation ? getDistance(lastSentLocation.lat, lastSentLocation.lon, newLocation.lat, newLocation.lon) : Infinity;
-                      if (distanceMoved > MIN_DISTANCE_THRESHOLD || now - lastSentTime > MIN_TIME_THRESHOLD) {
-                          sendHeartbeat(new GeoPoint(newLocation.lat, newLocation.lon));
-                          lastSentLocation = newLocation;
-                          lastSentTime = now;
-                      }
-                  },
-                  () => {},
-                  { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-              );
-          }
+            // Start the heartbeat after the first successful read
+            const sendHeartbeat = () => {
+                if (partnerDocRef.current) {
+                    updateDoc(partnerDocRef.current, { lastSeen: serverTimestamp(), isOnline: true }).catch(error => {
+                        errorEmitter.emit(
+                            'permission-error',
+                            new FirestorePermissionError({
+                                path: partnerDocRef.current!.path,
+                                operation: 'update',
+                                requestResourceData: { isOnline: true }
+                            })
+                        );
+                    });
+                }
+            };
+            sendHeartbeat(); // Send first heartbeat immediately after data is confirmed
+            heartbeatInterval = setInterval(sendHeartbeat, 30000); // Then every 30 seconds
         }
       } else {
-        // Handle case where partner document is deleted while they are logged in
+        // Document deleted, log the user out
         handleLogout();
       }
     }, (error) => {
@@ -240,34 +215,11 @@ function DriverLayoutContent({ children }: { children: React.ReactNode }) {
 
     return () => {
         unsubPartner();
-        if (watchId) navigator.geolocation.clearWatch(watchId);
+        clearInterval(heartbeatInterval);
         window.removeEventListener('beforeunload', handleBeforeUnload);
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [partnerDocRef.current]); // This effect depends only on the ref being set.
-  
-
-  const handleLogout = async () => {
-    if (partnerDocRef.current) {
-        try {
-            await updateDoc(partnerDocRef.current, { isOnline: false, lastSeen: serverTimestamp() });
-        } catch (error) {
-            console.error("Failed to update logout status (non-critical):", error);
-        }
-    }
-    if (auth) auth.signOut();
-    localStorage.removeItem('curocity-session');
-    
-    if (theme === 'pink') {
-        setTheme('system'); 
-    }
-
-    toast({
-        title: 'Logged Out',
-        description: 'You have been successfully logged out.'
-    });
-    router.push('/');
-  }
+  }, [partnerDocRef.current]); 
   
   if (pathname === '/driver/onboarding') {
     return (
@@ -402,5 +354,3 @@ export default function DriverLayout({ children }: { children: React.ReactNode }
         </NotificationsProvider>
     );
 }
-
-    

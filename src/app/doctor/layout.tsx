@@ -116,25 +116,24 @@ export default function DoctorLayout({ children }: { children: React.ReactNode }
   const [isSessionLoading, setIsSessionLoading] = useState(true);
   
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-        const sessionString = localStorage.getItem('curocity-doctor-session');
-        if (sessionString) {
-            try {
-                const sessionData = JSON.parse(sessionString);
-                setUserName(sessionData.name);
-                setHospitalId(sessionData.hospitalId);
-                setDoctorId(sessionData.id); 
-            } catch (error) {
-                console.error("Failed to parse session, redirecting", error);
-                localStorage.removeItem('curocity-doctor-session');
-                router.push('/login?role=doctor');
-            }
-        } else {
+    const sessionString = localStorage.getItem('curocity-doctor-session');
+    if (sessionString) {
+        try {
+            const sessionData = JSON.parse(sessionString);
+            setUserName(sessionData.name);
+            setHospitalId(sessionData.hospitalId);
+            setDoctorId(sessionData.id); 
+        } catch (error) {
+            console.error("Failed to parse session, redirecting", error);
+            localStorage.removeItem('curocity-doctor-session');
             router.push('/login?role=doctor');
         }
+    } else {
+        router.push('/login?role=doctor');
     }
     setIsSessionLoading(false);
-  }, [router]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleLogout = async () => {
     if (auth) auth.signOut();
