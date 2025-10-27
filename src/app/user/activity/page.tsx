@@ -70,7 +70,7 @@ export default function MyActivityPage() {
 
   // Fetch Rides
   useEffect(() => {
-    if (!db || !user) { return; }
+    if (!db || !user) { setIsLoading(false); return; }
     const q = query(collection(db, 'rides'), where('riderId', '==', user.uid), orderBy('createdAt', 'desc'));
     const unsub = onSnapshot(q, (snapshot) => {
         const ridesData = snapshot.docs.map(doc => {
@@ -94,6 +94,7 @@ export default function MyActivityPage() {
         setIsLoading(false);
     }, (error) => {
         console.error("Error fetching rides:", error);
+        setIsLoading(false);
     });
     return () => unsub();
   }, [db, user]);
@@ -117,7 +118,6 @@ export default function MyActivityPage() {
             collectionName: 'appointments',
         }));
         setAppointments(apptsData);
-        setIsLoading(false);
     }, (error) => {
         console.error("Error fetching appointments:", error);
     });
@@ -143,7 +143,6 @@ export default function MyActivityPage() {
             collectionName: 'emergencyCases',
         }));
         setEmergencies(casesData);
-        setIsLoading(false);
     }, (error) => {
         console.error("Error fetching emergencies:", error);
     });
@@ -170,7 +169,6 @@ export default function MyActivityPage() {
             collectionName: 'garageRequests',
         }));
         setResqRequests(resqData);
-        setIsLoading(false);
     }, (error) => {
         console.error("Error fetching ResQ requests:", error);
     });
