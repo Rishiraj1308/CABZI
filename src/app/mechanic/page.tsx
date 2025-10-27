@@ -104,7 +104,7 @@ export default function ResQDashboard() {
   // PIN lock state
   const [isEarningsVisible, setIsEarningsVisible] = useState(false);
   const [isPinDialogOpen, setIsPinDialogOpen] = useState(false);
-  const [enteredPin, setEnteredPin] = useState('');
+  const [pin, setPin] = useState('');
 
   useEffect(() => {
     notificationSoundRef.current = new Audio('/sounds/notification.mp3');
@@ -129,7 +129,7 @@ export default function ResQDashboard() {
               acceptanceRate: data.acceptanceRate || 95,
               jobsToday: data.jobsToday || 0,
               todaysEarnings: data.todaysEarnings || 0,
-              qrCodeUrl: data.qrCodeUrl || `https://placehold.co/300x300.png?text=CurocityUPI`,
+              qrCodeUrl: data.qrCodeUrl || `https://placehold.co/300x300/FBBF24/1E293B?text=CurocityUPI`,
               upiId: data.upiId || `${data.phone}@curocity`,
             } as MechanicData);
             setIsAvailable(data.isAvailable);
@@ -331,7 +331,7 @@ export default function ResQDashboard() {
             status: 'accepted',
             mechanicId: mechanicData.id,
             mechanicName: mechanicData.name,
-            phone: mechanicData.phone,
+            mechanicPhone: mechanicData.phone,
         });
         localStorage.setItem('activeJobId', jobRequest.id);
         setAcceptedJob(jobRequest);
@@ -428,10 +428,10 @@ export default function ResQDashboard() {
           toast({ variant: 'destructive', title: 'PIN Not Set', description: 'Please set a UPI PIN from your wallet first.' });
           return;
       }
-      if (enteredPin === storedPin) {
+      if (pin === storedPin) {
           setIsEarningsVisible(true);
           setIsPinDialogOpen(false);
-          setEnteredPin('');
+          setPin('');
           toast({ title: 'Earnings Revealed', description: 'Your earnings for today are now visible.' });
 
           if (earningsTimerRef.current) clearTimeout(earningsTimerRef.current);
@@ -631,8 +631,8 @@ export default function ResQDashboard() {
                         type="password" 
                         inputMode="numeric" 
                         maxLength={4}
-                        value={enteredPin}
-                        onChange={(e) => setEnteredPin(e.target.value)}
+                        value={pin}
+                        onChange={(e) => setPin(e.target.value)}
                         className="text-center text-2xl font-bold tracking-[1em] w-40" 
                         placeholder="••••"
                         autoFocus
