@@ -1,19 +1,18 @@
 
 'use client'
 
-import { useState, useEffect, useRef, useCallback } from 'react'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { LifeBuoy, Phone, Shield, Wrench, Siren } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import dynamic from 'next/dynamic'
-import { db } from '@/lib/firebase'
+import { useFirebase } from '@/firebase/client-provider'
 import { collection, query, where, onSnapshot, doc, GeoPoint, addDoc, serverTimestamp, updateDoc } from 'firebase/firestore'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Label } from '@/components/ui/label'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { useLanguage } from '@/hooks/use-language'
-import { useFirebase } from '@/firebase/client-provider'
 import type { ClientSession, GarageRequest } from '@/lib/types'
 import RideStatus from '@/components/ride-status'
 
@@ -254,5 +253,3 @@ export default function SupportPage() {
         </div>
     )
 }
-
-    

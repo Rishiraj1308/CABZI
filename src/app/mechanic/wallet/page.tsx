@@ -1,3 +1,4 @@
+
 'use client'
 
 import React, { useState, useEffect } from 'react'
@@ -8,7 +9,7 @@ import { Wallet, PlusCircle, IndianRupee, ShieldCheck, TrendingUp, PiggyBank, Ci
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { useToast } from '@/hooks/use-toast'
-import { db } from '@/lib/firebase'
+import { useFirestore } from '@/firebase/client-provider'
 import { collection, query, where, getDocs, doc, updateDoc, Timestamp, orderBy } from 'firebase/firestore'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
@@ -46,6 +47,7 @@ export default function ResQWalletPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [isBankDetailsDialogOpen, setIsBankDetailsDialogOpen] = useState(false);
     const { toast } = useToast();
+    const db = useFirestore();
 
     // PIN Management State
     const [isPinSet, setIsPinSet] = useState(false);
@@ -59,7 +61,7 @@ export default function ResQWalletPage() {
     useEffect(() => {
         // This effect only checks if a PIN exists in localStorage.
         // It does not fetch any data.
-        const storedPin = localStorage.getItem('cabzi-user-pin');
+        const storedPin = localStorage.getItem('curocity-user-pin');
         if (storedPin) {
             setIsPinSet(true);
         }
@@ -73,7 +75,7 @@ export default function ResQWalletPage() {
         };
 
         const fetchWalletData = async () => {
-             const session = localStorage.getItem('cabzi-resq-session');
+             const session = localStorage.getItem('curocity-resq-session');
             if (!session || !db) {
                 setIsLoading(false);
                 return;
@@ -91,8 +93,8 @@ export default function ResQWalletPage() {
                      const mechanicData = { 
                         id: mechanicDoc.id, 
                         ...mechanicDoc.data(),
-                        upiId: mechanicDoc.data().upiId || `${mechanicDoc.data().phone}@cabzi`,
-                        qrCodeUrl: mechanicDoc.data().qrCodeUrl || `https://placehold.co/300x300/FBBF24/1E293B?text=CabziUPI`
+                        upiId: mechanicDoc.data().upiId || `${mechanicDoc.data().phone}@curocity`,
+                        qrCodeUrl: mechanicDoc.data().qrCodeUrl || `https://placehold.co/300x300/FBBF24/1E293B?text=CurocityUPI`
                     } as Mechanic
                     setMechanic(mechanicData);
                     
@@ -112,13 +114,13 @@ export default function ResQWalletPage() {
 
         fetchWalletData();
 
-    }, [isWalletVisible, toast]);
+    }, [isWalletVisible, toast, db]);
 
     const handlePinSubmit = () => {
-        const storedPin = localStorage.getItem('cabzi-user-pin');
+        const storedPin = localStorage.getItem('curocity-user-pin');
         if (enteredPin === storedPin) {
             setIsWalletVisible(true);
-            toast({ title: 'Access Granted', description: 'Welcome to your Cabzi Bank.' });
+            toast({ title: 'Access Granted', description: 'Welcome to your Curocity Bank.' });
         } else {
             toast({ variant: 'destructive', title: 'Invalid PIN', description: 'Please enter the correct 4-digit PIN.' });
         }
@@ -140,8 +142,8 @@ export default function ResQWalletPage() {
             return;
         }
 
-        localStorage.setItem('cabzi-user-pin', newPin);
-        toast({ title: 'PIN Set Successfully!', description: 'Your Cabzi Bank is now secure.', className: 'bg-green-600 text-white border-green-600' });
+        localStorage.setItem('curocity-user-pin', newPin);
+        toast({ title: 'PIN Set Successfully!', description: 'Your Curocity Bank is now secure.', className: 'bg-green-600 text-white border-green-600' });
         setIsPinSet(true);
     }
 
@@ -183,7 +185,7 @@ export default function ResQWalletPage() {
                         <CardTitle>Create a Secure PIN</CardTitle>
                         <CardDescription>
                             {pinStep === 1 
-                                ? "Welcome to Cabzi Bank! Let's create your 4-digit UPI PIN to secure your wallet."
+                                ? "Welcome to Curocity Bank! Let's create your 4-digit UPI PIN to secure your wallet."
                                 : "Please re-enter the PIN to confirm."
                             }
                         </CardDescription>
@@ -236,7 +238,7 @@ export default function ResQWalletPage() {
                            <KeyRound className="w-8 h-8 text-primary"/>
                         </div>
                         <CardTitle>Enter PIN to Continue</CardTitle>
-                        <CardDescription>For your security, please enter your UPI PIN to access your Cabzi Bank.</CardDescription>
+                        <CardDescription>For your security, please enter your UPI PIN to access your Curocity Bank.</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
                         <div className="flex flex-col items-center justify-center gap-4">
@@ -253,7 +255,7 @@ export default function ResQWalletPage() {
                                autoFocus
                            />
                        </div>
-                        <Button className="w-full" onClick={handlePinSubmit}>Unlock Cabzi Bank</Button>
+                        <Button className="w-full" onClick={handlePinSubmit}>Unlock Curocity Bank</Button>
                     </CardContent>
                 </Card>
             </div>
@@ -274,13 +276,13 @@ export default function ResQWalletPage() {
 
     return (
         <div className="grid gap-6">
-            <h2 className="text-3xl font-bold tracking-tight">Cabzi Bank</h2>
+            <h2 className="text-3xl font-bold tracking-tight">Curocity Bank</h2>
 
              <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2"><Landmark /> Your Financial Hub</CardTitle>
                   <CardDescription>
-                    Your free bank account to manage your earnings, watch them grow with interest, and utilize them within the Cabzi ecosystem.
+                    Your free bank account to manage your earnings, watch them grow with interest, and utilize them within the Curocity ecosystem.
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="grid md:grid-cols-2 gap-6">
@@ -389,7 +391,7 @@ export default function ResQWalletPage() {
                     </Dialog>
                  </CardContent>
               </Card>
-
+              
               <div className="grid md:grid-cols-2 gap-6">
                   <Card>
                      <CardHeader>
