@@ -125,8 +125,10 @@ function DriverLayoutContent({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (isAuthLoading) return;
     
+    const isOnboardingPage = pathname.includes('/driver/onboarding');
+
     if (!user) {
-      if (!pathname.includes('/driver/onboarding')) {
+      if (!isOnboardingPage) {
         router.push('/login?role=driver');
       }
       setIsSessionLoading(false);
@@ -135,8 +137,8 @@ function DriverLayoutContent({ children }: { children: React.ReactNode }) {
 
     const session = localStorage.getItem('curocity-session');
     if (!session || !db) {
-        setIsSessionLoading(false); // No session, stop loading
-        if (!pathname.includes('/driver/onboarding')) {
+        setIsSessionLoading(false);
+        if (!isOnboardingPage) {
            router.push('/login?role=driver');
         }
         return;
@@ -165,7 +167,6 @@ function DriverLayoutContent({ children }: { children: React.ReactNode }) {
                 setPartnerData(fetchedPartnerData);
             } else {
                  console.warn("Partner document not found. This might be a new onboarding.");
-                 // Don't log out, just wait for doc to be created.
             }
             setIsSessionLoading(false);
         }, (error) => {
@@ -180,7 +181,6 @@ function DriverLayoutContent({ children }: { children: React.ReactNode }) {
         localStorage.removeItem('curocity-session');
         router.push('/login?role=driver');
         setIsSessionLoading(false);
-        return;
     }
   }, [isAuthLoading, user, db, router, toast, theme, setTheme, pathname]);
 
@@ -188,7 +188,6 @@ function DriverLayoutContent({ children }: { children: React.ReactNode }) {
    useEffect(() => {
     let heartbeatInterval: NodeJS.Timeout | null = null;
     
-    // Only start the heartbeat if we have confirmed the partnerData exists
     if (partnerData?.id && db) {
         heartbeatInterval = setInterval(() => {
             setDoc(doc(db, 'partners', partnerData.id), { lastSeen: serverTimestamp(), isOnline: true }, { merge: true }).catch(error => {
@@ -224,7 +223,6 @@ function DriverLayoutContent({ children }: { children: React.ReactNode }) {
   }
   
   if (!user) {
-    // This case is handled by the useEffect redirect, but as a fallback:
     return null;
   }
 
@@ -341,3 +339,5 @@ export default function DriverLayout({ children }: { children: React.ReactNode }
         </NotificationsProvider>
     );
 }
+
+    
