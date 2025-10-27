@@ -64,6 +64,10 @@ export default function OnboardingPage() {
                 toast({ variant: 'destructive', title: "Incomplete Details", description: "Please fill out your name, phone, and gender." });
                 return;
             }
+            if (formData.phone.length !== 10) {
+                toast({ variant: 'destructive', title: "Invalid Phone Number", description: "Please enter a valid 10-digit mobile number." });
+                return;
+            }
         }
         if (currentStep === 2) {
              if (!formData.panCard || !formData.aadhaarNumber) {
