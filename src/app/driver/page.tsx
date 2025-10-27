@@ -1,4 +1,3 @@
-
 'use client'
 
 import React, { useState, useEffect, useRef } from 'react'
@@ -19,7 +18,7 @@ import { useToast } from '@/hooks/use-toast'
 import { doc, updateDoc, GeoPoint, serverTimestamp, onSnapshot, collection, query, where, Timestamp } from 'firebase/firestore'
 import { useFirebase } from '@/firebase/client-provider'
 import dynamic from 'next/dynamic'
-import type { PartnerData, RideData, JobRequest } from '@/lib/types'
+import type { JobRequest, RideData } from '@/lib/types'
 import { AnimatePresence, motion } from 'framer-motion'
 import RideStatus from '@/components/ride-status'
 import SearchingIndicator from '@/components/ui/searching-indicator'
@@ -52,7 +51,6 @@ export default function DriverDashboardPage() {
     const [activeRide, setActiveRide] = useState<RideData | null>(null);
     const [requestTimeout, setRequestTimeout] = useState(15);
     const requestTimerRef = useRef<NodeJS.Timeout | null>(null);
-    const notificationSoundRef = useRef<HTMLAudioElement | null>(null);
     
     const { partnerData, isLoading: isDriverLoading } = useDriver(); 
 
@@ -62,12 +60,6 @@ export default function DriverDashboardPage() {
 
     const isOnline = partnerData?.isOnline || false;
     const jobRequest = availableJobs.length > 0 ? availableJobs[0] : null;
-
-    useEffect(() => {
-        if (typeof window !== 'undefined') {
-            notificationSoundRef.current = new Audio('/sounds/notification.mp3');
-        }
-    }, []);
 
     // New onSnapshot listener for ride requests
     useEffect(() => {
@@ -114,9 +106,6 @@ export default function DriverDashboardPage() {
                      const uniqueNewJobs = newJobs.filter(j => !existingIds.has(j.id));
                      return [...uniqueNewJobs, ...prevJobs].sort((a,b) => b.createdAt.toMillis() - a.createdAt.toMillis());
                  });
-                 if (playSound) {
-                    notificationSoundRef.current?.play().catch(e => console.error("Audio play failed:", e));
-                 }
             }
         });
 
