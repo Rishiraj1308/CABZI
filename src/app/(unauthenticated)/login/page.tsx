@@ -138,40 +138,37 @@ export default function LoginPage() {
     const isUserLogin = roleFromQuery === 'user';
     
     const partnerCollections = [
-        { name: 'partners', role: 'driver', identifier: 'phone' },
-        { name: 'mechanics', role: 'mechanic', identifier: 'phone' },
-        { name: 'ambulances', role: 'cure', identifier: 'phone' },
-        { name: 'ambulanceDrivers', role: 'ambulance', identifier: 'partnerId' },
-        { name: 'doctors', role: 'doctor', identifier: 'partnerId' },
+        { name: 'partners', role: 'driver', identifierField: 'phone' },
+        { name: 'mechanics', role: 'mechanic', identifierField: 'phone' },
+        { name: 'ambulances', role: 'cure', identifierField: 'phone' },
+        { name: 'ambulanceDrivers', role: 'ambulance', identifierField: 'partnerId' },
+        { name: 'doctors', role: 'doctor', identifierField: 'partnerId' },
     ];
-    const userCollections = [{ name: 'users', role: 'user', identifier: 'phone' }];
+    const userCollections = [{ name: 'users', role: 'user', identifierField: 'phone' }];
 
-    // If it's a user login, ONLY search the 'users' collection.
-    // If it's a partner login, search ALL partner collections.
     const collectionsToSearch = isUserLogin ? userCollections : partnerCollections;
     
-    let searchIdentifier: string | undefined;
-    
-    if (roleFromQuery === 'cure' && !identifier.includes('@')) {
-      searchIdentifier = identifier;
-    } else if (inputType === 'partnerId') {
-        searchIdentifier = identifier;
-    } else if (user.email) {
-        searchIdentifier = user.email;
-    } else if (user.phoneNumber) {
-        searchIdentifier = user.phoneNumber.replace('+91', '');
-    }
-    
-    if (!searchIdentifier) return false;
+    let searchField = '';
+    let searchValue = '';
 
-    for (const { name: colName, role, identifier: idField } of collectionsToSearch) {
-        
-        let q;
-        if (role === 'doctor') {
-            q = query(collectionGroup(db, 'doctors'), where(idField, "==", searchIdentifier), limit(1));
-        } else {
-            q = query(collection(db, colName), where(idField, "==", searchIdentifier), limit(1));
-        }
+    if (inputType === 'partnerId') {
+        searchField = 'partnerId';
+        searchValue = identifier;
+    } else if (user.email) {
+        searchField = 'email';
+        searchValue = user.email;
+    } else if (user.phoneNumber) {
+        searchField = 'phone';
+        searchValue = user.phoneNumber.replace('+91', '');
+    } else if (roleFromQuery === 'cure' && inputType === 'phone') {
+        searchField = 'phone';
+        searchValue = identifier;
+    } else {
+        return false;
+    }
+
+    for (const { name: colName, role } of collectionsToSearch) {
+        const q = query(collection(db, colName), where(searchField, "==", searchValue), limit(1));
         
         const snapshot = await getDocs(q);
 
@@ -179,27 +176,21 @@ export default function LoginPage() {
             const userDoc = snapshot.docs[0];
             const userData = userDoc.data();
             
-            // Password check for partnerId logins
             if (inputType === 'partnerId' && userData.password !== password) {
                 toast({ variant: 'destructive', title: 'Incorrect Password' });
                 return false;
             }
             
+            // **THE FIX IS HERE:** Always use the document's real ID for partnerId in the session.
             const sessionData: any = { 
                 role: role,
                 phone: userData.phone, 
                 email: userData.email,
                 name: userData.name,
-                partnerId: role === 'cure' ? userDoc.id : userData.partnerId,
-                id: userDoc.id,
+                partnerId: userDoc.id, // Correctly assigns the document ID
+                id: userDoc.id, // Redundant but safe
+                hospitalId: userData.hospitalId
             };
-
-            if (role === 'doctor' || role === 'ambulance') {
-                const pathParts = userDoc.ref.path.split('/');
-                if (pathParts.length >= 2) {
-                    sessionData.hospitalId = pathParts[1];
-                }
-            }
 
             let localStorageKey = 'curocity-session';
             let redirectPath = `/${role}`;
@@ -217,12 +208,10 @@ export default function LoginPage() {
         }
     }
     
-    // This part is only reached if no account was found in the searched collections.
     if (isUserLogin) {
-        setStep('details'); // If user login and not found, proceed to create account.
+        setStep('details'); 
         return true; 
     } else {
-        // If partner login and not found, show an error.
         toast({ variant: 'destructive', title: 'Partner Not Found', description: 'This account does not exist. Please check your credentials or onboard first.' });
         return false;
     }
@@ -549,16 +538,15 @@ export default function LoginPage() {
               <CardTitle className="text-2xl mt-4">{getPageTitle()}</CardTitle>
               <CardDescription>
                 <AnimatePresence mode="wait">
-                    <motion.span
+                    <motion.p
                         key={step + roleFromQuery}
                         initial={{ opacity: 0, y: -10 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: 10 }}
                         transition={{ duration: 0.2 }}
-                        className="block"
                     >
                        {getPageDescription()}
-                    </motion.span>
+                    </motion.p>
                 </AnimatePresence>
               </CardDescription>
             </CardHeader>
@@ -587,3 +575,5 @@ export default function LoginPage() {
       </div>
   );
 }
+
+    
