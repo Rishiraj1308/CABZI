@@ -6,12 +6,12 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Car, Wrench, Ambulance, Calendar, FlaskConical } from 'lucide-react';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
-import { MotionDiv, AnimatePresence } from '@/components/ui/motion-div';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useFirebase } from '@/firebase/client-provider';
 import { getDoc, doc, onSnapshot, query, collection, where } from 'firebase/firestore';
 import type { RideData, AmbulanceCase, GarageRequest, ClientSession } from '@/lib/types';
 import RideStatus from '@/components/ride-status';
-import { useRouter }from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 
 const LiveMap = dynamic(() => import('@/components/live-map'), {
