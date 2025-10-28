@@ -15,6 +15,8 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { useToast } from '@/hooks/use-toast'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { Carousel, CarouselContent, CarouselItem } from '@/components/ui/carousel'
+
 
 const testCategories = [
     { name: 'Full Body Checkup', icon: Activity },
@@ -74,49 +76,46 @@ export default function LabTestsPage() {
     );
     
     return (
-      <div className="min-h-screen bg-background">
-        <div className="relative bg-gradient-to-br from-purple-600 via-primary to-primary/70 text-primary-foreground p-6 md:p-8">
-            <div className="container mx-auto">
-                <div className="flex items-center gap-2">
-                    <Button variant="ghost" size="icon" className="hover:bg-white/10" onClick={() => router.push('/user')}>
-                    <ArrowLeft className="w-5 h-5"/>
-                    </Button>
-                </div>
-                <div className="mt-6 py-10">
-                    <h1 className="text-4xl md:text-5xl font-bold">Book Lab Tests</h1>
-                    <p className="opacity-80 mt-1 max-w-md">Certified labs, at your convenience.</p>
-                </div>
+        <div className="p-4 md:p-6 space-y-8">
+            <div className="animate-fade-in">
+                <h2 className="text-3xl font-bold tracking-tight flex items-center gap-2">
+                    <FlaskConical className="w-8 h-8 text-primary" />
+                    Book Lab Tests
+                </h2>
+                <p className="text-muted-foreground">Certified labs, at your convenience.</p>
             </div>
-        </div>
-
-        <main className="container mx-auto py-8 px-4 md:px-6 space-y-8 relative -mt-20 z-10">
+            
             <div className="relative">
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                 <Input
                     id="test-search"
                     placeholder="Search for tests or labs (e.g., Vitamin D, Dr. Lal...)"
-                    className="pl-12 h-14 text-base rounded-full shadow-lg border-2"
+                    className="pl-12 h-12 text-base rounded-full shadow-lg"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                 />
             </div>
-
+            
             <section>
                  <h2 className="text-xl font-bold mb-4">Browse by Test Category</h2>
-                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    {testCategories.map(cat => (
-                        <Card 
-                            key={cat.name} 
-                            onClick={() => setSelectedCategory(cat.name)}
-                            className={`p-4 flex flex-col items-center justify-center gap-2 cursor-pointer transition-all ${selectedCategory === cat.name ? 'ring-2 ring-primary bg-primary/5' : 'hover:bg-muted'}`}
-                        >
-                            <div className={`p-3 rounded-full ${selectedCategory === cat.name ? 'bg-primary/10' : 'bg-muted'}`}>
-                                <cat.icon className={`w-6 h-6 ${selectedCategory === cat.name ? 'text-primary' : 'text-muted-foreground'}`}/>
-                            </div>
-                            <p className="text-sm font-semibold text-center">{cat.name}</p>
-                        </Card>
-                    ))}
-                 </div>
+                 <Carousel opts={{ align: "start", loop: false, skipSnaps: true }} className="w-full">
+                    <CarouselContent className="-ml-2">
+                        {testCategories.map(cat => (
+                            <CarouselItem key={cat.name} className="pl-2 basis-1/3 md:basis-1/4 lg:basis-1/6">
+                                <Card 
+                                    key={cat.name} 
+                                    onClick={() => setSelectedCategory(cat.name)}
+                                    className={`p-4 flex flex-col items-center justify-center gap-2 cursor-pointer transition-all ${selectedCategory === cat.name ? 'ring-2 ring-primary bg-primary/5' : 'hover:bg-muted'}`}
+                                >
+                                    <div className={`p-3 rounded-full ${selectedCategory === cat.name ? 'bg-primary/10' : 'bg-muted'}`}>
+                                        <cat.icon className={`w-6 h-6 ${selectedCategory === cat.name ? 'text-primary' : 'text-muted-foreground'}`}/>
+                                    </div>
+                                    <p className="text-sm font-semibold text-center">{cat.name}</p>
+                                </Card>
+                            </CarouselItem>
+                        ))}
+                    </CarouselContent>
+                </Carousel>
             </section>
 
             <section className="grid grid-cols-1 lg:grid-cols-4 gap-8 items-start">
@@ -187,12 +186,5 @@ export default function LabTestsPage() {
                  </div>
             </section>
         </main>
-         <div className="fixed bottom-6 right-6 z-20 flex flex-col gap-3">
-             <Button variant="ghost" size="icon" className="h-14 w-14 rounded-full shadow-2xl bg-background/80 backdrop-blur-md">
-                <MessageSquare className="w-6 h-6"/>
-                <span className="sr-only">Help</span>
-            </Button>
-        </div>
-      </div>
     );
 }
