@@ -200,5 +200,5 @@ export default function LabTestsPage() {
             </Button>
         </div>
       </div>
-    )
+    );
 }
