@@ -57,7 +57,7 @@ const serviceCards = [
         title: 'Lab Tests',
         description: 'Book tests from certified labs.',
         icon: FlaskConical,
-        href: '#',
+        href: '/user/lab-tests',
         color: 'text-purple-500',
         category: 'Health & Safety',
     },
