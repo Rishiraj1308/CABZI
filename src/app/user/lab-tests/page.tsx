@@ -4,7 +4,7 @@
 import React, { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { ArrowLeft, FlaskConical, Search, CheckCircle, SlidersHorizontal, Droplets, Activity, HeartPulse, User, Home } from 'lucide-react'
 import Image from 'next/image'
@@ -76,10 +76,13 @@ export default function LabTestsPage() {
     );
 
     return (
-        <div className="p-4 md:p-6 space-y-8 pt-12">
-            <div className="text-center max-w-2xl mx-auto">
-                <CardTitle className="text-3xl md:text-4xl font-extrabold tracking-tight">Certified Labs, Unmatched Convenience</CardTitle>
-                <CardDescription className="text-lg mt-2">Book diagnostic tests with NABL-certified labs, with an option for home sample collection.</CardDescription>
+        <div className="p-4 md:p-6 space-y-8">
+            <div className="animate-fade-in">
+                <h2 className="text-3xl font-bold tracking-tight flex items-center gap-2">
+                    <FlaskConical className="w-8 h-8 text-primary" />
+                    Lab Tests at Home
+                </h2>
+                <p className="text-muted-foreground">Book diagnostic tests from NABL-certified labs, with the convenience of home sample collection.</p>
             </div>
 
             <div className="max-w-xl mx-auto w-full">
@@ -103,7 +106,7 @@ export default function LabTestsPage() {
                             <div className="p-3 bg-primary/10 rounded-full">
                                 <category.icon className="w-6 h-6 text-primary" />
                             </div>
-                            <p className="font-semibold text-sm">{category.title}</p>
+                            <p className="font-semibold text-sm">{category.name}</p>
                         </Card>
                    ))}
                 </div>
