@@ -210,14 +210,14 @@ export default function ResQPage() {
 
   return (
     <div className="h-full w-full flex flex-col bg-background">
-      <header className="bg-gradient-to-br from-amber-500 via-amber-400 to-amber-300 text-white p-6 pt-8">
+      <header className="bg-gradient-to-br from-amber-500 via-amber-400 to-amber-300 text-white p-8 pt-12">
           <div className="container mx-auto">
               <Button variant="ghost" size="icon" className="absolute top-4 left-4 text-white hover:bg-white/20" onClick={() => router.push('/user')}>
                   <ArrowLeft className="w-5 h-5"/>
               </Button>
-              <div className="mt-8">
-                <h1 className="text-4xl font-bold">Roadside Assistance</h1>
-                <p className="text-lg opacity-90 mt-1">Stuck on the road? We&apos;re here to help.</p>
+              <div className="mt-10">
+                <h1 className="text-5xl font-bold">Roadside Assistance</h1>
+                <p className="text-xl opacity-90 mt-1">Stuck on the road? We&apos;re here to help.</p>
               </div>
           </div>
       </header>
@@ -261,4 +261,3 @@ export default function ResQPage() {
     </div>
   );
 }
-
