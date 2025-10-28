@@ -6,13 +6,20 @@ import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
-import { ArrowLeft, FlaskConical, Search, FileText, CheckCircle, Home } from 'lucide-react'
+import { ArrowLeft, FlaskConical, Search, FileText, CheckCircle, Home, Calendar, Clock } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { useToast } from '@/hooks/use-toast'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Badge } from '@/components/ui/badge'
 import Image from 'next/image'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Label } from '@/components/ui/label'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { Calendar as CalendarPicker } from '@/components/ui/calendar'
+import { cn } from '@/lib/utils'
+import { format } from 'date-fns'
 
 
 const healthPackages = [
@@ -44,11 +51,27 @@ const recentReports = [
     },
 ]
 
+const timeSlots = [
+    "07:00 AM - 08:00 AM",
+    "08:00 AM - 09:00 AM",
+    "09:00 AM - 10:00 AM",
+    "10:00 AM - 11:00 AM",
+    "11:00 AM - 12:00 PM",
+]
+
 
 export default function LabTestsPage() {
     const router = useRouter();
     const { toast } = useToast();
     const [searchQuery, setSearchQuery] = useState('');
+    
+    // Booking Dialog State
+    const [isBookingOpen, setIsBookingOpen] = useState(false);
+    const [selectedPackage, setSelectedPackage] = useState<(typeof healthPackages)[0] | null>(null);
+    const [selectedLab, setSelectedLab] = useState('');
+    const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
+    const [selectedTime, setSelectedTime] = useState('');
+
 
     const containerVariants = {
         hidden: { opacity: 0 },
@@ -71,6 +94,31 @@ export default function LabTestsPage() {
         }
         return name.substring(0, 2).toUpperCase();
     }
+    
+    const handleBookNow = (pkg: (typeof healthPackages)[0]) => {
+        setSelectedPackage(pkg);
+        setIsBookingOpen(true);
+    }
+    
+    const handleConfirmBooking = () => {
+        if (!selectedPackage || !selectedLab || !selectedDate || !selectedTime) {
+            toast({ variant: 'destructive', title: 'Incomplete Details', description: 'Please select a lab, date, and time slot.' });
+            return;
+        }
+
+        toast({
+            title: 'Booking Confirmed!',
+            description: `Your ${selectedPackage.title} with ${selectedLab} is scheduled for ${format(selectedDate, "PPP")} at ${selectedTime}.`,
+            className: 'bg-green-600 text-white border-green-600'
+        });
+
+        // Reset state and close dialog
+        setIsBookingOpen(false);
+        setSelectedPackage(null);
+        setSelectedLab('');
+        setSelectedDate(new Date());
+        setSelectedTime('');
+    }
 
 
     return (
@@ -89,7 +137,7 @@ export default function LabTestsPage() {
                     </motion.div>
                     <motion.div variants={itemVariants} className="pt-8 pb-20 text-left">
                         <h1 className="text-4xl font-bold">Book Lab Tests</h1>
-                        <p className="opacity-80 mt-1 max-w-md">Certified labs, at your convenience.</p>
+                        <p className="opacity-80 mt-1 max-w-md">Certified labs, sample collection from your home.</p>
                     </motion.div>
                 </div>
             </header>
@@ -114,6 +162,33 @@ export default function LabTestsPage() {
                             </div>
                         </CardContent>
                     </Card>
+
+                    <div className="space-y-4">
+                        <h3 className="font-bold text-lg">Popular Health Packages</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {healthPackages.map(pkg => (
+                                <Card key={pkg.title} className="hover:shadow-md transition-shadow">
+                                    <CardHeader>
+                                        <CardTitle className="text-base">{pkg.title}</CardTitle>
+                                        <CardDescription>{pkg.tests} tests included</CardDescription>
+                                    </CardHeader>
+                                    <CardContent>
+                                         <div className="flex justify-between items-center">
+                                            <div>
+                                                <p className="text-xl font-bold">₹{pkg.price}</p>
+                                                <p className="text-sm text-muted-foreground line-through">₹{pkg.originalPrice}</p>
+                                            </div>
+                                            <Dialog>
+                                                <DialogTrigger asChild>
+                                                    <Button size="sm" onClick={() => handleBookNow(pkg)}>Book Now</Button>
+                                                </DialogTrigger>
+                                            </Dialog>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            ))}
+                        </div>
+                    </div>
                     
                      <div className="space-y-4">
                         <h3 className="font-bold text-lg">Our Lab Partners</h3>
@@ -131,29 +206,6 @@ export default function LabTestsPage() {
                          </div>
                     </div>
 
-                    <div className="space-y-4">
-                        <h3 className="font-bold text-lg">Popular Health Packages</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {healthPackages.map(pkg => (
-                                <Card key={pkg.title} className="hover:shadow-md transition-shadow">
-                                    <CardHeader>
-                                        <CardTitle className="text-base">{pkg.title}</CardTitle>
-                                        <CardDescription>{pkg.tests} tests included</CardDescription>
-                                    </CardHeader>
-                                    <CardContent>
-                                         <div className="flex justify-between items-center">
-                                            <div>
-                                                <p className="text-xl font-bold">₹{pkg.price}</p>
-                                                <p className="text-sm text-muted-foreground line-through">₹{pkg.originalPrice}</p>
-                                            </div>
-                                            <Button size="sm">Book Now</Button>
-                                        </div>
-                                    </CardContent>
-                                </Card>
-                            ))}
-                        </div>
-                    </div>
-                    
                     <div className="space-y-4">
                         <h3 className="font-bold text-lg">Recent Reports</h3>
                          {recentReports.map((report, index) => (
@@ -182,6 +234,50 @@ export default function LabTestsPage() {
 
                 </motion.div>
             </div>
+             <Dialog open={isBookingOpen} onOpenChange={setIsBookingOpen}>
+                <DialogContent className="max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>Schedule Home Collection</DialogTitle>
+                        <DialogDescription>For package: <span className="font-semibold text-primary">{selectedPackage?.title}</span></DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-6 py-4">
+                        <div className="space-y-2">
+                           <Label className="font-semibold">1. Select Lab Partner</Label>
+                           <Select value={selectedLab} onValueChange={setSelectedLab}>
+                                <SelectTrigger><SelectValue placeholder="Choose a certified lab" /></SelectTrigger>
+                                <SelectContent>
+                                    {labPartners.filter(l => l.homeCollection).map(lab => (
+                                        <SelectItem key={lab.name} value={lab.name}>{lab.name}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                           </Select>
+                        </div>
+                         <div className="space-y-2">
+                            <Label className="font-semibold">2. Select Collection Date</Label>
+                            <Popover>
+                                <PopoverTrigger asChild>
+                                    <Button variant={"outline"} className={cn("w-full justify-start text-left font-normal", !selectedDate && "text-muted-foreground")}>
+                                        <Calendar className="mr-2 h-4 w-4" />
+                                        {selectedDate ? format(selectedDate, "PPP") : <span>Pick a date</span>}
+                                    </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-0"><CalendarPicker mode="single" selected={selectedDate} onSelect={setSelectedDate} initialFocus disabled={(d) => d < new Date(new Date().setDate(new Date().getDate()))}/></PopoverContent>
+                            </Popover>
+                         </div>
+                          <div className="space-y-2">
+                            <Label className="font-semibold">3. Select Time Slot</Label>
+                            <div className="grid grid-cols-3 gap-2">
+                               {timeSlots.map(slot => (
+                                   <Button key={slot} variant={selectedTime === slot ? 'default' : 'outline'} onClick={() => setSelectedTime(slot)} className="text-xs h-9">{slot}</Button>
+                               ))}
+                            </div>
+                         </div>
+                    </div>
+                    <DialogFooter>
+                        <Button className="w-full" onClick={handleConfirmBooking} disabled={!selectedLab || !selectedDate || !selectedTime}>Confirm Booking for ₹{selectedPackage?.price}</Button>
+                    </DialogFooter>
+                </DialogContent>
+             </Dialog>
         </motion.div>
     );
 }
