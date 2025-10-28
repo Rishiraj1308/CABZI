@@ -58,6 +58,12 @@ const symptomCategories = [
     { name: 'Heart/Chest', icon: HeartPulse, specializations: ['Cardiology', 'General Physician'] },
     { name: 'Child Health', icon: Baby, specializations: ['Pediatrics'] },
     { name: 'ENT', icon: Mic, specializations: ['ENT Specialist'] },
+    { name: 'Eye Problems', icon: Eye, specializations: ['Ophthalmology'] },
+    { name: 'Dental Issues', icon: Smile, specializations: ['Dentist'] },
+    { name: 'Mental Wellness', icon: HeartHandshake, specializations: ['Psychiatry', 'Psychology'] },
+    { name: "Women's Health", icon: PersonStanding, specializations: ['Gynecology'] },
+    { name: 'General Checkup', icon: UserCheck, specializations: ['General Physician'] },
+    { name: 'Diabetes Care', icon: Droplets, specializations: ['Endocrinology', 'General Physician'] },
 ];
 
 const timeSlots = [
@@ -264,7 +270,7 @@ export default function BookAppointmentPage() {
       animate="visible"
       variants={containerVariants}
     >
-      <header className="bg-gradient-to-br from-blue-600 via-primary to-primary/70 p-4 relative text-primary-foreground">
+      <header className="bg-primary p-4 relative text-primary-foreground">
         <div className="container mx-auto">
             <motion.div variants={itemVariants}>
                 <Button variant="ghost" size="icon" className="hover:bg-white/10" onClick={() => router.push('/user')}>
@@ -413,3 +419,5 @@ export default function BookAppointmentPage() {
     </motion.div>
   )
 }
+
+    
