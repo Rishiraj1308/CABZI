@@ -75,25 +75,22 @@ export default function LabTestsPage() {
     
     return (
       <div className="min-h-screen bg-background">
-        <header className="sticky top-0 z-20">
-          <div className="relative h-56 md:h-48 bg-gradient-to-br from-purple-600 via-primary to-primary/70 text-primary-foreground p-6 md:p-8">
+        <div className="relative bg-gradient-to-br from-purple-600 via-primary to-primary/70 text-primary-foreground p-6 md:p-8">
             <div className="container mx-auto">
-              <div className="flex items-center gap-2">
-                <Button variant="ghost" size="icon" className="hover:bg-white/10" onClick={() => router.push('/user')}>
-                  <ArrowLeft className="w-5 h-5"/>
-                </Button>
-                <div className="md:hidden ml-auto flex items-center gap-2">
-                    {/* Add Mobile actions here if needed */}
+                <div className="flex items-center gap-2">
+                    <Button variant="ghost" size="icon" className="hover:bg-white/10" onClick={() => router.push('/user')}>
+                    <ArrowLeft className="w-5 h-5"/>
+                    </Button>
                 </div>
-              </div>
-              <div className="mt-6">
-                <h1 className="text-4xl md:text-5xl font-bold">Book Lab Tests</h1>
-                <p className="opacity-80 mt-1">Certified labs, at your convenience.</p>
-              </div>
+                <div className="mt-6 py-10">
+                    <h1 className="text-4xl md:text-5xl font-bold">Book Lab Tests</h1>
+                    <p className="opacity-80 mt-1 max-w-md">Certified labs, at your convenience.</p>
+                </div>
             </div>
-          </div>
-           <div className="container mx-auto relative -mt-8 z-30 px-4 md:px-6">
-             <div className="relative">
+        </div>
+
+        <main className="container mx-auto py-8 px-4 md:px-6 space-y-8 relative -mt-20 z-10">
+            <div className="relative">
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                 <Input
                     id="test-search"
@@ -102,11 +99,8 @@ export default function LabTestsPage() {
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                 />
-             </div>
-           </div>
-        </header>
+            </div>
 
-        <main className="container mx-auto py-8 px-4 md:px-6 space-y-8">
             <section>
                  <h2 className="text-xl font-bold mb-4">Browse by Test Category</h2>
                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -126,7 +120,7 @@ export default function LabTestsPage() {
             </section>
 
             <section className="grid grid-cols-1 lg:grid-cols-4 gap-8 items-start">
-                 <div className="hidden lg:block lg:col-span-1">
+                 <div className="hidden lg:block lg:col-span-1 sticky top-24">
                     <FilterPanel />
                  </div>
                  <div className="lg:col-span-3 space-y-4">
