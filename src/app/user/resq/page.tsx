@@ -210,18 +210,18 @@ export default function ResQPage() {
 
   return (
     <div className="h-full w-full flex flex-col bg-background">
-      <header className="bg-gradient-to-br from-amber-500 via-amber-400 to-amber-300 text-white p-4 pt-6">
+      <header className="bg-gradient-to-br from-amber-500 via-amber-400 to-amber-300 text-white p-6 pt-8">
           <div className="container mx-auto">
               <Button variant="ghost" size="icon" className="absolute top-4 left-4 text-white hover:bg-white/20" onClick={() => router.push('/user')}>
                   <ArrowLeft className="w-5 h-5"/>
               </Button>
-              <div className="mt-6">
-                <h1 className="text-3xl font-bold">Roadside Assistance</h1>
-                <p className="opacity-90">Stuck on the road? We're here to help.</p>
+              <div className="mt-8">
+                <h1 className="text-4xl font-bold">Roadside Assistance</h1>
+                <p className="text-lg opacity-90 mt-1">Stuck on the road? We&apos;re here to help.</p>
               </div>
           </div>
       </header>
-       <div className="container mx-auto relative -mt-6 z-10">
+       <div className="container mx-auto relative -mt-8 z-10">
             <Card className="shadow-lg">
                 <CardContent className="p-4 flex items-center gap-3">
                     <MapPin className="w-5 h-5 text-primary" />
