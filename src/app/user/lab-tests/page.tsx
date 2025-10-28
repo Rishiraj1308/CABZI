@@ -4,21 +4,15 @@
 import React, { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
-import { ArrowLeft, FlaskConical, Search, CheckCircle, Home, FileText } from 'lucide-react'
+import { ArrowLeft, FlaskConical, Search, FileText, CheckCircle, Home } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { useToast } from '@/hooks/use-toast'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Badge } from '@/components/ui/badge'
 import Image from 'next/image'
 
-const mockLabs = [
-    { name: 'Dr. Lal PathLabs', logo: '/labs/lal-pathlabs.png', accreditations: ['NABL', 'CAP'], homeCollection: true, dataAiHint: 'lab building' },
-    { name: 'SRL Diagnostics', logo: '/labs/srl-diagnostics.png', accreditations: ['NABL', 'ISO'], homeCollection: true, dataAiHint: 'lab building' },
-    { name: 'Metropolis Healthcare', logo: '/labs/metropolis.png', accreditations: ['NABL'], homeCollection: false, dataAiHint: 'lab building' },
-    { name: 'Thyrocare', logo: '/labs/thyrocare.png', accreditations: ['NABL'], homeCollection: true, dataAiHint: 'lab building' },
-];
 
 const healthPackages = [
     { title: 'Swasthfit Full Body Checkup', tests: 85, price: 1499, originalPrice: 2999 },
@@ -26,6 +20,28 @@ const healthPackages = [
     { title: 'Healthy Heart Package', tests: 62, price: 2499, originalPrice: 4999 },
     { title: 'Basic Fever Panel', tests: 90, price: 799, originalPrice: 1599 },
 ];
+
+const recentReports = [
+    {
+        testName: "Complete Blood Count (CBC)",
+        labName: "Dr. Lal PathLabs",
+        date: "2024-08-15",
+        status: "Available"
+    },
+    {
+        testName: "Lipid Profile",
+        labName: "SRL Diagnostics",
+        date: "2024-08-12",
+        status: "Available"
+    },
+    {
+        testName: "Thyroid Function Test",
+        labName: "Metropolis Healthcare",
+        date: "2024-08-10",
+        status: "Available"
+    },
+]
+
 
 export default function LabTestsPage() {
     const router = useRouter();
@@ -109,27 +125,33 @@ export default function LabTestsPage() {
                     </div>
                     
                     <div className="space-y-4 pt-6">
-                        <h3 className="font-bold text-lg">Our Lab Partners</h3>
-                        <div className="space-y-3">
-                            {mockLabs.map(lab => (
-                                <Card key={lab.name} className="p-3 flex items-center gap-4">
-                                     <Image src={lab.logo} alt={lab.name} width={60} height={60} className="rounded-md object-contain" data-ai-hint={lab.dataAiHint}/>
-                                    <div className="flex-1">
-                                        <h4 className="font-semibold">{lab.name}</h4>
-                                        <div className="flex items-center gap-2 mt-1">
-                                            {lab.accreditations.map(acc => <Badge key={acc} variant="secondary">{acc}</Badge>)}
-                                        </div>
+                        <h3 className="font-bold text-lg">Recent Reports</h3>
+                         {recentReports.map((report, index) => (
+                            <motion.div 
+                                key={report.testName + index}
+                                variants={itemVariants}
+                                initial="hidden"
+                                animate="visible"
+                                transition={{delay: 0.5 + index * 0.1}}
+                            >
+                                <div className="flex items-center gap-4 p-3 rounded-lg hover:bg-card cursor-pointer transition-colors">
+                                    <div className="p-3 bg-card rounded-full border">
+                                        <FileText className="w-5 h-5 text-muted-foreground" />
                                     </div>
-                                    {lab.homeCollection && (
-                                        <div className="flex items-center gap-1.5 text-sm text-green-600">
-                                            <Home className="w-4 h-4"/>
-                                            <span>Home Collection</span>
-                                        </div>
-                                    )}
-                                </Card>
-                            ))}
-                        </div>
+                                    <div className="flex-1">
+                                        <p className="font-semibold">{report.testName}</p>
+                                        <p className="text-sm text-muted-foreground">{report.labName} &bull; {report.date}</p>
+                                    </div>
+                                    <div className="text-right">
+                                        <Badge className="bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-200">
+                                            {report.status}
+                                        </Badge>
+                                    </div>
+                                </div>
+                            </motion.div>
+                        ))}
                     </div>
+
                 </motion.div>
             </div>
         </motion.div>
