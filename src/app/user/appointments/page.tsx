@@ -2,10 +2,11 @@
 'use client'
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import {
-    Calendar as CalendarIcon, Stethoscope, Clock, Search, ArrowRight,
+    Calendar as CalendarIcon, Stethoscope, Clock, Search, ArrowLeft,
     IndianRupee, MapPin, Building, Bone, Baby, Eye, Smile, AlertTriangle, PersonStanding, HeartHandshake, Sparkles, Layers, BrainCircuit, HeartPulse, UserCheck, Droplets, Thermometer, Mic, Video
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
@@ -24,7 +25,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Slider } from '@/components/ui/slider';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle, SheetDescription, SheetFooter } from '@/components/ui/sheet';
-import { MotionDiv } from '@/components/ui/motion-div';
+import { motion } from 'framer-motion';
 import { Carousel, CarouselContent, CarouselItem } from '@/components/ui/carousel';
 import { Badge } from '@/components/ui/badge';
 import { SlidersHorizontal } from 'lucide-react';
@@ -57,12 +58,6 @@ const symptomCategories = [
     { name: 'Heart/Chest', icon: HeartPulse, specializations: ['Cardiology', 'General Physician'] },
     { name: 'Child Health', icon: Baby, specializations: ['Pediatrics'] },
     { name: 'ENT', icon: Mic, specializations: ['ENT Specialist'] },
-    { name: 'Eye Problems', icon: Eye, specializations: ['Ophthalmology'] },
-    { name: 'Dental Issues', icon: Smile, specializations: ['Dentist'] },
-    { name: 'Mental Wellness', icon: HeartHandshake, specializations: ['Psychiatry', 'Psychology'] },
-    { name: "Women's Health", icon: PersonStanding, specializations: ['Gynecology'] },
-    { name: 'General Checkup', icon: UserCheck, specializations: ['General Physician'] },
-    { name: 'Diabetes Care', icon: Droplets, specializations: ['Endocrinology', 'General Physician'] },
 ];
 
 const timeSlots = [
@@ -71,6 +66,7 @@ const timeSlots = [
 
 
 export default function BookAppointmentPage() {
+  const router = useRouter();
   const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   
@@ -262,134 +258,158 @@ export default function BookAppointmentPage() {
   );
 
   return (
-    <div className="p-4 md:p-6 space-y-8 pt-12">
-      <div className="text-center max-w-2xl mx-auto">
-          <CardTitle className="text-3xl md:text-4xl font-extrabold tracking-tight">Find the Right Care, Instantly.</CardTitle>
-          <CardDescription className="text-lg mt-2">Search by doctor, specialization, or symptoms.</CardDescription>
-      </div>
+    <motion.div 
+      className="flex min-h-screen flex-col bg-muted/30 overflow-hidden"
+      initial="hidden"
+      animate="visible"
+      variants={containerVariants}
+    >
+      <header className="bg-gradient-to-br from-blue-600 via-primary to-primary/70 p-4 relative text-primary-foreground">
+        <div className="container mx-auto">
+            <motion.div variants={itemVariants}>
+                <Button variant="ghost" size="icon" className="hover:bg-white/10" onClick={() => router.push('/user')}>
+                    <ArrowLeft className="w-5 h-5"/>
+                </Button>
+            </motion.div>
+            <motion.div variants={itemVariants} className="pt-8 pb-20 text-left">
+                <h1 className="text-4xl font-bold">Find The Right Care, Right Away.</h1>
+                <p className="opacity-80 mt-1 max-w-md">Search by doctor, specialization, or symptoms.</p>
+            </motion.div>
+        </div>
+      </header>
+
+      <div className="flex-1 container mx-auto p-4 space-y-8 relative z-10 -mt-16">
+          <motion.div 
+              initial={{ y: 50, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.3, type: 'spring' }}
+          >
+              <Card className="shadow-lg">
+                  <CardContent className="p-3">
+                      <div className="relative">
+                          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                          <Input
+                              id="doctor-search"
+                              placeholder="Search by doctor name, hospital, or specialization..."
+                              className="pl-12 h-12 text-base rounded-lg"
+                              value={searchQuery}
+                              onChange={(e) => setSearchQuery(e.target.value)}
+                          />
+                      </div>
+                  </CardContent>
+              </Card>
+          </motion.div>
       
-       <div className="max-w-xl mx-auto w-full">
-            <div className="relative">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                <Input
-                    id="doctor-search"
-                    placeholder="Search by doctor name, hospital, or specialization..."
-                    className="pl-12 h-12 text-base rounded-full shadow-lg"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                />
+          <motion.div variants={itemVariants} className="space-y-4">
+              <Label className="font-semibold text-lg">Search by Common Symptoms</Label>
+              <Carousel opts={{ align: "start", loop: false, skipSnaps: true }} className="w-full">
+                  <CarouselContent className="-ml-2">
+                      {symptomCategories.map((symptom, i) => (
+                          <CarouselItem key={i} className="pl-2 basis-1/3 md:basis-1/4 lg:basis-1/6">
+                              <Card className={`p-4 flex flex-col items-center justify-center gap-2 cursor-pointer hover:ring-2 hover:ring-primary transition-all text-center h-full ${selectedSymptom === symptom.name ? 'ring-2 ring-primary' : ''}`} onClick={() => setSelectedSymptom(prev => prev === symptom.name ? null : symptom.name)}>
+                                  <div className="p-3 bg-card rounded-full"><symptom.icon className="w-6 h-6" /></div>
+                                  <p className="text-xs font-semibold">{symptom.name}</p>
+                              </Card>
+                          </CarouselItem>
+                      ))}
+                  </CarouselContent>
+              </Carousel>
+          </motion.div>
+      
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
+            <div className="hidden lg:block lg:col-span-1">
+              <FilterPanel />
+            </div>
+            <div className="lg:col-span-3">
+              <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-xl font-bold">{filteredAndSortedDoctors.length} doctors found</h3>
+                  <div className="lg:hidden"><Sheet open={isFilterSheetOpen} onOpenChange={setIsFilterSheetOpen}><SheetTrigger asChild><Button variant="outline"><SlidersHorizontal className="mr-2 h-4 w-4"/>Filter</Button></SheetTrigger><SheetContent><SheetHeader><SheetTitle>Filters</SheetTitle></SheetHeader><div className="p-4"><FilterPanel /></div></SheetContent></Sheet></div>
+              </div>
+              <div className="space-y-4">
+                  {isLoading ? Array.from({length:3}).map((_,i) => (
+                    <Card key={i} className="p-4 flex gap-4 items-start w-full">
+                        <Skeleton className="w-24 h-24 rounded-full"/>
+                        <div className="flex-1 space-y-2">
+                            <Skeleton className="h-6 w-1/2"/>
+                            <Skeleton className="h-4 w-1/3"/>
+                            <Skeleton className="h-4 w-3/4"/>
+                            <Skeleton className="h-4 w-1/4"/>
+                        </div>
+                        <div className="flex flex-col items-end justify-between h-full gap-2">
+                            <Skeleton className="h-6 w-16"/>
+                            <Skeleton className="h-9 w-24"/>
+                        </div>
+                    </Card>
+                  ))
+                    : filteredAndSortedDoctors.length > 0 ? (
+                      <motion.div variants={containerVariants} initial="hidden" animate="visible" className="space-y-4">
+                        {filteredAndSortedDoctors.map(doctor => (
+                            <motion.div key={doctor.id} variants={itemVariants}>
+                                <Card className="p-4 flex flex-col md:flex-row gap-4 items-start w-full text-left">
+                                    <Avatar className="w-24 h-24"><AvatarImage src={doctor.photoUrl || `https://i.pravatar.cc/150?u=${doctor.id}`} /><AvatarFallback>{doctor.name.substring(0,2)}</AvatarFallback></Avatar>
+                                    <div className="flex-1">
+                                        <p className="font-bold text-xl flex items-center gap-2">Dr. {doctor.name} 
+                                          {doctor.gender === 'female' && <PersonStanding className="w-5 h-5 text-pink-500" title="Female doctor available"/>}
+                                        </p>
+                                        <p className="font-semibold text-primary">{doctor.specialization}</p>
+                                        <p className="text-sm text-muted-foreground">{doctor.experience} years | {doctor.qualifications}</p>
+                                        <div className="text-sm text-muted-foreground mt-2 flex items-center gap-2"><Building className="w-4 h-4"/> {doctor.hospitalName}</div>
+                                        {doctor.distance != null && (<div className="text-sm text-muted-foreground flex items-center gap-2"><MapPin className="w-4 h-4"/>{doctor.distance.toFixed(1)} km away</div>)}
+                                        <div className="mt-2">
+                                          {(doctor.availability?.availableToday ?? Math.random() > 0.3) && <Badge variant="secondary" className="bg-green-100 text-green-800">Available Today</Badge>}
+                                        </div>
+                                    </div>
+                                    <div className="flex flex-col items-end justify-between h-full w-full md:w-auto mt-4 md:mt-0">
+                                      <p className="font-bold text-lg">₹{doctor.consultationFee}</p>
+                                      <div className="flex gap-2 w-full">
+                                        <Button asChild size="sm" variant="outline" className="flex-1">
+                                          <Link href={`/user/doctor/${doctor.hospitalId}/${doctor.id}`}>
+                                            View Profile
+                                          </Link>
+                                        </Button>
+                                        <Button size="sm" className="flex-1" onClick={() => handleOpenBookingSheet(doctor)}>Book Now</Button>
+                                      </div>
+                                    </div>
+                                </Card>
+                            </motion.div>
+                        ))}
+                      </motion.div>
+                    ) : (<Card className="col-span-full text-center p-12 flex flex-col items-center">
+                        <Search className="w-16 h-16 text-muted-foreground mb-4"/>
+                        <p className="font-bold text-lg">No Doctors Found</p>
+                        <p className="text-muted-foreground">Try adjusting your filters or search terms to find the right doctor for you.</p>
+                    </Card>)
+                  }
+              </div>
             </div>
         </div>
-
-      <div className="space-y-4">
-          <Label className="font-semibold text-lg">Search by Common Symptoms</Label>
-          <Carousel opts={{ align: "start", loop: false, skipSnaps: true }} className="w-full">
-              <CarouselContent className="-ml-2">
-                  {symptomCategories.map((symptom, i) => (
-                      <CarouselItem key={i} className="pl-2 basis-1/3 md:basis-1/4 lg:basis-1/6">
-                          <Card className={`p-4 flex flex-col items-center justify-center gap-2 cursor-pointer hover:ring-2 hover:ring-primary transition-all text-center h-full ${selectedSymptom === symptom.name ? 'ring-2 ring-primary' : ''}`} onClick={() => setSelectedSymptom(prev => prev === symptom.name ? null : symptom.name)}>
-                              <div className="p-3 bg-muted rounded-full"><symptom.icon className="w-6 h-6" /></div>
-                              <p className="text-xs font-semibold">{symptom.name}</p>
-                          </Card>
-                      </CarouselItem>
-                  ))}
-              </CarouselContent>
-          </Carousel>
-      </div>
-      
-       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
-        <div className="hidden lg:block lg:col-span-1">
-          <FilterPanel />
-        </div>
-        <div className="lg:col-span-3">
-          <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xl font-bold">{filteredAndSortedDoctors.length} doctors found</h3>
-              <div className="lg:hidden"><Sheet open={isFilterSheetOpen} onOpenChange={setIsFilterSheetOpen}><SheetTrigger asChild><Button variant="outline"><SlidersHorizontal className="mr-2 h-4 w-4"/>Filter</Button></SheetTrigger><SheetContent><SheetHeader><SheetTitle>Filters</SheetTitle></SheetHeader><div className="p-4"><FilterPanel /></div></SheetContent></Sheet></div>
-          </div>
-          <div className="space-y-4">
-              {isLoading ? Array.from({length:3}).map((_,i) => (
-                <Card key={i} className="p-4 flex gap-4 items-start w-full">
-                    <Skeleton className="w-24 h-24 rounded-full"/>
-                    <div className="flex-1 space-y-2">
-                        <Skeleton className="h-6 w-1/2"/>
-                        <Skeleton className="h-4 w-1/3"/>
-                        <Skeleton className="h-4 w-3/4"/>
-                        <Skeleton className="h-4 w-1/4"/>
-                    </div>
-                     <div className="flex flex-col items-end justify-between h-full gap-2">
-                        <Skeleton className="h-6 w-16"/>
-                        <Skeleton className="h-9 w-24"/>
-                    </div>
-                </Card>
-              ))
-                : filteredAndSortedDoctors.length > 0 ? (
-                  <MotionDiv variants={containerVariants} initial="hidden" animate="visible" className="space-y-4">
-                    {filteredAndSortedDoctors.map(doctor => (
-                        <MotionDiv key={doctor.id} variants={itemVariants}>
-                            <Card className="p-4 flex flex-col md:flex-row gap-4 items-start w-full text-left">
-                                <Avatar className="w-24 h-24"><AvatarImage src={doctor.photoUrl || `https://i.pravatar.cc/150?u=${doctor.id}`} /><AvatarFallback>{doctor.name.substring(0,2)}</AvatarFallback></Avatar>
-                                <div className="flex-1">
-                                    <p className="font-bold text-xl flex items-center gap-2">Dr. {doctor.name} 
-                                      {doctor.gender === 'female' && <PersonStanding className="w-5 h-5 text-pink-500" title="Female doctor available"/>}
-                                    </p>
-                                    <p className="font-semibold text-primary">{doctor.specialization}</p>
-                                    <p className="text-sm text-muted-foreground">{doctor.experience} years | {doctor.qualifications}</p>
-                                    <div className="text-sm text-muted-foreground mt-2 flex items-center gap-2"><Building className="w-4 h-4"/> {doctor.hospitalName}</div>
-                                    {doctor.distance != null && (<div className="text-sm text-muted-foreground flex items-center gap-2"><MapPin className="w-4 h-4"/>{doctor.distance.toFixed(1)} km away</div>)}
-                                    <div className="mt-2">
-                                      {(doctor.availability?.availableToday ?? Math.random() > 0.3) && <Badge variant="secondary" className="bg-green-100 text-green-800">Available Today</Badge>}
-                                    </div>
-                                </div>
-                                <div className="flex flex-col items-end justify-between h-full w-full md:w-auto mt-4 md:mt-0">
-                                  <p className="font-bold text-lg">₹{doctor.consultationFee}</p>
-                                  <div className="flex gap-2 w-full">
-                                    <Button asChild size="sm" variant="outline" className="flex-1">
-                                      <Link href={`/user/doctor/${doctor.hospitalId}/${doctor.id}`}>
-                                        View Profile
-                                      </Link>
-                                    </Button>
-                                    <Button size="sm" className="flex-1" onClick={() => handleOpenBookingSheet(doctor)}>Book Now</Button>
-                                  </div>
-                                </div>
-                            </Card>
-                        </MotionDiv>
-                    ))}
-                  </MotionDiv>
-                ) : (<Card className="col-span-full text-center p-12 flex flex-col items-center">
-                    <Search className="w-16 h-16 text-muted-foreground mb-4"/>
-                    <p className="font-bold text-lg">No Doctors Found</p>
-                    <p className="text-muted-foreground">Try adjusting your filters or search terms to find the right doctor for you.</p>
-                </Card>)
-              }
-          </div>
-        </div>
-      </div>
-       <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
-         <SheetContent>
-            {selectedDoctor && (
-              <>
-                <SheetHeader className="text-left">
-                    <div className="flex items-center gap-4">
-                        <Avatar className="w-16 h-16"><AvatarImage src={selectedDoctor.photoUrl || `https://i.pravatar.cc/150?u=${selectedDoctor.id}`} /><AvatarFallback>{selectedDoctor.name.substring(0,2)}</AvatarFallback></Avatar>
-                        <div>
-                        <SheetTitle className="text-2xl">Book with Dr. {selectedDoctor.name}</SheetTitle>
-                        <SheetDescription>{selectedDoctor.specialization} at {selectedDoctor.hospitalName}</SheetDescription>
+        <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
+             <SheetContent>
+                {selectedDoctor && (
+                  <>
+                    <SheetHeader className="text-left">
+                        <div className="flex items-center gap-4">
+                            <Avatar className="w-16 h-16"><AvatarImage src={selectedDoctor.photoUrl || `https://i.pravatar.cc/150?u=${selectedDoctor.id}`} /><AvatarFallback>{selectedDoctor.name.substring(0,2)}</AvatarFallback></Avatar>
+                            <div>
+                            <SheetTitle className="text-2xl">Book with Dr. {selectedDoctor.name}</SheetTitle>
+                            <SheetDescription>{selectedDoctor.specialization} at {selectedDoctor.hospitalName}</SheetDescription>
+                            </div>
                         </div>
+                    </SheetHeader>
+                    <div className="space-y-6 py-4">
+                      <div className="p-3 rounded-lg border bg-muted/50 flex justify-between items-center"><span className="font-semibold">Consultation Fee</span><span className="font-bold text-lg text-primary">₹{selectedDoctor.consultationFee}</span></div>
+                      <div className="space-y-3"><Label className="font-semibold">1. Select Consultation Type</Label><RadioGroup onValueChange={(v) => setConsultationType(v as any)} value={consultationType} className="grid grid-cols-2 gap-4"><div><RadioGroupItem value="in-clinic" id="in-clinic" className="peer sr-only" /><Label htmlFor="in-clinic" className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary"><Building className="mb-3 h-6 w-6" /> In-Clinic</Label></div><div><RadioGroupItem value="video" id="video" className="peer sr-only" /><Label htmlFor="video" className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary"><Video className="mb-3 h-6 w-6" /> Video</Label></div></RadioGroup></div>
+                      <div className="space-y-2"><Label className="font-semibold">2. Select Appointment Date</Label><Popover><PopoverTrigger asChild><Button variant={"outline"} className={cn("w-full justify-start text-left font-normal", !date && "text-muted-foreground")}><CalendarIcon className="mr-2 h-4 w-4" />{date ? format(date, "PPP") : <span>Pick a date</span>}</Button></PopoverTrigger><PopoverContent className="w-auto p-0"><Calendar mode="single" selected={date} onSelect={setDate} initialFocus disabled={(d) => d < new Date(new Date().setDate(new Date().getDate() - 1))}/></PopoverContent></Popover></div>
+                      <div className="space-y-2"><Label className="font-semibold">3. Select Available Time Slot</Label><div className="grid grid-cols-3 gap-2">{timeSlots.map(slot => (<Button key={slot} variant={time === slot ? 'default' : 'outline'} onClick={() => setTime(slot)}>{slot}</Button>))}</div></div>
                     </div>
-                </SheetHeader>
-                <div className="space-y-6 py-4">
-                  <div className="p-3 rounded-lg border bg-muted/50 flex justify-between items-center"><span className="font-semibold">Consultation Fee</span><span className="font-bold text-lg text-primary">₹{selectedDoctor.consultationFee}</span></div>
-                  <div className="space-y-3"><Label className="font-semibold">1. Select Consultation Type</Label><RadioGroup onValueChange={(v) => setConsultationType(v as any)} value={consultationType} className="grid grid-cols-2 gap-4"><div><RadioGroupItem value="in-clinic" id="in-clinic" className="peer sr-only" /><Label htmlFor="in-clinic" className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary"><Building className="mb-3 h-6 w-6" /> In-Clinic</Label></div><div><RadioGroupItem value="video" id="video" className="peer sr-only" /><Label htmlFor="video" className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary"><Video className="mb-3 h-6 w-6" /> Video</Label></div></RadioGroup></div>
-                  <div className="space-y-2"><Label className="font-semibold">2. Select Appointment Date</Label><Popover><PopoverTrigger asChild><Button variant={"outline"} className={cn("w-full justify-start text-left font-normal", !date && "text-muted-foreground")}><CalendarIcon className="mr-2 h-4 w-4" />{date ? format(date, "PPP") : <span>Pick a date</span>}</Button></PopoverTrigger><PopoverContent className="w-auto p-0"><Calendar mode="single" selected={date} onSelect={setDate} initialFocus disabled={(d) => d < new Date(new Date().setDate(new Date().getDate() - 1))}/></PopoverContent></Popover></div>
-                  <div className="space-y-2"><Label className="font-semibold">3. Select Available Time Slot</Label><div className="grid grid-cols-3 gap-2">{timeSlots.map(slot => (<Button key={slot} variant={time === slot ? 'default' : 'outline'} onClick={() => setTime(slot)}>{slot}</Button>))}</div></div>
-                </div>
-                <SheetFooter className="absolute bottom-0 left-0 right-0 p-4 border-t bg-background">
-                  <Button className="w-full" size="lg" onClick={handleBookingConfirmation} disabled={!date || !time || isBooking || !consultationType}>{isBooking ? 'Requesting...' : 'Confirm Appointment'}</Button>
-                </SheetFooter>
-              </>
-            )}
-        </SheetContent>
-      </Sheet>
-    </div>
+                    <SheetFooter className="absolute bottom-0 left-0 right-0 p-4 border-t bg-background">
+                      <Button className="w-full" size="lg" onClick={handleBookingConfirmation} disabled={!date || !time || isBooking || !consultationType}>{isBooking ? 'Requesting...' : 'Confirm Appointment'}</Button>
+                    </SheetFooter>
+                  </>
+                )}
+            </SheetContent>
+        </Sheet>
+      </div>
+    </motion.div>
   )
 }
