@@ -22,10 +22,10 @@ const healthPackages = [
 ];
 
 const labPartners = [
-    { name: "Dr. Lal PathLabs", logo: "/labs/lalpath.svg", accreditations: "NABL, CAP", homeCollection: true },
-    { name: "SRL Diagnostics", logo: "/labs/srl.svg", accreditations: "NABL, CAP", homeCollection: true },
-    { name: "Metropolis Healthcare", logo: "/labs/metropolis.svg", accreditations: "NABL", homeCollection: true },
-    { name: "Thyrocare", logo: "/labs/thyrocare.svg", accreditations: "NABL, ISO 9001", homeCollection: false },
+    { name: "Dr. Lal PathLabs", logo: "https://picsum.photos/seed/lalpath/200/100", accreditations: "NABL, CAP", homeCollection: true },
+    { name: "SRL Diagnostics", logo: "https://picsum.photos/seed/srl/200/100", accreditations: "NABL, CAP", homeCollection: true },
+    { name: "Metropolis Healthcare", logo: "https://picsum.photos/seed/metropolis/200/100", accreditations: "NABL", homeCollection: true },
+    { name: "Thyrocare", logo: "https://picsum.photos/seed/thyrocare/200/100", accreditations: "NABL, ISO 9001", homeCollection: false },
 ]
 
 const recentReports = [
@@ -174,4 +174,3 @@ export default function LabTestsPage() {
         </motion.div>
     );
 }
-
