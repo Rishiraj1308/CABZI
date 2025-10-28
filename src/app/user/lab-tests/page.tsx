@@ -12,6 +12,7 @@ import { useToast } from '@/hooks/use-toast'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Badge } from '@/components/ui/badge'
 import Image from 'next/image'
+import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 
 
 const healthPackages = [
@@ -22,10 +23,10 @@ const healthPackages = [
 ];
 
 const labPartners = [
-    { name: "Dr. Lal PathLabs", logo: "https://picsum.photos/seed/lalpath/200/100", accreditations: "NABL, CAP", homeCollection: true },
-    { name: "SRL Diagnostics", logo: "https://picsum.photos/seed/srl/200/100", accreditations: "NABL, CAP", homeCollection: true },
-    { name: "Metropolis Healthcare", logo: "https://picsum.photos/seed/metropolis/200/100", accreditations: "NABL", homeCollection: true },
-    { name: "Thyrocare", logo: "https://picsum.photos/seed/thyrocare/200/100", accreditations: "NABL, ISO 9001", homeCollection: false },
+    { name: "Dr. Lal PathLabs", logo: "/labs/lalpath.svg", accreditations: "NABL, CAP", homeCollection: true },
+    { name: "SRL Diagnostics", logo: "/labs/srl.svg", accreditations: "NABL, CAP", homeCollection: true },
+    { name: "Metropolis Healthcare", logo: "/labs/metropolis.svg", accreditations: "NABL", homeCollection: true },
+    { name: "Thyrocare", logo: "/labs/thyrocare.svg", accreditations: "NABL, ISO 9001", homeCollection: false },
 ]
 
 const recentReports = [
@@ -61,6 +62,16 @@ export default function LabTestsPage() {
         hidden: { opacity: 0, y: 20 },
         visible: { opacity: 1, y: 0 }
     };
+    
+    const getInitials = (name: string) => {
+        if (!name) return 'L';
+        const names = name.split(' ');
+        if (names.length > 1) {
+            return names[0][0] + names[1][0];
+        }
+        return name.substring(0, 2).toUpperCase();
+    }
+
 
     return (
         <motion.div 
@@ -109,9 +120,9 @@ export default function LabTestsPage() {
                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                              {labPartners.map(lab => (
                                 <Card key={lab.name} className="p-4 flex flex-col items-center justify-between text-center hover:shadow-md transition-shadow">
-                                   <div className="w-24 h-12 relative mb-4">
-                                      <Image src={lab.logo} alt={`${lab.name} logo`} layout="fill" objectFit="contain" data-ai-hint="logo" />
-                                   </div>
+                                   <Avatar className="w-16 h-16 mb-4 text-xl font-bold">
+                                       <AvatarFallback className="bg-muted">{getInitials(lab.name)}</AvatarFallback>
+                                   </Avatar>
                                     <p className="font-semibold text-sm">{lab.name}</p>
                                     <p className="text-xs text-muted-foreground">{lab.accreditations}</p>
                                     {lab.homeCollection && <Badge className="mt-2 text-xs bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300"><Home className="w-3 h-3 mr-1"/> Home Collection</Badge>}
