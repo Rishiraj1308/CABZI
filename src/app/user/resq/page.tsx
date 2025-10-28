@@ -1,4 +1,3 @@
-
 'use client'
 
 import React, { useState, useEffect, useCallback } from 'react'
@@ -216,8 +215,8 @@ export default function ResQPage() {
                   <ArrowLeft className="w-5 h-5"/>
               </Button>
               <div className="mt-10">
-                <h1 className="text-5xl font-bold">Roadside Assistance</h1>
-                <p className="text-xl opacity-90 mt-1">Stuck on the road? We&apos;re here to help.</p>
+                <h1 className="text-5xl font-bold">Roadside ResQ assistance</h1>
+                <p className="text-xl opacity-90 mt-1">Stuck on the road? We're here to help.</p>
               </div>
           </div>
       </header>
@@ -261,4 +260,3 @@ export default function ResQPage() {
     </div>
   );
 }
-
