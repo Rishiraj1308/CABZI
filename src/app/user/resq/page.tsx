@@ -210,7 +210,7 @@ export default function ResQPage() {
 
   return (
     <div className="h-full w-full flex flex-col bg-background">
-      <header className="bg-amber-500 text-white p-4 pt-6">
+      <header className="bg-gradient-to-br from-amber-500 via-amber-400 to-amber-300 text-white p-4 pt-6">
           <div className="container mx-auto">
               <Button variant="ghost" size="icon" className="absolute top-4 left-4 text-white hover:bg-white/20" onClick={() => router.push('/user')}>
                   <ArrowLeft className="w-5 h-5"/>
