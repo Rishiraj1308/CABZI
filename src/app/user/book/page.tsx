@@ -81,68 +81,65 @@ export default function BookRidePage() {
 
     return (
         <motion.div 
-            className="h-screen w-screen flex flex-col bg-muted/30 overflow-hidden"
+            className="min-h-screen w-full flex flex-col bg-muted/30 overflow-hidden"
             initial="hidden"
             animate="visible"
             variants={containerVariants}
         >
-            <header className="bg-gradient-to-br from-green-500 to-primary p-4 relative text-primary-foreground">
+            <header className="bg-gradient-to-br from-primary via-primary/90 to-black p-4 relative text-primary-foreground">
                 <div className="container mx-auto">
                     <motion.div variants={itemVariants}>
-                        <Button variant="ghost" size="icon" className="hover:bg-white/10" onClick={() => router.back()}>
+                        <Button variant="ghost" size="icon" className="hover:bg-white/10" onClick={() => router.push('/user')}>
                             <ArrowLeft className="w-5 h-5"/>
                         </Button>
                     </motion.div>
-                    <motion.div variants={itemVariants} className="pt-8 pb-24 text-left">
-                        <h1 className="text-4xl font-bold">Transport</h1>
-                        <p className="opacity-80 mt-1">Wherever you're going, let's get you there!</p>
+                    <motion.div variants={itemVariants} className="pt-8 pb-20 text-left">
+                        <h1 className="text-4xl font-bold">Fair Fares, Safer Roads.</h1>
+                        <p className="opacity-80 mt-1 max-w-md">Book a ride that empowers drivers and protects you on every trip.</p>
                     </motion.div>
                 </div>
-                 <motion.div
-                    initial={{ x: 100, opacity: 0 }}
-                    animate={{ x: 0, opacity: 1 }}
-                    transition={{ delay: 0.2, type: 'spring', stiffness: 50 }}
-                    className="absolute -bottom-4 right-0 w-48 h-28 z-20"
-                 >
-                    <Image src="/car.svg" alt="Car" layout="fill" objectFit="contain" className="opacity-90" data-ai-hint="car illustration" />
-                </motion.div>
             </header>
 
-            <div className="flex-1 container mx-auto p-4 space-y-6 relative z-10 -mt-20">
+            <div className="flex-1 container mx-auto p-4 space-y-6 relative z-10 -mt-16">
                  <motion.div 
                     initial={{ y: 50, opacity: 0 }}
                     animate={{ y: 0, opacity: 1 }}
                     transition={{ delay: 0.3, type: 'spring' }}
                     className="space-y-6"
                 >
-                    <Card className="shadow-lg">
-                        <CardContent className="p-3 space-y-1">
-                            <div className="flex items-center gap-4 p-2 rounded-lg">
+                    <Card className="shadow-lg overflow-hidden">
+                        <CardContent className="p-3 relative">
+                            <div className="flex items-center gap-4 py-2 px-2 rounded-lg">
                                 <div className="w-2.5 h-2.5 rounded-full bg-green-500 ring-2 ring-green-500/30"/>
                                 <p className="font-semibold text-base text-muted-foreground">Current Location</p>
                             </div>
-                            <div className="border-l-2 border-dotted border-border h-4 ml-[13px]"></div>
-                            <div className="flex items-center gap-4 p-2 rounded-lg">
+                            <div className="border-l-2 border-dotted border-border h-4 ml-[13px] my-1"></div>
+                            <div className="flex items-center gap-4 py-2 px-2 rounded-lg">
                                 <div className="w-2.5 h-2.5 rounded-full bg-red-500 ring-2 ring-red-500/30"/>
                                 <Input
                                     placeholder="Where to?"
                                     className="border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 text-base font-semibold p-0 h-auto"
                                     value={destination}
                                     onChange={(e) => setDestination(e.target.value)}
+                                    onKeyDown={(e) => e.key === 'Enter' && searchResults.length > 0 && handleSelectDestination(searchResults[0])}
                                 />
+                            </div>
+                             <div className="absolute -right-4 -bottom-4 w-40 h-24 z-0">
+                                <Image src="/car.svg" alt="Car illustration" layout="fill" objectFit="contain" className="opacity-60" data-ai-hint="car illustration"/>
                             </div>
                         </CardContent>
                     </Card>
 
-                    {/* Search Suggestions */}
                     {(isSearching || searchResults.length > 0) && (
                         <Card className="shadow-lg">
                             <CardContent className="p-2 space-y-1">
                                 {isSearching ? (
-                                    <div className="p-2 space-y-2">
-                                        <Skeleton className="h-5 w-3/4" />
-                                        <Skeleton className="h-4 w-1/2" />
-                                    </div>
+                                    Array.from({length: 2}).map((_, i) => (
+                                        <div key={i} className="p-2 space-y-2">
+                                            <Skeleton className="h-5 w-3/4" />
+                                            <Skeleton className="h-4 w-1/2" />
+                                        </div>
+                                    ))
                                 ) : (
                                     searchResults.map(place => (
                                         <div key={place.place_id} onClick={() => handleSelectDestination(place)} className="p-2 rounded-md hover:bg-muted cursor-pointer">
@@ -155,7 +152,7 @@ export default function BookRidePage() {
                         </Card>
                     )}
                     
-                    <div className="space-y-2 mt-8">
+                    <div className="space-y-2 pt-6">
                         <h3 className="font-bold text-lg">Recent Trips</h3>
                         {recentTrips.map((trip, index) => (
                             <motion.div 
