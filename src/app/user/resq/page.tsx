@@ -204,13 +204,13 @@ export default function ResQPage() {
                 <Wrench className="w-8 h-8 text-amber-500"/>
             </div>
             <h1 className="text-3xl font-bold mt-4">Roadside Assistance</h1>
-            <p className="text-muted-foreground">Vehicle trouble? Get quick help.</p>
+            <p className="text-muted-foreground">Stuck on the road? We&apos;re here to help.</p>
         </div>
 
         <Card>
             <CardHeader>
-                <CardTitle>Select Service</CardTitle>
-                <CardDescription>Tell us what's wrong so we can find the right help.</CardDescription>
+                <CardTitle>What&apos;s the issue?</CardTitle>
+                <CardDescription>Select the problem you are facing.</CardDescription>
             </CardHeader>
             <CardContent>
                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
@@ -235,7 +235,7 @@ export default function ResQPage() {
                     disabled={!selectedIssue}
                     onClick={handleRequestMechanic}
                     className="w-full font-semibold h-12 text-lg">
-                    Request Assistance
+                    Find a Mechanic
                 </Button>
             </CardFooter>
         </Card>
@@ -297,3 +297,4 @@ export default function ResQPage() {
     </div>
   );
 }
+
