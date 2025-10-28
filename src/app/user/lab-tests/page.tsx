@@ -74,7 +74,7 @@ export default function LabTestsPage() {
             </CardContent>
         </Card>
     );
-    
+
     return (
         <div className="p-4 md:p-6 space-y-8">
             <div className="animate-fade-in">
@@ -185,6 +185,6 @@ export default function LabTestsPage() {
                     )}
                  </div>
             </section>
-        </main>
+        </div>
     );
 }
