@@ -272,7 +272,7 @@ export default function BookAppointmentPage() {
                 </Button>
             </motion.div>
             <motion.div variants={itemVariants} className="pt-8 pb-20 text-left">
-                <h1 className="text-4xl font-bold">Find The Right Care, Right Away.</h1>
+                <h1 className="text-4xl font-bold">Find The Right Care, Instantly.</h1>
                 <p className="opacity-80 mt-1 max-w-md">Search by doctor, specialization, or symptoms.</p>
             </motion.div>
         </div>
@@ -307,7 +307,7 @@ export default function BookAppointmentPage() {
                       {symptomCategories.map((symptom, i) => (
                           <CarouselItem key={i} className="pl-2 basis-1/3 md:basis-1/4 lg:basis-1/6">
                               <Card className={`p-4 flex flex-col items-center justify-center gap-2 cursor-pointer hover:ring-2 hover:ring-primary transition-all text-center h-full ${selectedSymptom === symptom.name ? 'ring-2 ring-primary' : ''}`} onClick={() => setSelectedSymptom(prev => prev === symptom.name ? null : symptom.name)}>
-                                  <div className="p-3 bg-card rounded-full"><symptom.icon className="w-6 h-6" /></div>
+                                  <div className="p-3 bg-muted rounded-full"><symptom.icon className="w-6 h-6" /></div>
                                   <p className="text-xs font-semibold">{symptom.name}</p>
                               </Card>
                           </CarouselItem>
