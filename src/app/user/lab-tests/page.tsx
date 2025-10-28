@@ -4,7 +4,7 @@
 import React, { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { ArrowLeft, FlaskConical, Search, FileText, CheckCircle, Home } from 'lucide-react'
 import { motion } from 'framer-motion'
@@ -21,6 +21,13 @@ const healthPackages = [
     { title: 'Basic Fever Panel', tests: 90, price: 799, originalPrice: 1599 },
 ];
 
+const labPartners = [
+    { name: "Dr. Lal PathLabs", logo: "/labs/lalpath.svg", accreditations: "NABL, CAP", homeCollection: true },
+    { name: "SRL Diagnostics", logo: "/labs/srl.svg", accreditations: "NABL, CAP", homeCollection: true },
+    { name: "Metropolis Healthcare", logo: "/labs/metropolis.svg", accreditations: "NABL", homeCollection: true },
+    { name: "Thyrocare", logo: "/labs/thyrocare.svg", accreditations: "NABL, ISO 9001", homeCollection: false },
+]
+
 const recentReports = [
     {
         testName: "Complete Blood Count (CBC)",
@@ -32,12 +39,6 @@ const recentReports = [
         testName: "Lipid Profile",
         labName: "SRL Diagnostics",
         date: "2024-08-12",
-        status: "Available"
-    },
-    {
-        testName: "Thyroid Function Test",
-        labName: "Metropolis Healthcare",
-        date: "2024-08-10",
         status: "Available"
     },
 ]
@@ -87,7 +88,7 @@ export default function LabTestsPage() {
                     initial={{ y: 50, opacity: 0 }}
                     animate={{ y: 0, opacity: 1 }}
                     transition={{ delay: 0.3, type: 'spring' }}
-                    className="space-y-6"
+                    className="space-y-8"
                 >
                     <Card className="shadow-lg">
                         <CardContent className="p-3">
@@ -102,8 +103,24 @@ export default function LabTestsPage() {
                             </div>
                         </CardContent>
                     </Card>
+                    
+                     <div className="space-y-4">
+                        <h3 className="font-bold text-lg">Our Lab Partners</h3>
+                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                             {labPartners.map(lab => (
+                                <Card key={lab.name} className="p-4 flex flex-col items-center justify-between text-center hover:shadow-md transition-shadow">
+                                   <div className="w-24 h-12 relative mb-4">
+                                      <Image src={lab.logo} alt={`${lab.name} logo`} layout="fill" objectFit="contain" data-ai-hint="logo" />
+                                   </div>
+                                    <p className="font-semibold text-sm">{lab.name}</p>
+                                    <p className="text-xs text-muted-foreground">{lab.accreditations}</p>
+                                    {lab.homeCollection && <Badge className="mt-2 text-xs bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300"><Home className="w-3 h-3 mr-1"/> Home Collection</Badge>}
+                                </Card>
+                            ))}
+                         </div>
+                    </div>
 
-                    <div className="space-y-4 pt-6">
+                    <div className="space-y-4">
                         <h3 className="font-bold text-lg">Popular Health Packages</h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             {healthPackages.map(pkg => (
@@ -112,19 +129,21 @@ export default function LabTestsPage() {
                                         <CardTitle className="text-base">{pkg.title}</CardTitle>
                                         <CardDescription>{pkg.tests} tests included</CardDescription>
                                     </CardHeader>
-                                    <CardContent className="flex justify-between items-end">
-                                        <div>
-                                            <p className="text-xl font-bold">₹{pkg.price}</p>
-                                            <p className="text-sm text-muted-foreground line-through">₹{pkg.originalPrice}</p>
+                                    <CardContent>
+                                         <div className="flex justify-between items-center">
+                                            <div>
+                                                <p className="text-xl font-bold">₹{pkg.price}</p>
+                                                <p className="text-sm text-muted-foreground line-through">₹{pkg.originalPrice}</p>
+                                            </div>
+                                            <Button size="sm">Book Now</Button>
                                         </div>
-                                        <Button size="sm">View Details</Button>
                                     </CardContent>
                                 </Card>
                             ))}
                         </div>
                     </div>
                     
-                    <div className="space-y-4 pt-6">
+                    <div className="space-y-4">
                         <h3 className="font-bold text-lg">Recent Reports</h3>
                          {recentReports.map((report, index) => (
                             <motion.div 
@@ -143,9 +162,7 @@ export default function LabTestsPage() {
                                         <p className="text-sm text-muted-foreground">{report.labName} &bull; {report.date}</p>
                                     </div>
                                     <div className="text-right">
-                                        <Badge className="bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-200">
-                                            {report.status}
-                                        </Badge>
+                                        <Button variant="outline" size="sm">View Report</Button>
                                     </div>
                                 </div>
                             </motion.div>
@@ -157,3 +174,4 @@ export default function LabTestsPage() {
         </motion.div>
     );
 }
+
