@@ -419,5 +419,3 @@ export default function BookAppointmentPage() {
     </motion.div>
   )
 }
-
-    
