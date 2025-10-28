@@ -1,17 +1,18 @@
 'use client'
 
 import React, { useState, useEffect, useCallback } from 'react'
+import { useRouter } from 'next/navigation'
 import { useFirebase } from '@/firebase/client-provider'
 import { getDoc, doc, onSnapshot, query, collection, where, updateDoc, GeoPoint, serverTimestamp, addDoc, runTransaction } from 'firebase/firestore'
 import type { GarageRequest, ClientSession } from '@/lib/types'
 import { useToast } from '@/hooks/use-toast'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import RideStatus from '@/components/ride-status'
 import { Wrench, Zap, Fuel, Car, MoreHorizontal, ArrowLeft, MapPin } from 'lucide-react'
-import SearchingIndicator from '@/components/ui/searching-indicator'
 import { cn } from '@/lib/utils'
-import { useRouter } from 'next/navigation'
+import { motion } from 'framer-motion'
+import Image from 'next/image'
 
 const commonIssues = [
     { id: 'flat_tyre', label: 'Flat Tyre', icon: Wrench },
@@ -20,6 +21,11 @@ const commonIssues = [
     { id: 'fuel_delivery', label: 'Fuel Refill', icon: Fuel },
     { id: 'minor_repair', label: 'Minor Repair', icon: Wrench },
     { id: 'other', label: 'Other', icon: MoreHorizontal },
+]
+
+const recentServices = [
+    { issue: 'Flat Tyre', location: 'Cyber Hub, Gurgaon' },
+    { issue: 'Battery Jump-Start', location: 'MG Road, New Delhi' },
 ]
 
 export default function ResQPage() {
@@ -128,9 +134,7 @@ export default function ResQPage() {
   const handleGaragePayment = async (paymentMode: 'cash' | 'wallet') => {
     if (!db || !activeGarageRequest || !user || !activeGarageRequest.mechanicId) return;
 
-    const driverRef = doc(db, 'users', user.uid);
     const garageRequestRef = doc(db, 'garageRequests', activeGarageRequest.id);
-    const mechanicRef = doc(db, 'mechanics', activeGarageRequest.mechanicId);
 
     try {
         await runTransaction(db, async (transaction) => {
@@ -193,9 +197,18 @@ export default function ResQPage() {
     }
   };
 
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: { opacity: 1, transition: { staggerChildren: 0.1 } }
+  };
+  const itemVariants = {
+      hidden: { opacity: 0, y: 20 },
+      visible: { opacity: 1, y: 0 }
+  };
+
   if (activeGarageRequest) {
     return (
-        <div className="h-full w-full flex items-center justify-center">
+        <div className="h-full w-full flex items-center justify-center p-4">
             <RideStatus 
                 ride={activeGarageRequest} 
                 isGarageRequest 
@@ -208,37 +221,50 @@ export default function ResQPage() {
   }
 
   return (
-    <div className="h-full w-full flex flex-col bg-background">
-      <header className="bg-gradient-to-br from-amber-500 via-amber-400 to-amber-300 text-white p-8 pt-12">
-          <div className="container mx-auto">
-              <Button variant="ghost" size="icon" className="absolute top-4 left-4 text-white hover:bg-white/20" onClick={() => router.push('/user')}>
-                  <ArrowLeft className="w-5 h-5"/>
-              </Button>
-              <div className="mt-10">
-                <h1 className="text-5xl font-bold">Roadside ResQ assistance</h1>
-                <p className="text-xl opacity-90 mt-1">Stuck on the road? We're here to help.</p>
-              </div>
-          </div>
-      </header>
-       <div className="container mx-auto relative -mt-8 z-10">
-            <Card className="shadow-lg">
-                <CardContent className="p-4 flex items-center gap-3">
-                    <MapPin className="w-5 h-5 text-primary" />
-                    <p className="font-semibold text-muted-foreground">{locationAddress}</p>
-                </CardContent>
-            </Card>
-        </div>
-        <div className="container mx-auto py-8 flex-1">
-             <div className="space-y-4">
-                <h2 className="text-lg font-semibold">What's the issue?</h2>
-                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+    <motion.div 
+        className="min-h-screen w-full flex flex-col bg-muted/30 overflow-hidden"
+        initial="hidden"
+        animate="visible"
+        variants={containerVariants}
+    >
+        <header className="bg-gradient-to-br from-amber-500 via-amber-400 to-amber-300 text-white p-4 relative">
+            <div className="container mx-auto">
+                <motion.div variants={itemVariants}>
+                    <Button variant="ghost" size="icon" className="hover:bg-white/10" onClick={() => router.push('/user')}>
+                        <ArrowLeft className="w-5 h-5"/>
+                    </Button>
+                </motion.div>
+                <motion.div variants={itemVariants} className="pt-8 pb-20 text-left">
+                    <h1 className="text-4xl font-bold">Roadside ResQ assistance</h1>
+                    <p className="opacity-90 mt-1 max-w-md">Stuck on the road? We&apos;re here to help.</p>
+                </motion.div>
+            </div>
+        </header>
+
+       <div className="flex-1 container mx-auto p-4 space-y-6 relative z-10 -mt-16">
+            <motion.div 
+                initial={{ y: 50, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 0.3, type: 'spring' }}
+            >
+                <Card className="shadow-lg">
+                    <CardContent className="p-3 flex items-center gap-3">
+                        <div className="w-2.5 h-2.5 rounded-full bg-green-500 ring-2 ring-green-500/30 ml-2"/>
+                        <p className="font-semibold text-base text-muted-foreground">{locationAddress}</p>
+                    </CardContent>
+                </Card>
+            </motion.div>
+            
+            <motion.div variants={itemVariants}>
+                <h3 className="font-bold text-lg">What&apos;s the issue?</h3>
+                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mt-2">
                     {commonIssues.map((item) => (
                         <div
                         key={item.id}
                         onClick={() => setSelectedIssue(item.label)}
                         className={cn(
-                            "group flex flex-col items-center justify-center p-4 bg-muted/50 rounded-xl hover:shadow-lg hover:-translate-y-1 transition-all cursor-pointer",
-                            selectedIssue === item.label && "ring-2 ring-primary bg-primary/5"
+                            "group flex flex-col items-center justify-center p-4 bg-card rounded-xl border-2 border-transparent hover:shadow-lg hover:-translate-y-1 transition-all cursor-pointer",
+                            selectedIssue === item.label && "ring-2 ring-primary border-primary"
                         )}
                         >
                             <item.icon className="text-primary w-8 h-8 mb-2 transition-all" />
@@ -246,9 +272,26 @@ export default function ResQPage() {
                         </div>
                     ))}
                 </div>
-             </div>
+            </motion.div>
+
+            <motion.div variants={itemVariants}>
+                 <h3 className="font-bold text-lg pt-4">Recent Requests</h3>
+                 <div className="space-y-2 mt-2">
+                    {recentServices.map((service, index) => (
+                        <div key={index} className="flex items-center gap-4 p-3 rounded-lg hover:bg-card cursor-pointer transition-colors">
+                            <div className="p-3 bg-card rounded-full border">
+                                <Wrench className="w-5 h-5 text-muted-foreground" />
+                            </div>
+                            <div className="flex-1">
+                                <p className="font-semibold">{service.issue}</p>
+                                <p className="text-sm text-muted-foreground">{service.location}</p>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </motion.div>
         </div>
-         <div className="p-4 border-t bg-background">
+         <div className="p-4 border-t bg-background sticky bottom-0">
             <Button
                 size="lg"
                 disabled={!selectedIssue}
@@ -257,6 +300,6 @@ export default function ResQPage() {
                 Find a Mechanic
             </Button>
         </div>
-    </div>
+    </motion.div>
   );
 }
