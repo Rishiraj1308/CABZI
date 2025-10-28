@@ -3,19 +3,16 @@
 
 import React, { useState, useEffect, useCallback } from 'react'
 import { useFirebase } from '@/firebase/client-provider'
-import { getDoc, doc, onSnapshot, query, collection, where, updateDoc, GeoPoint, serverTimestamp, addDoc } from 'firebase/firestore'
+import { getDoc, doc, onSnapshot, query, collection, where, updateDoc, GeoPoint, serverTimestamp, addDoc, runTransaction } from 'firebase/firestore'
 import type { GarageRequest, ClientSession } from '@/lib/types'
 import { useToast } from '@/hooks/use-toast'
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import RideStatus from '@/components/ride-status'
-import { Wrench, Zap, Fuel, Car, MoreHorizontal, LifeBuoy, Phone, Shield, LocateFixed, MessageSquare, Siren } from 'lucide-react'
-import { runTransaction } from 'firebase/firestore'
+import { Wrench, Zap, Fuel, Car, MoreHorizontal, ArrowLeft, MapPin } from 'lucide-react'
 import SearchingIndicator from '@/components/ui/searching-indicator'
 import { cn } from '@/lib/utils'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription, DialogFooter } from '@/components/ui/dialog'
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
-import { Label } from '@/components/ui/label'
+import { useRouter } from 'next/navigation'
 
 const commonIssues = [
     { id: 'flat_tyre', label: 'Flat Tyre', icon: Wrench },
@@ -35,6 +32,7 @@ export default function ResQPage() {
 
   const { user, db } = useFirebase();
   const { toast } = useToast();
+  const router = useRouter();
 
   const getAddressFromCoords = useCallback(async (lat: number, lon: number) => {
     try {
@@ -196,105 +194,70 @@ export default function ResQPage() {
     }
   };
 
-
-  const renderInitialView = () => (
-     <div className="max-w-xl mx-auto w-full p-4 md:p-0">
-        <div className="text-center mb-8">
-            <div className="w-16 h-16 mx-auto rounded-full bg-amber-500/10 flex items-center justify-center border-4 border-amber-500/20">
-                <Wrench className="w-8 h-8 text-amber-500"/>
-            </div>
-            <h1 className="text-3xl font-bold mt-4">Roadside Assistance</h1>
-            <p className="text-muted-foreground">Stuck on the road? We&apos;re here to help.</p>
+  if (activeGarageRequest) {
+    return (
+        <div className="h-full w-full flex items-center justify-center">
+            <RideStatus 
+                ride={activeGarageRequest} 
+                isGarageRequest 
+                onCancel={handleCancelServiceRequest} 
+                onDone={resetFlow} 
+                onPayment={handleGaragePayment}
+            />
         </div>
+    )
+  }
 
-        <Card>
-            <CardHeader>
-                <CardTitle>What&apos;s the issue?</CardTitle>
-                <CardDescription>Select the problem you are facing.</CardDescription>
-            </CardHeader>
-            <CardContent>
+  return (
+    <div className="h-full w-full flex flex-col bg-background">
+      <header className="bg-amber-500 text-white p-4 pt-6">
+          <div className="container mx-auto">
+              <Button variant="ghost" size="icon" className="absolute top-4 left-4 text-white hover:bg-white/20" onClick={() => router.push('/user')}>
+                  <ArrowLeft className="w-5 h-5"/>
+              </Button>
+              <div className="mt-6">
+                <h1 className="text-3xl font-bold">Roadside Assistance</h1>
+                <p className="opacity-90">Stuck on the road? We're here to help.</p>
+              </div>
+          </div>
+      </header>
+       <div className="container mx-auto relative -mt-6 z-10">
+            <Card className="shadow-lg">
+                <CardContent className="p-4 flex items-center gap-3">
+                    <MapPin className="w-5 h-5 text-primary" />
+                    <p className="font-semibold text-muted-foreground">{locationAddress}</p>
+                </CardContent>
+            </Card>
+        </div>
+        <div className="container mx-auto py-8 flex-1">
+             <div className="space-y-4">
+                <h2 className="text-lg font-semibold">What's the issue?</h2>
                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                     {commonIssues.map((item) => (
                         <div
                         key={item.id}
                         onClick={() => setSelectedIssue(item.label)}
                         className={cn(
-                            "group flex flex-col items-center justify-center p-4 bg-muted/50 rounded-xl hover:shadow-orange-glow hover:-translate-y-1 transition-all cursor-pointer",
-                            selectedIssue === item.label && "ring-2 ring-orange-500 bg-orange-100/50 dark:bg-orange-900/30"
+                            "group flex flex-col items-center justify-center p-4 bg-muted/50 rounded-xl hover:shadow-lg hover:-translate-y-1 transition-all cursor-pointer",
+                            selectedIssue === item.label && "ring-2 ring-primary bg-primary/5"
                         )}
                         >
-                            <item.icon className="text-orange-500 w-8 h-8 mb-2 transition-all group-hover:text-orange-400 group-hover:drop-shadow-[0_0_4px_rgba(255,140,0,0.4)]" />
+                            <item.icon className="text-primary w-8 h-8 mb-2 transition-all" />
                             <span className="font-semibold text-center text-sm">{item.label}</span>
                         </div>
                     ))}
                 </div>
-            </CardContent>
-            <CardFooter>
-                 <Button
-                    size="lg"
-                    disabled={!selectedIssue}
-                    onClick={handleRequestMechanic}
-                    className="w-full font-semibold h-12 text-lg">
-                    Find a Mechanic
-                </Button>
-            </CardFooter>
-        </Card>
-      </div>
-  )
-
-  const renderActiveRequest = () => {
-    if(!activeGarageRequest) return null;
-
-    if (activeGarageRequest.status === 'pending') {
-        return (
-            <Card className="max-w-xl mx-auto mt-8">
-                <CardContent className="py-10 text-center">
-                    <SearchingIndicator partnerType="resq" />
-                    <h3 className="text-2xl font-bold mt-4">Finding a Mechanic...</h3>
-                    <p className="text-muted-foreground">Contacting nearby ResQ partners for your issue: <span className="font-semibold">{activeGarageRequest.issue}</span></p>
-                </CardContent>
-                 <CardFooter>
-                     <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                           <Button variant="link" size="sm" className="w-full text-muted-foreground">Cancel Request</Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                            <AlertDialogHeader>
-                                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                    This will cancel your current request for roadside assistance.
-                                </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                                <AlertDialogCancel>Go Back</AlertDialogCancel>
-                                <AlertDialogAction onClick={handleCancelServiceRequest} className="bg-destructive hover:bg-destructive/80">Yes, Cancel</AlertDialogAction>
-                            </AlertDialogFooter>
-                        </AlertDialogContent>
-                    </AlertDialog>
-                </CardFooter>
-            </Card>
-        )
-    }
-    
-    return (
-      <div className="max-w-xl mx-auto mt-8">
-        <RideStatus 
-            ride={activeGarageRequest} 
-            isGarageRequest 
-            onCancel={handleCancelServiceRequest} 
-            onDone={resetFlow} 
-            onPayment={handleGaragePayment}
-        />
-      </div>
-    )
-  }
-
-  return (
-    <div className="h-full w-full relative flex flex-col items-center justify-center bg-[linear-gradient(180deg,_#fffdf8_0%,_#fff6e9_100%)] dark:bg-[linear-gradient(180deg,_hsl(var(--background))_0%,_hsl(var(--muted))_100%)]">
-        <div className="w-full">
-            {activeGarageRequest ? renderActiveRequest() : renderInitialView()}
+             </div>
+        </div>
+         <div className="p-4 border-t bg-background">
+            <Button
+                size="lg"
+                disabled={!selectedIssue}
+                onClick={handleRequestMechanic}
+                className="w-full font-semibold h-12 text-lg">
+                Find a Mechanic
+            </Button>
         </div>
     </div>
   );
 }
-
