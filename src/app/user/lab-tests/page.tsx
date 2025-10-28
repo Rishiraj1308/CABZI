@@ -76,7 +76,7 @@ export default function LabTestsPage() {
     return (
       <div className="min-h-screen bg-background">
         <header className="sticky top-0 z-20">
-          <div className="relative h-48 md:h-40 bg-gradient-to-br from-purple-600 via-primary to-primary/70 text-primary-foreground p-4 md:p-6">
+          <div className="relative h-56 md:h-48 bg-gradient-to-br from-purple-600 via-primary to-primary/70 text-primary-foreground p-6 md:p-8">
             <div className="container mx-auto">
               <div className="flex items-center gap-2">
                 <Button variant="ghost" size="icon" className="hover:bg-white/10" onClick={() => router.push('/user')}>
@@ -86,9 +86,9 @@ export default function LabTestsPage() {
                     {/* Add Mobile actions here if needed */}
                 </div>
               </div>
-              <div className="mt-4">
-                <h1 className="text-3xl md:text-4xl font-bold">Book Lab Tests</h1>
-                <p className="opacity-80">Certified labs, at your convenience.</p>
+              <div className="mt-6">
+                <h1 className="text-4xl md:text-5xl font-bold">Book Lab Tests</h1>
+                <p className="opacity-80 mt-1">Certified labs, at your convenience.</p>
               </div>
             </div>
           </div>
