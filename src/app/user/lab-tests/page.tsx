@@ -1,54 +1,34 @@
 
 'use client'
 
-import React, { useState, useEffect, useMemo } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Search, SlidersHorizontal, ArrowLeft, FlaskConical, MapPin, Activity, HeartPulse, Droplets, Thermometer, User, MessageSquare, Shield, Bone, GitCommitVertical } from 'lucide-react'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Badge } from '@/components/ui/badge'
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
-import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from '@/components/ui/sheet'
-import { Skeleton } from '@/components/ui/skeleton'
-import { useToast } from '@/hooks/use-toast'
-import Link from 'next/link'
+import React, { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { motion } from 'framer-motion'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { ArrowLeft, FlaskConical, Droplets, Activity, HeartPulse, User } from 'lucide-react'
 import Image from 'next/image'
-import { Carousel, CarouselContent, CarouselItem } from '@/components/ui/carousel'
-import { cn } from '@/lib/utils'
+import Link from 'next/link'
+import { motion } from 'framer-motion'
+import { useToast } from '@/hooks/use-toast'
 
 const popularPackages = [
-    { name: 'Complete Health Check', tests: '85 tests', price: '₹1499', oldPrice: '₹2999' },
-    { name: 'Advanced Heart Care', tests: '62 tests', price: '₹2199', oldPrice: '₹4500' },
-    { name: 'Diabetes & Lipid Profile', tests: '34 tests', price: '₹999', oldPrice: '₹1800' },
-    { name: 'Fever Panel (Advanced)', tests: '90 tests', price: '₹1799', oldPrice: '₹3200' },
+    { icon: User, title: 'Full Body Checkup', description: '85 parameters' },
+    { icon: HeartPulse, title: 'Heart Risk Assessment', description: '62 parameters' },
+    { icon: Droplets, title: 'Diabetes Care', description: '34 parameters' },
+    { icon: Activity, title: 'Fever Panel', description: '90 parameters' },
 ];
 
-const testCategories = [
-    { name: 'Full Body', icon: User },
-    { name: 'Diabetes', icon: Droplets },
-    { name: 'Heart', icon: HeartPulse },
-    { name: 'Vitamins', icon: Shield },
-    { name: 'Fever', icon: Thermometer },
-    { name: 'Bones', icon: Bone },
-    { name: 'Thyroid', icon: GitCommitVertical },
+const recentReports = [
+    { test: 'Complete Blood Count (CBC)', date: '2024-08-15', lab: 'Dr. Lal PathLabs' },
+    { test: 'Vitamin D, 25-Hydroxy', date: '2024-07-22', lab: 'SRL Diagnostics' },
 ]
-
-const featuredLabs = [
-    { name: 'Dr. Lal PathLabs', logo: '/labs/lalpath.png', accreditation: 'NABL, CAP' },
-    { name: 'SRL Diagnostics', logo: '/labs/srl.png', accreditation: 'NABL, CAP' },
-    { name: 'Metropolis Healthcare', logo: '/labs/metropolis.png', accreditation: 'NABL, CAP' },
-]
-
 
 export default function LabTestsPage() {
     const router = useRouter()
-    const { toast } = useToast();
-    const [searchQuery, setSearchQuery] = useState('');
-    
+    const { toast } = useToast()
+    const [searchQuery, setSearchQuery] = useState('')
+
     const containerVariants = {
         hidden: { opacity: 0 },
         visible: {
@@ -59,93 +39,101 @@ export default function LabTestsPage() {
     
     const itemVariants = {
         hidden: { opacity: 0, y: 20 },
-        visible: { opacity: 1, y: 0, transition: {type: 'spring', stiffness: 100} }
+        visible: { opacity: 1, y: 0 }
     };
 
     return (
         <motion.div 
-            className="p-4 md:p-6 space-y-8"
+            className="min-h-screen w-full flex flex-col bg-muted/30 overflow-hidden"
             initial="hidden"
             animate="visible"
             variants={containerVariants}
         >
-            <motion.div variants={itemVariants} className="text-center">
-                <h2 className="text-3xl font-bold tracking-tight flex items-center justify-center gap-2">
-                    <FlaskConical className="w-8 h-8 text-primary" /> 
-                    Diagnostics & Lab Tests
-                </h2>
-                <p className="text-muted-foreground mt-1">Book tests from certified labs with home sample collection.</p>
-            </motion.div>
+            <header className="bg-gradient-to-br from-purple-600 via-primary to-primary/70 text-primary-foreground p-4 relative">
+                <div className="container mx-auto">
+                    <motion.div variants={itemVariants}>
+                        <Button variant="ghost" size="icon" className="hover:bg-white/10" onClick={() => router.push('/user')}>
+                            <ArrowLeft className="w-5 h-5"/>
+                        </Button>
+                    </motion.div>
+                    <motion.div variants={itemVariants} className="pt-8 pb-20 text-left">
+                        <h1 className="text-4xl font-bold">Diagnostics at Your Doorstep.</h1>
+                        <p className="opacity-80 mt-1 max-w-md">Certified labs, seamless service.</p>
+                    </motion.div>
+                </div>
+            </header>
             
-            <motion.div variants={itemVariants} className="max-w-2xl mx-auto w-full">
-                <div className="relative">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                    <Input
-                        id="test-search"
-                        placeholder="Search for tests (e.g., Vitamin D, Complete Blood Count)"
-                        className="pl-12 h-12 text-base rounded-full shadow-lg"
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        onKeyDown={(e) => e.key === 'Enter' && toast({title: "Search coming soon!"})}
-                    />
-                </div>
-            </motion.div>
+            <div className="flex-1 container mx-auto p-4 space-y-6 relative z-10 -mt-16">
+                 <motion.div 
+                    initial={{ y: 50, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    transition={{ delay: 0.3, type: 'spring' }}
+                    className="space-y-6"
+                >
+                    <Card className="shadow-lg">
+                        <CardContent className="p-3 relative">
+                            <div className="flex items-center gap-4 py-2 px-2 rounded-lg">
+                                <div className="w-2.5 h-2.5 rounded-full bg-blue-500 ring-2 ring-blue-500/30"/>
+                                <Input
+                                    placeholder="Search for a test or lab"
+                                    className="border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 text-base font-semibold p-0 h-auto"
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                />
+                            </div>
+                        </CardContent>
+                    </Card>
 
-             <motion.div variants={itemVariants} className="space-y-4">
-                <h3 className="font-bold text-lg">Search by Category</h3>
-                <Carousel opts={{ align: "start", loop: false, skipSnaps: true }} className="w-full">
-                    <CarouselContent className="-ml-2">
-                        {testCategories.map((cat, i) => (
-                            <CarouselItem key={i} className="pl-2 basis-1/3 md:basis-1/4 lg:basis-1/6">
-                                <Card className="p-4 flex flex-col items-center justify-center gap-2 cursor-pointer hover:ring-2 hover:ring-primary transition-all text-center h-full">
-                                    <div className="p-3 bg-muted rounded-full"><cat.icon className="w-6 h-6 text-primary" /></div>
-                                    <p className="text-xs font-semibold">{cat.name}</p>
-                                </Card>
-                            </CarouselItem>
+                    <div className="space-y-4 pt-4">
+                        <h3 className="font-bold text-lg">Popular Health Packages</h3>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                           {popularPackages.map((pkg, index) => (
+                                <motion.div 
+                                    key={pkg.title}
+                                    variants={itemVariants}
+                                    initial="hidden"
+                                    animate="visible"
+                                    transition={{delay: 0.5 + index * 0.1}}
+                                >
+                                    <Card className="p-4 flex flex-col items-center justify-center gap-2 text-center cursor-pointer hover:bg-muted h-full">
+                                        <div className="p-3 bg-primary/10 rounded-full">
+                                            <pkg.icon className="w-6 h-6 text-primary" />
+                                        </div>
+                                        <p className="font-semibold text-sm">{pkg.title}</p>
+                                        <p className="text-xs text-muted-foreground">{pkg.description}</p>
+                                    </Card>
+                                </motion.div>
+                           ))}
+                        </div>
+                    </div>
+                    
+                    <div className="space-y-2 pt-6">
+                        <h3 className="font-bold text-lg">Recent Reports</h3>
+                        {recentReports.map((report, index) => (
+                            <motion.div 
+                                key={report.test}
+                                variants={itemVariants}
+                                initial="hidden"
+                                animate="visible"
+                                transition={{delay: 0.7 + index * 0.1}}
+                            >
+                                <div className="flex items-center gap-4 p-3 rounded-lg hover:bg-card cursor-pointer transition-colors">
+                                    <div className="p-3 bg-card rounded-full border">
+                                        <FlaskConical className="w-5 h-5 text-muted-foreground" />
+                                    </div>
+                                    <div className="flex-1">
+                                        <p className="font-semibold">{report.test}</p>
+                                        <p className="text-sm text-muted-foreground">{report.lab}</p>
+                                    </div>
+                                    <div className="text-right">
+                                        <p className="text-sm font-semibold">{report.date}</p>
+                                    </div>
+                                </div>
+                            </motion.div>
                         ))}
-                    </CarouselContent>
-                </Carousel>
-            </motion.div>
-
-
-            <motion.div variants={itemVariants} className="space-y-4">
-                <h3 className="font-bold text-lg">Popular Health Packages</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                    {popularPackages.map((pkg, index) => (
-                        <Card key={pkg.name} className="flex flex-col">
-                            <CardHeader>
-                                <CardTitle className="text-lg">{pkg.name}</CardTitle>
-                                <CardDescription>{pkg.tests} included</CardDescription>
-                            </CardHeader>
-                            <CardContent className="flex-1">
-                                <p className="text-2xl font-bold">{pkg.price}</p>
-                                <p className="text-sm text-muted-foreground line-through">{pkg.oldPrice}</p>
-                            </CardContent>
-                             <CardFooter>
-                                <Button className="w-full" variant="outline">View Details</Button>
-                            </CardFooter>
-                        </Card>
-                    ))}
-                </div>
-            </motion.div>
-
-            <motion.div variants={itemVariants} className="space-y-4">
-                 <h3 className="font-bold text-lg">Featured Labs</h3>
-                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                     {featuredLabs.map((lab, index) => (
-                         <Card key={lab.name} className="p-4 flex items-center gap-4">
-                             <div className="w-16 h-16 rounded-lg bg-white flex items-center justify-center border">
-                                <Image src={lab.logo} alt={`${lab.name} Logo`} width={50} height={50} objectFit="contain" data-ai-hint="lab logo" />
-                             </div>
-                             <div className="flex-1">
-                                <p className="font-bold">{lab.name}</p>
-                                <Badge variant="secondary" className="mt-1">{lab.accreditation}</Badge>
-                             </div>
-                         </Card>
-                     ))}
-                 </div>
-            </motion.div>
+                    </div>
+                </motion.div>
+            </div>
         </motion.div>
     );
 }
-
