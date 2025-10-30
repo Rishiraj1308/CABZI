@@ -16,8 +16,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { useToast } from '@/hooks/use-toast'
 import { doc, updateDoc, GeoPoint, serverTimestamp, onSnapshot, collection, query, where, Timestamp } from 'firebase/firestore'
-import { useFirebase, useMessaging } from '@/firebase/client-provider'
-import { onMessage } from 'firebase/messaging'
+import { useFirebase } from '@/firebase/client-provider'
 import dynamic from 'next/dynamic'
 import type { JobRequest, RideData } from '@/lib/types'
 import { AnimatePresence, motion } from 'framer-motion'
@@ -66,7 +65,6 @@ export default function DriverDashboardPage() {
     const { partnerData, isLoading: isDriverLoading } = useDriver(); 
 
     const { db } = useFirebase();
-    const messaging = useMessaging();
     const { toast } = useToast();
     const liveMapRef = useRef<any>(null);
 
@@ -79,41 +77,38 @@ export default function DriverDashboardPage() {
         }
     }, []);
 
-    // Listen for new ride requests via FCM
+    // Listen for new ride requests directly from Firestore
     useEffect(() => {
-        if (!messaging || !isOnline || activeRide || !partnerData?.id) {
-            return;
-        }
+        if (!db || !isOnline || activeRide) return;
 
-        const unsubscribe = onMessage(messaging, (payload) => {
-            console.log('FCM Message received in driver dashboard.', payload);
-            const { type, rideId, ...jobData } = payload.data || {};
+        const q = query(
+            collection(db, "rides"),
+            where("status", "==", "searching")
+        );
 
-            if(type === 'new_ride_request' && rideId) {
-                // Critical Fix: Parse the JSON stringified location data
-                const newJobRequest: JobRequest = {
-                    id: rideId,
-                    ...jobData,
-                    pickup: { address: jobData.pickupAddress, location: JSON.parse(jobData.pickupLocation || '{}') },
-                    destination: { address: jobData.destinationAddress, location: JSON.parse(jobData.destinationLocation || '{}') },
-                    fare: parseFloat(jobData.fare),
-                    createdAt: new Timestamp(parseInt(jobData.createdAt) / 1000, 0),
-                } as JobRequest;
-                
-                // Add to the front of the queue if not already present
-                setAvailableJobs(prevJobs => {
-                    if (prevJobs.some(job => job.id === newJobRequest.id)) {
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            snapshot.docChanges().forEach((change) => {
+                if (change.type === "added") {
+                    const newJobData = { id: change.doc.id, ...change.doc.data() } as JobRequest;
+                    
+                    // Add job to queue if it's not already there
+                    setAvailableJobs(prevJobs => {
+                        if (!prevJobs.some(job => job.id === newJobData.id)) {
+                             notificationSoundRef.current?.play().catch(e => console.error("Audio play failed:", e));
+                            return [newJobData, ...prevJobs];
+                        }
                         return prevJobs;
-                    }
-                    return [newJobRequest, ...prevJobs];
-                });
-
-                notificationSoundRef.current?.play().catch(e => console.error("Audio play failed:", e));
-            }
+                    });
+                }
+                if (change.type === "removed" || (change.type === "modified" && change.doc.data().status !== 'searching')) {
+                    setAvailableJobs(prevJobs => prevJobs.filter(job => job.id !== change.doc.id));
+                }
+            });
         });
 
         return () => unsubscribe();
-    }, [messaging, isOnline, partnerData, activeRide]);
+    }, [db, isOnline, activeRide]);
+
 
     useEffect(() => {
         // This effect is responsible for managing the countdown timer for the oldest job request.
@@ -314,5 +309,3 @@ export default function DriverDashboardPage() {
         </div>
     );
 }
-
-    
