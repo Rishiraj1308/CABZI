@@ -87,7 +87,9 @@ export default function DriverDashboardPage() {
         );
 
         const unsubscribe = onSnapshot(q, (snapshot) => {
+             console.log("Found rides:", snapshot.size);
             snapshot.docChanges().forEach((change) => {
+                 console.log(change.doc.id, change.doc.data());
                 if (change.type === "added") {
                     const newJobData = { id: change.doc.id, ...change.doc.data() } as JobRequest;
                     
