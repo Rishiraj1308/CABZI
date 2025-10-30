@@ -6,7 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Car, Wrench, Ambulance, Calendar, FlaskConical } from 'lucide-react';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'framer-motion';
+import { MotionDiv } from '@/components/ui/motion-div';
 import { useFirebase } from '@/firebase/client-provider';
 import { getDoc, doc, onSnapshot, query, collection, where } from 'firebase/firestore';
 import type { RideData, AmbulanceCase, GarageRequest, ClientSession } from '@/lib/types';
