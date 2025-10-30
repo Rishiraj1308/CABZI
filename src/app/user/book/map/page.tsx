@@ -3,7 +3,7 @@
 
 import React, { useState, useEffect, useCallback, Suspense } from 'react'
 import { Button } from '@/components/ui/button'
-import { ArrowLeft, MapPin, X } from 'lucide-react'
+import { ArrowLeft, MapPin, X, Shield, Phone, Siren, Clock, IndianRupee } from 'lucide-react'
 import { getRoute, searchPlace } from '@/lib/routing'
 import dynamic from 'next/dynamic'
 import { useRouter, useSearchParams } from 'next/navigation'
@@ -15,7 +15,7 @@ import { useToast } from '@/hooks/use-toast'
 import type { RideData, ClientSession } from '@/lib/types'
 import { cn } from '@/lib/utils'
 import { BikeIcon, AutoIcon, CabIcon } from '@/components/icons'
-import { HeartHandshake, Clock, IndianRupee, Shield } from 'lucide-react'
+import { HeartHandshake } from 'lucide-react'
 import RideStatus from '@/components/ride-status'
 import {
   AlertDialog,
