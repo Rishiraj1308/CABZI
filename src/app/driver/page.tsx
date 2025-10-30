@@ -28,7 +28,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { useDriver } from './layout'
 import Image from 'next/image'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
-import { Input } from '../ui/input'
+import { Input } from '@/components/ui/input'
 
 const LiveMap = dynamic(() => import('@/components/live-map'), { 
     ssr: false,
@@ -319,3 +319,4 @@ export default function DriverDashboardPage() {
         </div>
     );
 }
+
