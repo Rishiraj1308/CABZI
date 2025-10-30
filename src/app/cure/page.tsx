@@ -1,7 +1,8 @@
+
 'use client'
 
 import React from 'react'
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
+import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import HospitalMissionControl from './hospital-dashboard'
 import ClinicDashboard from './clinic-dashboard'

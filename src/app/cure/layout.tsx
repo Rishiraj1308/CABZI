@@ -1,3 +1,4 @@
+
 'use client'
 
 import React, { useState, useEffect, useCallback, createContext, useContext } from 'react'
@@ -113,82 +114,81 @@ export default function CureLayout({ children }: { children: React.ReactNode }) 
   }, [auth, router, toast]);
 
   useEffect(() => {
-    const isOnboardingPage = pathname.includes('/cure/onboarding');
-    
     if (isUserLoading || !db) return;
 
+    const isOnboardingPage = pathname.includes('/cure/onboarding');
+
     if (!user) {
-        if (!isOnboardingPage) router.replace('/login?role=driver');
-        setIsSessionLoading(false);
-        return;
+      if (!isOnboardingPage) router.replace('/login?role=cure');
+      setIsSessionLoading(false);
+      return;
     }
 
     const sessionString = localStorage.getItem('curocity-cure-session');
     if (!sessionString) {
-        if (!isOnboardingPage) handleLogout();
-        setIsSessionLoading(false);
-        return;
+      if (!isOnboardingPage) handleLogout();
+      setIsSessionLoading(false);
+      return;
     }
 
     let unsubPartner: (() => void) | null = null;
     let isSubscribed = true;
 
     try {
-        const sessionData = JSON.parse(sessionString);
-        if (!sessionData.role || sessionData.role !== 'cure' || !sessionData.partnerId) {
-            if (!isOnboardingPage) handleLogout();
-            setIsSessionLoading(false);
-            return;
-        }
-
-        const partnerRef = doc(db, 'ambulances', sessionData.partnerId);
-        unsubPartner = onSnapshot(partnerRef, (docSnap) => {
-            if (!isSubscribed) return;
-            if (docSnap.exists()) {
-                const data = docSnap.data();
-                const partner: PartnerData = { id: docSnap.id, ...data } as PartnerData;
-                setPartnerData(partner);
-
-                const isHospital = partner.businessType?.toLowerCase().includes('hospital');
-                const menu = isHospital
-                    ? [
-                        { href: '/cure', label: 'Mission Control', icon: LayoutDashboard },
-                        { href: '/cure/cases', label: 'Case History', icon: History },
-                        { href: '/cure/insurance', label: 'Insurance', icon: ShieldCheck },
-                        { href: '/cure/billing', label: 'Billing', icon: Landmark },
-                        { href: '/cure/analytics', label: 'Analytics', icon: BarChart },
-                        { href: '/cure/subscription', label: 'Subscription', icon: Gem },
-                      ]
-                    : [
-                        { href: '/cure', label: 'Dashboard', icon: LayoutDashboard },
-                        { href: '/cure/billing', label: 'Billing', icon: Landmark },
-                        { href: '/cure/subscription', label: 'Subscription', icon: Gem },
-                      ];
-                setNavItems(menu);
-            } else {
-                if (!isOnboardingPage) handleLogout();
-            }
-            setIsSessionLoading(false);
-        }, (error) => {
-             console.error("CureLayout onSnapshot error:", error);
-             if (!isOnboardingPage) handleLogout();
-             setIsSessionLoading(false);
-        });
-
-    } catch (e) {
-        console.error("CureLayout session parsing error:", e);
+      const sessionData = JSON.parse(sessionString);
+      if (!sessionData.role || sessionData.role !== 'cure' || !sessionData.partnerId) {
         if (!isOnboardingPage) handleLogout();
         setIsSessionLoading(false);
+        return;
+      }
+
+      const partnerRef = doc(db, 'ambulances', sessionData.partnerId);
+      unsubPartner = onSnapshot(partnerRef, (docSnap) => {
+        if (!isSubscribed) return;
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          const partner: PartnerData = { id: docSnap.id, ...data } as PartnerData;
+          setPartnerData(partner);
+
+          const isHospital = partner.businessType?.toLowerCase().includes('hospital');
+          const menu = isHospital
+            ? [
+                { href: '/cure', label: 'Mission Control', icon: LayoutDashboard },
+                { href: '/cure/cases', label: 'Case History', icon: History },
+                { href: '/cure/insurance', label: 'Insurance', icon: ShieldCheck },
+                { href: '/cure/billing', label: 'Billing', icon: Landmark },
+                { href: '/cure/analytics', label: 'Analytics', icon: BarChart },
+                { href: '/cure/subscription', label: 'Subscription', icon: Gem },
+              ]
+            : [
+                { href: '/cure', label: 'Dashboard', icon: LayoutDashboard },
+                { href: '/cure/billing', label: 'Billing', icon: Landmark },
+                { href: '/cure/subscription', label: 'Subscription', icon: Gem },
+              ];
+          setNavItems(menu);
+        } else {
+          if (!isOnboardingPage) handleLogout();
+        }
+        setIsSessionLoading(false);
+      }, (error) => {
+        console.error("CureLayout onSnapshot error:", error);
+        if (!isOnboardingPage) handleLogout();
+        setIsSessionLoading(false);
+      });
+    } catch (e) {
+      console.error("CureLayout session parsing error:", e);
+      if (!isOnboardingPage) handleLogout();
+      setIsSessionLoading(false);
     }
     
     return () => {
-        isSubscribed = false;
-        if (unsubPartner) unsubPartner();
+      isSubscribed = false;
+      if (unsubPartner) unsubPartner();
     };
+  }, [db, user, isUserLoading, pathname, router, handleLogout]);
 
-  }, [db, user, isUserLoading, handleLogout, pathname, router]);
   
-  if (pathname === '/cure/onboarding') {
+  if (pathname.includes('/cure/onboarding')) {
     return (
       <CureContext.Provider value={{ partnerData, isLoading: isSessionLoading }}>
         {children}
@@ -231,11 +231,9 @@ export default function CureLayout({ children }: { children: React.ReactNode }) 
             <Link
               href="/"
               className="flex items-center gap-2 text-lg font-semibold md:text-base"
-              passHref legacyBehavior>
-              <a>
-                  <BrandLogo />
-                  <span className="ml-2 text-xs font-semibold px-2 py-1 rounded-full bg-red-500/20 text-red-600">Cure</span>
-              </a>
+              passHref>
+              <BrandLogo />
+              <span className="ml-2 text-xs font-semibold px-2 py-1 rounded-full bg-red-500/20 text-red-600">Cure</span>
             </Link>
               <div className="w-px bg-border h-6 mx-2"></div>
               <CureNav navItems={navItems} />

@@ -1,3 +1,4 @@
+
 'use client'
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
@@ -37,6 +38,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Progress } from '@/components/ui/progress';
 import { Switch } from '@/components/ui/switch';
 import { cn } from '@/lib/utils';
+import { useCurePartner } from './layout';
 
 const StatCard = ({ title, value, icon: Icon, isLoading }: { title: string, value: string, icon: React.ElementType, isLoading?: boolean }) => (
     <Card>
@@ -100,48 +102,20 @@ const ClinicDashboard = () => {
     const [generatedCreds, setGeneratedCreds] = useState<{ id: string, pass: string, role: string } | null>(null);
     const [isCredsDialogOpen, setIsCredsDialogOpen] = useState(false);
     const [currentFormStep, setCurrentFormStep] = useState(1);
+    const { partnerData } = useCurePartner();
     const { user, db } = useFirebase();
     const { toast } = useToast();
 
-    const [hospitalId, setHospitalId] = useState<string | null>(null);
-    const [hospitalName, setHospitalName] = useState<string | null>(null);
-    
     const handleLogout = useCallback(() => {
         // Placeholder for logout logic
     }, []);
 
     useEffect(() => {
-        if (!db || !user) {
+        if (!db || !user || !partnerData) {
             setIsLoading(false);
             return;
         }
 
-        const sessionStr = localStorage.getItem('curocity-cure-session');
-        if (!sessionStr) {
-             handleLogout();
-             setIsLoading(false);
-             return;
-        }
-        
-        let sessionData;
-        try {
-            sessionData = JSON.parse(sessionStr);
-        } catch (e) {
-            handleLogout();
-            setIsLoading(false);
-            return;
-        }
-
-        const { partnerId, name } = sessionData;
-        setHospitalId(partnerId);
-        setHospitalName(name);
-
-        if (!partnerId) {
-            toast({ variant: 'destructive', title: 'Error', description: 'Partner ID is missing from session.' });
-            setIsLoading(false);
-            return;
-        }
-        
         let isSubscribed = true;
 
         const todayStart = startOfDay(new Date());
@@ -149,7 +123,7 @@ const ClinicDashboard = () => {
 
         const apptQuery = query(
             collection(db, 'appointments'),
-            where('hospitalId', '==', partnerId),
+            where('hospitalId', '==', partnerData.id),
             where('appointmentDate', '>=', todayStart),
             where('appointmentDate', '<=', todayEnd),
             orderBy('appointmentDate', 'asc')
@@ -167,7 +141,7 @@ const ClinicDashboard = () => {
             }
         });
         
-        const doctorsQuery = query(collection(db, `ambulances/${partnerId}/doctors`));
+        const doctorsQuery = query(collection(db, `ambulances/${partnerData.id}/doctors`));
         const unsubDoctors = onSnapshot(doctorsQuery, (snapshot) => {
             if (isSubscribed) {
                 const doctorsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Doctor));
@@ -182,7 +156,7 @@ const ClinicDashboard = () => {
             unsubDoctors();
         };
 
-    }, [db, user, toast, handleLogout]);
+    }, [db, user, toast, partnerData]);
     
     const stats = useMemo(() => {
         const checkedInCount = appointments.filter(a => a.status === 'In Queue').length;
@@ -208,7 +182,7 @@ const ClinicDashboard = () => {
 
     const handleAddDoctor = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
-        if (!db || !hospitalId || !hospitalName) {
+        if (!db || !partnerData) {
             toast({ variant: 'destructive', title: 'Error', description: 'Database or hospital information is missing.' });
             return;
         }
@@ -237,7 +211,7 @@ const ClinicDashboard = () => {
             
             const batch = writeBatch(db);
             
-            const hospitalDoctorsRef = collection(db, `ambulances/${hospitalId}/doctors`);
+            const hospitalDoctorsRef = collection(db, `ambulances/${partnerData.id}/doctors`);
             const newDoctorDocRefInHospital = doc(hospitalDoctorsRef);
             const doctorData = { 
                 id: newDoctorDocRefInHospital.id, 
@@ -245,7 +219,7 @@ const ClinicDashboard = () => {
                 partnerId, 
                 createdAt: serverTimestamp(), 
                 docStatus: 'Pending', 
-                hospitalId, hospitalName, 
+                hospitalId: partnerData.id, hospitalName: partnerData.name, 
                 isAvailable: false 
             };
             
@@ -255,7 +229,7 @@ const ClinicDashboard = () => {
             batch.set(newDoctorDocRefGlobal, {
                  id: newDoctorDocRefInHospital.id, 
                  name, phone, email, partnerId, password,
-                 hospitalId, hospitalName,
+                 hospitalId: partnerData.id, hospitalName: partnerData.name,
                  createdAt: serverTimestamp(),
                  status: 'pending_verification' 
             });
@@ -278,11 +252,11 @@ const ClinicDashboard = () => {
     };
     
     const handleDeleteDoctor = async (doctorId: string, doctorName: string) => {
-        if (!db || !hospitalId) return;
+        if (!db || !partnerData) return;
         
         const batch = writeBatch(db);
 
-        const hospitalDoctorRef = doc(db, `ambulances/${hospitalId}/doctors`, doctorId);
+        const hospitalDoctorRef = doc(db, `ambulances/${partnerData.id}/doctors`, doctorId);
         batch.delete(hospitalDoctorRef);
 
         const globalDoctorRef = doc(db, 'doctors', doctorId);
@@ -297,8 +271,8 @@ const ClinicDashboard = () => {
     };
 
     const handleToggleAvailability = async (doctorId: string, isAvailable: boolean) => {
-        if (!db || !hospitalId) return;
-        const doctorRef = doc(db, `ambulances/${hospitalId}/doctors`, doctorId);
+        if (!db || !partnerData) return;
+        const doctorRef = doc(db, `ambulances/${partnerData.id}/doctors`, doctorId);
         try {
             await updateDoc(doctorRef, { isAvailable });
         } catch (error) {

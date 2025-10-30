@@ -51,10 +51,9 @@ function PartnerProvider({ children, partnerType }: { children: React.ReactNode,
     const [isLoading, setIsLoading] = useState(true);
     const { db, user, isUserLoading } = useFirebase();
     const router = useRouter();
-    const { toast } = useToast();
     const pathname = usePathname();
 
-    const handleLogout = useCallback(() => {
+     const handleLogout = useCallback(() => {
         if (partnerData?.id && db) {
             updateDoc(doc(db, partnerType === 'driver' ? 'partners' : 'mechanics', partnerData.id), { 
                 isOnline: false, 

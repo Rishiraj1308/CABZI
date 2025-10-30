@@ -197,18 +197,18 @@ useEffect(() => {
         return;
     }
 
-    const session = localStorage.getItem('curocity-session');
-    if (!session) {
-        if (!isOnboardingPage) handleLogout();
-        setIsSessionLoading(false);
-        return;
-    }
-
     let unsubscribe: (() => void) | null = null;
     let isSubscribed = true;
 
     try {
-        const sessionData = JSON.parse(session);
+        const sessionString = localStorage.getItem('curocity-session');
+        if (!sessionString) {
+            if (!isOnboardingPage) handleLogout();
+            setIsSessionLoading(false);
+            return;
+        }
+
+        const sessionData = JSON.parse(sessionString);
         if (!sessionData.role || sessionData.role !== 'driver' || !sessionData.partnerId) {
             if (!isOnboardingPage) handleLogout();
             setIsSessionLoading(false);
@@ -266,7 +266,7 @@ useEffect(() => {
     }
   }, [partnerData, db]);
   
-  if (pathname === '/driver/onboarding') {
+  if (pathname.includes('/onboarding')) {
     return <>{children}<Toaster /></>
   }
   
