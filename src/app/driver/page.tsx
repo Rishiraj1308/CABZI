@@ -71,13 +71,11 @@ export default function DriverDashboardPage() {
       return R * c; // distance in km
     }, []);
 
-    // New onSnapshot listener for ride requests
+    // Stable listener for new ride requests
     useEffect(() => {
         if (!db || !isOnline || activeRide || !partnerData?.currentLocation || !partnerData.vehicleType) {
             return;
         }
-
-        let isSubscribed = true;
 
         const twentySecondsAgo = Timestamp.fromMillis(Date.now() - 20000);
         const ridesRef = collection(db, 'rides');
@@ -87,7 +85,7 @@ export default function DriverDashboardPage() {
             where('createdAt', '>=', twentySecondsAgo)
         );
 
-        const vehicleTypePrefix = partnerData.vehicleType.split(' ')[0]; // e.g., "Cab" from "Cab (Lite)"
+        const vehicleTypePrefix = partnerData.vehicleType.split(' ')[0];
         q = query(q, where('rideType', '==', vehicleTypePrefix));
         
         if (partnerData.isCabziPinkPartner) {
@@ -95,8 +93,6 @@ export default function DriverDashboardPage() {
         }
 
         const unsubscribe = onSnapshot(q, (snapshot) => {
-            if (!isSubscribed) return;
-
             const newJobs: JobRequest[] = [];
             snapshot.docChanges().forEach((change) => {
                 if (change.type === 'added') {
@@ -118,14 +114,9 @@ export default function DriverDashboardPage() {
                      return [...uniqueNewJobs, ...prevJobs].sort((a,b) => b.createdAt.toMillis() - a.createdAt.toMillis());
                  });
             }
-        }, (error) => {
-             console.error("Error listening to ride requests:", error);
         });
 
-        return () => {
-            isSubscribed = false;
-            unsubscribe();
-        };
+        return () => unsubscribe();
     }, [db, isOnline, activeRide, partnerData?.currentLocation, partnerData?.vehicleType, partnerData?.isCabziPinkPartner, getDistance]);
 
     const handleOnlineStatusChange = async (checked: boolean) => {

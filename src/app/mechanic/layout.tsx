@@ -26,7 +26,7 @@ import { useToast } from '@/hooks/use-toast'
 import BrandLogo from '@/components/brand-logo'
 import { useTheme } from 'next-themes'
 import { useFirebase } from '@/firebase/client-provider'
-import { doc, updateDoc, serverTimestamp } from 'firebase/firestore'
+import { doc, updateDoc, serverTimestamp, onSnapshot } from 'firebase/firestore'
 import { MotionDiv } from '@/components/ui/motion-div'
 import { Skeleton } from '@/components/ui/skeleton'
 
@@ -86,12 +86,15 @@ function PartnerProvider({ children, partnerType }: { children: React.ReactNode,
         }
 
         let unsubscribe: (() => void) | null = null;
+        let isSubscribed = true;
+        
         try {
             const sessionData = JSON.parse(session);
             const collectionName = partnerType === 'driver' ? 'partners' : 'mechanics';
             const partnerDocRef = doc(db, collectionName, sessionData.partnerId);
 
             unsubscribe = onSnapshot(partnerDocRef, (docSnap) => {
+                if (!isSubscribed) return;
                 if (docSnap.exists()) {
                     setPartnerData({ id: docSnap.id, ...docSnap.data() });
                 } else {
@@ -109,6 +112,7 @@ function PartnerProvider({ children, partnerType }: { children: React.ReactNode,
         }
         
         return () => {
+            isSubscribed = false;
             if (unsubscribe) unsubscribe();
         };
 
@@ -318,5 +322,3 @@ export default function MechanicLayout({ children }: { children: React.ReactNode
         </PartnerProvider>
     )
 }
-
-    

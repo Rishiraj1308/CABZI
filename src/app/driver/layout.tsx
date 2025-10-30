@@ -204,7 +204,7 @@ useEffect(() => {
         return;
     }
 
-    let unsubPartner: (() => void) | undefined;
+    let unsubscribe: (() => void) | null = null;
     let isSubscribed = true;
 
     try {
@@ -216,7 +216,7 @@ useEffect(() => {
         }
 
         const partnerDocRef = doc(db, 'partners', sessionData.partnerId);
-        unsubPartner = onSnapshot(partnerDocRef, (docSnap) => {
+        unsubscribe = onSnapshot(partnerDocRef, (docSnap) => {
             if (!isSubscribed) return;
 
             if (docSnap.exists()) {
@@ -245,7 +245,7 @@ useEffect(() => {
   
     return () => {
         isSubscribed = false;
-        if (unsubPartner) unsubPartner();
+        if (unsubscribe) unsubscribe();
     };
 }, [isAuthLoading, user, db, handleLogout, pathname, router, theme, setTheme]);
 
