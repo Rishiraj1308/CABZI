@@ -422,7 +422,6 @@ export default function RideStatus({
                     </div>
                     <div>
                     <CardTitle className="text-lg">{getActiveRideTitle()}</CardTitle>
-                    {ride.status !== 'searching' && <CardDescription>ID: {ride.id.substring(0, 8)}...</CardDescription>}
                     </div>
                 </div>
                 <Dialog>
