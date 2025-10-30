@@ -44,6 +44,8 @@ export default function BookRidePage() {
     const [searchResults, setSearchResults] = useState<any[]>([]);
     const [isSearching, setIsSearching] = useState(false);
 
+    // This hook fetches the user's real address but we will display static text.
+    // The real address is used on the next page.
     const getAddressFromCoords = useCallback(async (lat: number, lon: number) => {
         try {
             const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`);
@@ -59,9 +61,13 @@ export default function BookRidePage() {
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(
                 async (position) => {
+                    // We fetch the address to ensure it's ready for the next step,
+                    // but we keep the UI text as "Current Location".
                     const { latitude, longitude } = position.coords;
                     const address = await getAddressFromCoords(latitude, longitude);
-                    setPickupAddress(address);
+                    // The state `pickupAddress` is now just for display. The actual location
+                    // is handled on the map page.
+                    setPickupAddress('Current Location');
                 },
                 () => {
                     setPickupAddress('Location access denied');
@@ -143,7 +149,7 @@ export default function BookRidePage() {
                                 {pickupAddress === 'Locating...' ? (
                                     <Skeleton className="h-5 w-48" />
                                 ) : (
-                                    <p className="font-semibold text-base text-muted-foreground truncate">{pickupAddress}</p>
+                                    <p className="font-semibold text-base text-muted-foreground truncate">Current Location</p>
                                 )}
                             </div>
                             <div className="border-l-2 border-dotted border-border h-4 ml-[13px] my-1"></div>
