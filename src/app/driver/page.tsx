@@ -73,7 +73,7 @@ export default function DriverDashboardPage() {
 
     // New onSnapshot listener for ride requests
     useEffect(() => {
-        if (!db || !isOnline || activeRide) return;
+        if (!db || !isOnline || activeRide || !partnerData) return;
 
         const twentySecondsAgo = Timestamp.fromMillis(Date.now() - 20000);
         const ridesRef = collection(db, 'rides');
@@ -82,9 +82,10 @@ export default function DriverDashboardPage() {
             where('status', '==', 'searching'),
             where('createdAt', '>=', twentySecondsAgo)
         );
-        // Add rideType filter if vehicleType is available
-        if (partnerData?.vehicleType) {
-            q = query(q, where('rideType', '==', partnerData.vehicleType));
+
+        if (partnerData.vehicleType) {
+            const vehicleTypePrefix = partnerData.vehicleType.split(' ')[0]; // e.g., "Cab" from "Cab (Lite)"
+            q = query(q, where('rideType', '==', vehicleTypePrefix));
         }
 
         const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -121,7 +122,7 @@ export default function DriverDashboardPage() {
         });
 
         return () => unsubscribe();
-    }, [db, isOnline, activeRide, partnerData?.currentLocation, partnerData?.vehicleType, getDistance]);
+    }, [db, isOnline, activeRide, partnerData, getDistance]);
 
     const handleOnlineStatusChange = async (checked: boolean) => {
         if (!partnerData || !db) return;
@@ -245,3 +246,5 @@ export default function DriverDashboardPage() {
         </div>
     );
 }
+
+    

@@ -26,7 +26,7 @@ import { useToast } from '@/hooks/use-toast'
 import BrandLogo from '@/components/brand-logo'
 import { useTheme } from 'next-themes'
 import { useFirebase } from '@/firebase/client-provider'
-import { doc, setDoc, serverTimestamp, GeoPoint, type DocumentReference, onSnapshot, getDoc } from 'firebase/firestore'
+import { doc, setDoc, serverTimestamp, type DocumentReference, onSnapshot } from 'firebase/firestore'
 import { Badge } from '@/components/ui/badge'
 import { MotionDiv } from '@/components/ui/motion-div'
 import { NotificationsProvider } from '@/context/NotificationContext';
@@ -410,3 +410,5 @@ export default function DriverLayout({ children }: { children: React.ReactNode }
         </NotificationsProvider>
     );
 }
+
+    
