@@ -24,6 +24,7 @@ import {
   where,
   onSnapshot,
   Timestamp,
+  GeoPoint
 } from 'firebase/firestore'
 import { useFirebase } from '@/firebase/client-provider'
 import dynamic from 'next/dynamic'
@@ -193,6 +194,10 @@ export default function DriverDashboardPage() {
       toast({ variant: 'destructive', title: 'Invalid PIN', description: 'Please enter the correct 4-digit PIN.' })
     }
   }
+  
+  const driverLocation = partnerData?.currentLocation
+    ? { lat: partnerData.currentLocation.latitude, lon: partnerData.currentLocation.longitude }
+    : undefined;
 
   if (activeRide) {
     return (
@@ -280,9 +285,10 @@ export default function DriverDashboardPage() {
               
               <div className="h-40 w-full rounded-md overflow-hidden border">
                 <LiveMap
+                  driverLocation={driverLocation}
                   riderLocation={jobRequest.pickup?.location ? { lat: jobRequest.pickup.location.latitude, lon: jobRequest.pickup.location.longitude } : undefined}
                   destinationLocation={jobRequest.destination?.location ? { lat: jobRequest.destination.location.latitude, lon: jobRequest.destination.location.longitude } : undefined}
-                  isTripInProgress={false} // Only show pickup initially
+                  isTripInProgress={false}
                   zoom={11}
                 />
               </div>
