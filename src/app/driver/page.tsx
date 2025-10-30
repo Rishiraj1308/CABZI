@@ -1,4 +1,3 @@
-
 'use client'
 
 import React, { useState, useEffect, useRef, useCallback } from 'react'
@@ -74,58 +73,58 @@ export default function DriverDashboardPage() {
     useEffect(() => {
         if (typeof window !== 'undefined') {
             notificationSoundRef.current = new Audio('/sounds/notification.mp3');
+             const unlockSound = () => {
+                notificationSoundRef.current?.play().then(() => {
+                  notificationSoundRef.current?.pause();
+                  if(notificationSoundRef.current) notificationSoundRef.current.currentTime = 0;
+                  window.removeEventListener('click', unlockSound);
+                });
+              };
+              window.addEventListener('click', unlockSound);
         }
     }, []);
 
     // Firestore listener for new ride requests
     useEffect(() => {
-        if (!db || !isOnline || activeRide) {
-            setAvailableJobs([]); // Clear jobs if offline or on a ride
-            return;
-        }
+      if (!db || !isOnline || activeRide) {
+        setAvailableJobs([]);
+        return;
+      }
 
-        console.log("Setting up Firestore listener for 'searching' rides...");
+      console.log("🚀 Firestore listener started...");
 
-        const q = query(
-            collection(db, "rides"),
-            where("status", "==", "searching")
-        );
+      const q = query(collection(db, "rides"), where("status", "==", "searching"));
+      const unsub = onSnapshot(q, (snapshot) => {
+        console.log("📡 Listener update:", snapshot.size);
 
-        const unsubscribe = onSnapshot(q, (snapshot) => {
-            console.log("Rides listener fired. Found documents:", snapshot.size);
-            const newJobs: JobRequest[] = [];
-            snapshot.forEach((doc) => {
-                const rideData = doc.data();
-                console.log("Processing doc:", doc.id, rideData);
-                newJobs.push({
-                  id: doc.id,
-                  ...rideData,
-                  pickup: {
-                    address: rideData.pickup.address,
-                    location: rideData.pickup.location,
-                  },
-                  destination: {
-                    address: rideData.destination.address,
-                    location: rideData.destination.location,
-                  },
-                  createdAt: rideData.createdAt,
-                } as JobRequest);
-            });
-            
-            // If new jobs are found and we weren't showing any before, play a sound.
-            if (newJobs.length > 0 && availableJobs.length === 0) {
-                 notificationSoundRef.current?.play().catch(e => console.error("Audio play failed:", e));
-            }
-            setAvailableJobs(newJobs);
-        }, (error) => {
-            console.error("Firestore listener error:", error);
+        const jobs: JobRequest[] = [];
+        snapshot.forEach((doc) => {
+          const rideData = doc.data();
+          console.log("📄 Ride detected:", doc.id, rideData);
+          jobs.push({
+            id: doc.id,
+            ...rideData,
+            pickup: rideData.pickup,
+            destination: rideData.destination,
+            createdAt: rideData.createdAt,
+          } as JobRequest);
         });
 
-        return () => {
-            console.log("Cleaning up Firestore listener.");
-            unsubscribe();
+        // Only trigger sound & popup if new jobs appear
+        // This check is flawed if multiple jobs come in, a better check is needed
+        if (jobs.length > availableJobs.length) {
+          console.log("🚨 New ride request!");
+          notificationSoundRef.current?.play().catch(e => console.warn("Sound blocked:", e));
         }
-    }, [db, isOnline, activeRide, availableJobs.length]);
+
+        setAvailableJobs(jobs);
+      });
+
+      return () => {
+        console.log("🧹 Listener cleaned up");
+        unsub();
+      };
+    }, [db, isOnline, activeRide]);
 
 
     useEffect(() => {
