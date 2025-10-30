@@ -4,7 +4,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
 import { Star, History, IndianRupee, Power, AlertTriangle, Sparkles, Eye } from 'lucide-react'
 import {
@@ -232,7 +231,6 @@ export default function DriverDashboardPage() {
                     <div className="flex justify-between items-center">
                         <div>
                             <CardTitle>Your Dashboard</CardTitle>
-                            <CardDescription>You are currently <span className={isOnline ? "font-bold text-green-600" : "font-bold text-destructive"}>{isOnline ? "Online" : "Offline"}</span>.</CardDescription>
                         </div>
                     </div>
                 </CardHeader>
