@@ -129,9 +129,9 @@ const LiveMap = forwardRef<any, LiveMapProps>((props, ref) => {
             case 'driver':
             case 'online':
             case 'on_trip':
-                iconHtml = `<div style="background-color: hsl(var(--primary)); border-radius: 9999px; padding: 4px; display:flex; align-items:center; justify-content:center; box-shadow: 0 1px 4px rgba(0,0,0,0.2); border: 1.5px solid white;"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-car"><path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9L2 12v9h2"/><path d="M7 17h10"/><circle cx="7" cy="17" r="2"/><path d="M17 17h-2"/><circle cx="17" cy="17" r="2"/></svg></div>`;
-                iconSize = [20, 20];
-                iconAnchor = [10, 10];
+                iconHtml = `<div style="width: 32px; height: 32px; transform: rotate(90deg);"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512" fill="hsl(var(--primary))" style="filter: drop-shadow(0px 2px 2px rgba(0,0,0,0.4));"><path d="M384 192c0-87.4-117-144-144-144c-30.9 0-58.5 40.2-76.8 64H128c-17.7 0-32 14.3-32 32s14.3 32 32 32h64c17.7 0 32-14.3 32-32c0-12.8-13-24-24-24H208V32c0-17.7-14.3-32-32-32H32C14.3 0 0 14.3 0 32v224c0 77.3 103.5 128 192 128s192-50.7 192-128V224c0-17.7-14.3-32-32-32s-32 14.3-32 32v32c0 23.6-26.3 48-96 48s-96-24.4-96-48V128c0-17.7 14.3-32 32-32h4.8c18.5-23.8 45.9-64 76.8-64c27 0 144 56.6 144 144v64c0 53-64 96-128 96S64 429 64 376v-32c0-17.7-14.3-32-32-32s-32 14.3-32 32v32c0 88.4 100.3 160 224 160s224-71.6 224-160V192z"/></svg></div>`;
+                iconSize = [32, 32];
+                iconAnchor = [16, 16];
                 break;
             case 'mechanic':
             case 'available':
