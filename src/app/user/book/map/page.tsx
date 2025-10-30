@@ -70,7 +70,7 @@ function BookRideMapComponent() {
     const { db, user } = useFirebase();
     const [session, setSession] = useState<ClientSession | null>(null);
     
-    const [userLocation, setUserLocation] = useState<{ lat: number; lon: number } | null>(null);
+    const [pickup, setPickup] = useState<LocationWithCoords>({ address: 'Locating...', coords: null });
     const [destination, setDestination] = useState<LocationWithCoords | null>(null);
     const [routeGeometry, setRouteGeometry] = useState(null);
     const [routeInfo, setRouteInfo] = useState<{distance: number, duration: number} | null>(null);
@@ -114,13 +114,16 @@ function BookRideMapComponent() {
         const fetchInitialData = async () => {
             // Get user's current location
             navigator.geolocation.getCurrentPosition(
-                (position) => {
+                async (position) => {
                     const coords = { lat: position.coords.latitude, lon: position.coords.longitude };
-                    setUserLocation(coords);
+                    setPickup(prev => ({ ...prev, coords }));
+                    const address = await getAddress(coords.lat, coords.lon);
+                    setPickup({ address: address || 'Current Location', coords });
                 },
                 () => {
                     // Fallback location if user denies access
-                    setUserLocation({ lat: 28.6139, lon: 77.2090 }); 
+                    const fallbackCoords = { lat: 28.6139, lon: 77.2090 };
+                    setPickup({ address: 'New Delhi, India', coords: fallbackCoords }); 
                     toast({ variant: 'destructive', title: "Location Access Denied" });
                 }
             );
@@ -143,16 +146,16 @@ function BookRideMapComponent() {
         };
 
         fetchInitialData();
-    }, [searchParams, router, toast]);
+    }, [searchParams, router, toast, getAddress]);
 
     // This effect runs only when the user's location or destination changes to calculate the route and fares.
     useEffect(() => {
-        if (!userLocation || !destination?.coords) return;
+        if (!pickup?.coords || !destination?.coords) return;
 
         const fetchRouteAndFares = async () => {
             setIsLoading(true);
             try {
-                const routeData = await getRoute(userLocation, destination.coords!);
+                const routeData = await getRoute(pickup.coords!, destination.coords!);
                 if (routeData.routes && routeData.routes.length > 0) {
                     const route = routeData.routes[0];
                     setRouteGeometry(route.geometry);
@@ -183,7 +186,7 @@ function BookRideMapComponent() {
         };
 
         fetchRouteAndFares();
-    }, [userLocation, destination, toast, session?.gender]);
+    }, [pickup, destination, toast, session?.gender]);
     
     // This effect listens for updates on the active ride.
     useEffect(() => {
@@ -228,7 +231,7 @@ function BookRideMapComponent() {
     }, [db]);
 
     const handleConfirmRide = async () => {
-       if (!userLocation || !destination?.coords || !session || !db || !routeInfo) return;
+       if (!pickup?.coords || !destination?.coords || !session || !db || !routeInfo) return;
     
         const selectedRideInfo = rideTypes.find(rt => rt.name === selectedRide);
         if (!selectedRideInfo?.fareDetails) {
@@ -243,12 +246,12 @@ function BookRideMapComponent() {
             riderId: session.userId,
             riderName: session.name,
             riderGender: session.gender,
-            pickup: { address: 'Current Location', location: new GeoPoint(userLocation.lat, userLocation.lon) },
+            pickup: { address: pickup.address, location: new GeoPoint(pickup.coords.lat, pickup.coords.lon) },
             destination: { address: destination.address, location: new GeoPoint(destination.coords.lat, destination.coords.lon) },
             rideType: selectedRide,
             status: 'searching' as const,
             fare: selectedRideInfo.fareDetails.total,
-            distance: routeInfo.distance, // Save the distance
+            distance: routeInfo.distance,
             otp: generatedOtp,
             createdAt: serverTimestamp(),
         };
@@ -284,7 +287,7 @@ function BookRideMapComponent() {
             <div className="flex-1 relative">
                 <div className="absolute inset-0 z-0">
                     <LiveMap
-                        riderLocation={userLocation}
+                        riderLocation={pickup?.coords}
                         destinationLocation={destination?.coords}
                         routeGeometry={routeGeometry}
                     />
