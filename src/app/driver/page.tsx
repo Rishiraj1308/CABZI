@@ -77,38 +77,68 @@ export default function DriverDashboardPage() {
         }
     }, []);
 
-    // Listen for new ride requests directly from Firestore
+    // Firestore listener for new ride requests
     useEffect(() => {
-        if (!db || !isOnline || activeRide) return;
+        if (!db || !isOnline || activeRide) {
+            setAvailableJobs([]); // Clear jobs if offline or on a ride
+            return;
+        }
+
+        console.log("Setting up Firestore listener for 'searching' rides...");
 
         const q = query(
             collection(db, "rides"),
             where("status", "==", "searching")
         );
-        
-        console.log("Setting up Firestore listener for 'searching' rides.");
 
         const unsubscribe = onSnapshot(q, (snapshot) => {
-             console.log(`Firestore listener fired: Found ${snapshot.size} rides with 'searching' status.`);
+            console.log(`Firestore listener fired: Found ${snapshot.size} rides with 'searching' status.`);
+            const newJobs: JobRequest[] = [];
+            let playSound = false;
+
             snapshot.docChanges().forEach((change) => {
                 if (change.type === "added") {
-                    const newJobData = { id: change.doc.id, ...change.doc.data() } as JobRequest;
-                    console.log("New ride detected:", newJobData.id);
-                    
-                    setAvailableJobs(prevJobs => {
-                        if (!prevJobs.some(job => job.id === newJobData.id)) {
-                             notificationSoundRef.current?.play().catch(e => console.error("Audio play failed:", e));
-                            // Correctly add the new job to the state
-                            return [newJobData, ...prevJobs];
-                        }
-                        return prevJobs;
-                    });
+                    console.log("New ride detected:", change.doc.id);
+                    const rideData = change.doc.data();
+                    const newJob = {
+                      id: change.doc.id,
+                      ...rideData,
+                      pickup: {
+                        address: rideData.pickupAddress,
+                        location: JSON.parse(rideData.pickupLocation),
+                      },
+                      destination: {
+                        address: rideData.destinationAddress,
+                        location: JSON.parse(rideData.destinationLocation),
+                      },
+                      createdAt: new Timestamp(parseInt(rideData.createdAt) / 1000, 0),
+                    } as JobRequest;
+                    newJobs.push(newJob);
+                    playSound = true;
                 }
+            });
+
+            if (newJobs.length > 0) {
+                 setAvailableJobs(prevJobs => {
+                    const existingIds = new Set(prevJobs.map(j => j.id));
+                    const filteredNewJobs = newJobs.filter(j => !existingIds.has(j.id));
+                    if (filteredNewJobs.length > 0) {
+                        notificationSoundRef.current?.play().catch(e => console.error("Audio play failed:", e));
+                        return [...prevJobs, ...filteredNewJobs];
+                    }
+                    return prevJobs;
+                 });
+            }
+            
+            // Handle removed or modified rides
+            snapshot.docChanges().forEach((change) => {
                 if (change.type === "removed" || (change.type === "modified" && change.doc.data().status !== 'searching')) {
                     console.log("Ride removed or status changed:", change.doc.id);
                     setAvailableJobs(prevJobs => prevJobs.filter(job => job.id !== change.doc.id));
                 }
             });
+
+
         }, (error) => {
             console.error("Firestore listener error:", error);
         });
@@ -291,4 +321,6 @@ export default function DriverDashboardPage() {
             </Dialog>
         </div>
     );
-}
+
+
+    
