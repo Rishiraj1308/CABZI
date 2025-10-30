@@ -103,14 +103,6 @@ export default function CureLayout({ children }: { children: React.ReactNode }) 
   const [isSessionLoading, setIsSessionLoading] = useState(true);
   
   const handleLogout = useCallback(() => {
-    if(partnerData && db) {
-        try {
-            const cureRef = doc(db, 'ambulances', partnerData.id);
-            updateDoc(cureRef, { isOnline: false });
-        } catch (error) {
-          console.error("Failed to update logout status for cure partner:", error);
-        }
-    }
     if (auth) auth.signOut();
     localStorage.removeItem('curocity-cure-session');
     localStorage.removeItem('curocity-session');
@@ -119,7 +111,7 @@ export default function CureLayout({ children }: { children: React.ReactNode }) 
         description: 'You have been successfully logged out.'
     });
     router.push('/');
-  }, [auth, db, partnerData, router, toast]);
+  }, [auth, router, toast]);
 
   useEffect(() => {
     if (isUserLoading || !db) return;
@@ -134,7 +126,7 @@ export default function CureLayout({ children }: { children: React.ReactNode }) 
 
     const sessionString = localStorage.getItem('curocity-cure-session');
     if (!sessionString) {
-        if (!isOnboardingPage && auth) handleLogout();
+        if (!isOnboardingPage) handleLogout();
         setIsSessionLoading(false);
         return;
     }
@@ -162,8 +154,7 @@ export default function CureLayout({ children }: { children: React.ReactNode }) 
                 const menu = isHospital
                     ? [
                         { href: '/cure', label: 'Mission Control', icon: LayoutDashboard },
-                        { href: '/cure/fleet', label: 'Fleet & Staff', icon: UsersIcon },
-                        { href: '/cure/doctors', label: 'Doctors Roster', icon: Stethoscope },
+                        { href: '/cure/cases', label: 'Case History', icon: History },
                         { href: '/cure/insurance', label: 'Insurance', icon: ShieldCheck },
                         { href: '/cure/billing', label: 'Billing', icon: Landmark },
                         { href: '/cure/analytics', label: 'Analytics', icon: BarChart },
@@ -171,15 +162,17 @@ export default function CureLayout({ children }: { children: React.ReactNode }) 
                       ]
                     : [
                         { href: '/cure', label: 'Dashboard', icon: LayoutDashboard },
-                        { href: '/cure/doctors', label: 'Appointments', icon: Stethoscope },
                         { href: '/cure/billing', label: 'Billing', icon: Landmark },
                         { href: '/cure/subscription', label: 'Subscription', icon: Gem },
                       ];
                 setNavItems(menu);
+            } else {
+                 if (!isOnboardingPage) handleLogout();
             }
             setIsSessionLoading(false);
         }, (error) => {
              console.error("CureLayout onSnapshot error:", error);
+             if (!isOnboardingPage) handleLogout();
              setIsSessionLoading(false);
         });
 
@@ -194,8 +187,7 @@ export default function CureLayout({ children }: { children: React.ReactNode }) 
         if (unsubPartner) unsubPartner();
     };
 
-  }, [db, user, isUserLoading, handleLogout, auth, pathname, router]);
-
+  }, [db, user, isUserLoading, handleLogout, pathname, router]);
   
   if (pathname === '/cure/onboarding') {
     return (
