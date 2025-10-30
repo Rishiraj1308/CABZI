@@ -7,7 +7,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from './ui/badge'
 import { CheckCircle, Landmark } from 'lucide-react'
-import { db } from '@/lib/firebase'
+import { useDb } from '@/firebase/client-provider'
 import { collection, query, where, getDocs, onSnapshot } from 'firebase/firestore'
 import { Skeleton } from './ui/skeleton'
 
@@ -26,6 +26,7 @@ interface PartnerData {
 export default function DriverIdCard() {
     const [partnerData, setPartnerData] = useState<PartnerData | null>(null);
     const [isLoading, setIsLoading] = useState(true);
+    const db = useDb();
 
     useEffect(() => {
         const session = localStorage.getItem('curocity-session');
@@ -46,7 +47,7 @@ export default function DriverIdCard() {
         } else {
             setIsLoading(false);
         }
-    }, []);
+    }, [db]);
 
     const getInitials = (name: string) => {
         if (!name) return 'D';

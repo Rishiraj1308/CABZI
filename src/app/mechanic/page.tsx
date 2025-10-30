@@ -15,7 +15,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from '@/hooks/use-toast'
 import { Skeleton } from '@/components/ui/skeleton'
 import dynamic from 'next/dynamic'
-import { db } from '@/lib/firebase'
 import { collection, query, where, onSnapshot, doc, updateDoc, getDoc, serverTimestamp, GeoPoint, limit, runTransaction, addDoc, arrayUnion, orderBy, Timestamp, FieldValue } from 'firebase/firestore'
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert'
 import { cn } from '@/lib/utils'
@@ -29,7 +28,7 @@ import {
 } from "@/components/ui/tooltip"
 import BrandLogo from '@/components/brand-logo'
 import SearchingIndicator from '@/components/ui/searching-indicator'
-import { useMessaging } from '@/firebase/client-provider'
+import { useMessaging, useFirebase } from '@/firebase/client-provider'
 import { onMessage } from 'firebase/messaging'
 
 
@@ -100,6 +99,7 @@ export default function ResQDashboard() {
   
   const { toast } = useToast();
   const messaging = useMessaging();
+  const { db } = useFirebase();
   
   // PIN lock state
   const [isEarningsVisible, setIsEarningsVisible] = useState(false);
@@ -115,6 +115,7 @@ export default function ResQDashboard() {
         return;
     }
     const { phone } = JSON.parse(session);
+    if (!db) return;
     const mechanicsRef = collection(db, "mechanics");
     const q = query(mechanicsRef, where("phone", "==", phone));
     
@@ -139,6 +140,7 @@ export default function ResQDashboard() {
 
      // Check for active job on load
     const checkActiveJob = async () => {
+      if (!db) return;
       const jobId = localStorage.getItem('activeJobId');
       if (jobId) {
         const jobRef = doc(db, 'garageRequests', jobId);
@@ -160,7 +162,7 @@ export default function ResQDashboard() {
 
     return () => unsubscribe();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [toast]);
+  }, [toast, db]);
 
    // Effect for the request countdown timer
    useEffect(() => {
@@ -259,7 +261,7 @@ export default function ResQDashboard() {
 
     // Listen for job status changes (e.g., payment completion)
   useEffect(() => {
-    if (!acceptedJob?.id) return;
+    if (!acceptedJob?.id || !db) return;
 
     const jobRef = doc(db, 'garageRequests', acceptedJob.id);
     const unsubscribe = onSnapshot(jobRef, (docSnap) => {
@@ -282,7 +284,7 @@ export default function ResQDashboard() {
     });
 
     return () => unsubscribe();
-  }, [acceptedJob, jobStatus, toast]);
+  }, [acceptedJob, jobStatus, toast, db]);
 
   const handleScanResult = (result: any, error: any) => {
       if (!!result) {
@@ -303,7 +305,7 @@ export default function ResQDashboard() {
 
 
   const handleAvailabilityChange = async (checked: boolean) => {
-    if (!mechanicData) return;
+    if (!mechanicData || !db) return;
     setIsAvailable(checked);
     const mechanicRef = doc(db, 'mechanics', mechanicData.id);
     try {
@@ -319,7 +321,7 @@ export default function ResQDashboard() {
   }
 
   const handleAcceptJob = async () => {
-    if (!jobRequest || !mechanicData) return;
+    if (!jobRequest || !mechanicData || !db) return;
      if (requestTimerRef.current) {
          clearInterval(requestTimerRef.current);
          requestTimerRef.current = null;
@@ -344,7 +346,7 @@ export default function ResQDashboard() {
   }
 
   const handleDeclineJob = async (isTimeout = false) => {
-    if (!jobRequest || !mechanicData) return;
+    if (!jobRequest || !mechanicData || !db) return;
 
     if (requestTimerRef.current) {
         clearInterval(requestTimerRef.current);
@@ -363,7 +365,7 @@ export default function ResQDashboard() {
   }
 
   const handleVerifyOtp = async () => {
-      if (enteredOtp === acceptedJob?.otp && acceptedJob) {
+      if (enteredOtp === acceptedJob?.otp && acceptedJob && db) {
           const jobRef = doc(db, 'garageRequests', acceptedJob.id);
           await updateDoc(jobRef, { status: 'in_progress' });
           localStorage.setItem('activeJobId', acceptedJob.id);
@@ -392,7 +394,7 @@ export default function ResQDashboard() {
   const totalAmount = billItems.reduce((sum, item) => sum + (parseFloat(item.amount) || 0), 0);
 
   const completeJob = async () => {
-      if (!acceptedJob || !mechanicData) return;
+      if (!acceptedJob || !mechanicData || !db) return;
       
       const filledItems = billItems.filter(item => item.description && item.amount);
       if(filledItems.length === 0) {
