@@ -73,7 +73,9 @@ export default function DriverDashboardPage() {
 
     // New onSnapshot listener for ride requests
     useEffect(() => {
-        if (!db || !isOnline || activeRide || !partnerData) return;
+        if (!db || !isOnline || activeRide || !partnerData?.currentLocation || !partnerData.vehicleType) {
+            return;
+        }
 
         let isSubscribed = true;
 
@@ -85,33 +87,26 @@ export default function DriverDashboardPage() {
             where('createdAt', '>=', twentySecondsAgo)
         );
 
-        if (partnerData.vehicleType) {
-            const vehicleTypePrefix = partnerData.vehicleType.split(' ')[0]; // e.g., "Cab" from "Cab (Lite)"
-            q = query(q, where('rideType', '==', vehicleTypePrefix));
+        const vehicleTypePrefix = partnerData.vehicleType.split(' ')[0]; // e.g., "Cab" from "Cab (Lite)"
+        q = query(q, where('rideType', '==', vehicleTypePrefix));
+        
+        if (partnerData.isCabziPinkPartner) {
+            q = query(q, where('riderGender', '==', 'female'));
         }
 
         const unsubscribe = onSnapshot(q, (snapshot) => {
             if (!isSubscribed) return;
 
             const newJobs: JobRequest[] = [];
-            let playSound = false;
-
             snapshot.docChanges().forEach((change) => {
                 if (change.type === 'added') {
                     const job = { id: change.doc.id, ...change.doc.data() } as JobRequest;
-                    
-                    if (partnerData?.currentLocation && job.pickup?.location) {
-                        const distance = getDistance(
-                            partnerData.currentLocation.latitude, partnerData.currentLocation.longitude,
-                            job.pickup.location.latitude, job.pickup.location.longitude
-                        );
-                        if (distance < 10) { 
-                           newJobs.push(job);
-                           playSound = true;
-                        }
-                    } else {
-                         newJobs.push(job);
-                         playSound = true;
+                    const distance = getDistance(
+                        partnerData.currentLocation!.latitude, partnerData.currentLocation!.longitude,
+                        job.pickup.location.latitude, job.pickup.location.longitude
+                    );
+                    if (distance < 10) { 
+                       newJobs.push({...job, distance});
                     }
                 }
             });
@@ -123,13 +118,15 @@ export default function DriverDashboardPage() {
                      return [...uniqueNewJobs, ...prevJobs].sort((a,b) => b.createdAt.toMillis() - a.createdAt.toMillis());
                  });
             }
+        }, (error) => {
+             console.error("Error listening to ride requests:", error);
         });
 
         return () => {
             isSubscribed = false;
             unsubscribe();
         };
-    }, [db, isOnline, activeRide, partnerData, getDistance]);
+    }, [db, isOnline, activeRide, partnerData?.currentLocation, partnerData?.vehicleType, partnerData?.isCabziPinkPartner, getDistance]);
 
     const handleOnlineStatusChange = async (checked: boolean) => {
         if (!partnerData || !db) return;
@@ -240,8 +237,8 @@ export default function DriverDashboardPage() {
                          <div className="absolute top-0 right-0 w-12 h-12 flex items-center justify-center rounded-full border-4 border-primary text-primary font-bold text-xl">
                             {requestTimeout}
                         </div>
-                        <div><Label>Pickup</Label><p className="font-semibold">{jobRequest?.pickupAddress}</p></div>
-                        <div><Label>Drop</Label><p className="font-semibold">{jobRequest?.destinationAddress}</p></div>
+                        <div><Label>Pickup</Label><p className="font-semibold">{jobRequest?.pickup?.address}</p></div>
+                        <div><Label>Drop</Label><p className="font-semibold">{jobRequest?.destination?.address}</p></div>
                         <div><Label>Estimated Fare</Label><p className="font-bold text-xl text-green-600">₹{jobRequest?.fare}</p></div>
                     </div>
                     <AlertDialogFooter className="grid grid-cols-2">
