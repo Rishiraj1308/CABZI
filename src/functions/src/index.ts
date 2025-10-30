@@ -47,7 +47,8 @@ const handleRideDispatch = async (rideData: any, rideId: string) => {
     let partnersQuery = db.collection('partners')
         .where('isOnline', '==', true);
 
-    const rideTypeBase = rideData.rideType.split(' ')[0]; // Gets "Cab" from "Cab (Lite)"
+    // FIX: Match base vehicle type (e.g. "Cab" for "Cab (Lite)")
+    const rideTypeBase = rideData.rideType.split(' ')[0]; 
     if (rideTypeBase) {
         partnersQuery = partnersQuery.where('vehicleType', '==', rideTypeBase);
     }
@@ -453,6 +454,8 @@ export const simulateHighDemand = onCall(async (request) => {
 
     return { success: true, message: `High demand alert triggered for ${zoneName}.` };
 });
+
+    
 
     
 
