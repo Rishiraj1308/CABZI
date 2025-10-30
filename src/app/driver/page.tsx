@@ -1,3 +1,4 @@
+
 'use client'
 
 import React, { useState, useEffect, useRef, useCallback } from 'react'
@@ -177,6 +178,33 @@ export default function DriverDashboardPage() {
     localStorage.removeItem('activeRideId')
   }
 
+  const handleAcceptJob = async () => {
+    if (!jobRequest || !partnerData || !db) return;
+    if (requestTimerRef.current) clearInterval(requestTimerRef.current);
+    
+    const jobRef = doc(db, 'rides', jobRequest.id);
+    try {
+        await updateDoc(jobRef, {
+            status: 'accepted',
+            driverId: partnerData.id,
+            driverName: partnerData.name,
+            driverDetails: {
+                name: partnerData.name,
+                vehicle: `${partnerData.vehicleBrand} ${partnerData.vehicleName}`,
+                rating: partnerData.rating ?? 5.0, // Ensure rating is not undefined
+                photoUrl: partnerData.photoUrl,
+                phone: partnerData.phone,
+            },
+        });
+        setAvailableJobs((prev) => prev.filter((j) => j.id !== jobRequest.id));
+        setActiveRide({ id: jobRequest.id, ...jobRequest } as RideData);
+        localStorage.setItem('activeRideId', jobRequest.id);
+    } catch (err) {
+        console.error("❌ Error accepting job:", err);
+        toast({ variant: 'destructive', title: 'Error', description: 'Could not accept job. It might have been taken.' });
+    }
+  }
+
   const handlePinSubmit = () => {
     const storedPin = localStorage.getItem('curocity-user-pin')
     if (!storedPin) {
@@ -201,7 +229,12 @@ export default function DriverDashboardPage() {
   if (activeRide) {
     return (
       <div className="flex justify-center items-center h-full">
-        <RideStatus ride={activeRide} onCancel={resetAfterRide} onDone={resetAfterRide} />
+        <RideStatus 
+            ride={activeRide} 
+            onCancel={resetAfterRide} 
+            onDone={resetAfterRide} 
+            isTripInProgress={activeRide?.status === 'in-progress'}
+        />
       </div>
     )
   }
@@ -309,30 +342,7 @@ export default function DriverDashboardPage() {
           )}
           <AlertDialogFooter className="grid grid-cols-2 gap-2">
             <Button variant="destructive" onClick={() => handleDeclineJob()}>Decline</Button>
-            <Button onClick={() => {
-              if (!jobRequest || !partnerData || !db) return;
-              if (requestTimerRef.current) clearInterval(requestTimerRef.current);
-              const jobRef = doc(db, 'rides', jobRequest.id);
-              updateDoc(jobRef, {
-                status: 'accepted',
-                driverId: partnerData.id,
-                driverName: partnerData.name,
-                driverDetails: {
-                  name: partnerData.name,
-                  vehicle: `${partnerData.vehicleBrand} ${partnerData.vehicleName}`,
-                  rating: partnerData.rating,
-                  photoUrl: partnerData.photoUrl,
-                  phone: partnerData.phone,
-                },
-              }).then(() => {
-                setAvailableJobs((prev) => prev.filter((j) => j.id !== jobRequest.id));
-                setActiveRide({ id: jobRequest.id, ...jobRequest } as RideData);
-                localStorage.setItem('activeRideId', jobRequest.id);
-              }).catch((err) => {
-                console.error("❌ Error accepting job:", err);
-                toast({ variant: 'destructive', title: 'Error', description: 'Could not accept job. It might have been taken.' });
-              });
-            }}>Accept Ride</Button>
+            <Button onClick={handleAcceptJob}>Accept Ride</Button>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
