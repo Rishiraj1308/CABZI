@@ -228,7 +228,7 @@ function BookRideMapComponent() {
     }, [db]);
 
     const handleConfirmRide = async () => {
-       if (!userLocation || !destination?.coords || !session || !db) return;
+       if (!userLocation || !destination?.coords || !session || !db || !routeInfo) return;
     
         const selectedRideInfo = rideTypes.find(rt => rt.name === selectedRide);
         if (!selectedRideInfo?.fareDetails) {
@@ -248,6 +248,7 @@ function BookRideMapComponent() {
             rideType: selectedRide,
             status: 'searching' as const,
             fare: selectedRideInfo.fareDetails.total,
+            distance: routeInfo.distance, // Save the distance
             otp: generatedOtp,
             createdAt: serverTimestamp(),
         };

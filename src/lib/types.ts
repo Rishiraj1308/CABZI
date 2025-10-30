@@ -36,6 +36,7 @@ export interface RideData {
     driverDetails?: { name: string; vehicle: string; rating: number; photoUrl: string; phone: string; location?: GeoPoint };
     driverEta?: number | null;
     fare?: number;
+    distance?: number;
     routeGeometry?: any;
 }
 
@@ -67,9 +68,12 @@ export interface GarageRequest {
 }
 
 
-export interface JobRequest extends RideData {
+export interface JobRequest extends Omit<RideData, 'pickup' | 'destination'> {
     riderName?: string;
     riderGender?: string;
     rideType?: string;
     distance?: number;
+    pickup: { address: string; location: GeoPoint; };
+    destination: { address: string; location: GeoPoint; };
+    createdAt: any;
 }
