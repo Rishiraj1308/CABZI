@@ -48,14 +48,11 @@ const handleRideDispatch = async (rideData: any, rideId: string) => {
         .where('isOnline', '==', true)
         .where('status', '==', 'online') // Ensure partner is not on a trip
         
-    // This logic is critical. It extracts the base vehicle type.
-    // e.g., "Cab (Lite)" -> "Cab", "Auto" -> "Auto", "Bike" -> "Bike"
     const rideTypeBase = rideData.rideType.split('(')[0].trim();
     if (rideTypeBase) {
         partnersQuery = partnersQuery.where('vehicleType', '==', rideTypeBase);
     }
     
-    // If ride type is "Curocity Pink", add more filters for women partners who have opted in.
     if (rideData.rideType === 'Curocity Pink') {
         partnersQuery = partnersQuery.where('isCabziPinkPartner', '==', true)
                                    .where('gender', '==', 'female');
@@ -87,7 +84,6 @@ const handleRideDispatch = async (rideData: any, rideId: string) => {
 
     const tokens = nearbyPartners.map(p => p.fcmToken).filter((t): t is string => !!t);
     if (tokens.length > 0) {
-        // Create a serializable payload by converting complex objects to strings/numbers.
         const payloadData = {
             type: 'new_ride_request',
             rideId: rideId,
@@ -472,3 +468,5 @@ export const simulateHighDemand = onCall(async (request) => {
 
     return { success: true, message: `High demand alert triggered for ${zoneName}.` };
 });
+
+    
