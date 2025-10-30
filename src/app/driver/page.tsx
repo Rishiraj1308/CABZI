@@ -85,43 +85,50 @@ export default function DriverDashboardPage() {
             collection(db, "rides"),
             where("status", "==", "searching")
         );
+        
+        console.log("Setting up Firestore listener for 'searching' rides.");
 
         const unsubscribe = onSnapshot(q, (snapshot) => {
-             console.log("Found rides:", snapshot.size);
+             console.log(`Firestore listener fired: Found ${snapshot.size} rides with 'searching' status.`);
             snapshot.docChanges().forEach((change) => {
-                 console.log(change.doc.id, change.doc.data());
                 if (change.type === "added") {
                     const newJobData = { id: change.doc.id, ...change.doc.data() } as JobRequest;
+                    console.log("New ride detected:", newJobData.id);
                     
-                    // Add job to queue if it's not already there
                     setAvailableJobs(prevJobs => {
                         if (!prevJobs.some(job => job.id === newJobData.id)) {
                              notificationSoundRef.current?.play().catch(e => console.error("Audio play failed:", e));
+                            // Correctly add the new job to the state
                             return [newJobData, ...prevJobs];
                         }
                         return prevJobs;
                     });
                 }
                 if (change.type === "removed" || (change.type === "modified" && change.doc.data().status !== 'searching')) {
+                    console.log("Ride removed or status changed:", change.doc.id);
                     setAvailableJobs(prevJobs => prevJobs.filter(job => job.id !== change.doc.id));
                 }
             });
+        }, (error) => {
+            console.error("Firestore listener error:", error);
         });
 
-        return () => unsubscribe();
+        return () => {
+            console.log("Cleaning up Firestore listener.");
+            unsubscribe();
+        }
     }, [db, isOnline, activeRide]);
 
 
     useEffect(() => {
-        // This effect is responsible for managing the countdown timer for the oldest job request.
         let timer: NodeJS.Timeout | null = null;
         if (jobRequest) {
-            setRequestTimeout(15); // Reset timer for the new job
+            setRequestTimeout(15); 
             timer = setInterval(() => {
                 setRequestTimeout(prev => {
                     if (prev <= 1) {
                         if (timer) clearInterval(timer);
-                        handleDeclineJob(true); // Automatically decline the current jobRequest
+                        handleDeclineJob(true); 
                         return 0;
                     }
                     return prev - 1;
@@ -141,45 +148,6 @@ export default function DriverDashboardPage() {
       // eslint-disable-next-line react-hooks/exhaustive-deps
       }, [jobRequest]);
 
-
-    const handleOnlineStatusChange = async (checked: boolean) => {
-        if (!partnerData || !db) return;
-        
-        const partnerRef = doc(db, 'partners', partnerData.id);
-        try {
-            await updateDoc(partnerRef, { 
-                isOnline: checked,
-                status: checked ? 'online' : 'offline',
-                lastSeen: serverTimestamp() 
-            });
-
-            if (checked) {
-                liveMapRef.current?.locate();
-            } else {
-                await updateDoc(partnerRef, { currentLocation: null });
-            }
-            toast({ title: checked ? "You are now Online" : "You've gone Offline" });
-        } catch (error) {
-            toast({ variant: 'destructive', title: 'Error', description: 'Could not update your status. Please try again.' });
-        }
-    }
-    
-    const handleAcceptJob = async () => {
-        if (!jobRequest || !partnerData || !db) return;
-        if(requestTimerRef.current) clearInterval(requestTimerRef.current);
-        
-        const jobRef = doc(db, 'rides', jobRequest.id);
-        try {
-            await updateDoc(jobRef, { status: 'accepted', driverId: partnerData.id, driverName: partnerData.name, driverDetails: { name: partnerData.name, vehicle: `${partnerData.vehicleBrand} ${partnerData.vehicleName}`, rating: partnerData.rating, photoUrl: partnerData.photoUrl, phone: partnerData.phone, location: partnerData.currentLocation } });
-            setAvailableJobs(prev => prev.filter(j => j.id !== jobRequest.id));
-            setActiveRide({ id: jobRequest.id, ...jobRequest } as RideData);
-            localStorage.setItem('activeRideId', jobRequest.id);
-        } catch (error) {
-            toast({ variant: 'destructive', title: 'Error', description: 'Could not accept job. It might have been taken.' });
-            setAvailableJobs(prev => prev.filter(j => j.id !== jobRequest.id));
-        }
-    }
-    
     const handleDeclineJob = async (isTimeout = false) => {
         if (!jobRequest) return;
         if(requestTimerRef.current) clearInterval(requestTimerRef.current);
@@ -224,7 +192,7 @@ export default function DriverDashboardPage() {
 
     return (
         <div className="space-y-6">
-            <Card className="shadow-lg">
+             <Card className="shadow-lg">
                 <CardHeader>
                     <div className="flex justify-between items-center">
                         <div>
@@ -279,7 +247,20 @@ export default function DriverDashboardPage() {
                     </div>
                     <AlertDialogFooter className="grid grid-cols-2">
                         <Button variant="destructive" onClick={() => handleDeclineJob()}>Decline</Button>
-                        <Button onClick={handleAcceptJob}>Accept Ride</Button>
+                        <Button onClick={() => {
+                            if (!jobRequest || !partnerData || !db) return;
+                            if(requestTimerRef.current) clearInterval(requestTimerRef.current);
+                            
+                            const jobRef = doc(db, 'rides', jobRequest.id);
+                            updateDoc(jobRef, { status: 'accepted', driverId: partnerData.id, driverName: partnerData.name, driverDetails: { name: partnerData.name, vehicle: `${partnerData.vehicleBrand} ${partnerData.vehicleName}`, rating: partnerData.rating, photoUrl: partnerData.photoUrl, phone: partnerData.phone, location: partnerData.currentLocation } }).then(() => {
+                                setAvailableJobs(prev => prev.filter(j => j.id !== jobRequest.id));
+                                setActiveRide({ id: jobRequest.id, ...jobRequest } as RideData);
+                                localStorage.setItem('activeRideId', jobRequest.id);
+                            }).catch(() => {
+                                toast({ variant: 'destructive', title: 'Error', description: 'Could not accept job. It might have been taken.' });
+                                setAvailableJobs(prev => prev.filter(j => j.id !== jobRequest.id));
+                            });
+                        }}>Accept Ride</Button>
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
