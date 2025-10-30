@@ -75,6 +75,8 @@ export default function DriverDashboardPage() {
     useEffect(() => {
         if (!db || !isOnline || activeRide || !partnerData) return;
 
+        let isSubscribed = true;
+
         const twentySecondsAgo = Timestamp.fromMillis(Date.now() - 20000);
         const ridesRef = collection(db, 'rides');
         let q = query(
@@ -89,6 +91,8 @@ export default function DriverDashboardPage() {
         }
 
         const unsubscribe = onSnapshot(q, (snapshot) => {
+            if (!isSubscribed) return;
+
             const newJobs: JobRequest[] = [];
             let playSound = false;
 
@@ -121,7 +125,10 @@ export default function DriverDashboardPage() {
             }
         });
 
-        return () => unsubscribe();
+        return () => {
+            isSubscribed = false;
+            unsubscribe();
+        };
     }, [db, isOnline, activeRide, partnerData, getDistance]);
 
     const handleOnlineStatusChange = async (checked: boolean) => {
@@ -246,5 +253,3 @@ export default function DriverDashboardPage() {
         </div>
     );
 }
-
-    

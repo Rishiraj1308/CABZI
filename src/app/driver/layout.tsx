@@ -186,24 +186,24 @@ function DriverLayoutContent({ children }: { children: React.ReactNode }) {
     router.push('/');
   }, [auth, db, partnerData?.id, router, toast, theme, setTheme]);
 
-  useEffect(() => {
+useEffect(() => {
     if (isAuthLoading || !db) return;
-  
+
     const isOnboardingPage = pathname.includes('/driver/onboarding');
-  
+
     if (!user) {
-      if (!isOnboardingPage) router.replace('/login?role=driver');
-      setIsSessionLoading(false);
-      return;
+        if (!isOnboardingPage) router.replace('/login?role=driver');
+        setIsSessionLoading(false);
+        return;
     }
-  
+
     const session = localStorage.getItem('curocity-session');
     if (!session) {
         if (!isOnboardingPage) handleLogout();
         setIsSessionLoading(false);
         return;
     }
-    
+
     let unsubPartner: (() => void) | undefined;
     let isSubscribed = true;
 
@@ -244,8 +244,8 @@ function DriverLayoutContent({ children }: { children: React.ReactNode }) {
     }
   
     return () => {
-      isSubscribed = false;
-      if (unsubPartner) unsubPartner();
+        isSubscribed = false;
+        if (unsubPartner) unsubPartner();
     };
 }, [isAuthLoading, user, db, handleLogout, pathname, router, theme, setTheme]);
 
@@ -410,5 +410,3 @@ export default function DriverLayout({ children }: { children: React.ReactNode }
         </NotificationsProvider>
     );
 }
-
-    
