@@ -289,6 +289,7 @@ const LiveMap = forwardRef<any, LiveMapProps>((props, ref) => {
         if (!map) return;
         const L = require('leaflet');
         
+        // Handle rider/pickup location
         if (props.riderLocation && typeof props.riderLocation.lat === 'number' && typeof props.riderLocation.lon === 'number') {
             const { lat, lon } = props.riderLocation;
             if (riderMarkerRef.current) {
@@ -301,7 +302,8 @@ const LiveMap = forwardRef<any, LiveMapProps>((props, ref) => {
             riderMarkerRef.current = null;
         }
         
-         if (props.destinationLocation && typeof props.destinationLocation.lat === 'number' && typeof props.destinationLocation.lon === 'number') {
+        // Conditionally handle destination location based on trip progress
+         if (props.isTripInProgress && props.destinationLocation && typeof props.destinationLocation.lat === 'number' && typeof props.destinationLocation.lon === 'number') {
             const { lat, lon } = props.destinationLocation;
             if (destinationMarkerRef.current) {
                 destinationMarkerRef.current.setLatLng([lat, lon]);
@@ -313,7 +315,7 @@ const LiveMap = forwardRef<any, LiveMapProps>((props, ref) => {
             destinationMarkerRef.current = null;
         }
 
-    }, [props.riderLocation, props.destinationLocation]);
+    }, [props.riderLocation, props.destinationLocation, props.isTripInProgress]);
 
     const startAnimationLoop = useCallback(() => {
         if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);

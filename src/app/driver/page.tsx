@@ -273,7 +273,7 @@ export default function DriverDashboardPage() {
                        <p><span className="font-semibold">Pickup:</span> {jobRequest.pickup?.address}</p>
                    </div>
                    <div className="flex items-start gap-2">
-                       <MapPin className="w-4 h-4 mt-1 text-red-500 flex-shrink-0" />
+                       <Route className="w-4 h-4 mt-1 text-red-500 flex-shrink-0" />
                        <p><span className="font-semibold">Drop:</span> {jobRequest.destination?.address}</p>
                    </div>
                </div>
@@ -282,6 +282,7 @@ export default function DriverDashboardPage() {
                 <LiveMap
                   riderLocation={jobRequest.pickup?.location ? { lat: jobRequest.pickup.location.latitude, lon: jobRequest.pickup.location.longitude } : undefined}
                   destinationLocation={jobRequest.destination?.location ? { lat: jobRequest.destination.location.latitude, lon: jobRequest.destination.location.longitude } : undefined}
+                  isTripInProgress={false} // Only show pickup initially
                   zoom={11}
                 />
               </div>
