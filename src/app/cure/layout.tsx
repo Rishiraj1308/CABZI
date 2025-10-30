@@ -120,7 +120,7 @@ export default function CureLayout({ children }: { children: React.ReactNode }) 
         description: 'You have been successfully logged out.'
     });
     router.push('/');
-  }, [auth, db, router, partnerData, toast]);
+  }, [auth, db, partnerData, router, toast]);
 
   useEffect(() => {
     if (isUserLoading) return;
@@ -184,7 +184,7 @@ export default function CureLayout({ children }: { children: React.ReactNode }) 
     
     return () => unsubPartner();
 
-  }, [db, user, isUserLoading, pathname, router, handleLogout]);
+  }, [db, user, isUserLoading, handleLogout, pathname, router]);
 
   
   if (pathname === '/cure/onboarding') {
