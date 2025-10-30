@@ -116,16 +116,11 @@ export default function DriverDashboardPage() {
       return;
     }
   
-    console.log("🚀 Firestore listener started...");
-  
     const q = query(collection(db, "rides"), where("status", "==", "searching"));
     const unsub = onSnapshot(q, (snapshot) => {
-        console.log("📡 Listener update:", snapshot.size);
-        
         const newJobs: JobRequest[] = [];
         snapshot.forEach((doc) => {
             const rideData = doc.data();
-            console.log("📄 Ride detected:", rideData);
             newJobs.push({
                 id: doc.id,
                 ...rideData
@@ -134,17 +129,18 @@ export default function DriverDashboardPage() {
 
         // This logic ensures sound plays only when the list goes from empty to non-empty
         if (newJobs.length > 0 && availableJobs.length === 0) {
-            console.log("🚨 New ride request!");
-            notificationSoundRef.current?.play().catch(e => console.warn("Sound blocked:", e));
+          if (notificationSoundRef.current) {
+            notificationSoundRef.current.play().catch(e => console.warn("Sound blocked until user interaction:", e));
+          }
         }
 
         setAvailableJobs(newJobs);
     });
 
     return () => {
-        console.log("🧹 Listener cleaned up");
         unsub();
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [db, isOnline, activeRide]);
 
   // Timer for request
