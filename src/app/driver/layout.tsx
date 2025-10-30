@@ -52,10 +52,88 @@ const DriverContext = createContext<DriverContextType | null>(null);
 export const useDriver = () => {
     const context = useContext(DriverContext);
     if (!context) {
-        throw new Error('useDriver must be used within a DriverLayout');
+        throw new Error('useDriver must be used within a DriverProvider');
     }
     return context;
 }
+
+function DriverProvider({ children }: { children: React.ReactNode }) {
+    const [partnerData, setPartnerData] = useState<PartnerData | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
+    const { db, user, isUserLoading: isAuthLoading } = useFirebase();
+    const router = useRouter();
+    const pathname = usePathname();
+
+    const handleLogout = useCallback(() => {
+        if (partnerData?.id && db) {
+            setDoc(doc(db, 'partners', partnerData.id), { isOnline: false, lastSeen: serverTimestamp() }, { merge: true }).catch(error => {
+                console.warn("Failed to update status on logout (non-critical):", error);
+            });
+        }
+        localStorage.removeItem('curocity-session');
+        router.push('/');
+    }, [db, partnerData, router]);
+    
+    useEffect(() => {
+        if (isAuthLoading || !db) return;
+
+        const isOnboardingPage = pathname.includes('/driver/onboarding');
+
+        if (!user) {
+            if (!isOnboardingPage) router.replace('/login?role=driver');
+            setIsLoading(false);
+            return;
+        }
+
+        let unsubscribe: (() => void) | null = null;
+        let isSubscribed = true;
+
+        try {
+            const sessionString = localStorage.getItem('curocity-session');
+            if (!sessionString) {
+                if (!isOnboardingPage) handleLogout();
+                setIsLoading(false);
+                return;
+            }
+
+            const sessionData = JSON.parse(sessionString);
+            if (!sessionData.role || sessionData.role !== 'driver' || !sessionData.partnerId) {
+                if (!isOnboardingPage) handleLogout();
+                setIsLoading(false);
+                return;
+            }
+
+            const partnerDocRef = doc(db, 'partners', sessionData.partnerId);
+            unsubscribe = onSnapshot(partnerDocRef, (docSnap) => {
+                if (!isSubscribed) return;
+                if (docSnap.exists()) {
+                    setPartnerData({ id: docSnap.id, ...docSnap.data() } as PartnerData);
+                } else {
+                    if (!isOnboardingPage) handleLogout();
+                }
+                setIsLoading(false);
+            }, (error) => {
+                if (!isOnboardingPage) handleLogout();
+                setIsLoading(false);
+            });
+        } catch (e) {
+            if (!isOnboardingPage) handleLogout();
+            setIsLoading(false);
+        }
+      
+        return () => {
+            isSubscribed = false;
+            if (unsubscribe) unsubscribe();
+        };
+    }, [isAuthLoading, user, db, handleLogout, pathname, router]);
+
+    return (
+        <DriverContext.Provider value={{ partnerData, isLoading }}>
+            {children}
+        </DriverContext.Provider>
+    );
+}
+
 
 const navItems = [
   { href: '/driver', label: 'Dashboard', icon: LayoutDashboard },
@@ -117,7 +195,6 @@ function LocationDisplay() {
             async (position) => {
                 const { latitude, longitude } = position.coords;
                 try {
-                    // Added zoom=14 to get more specific locality info
                     const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=14`);
                     if (!response.ok) {
                         setLocation('Location not found');
@@ -125,7 +202,6 @@ function LocationDisplay() {
                     }
                     const data = await response.json();
                     const address = data.address;
-                    // Prioritize suburb/neighbourhood for better local accuracy
                     const primaryLocation = address.suburb || address.neighbourhood || address.city || address.town || address.village;
                     const secondaryLocation = address.city || address.state;
 
@@ -163,10 +239,9 @@ function DriverLayoutContent({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const { toast } = useToast();
   const { theme, setTheme } = useTheme();
-  const { db, auth, user, isUserLoading: isAuthLoading } = useFirebase();
-  const [partnerData, setPartnerData] = useState<PartnerData | null>(null);
-  const [isSessionLoading, setIsSessionLoading] = useState(true);
-  
+  const { auth, db } = useFirebase();
+  const { partnerData, isLoading } = useDriver();
+
   const handleLogout = useCallback(() => {
     if (auth) auth.signOut();
     if (partnerData?.id && db) {
@@ -186,70 +261,6 @@ function DriverLayoutContent({ children }: { children: React.ReactNode }) {
     router.push('/');
   }, [auth, db, partnerData?.id, router, toast, theme, setTheme]);
 
-useEffect(() => {
-    if (isAuthLoading || !db) return;
-
-    const isOnboardingPage = pathname.includes('/driver/onboarding');
-
-    if (!user) {
-        if (!isOnboardingPage) router.replace('/login?role=driver');
-        setIsSessionLoading(false);
-        return;
-    }
-
-    let unsubscribe: (() => void) | null = null;
-    let isSubscribed = true;
-
-    try {
-        const sessionString = localStorage.getItem('curocity-session');
-        if (!sessionString) {
-            if (!isOnboardingPage) handleLogout();
-            setIsSessionLoading(false);
-            return;
-        }
-
-        const sessionData = JSON.parse(sessionString);
-        if (!sessionData.role || sessionData.role !== 'driver' || !sessionData.partnerId) {
-            if (!isOnboardingPage) handleLogout();
-            setIsSessionLoading(false);
-            return;
-        }
-
-        const partnerDocRef = doc(db, 'partners', sessionData.partnerId);
-        unsubscribe = onSnapshot(partnerDocRef, (docSnap) => {
-            if (!isSubscribed) return;
-
-            if (docSnap.exists()) {
-                const data = docSnap.data();
-                const fetchedPartnerData = { id: docSnap.id, ...data } as PartnerData;
-
-                const isPink = data.isCabziPinkPartner || false;
-                if (isPink && theme !== 'pink') setTheme('pink');
-                else if (!isPink && theme === 'pink') setTheme('system');
-
-                setPartnerData(fetchedPartnerData);
-            } else {
-                console.error("Partner document not found with ID:", sessionData.partnerId);
-                if (!isOnboardingPage) handleLogout();
-            }
-            setIsSessionLoading(false);
-        }, (error) => {
-            console.error("Error with partner data snapshot:", error);
-            if (!isOnboardingPage) handleLogout();
-            setIsSessionLoading(false);
-        });
-    } catch (e) {
-        if (!isOnboardingPage) handleLogout();
-        setIsSessionLoading(false);
-    }
-  
-    return () => {
-        isSubscribed = false;
-        if (unsubscribe) unsubscribe();
-    };
-}, [isAuthLoading, user, db, handleLogout, pathname, router, theme, setTheme]);
-
-
    useEffect(() => {
     let heartbeatInterval: NodeJS.Timeout | null = null;
     
@@ -266,11 +277,17 @@ useEffect(() => {
     }
   }, [partnerData, db]);
   
+  useEffect(() => {
+    if (!isLoading && partnerData?.isCabziPinkPartner && theme !== 'pink') {
+      setTheme('pink');
+    } else if (!isLoading && !partnerData?.isCabziPinkPartner && theme === 'pink') {
+      setTheme('system');
+    }
+  }, [isLoading, partnerData, theme, setTheme]);
+  
   if (pathname.includes('/onboarding')) {
     return <>{children}<Toaster /></>
   }
-  
-  const isLoading = isAuthLoading || isSessionLoading;
 
   if (isLoading) {
      return (
@@ -306,107 +323,107 @@ useEffect(() => {
   );
 
   return (
-       <DriverContext.Provider value={{ partnerData, isLoading }}>
-         <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
-           <div className="hidden border-r bg-muted/40 md:block">
-               <div className="flex h-full max-h-screen flex-col gap-2">
-                   <div className="flex h-16 items-center border-b px-6">
-                       <LogoArea isPinkPartner={partnerData?.isCabziPinkPartner || false} />
-                   </div>
-                    <div className="flex-1 overflow-auto py-2">
-                       <DriverNav isPinkPartner={partnerData?.isCabziPinkPartner || false} />
-                    </div>
-               </div>
-           </div>
-           <div className="flex flex-col">
-              <header className="flex h-16 items-center gap-4 border-b bg-background px-4 md:px-6">
-                   <div className="md:hidden">
-                      <Sheet>
-                          <SheetTrigger asChild>
-                              <Button variant="outline" size="icon" className="shrink-0">
-                                  <PanelLeft className="h-5 w-5" />
-                                  <span className="sr-only">Toggle navigation menu</span>
-                              </Button>
-                          </SheetTrigger>
-                          <SheetContent side="left" className="p-0">
-                               <SheetHeader className="p-6">
-                                 <SheetTitle><LogoArea isPinkPartner={partnerData?.isCabziPinkPartner || false} /></SheetTitle>
-                                 <SheetDescription className="sr-only">Main menu for driver</SheetDescription>
-                              </SheetHeader>
-                               <div className="flex-1 overflow-auto py-2">
-                                   <DriverNav isPinkPartner={partnerData?.isCabziPinkPartner || false} />
-                               </div>
-                          </SheetContent>
-                      </Sheet>
-                   </div>
-                   <div className="hidden md:block">
-                       <LocationDisplay />
-                   </div>
-                   <div className="flex w-full items-center gap-4 md:ml-auto md:gap-2 lg:gap-4 justify-end">
-                      <ThemeToggle />
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="secondary" size="icon" className="rounded-full">
-                            <Avatar className="h-8 w-8">
-                              <AvatarImage src="https://i.pravatar.cc/40?u=driver" alt={partnerData?.name} data-ai-hint="driver portrait" />
-                              <AvatarFallback>{getInitials(partnerData?.name || '').toUpperCase()}</AvatarFallback>
-                            </Avatar>
-                            <span className="sr-only">Toggle user menu</span>
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuLabel>My Account</DropdownMenuLabel>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem onSelect={() => router.push('/driver/profile')}>Profile</DropdownMenuItem>
-                          <DropdownMenuItem onSelect={() => router.push('/driver/support')}>Support</DropdownMenuItem>
-                           <DropdownMenuSeparator />
-                           <AlertDialog>
-                              <AlertDialogTrigger asChild>
-                                  <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:text-destructive">
-                                      Logout
-                                  </DropdownMenuItem>
-                              </AlertDialogTrigger>
-                              <AlertDialogContent>
-                                  <AlertDialogHeader>
-                                      <AlertDialogTitle>Are you sure you want to log out?</AlertDialogTitle>
-                                      <AlertDialogDescription>
-                                         You will be returned to the home page and will need to log in again to access your dashboard.
-                                      </AlertDialogDescription>
-                                  </AlertDialogHeader>
-                                  <AlertDialogFooter>
-                                      <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                      <AlertDialogAction onClick={handleLogout} className="bg-destructive hover:bg-destructive/90">
-                                         Logout
-                                      </AlertDialogAction>
-                                  </AlertDialogFooter>
-                              </AlertDialogContent>
-                          </AlertDialog>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                   </div>
-              </header>
-               <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8 overflow-auto">
-                   <MotionDiv 
-                      key={pathname}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.5, ease: 'easeInOut' }}
-                      className="h-full relative"
-                  >
-                     {children}
-                  </MotionDiv>
-               </main>
-           </div>
+       <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
+         <div className="hidden border-r bg-muted/40 md:block">
+             <div className="flex h-full max-h-screen flex-col gap-2">
+                 <div className="flex h-16 items-center border-b px-6">
+                     <LogoArea isPinkPartner={partnerData?.isCabziPinkPartner || false} />
+                 </div>
+                  <div className="flex-1 overflow-auto py-2">
+                     <DriverNav isPinkPartner={partnerData?.isCabziPinkPartner || false} />
+                  </div>
+             </div>
          </div>
-      </DriverContext.Provider>
+         <div className="flex flex-col">
+            <header className="flex h-16 items-center gap-4 border-b bg-background px-4 md:px-6">
+                 <div className="md:hidden">
+                    <Sheet>
+                        <SheetTrigger asChild>
+                            <Button variant="outline" size="icon" className="shrink-0">
+                                <PanelLeft className="h-5 w-5" />
+                                <span className="sr-only">Toggle navigation menu</span>
+                            </Button>
+                        </SheetTrigger>
+                        <SheetContent side="left" className="p-0">
+                             <SheetHeader className="p-6">
+                               <SheetTitle><LogoArea isPinkPartner={partnerData?.isCabziPinkPartner || false} /></SheetTitle>
+                               <SheetDescription className="sr-only">Main menu for driver</SheetDescription>
+                            </SheetHeader>
+                             <div className="flex-1 overflow-auto py-2">
+                                 <DriverNav isPinkPartner={partnerData?.isCabziPinkPartner || false} />
+                             </div>
+                        </SheetContent>
+                    </Sheet>
+                 </div>
+                 <div className="hidden md:block">
+                     <LocationDisplay />
+                 </div>
+                 <div className="flex w-full items-center gap-4 md:ml-auto md:gap-2 lg:gap-4 justify-end">
+                    <ThemeToggle />
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="secondary" size="icon" className="rounded-full">
+                          <Avatar className="h-8 w-8">
+                            <AvatarImage src="https://i.pravatar.cc/40?u=driver" alt={partnerData?.name} data-ai-hint="driver portrait" />
+                            <AvatarFallback>{getInitials(partnerData?.name || '').toUpperCase()}</AvatarFallback>
+                          </Avatar>
+                          <span className="sr-only">Toggle user menu</span>
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onSelect={() => router.push('/driver/profile')}>Profile</DropdownMenuItem>
+                        <DropdownMenuItem onSelect={() => router.push('/driver/support')}>Support</DropdownMenuItem>
+                         <DropdownMenuSeparator />
+                         <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:text-destructive">
+                                    Logout
+                                </DropdownMenuItem>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle>Are you sure you want to log out?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                       You will be returned to the home page and will need to log in again to access your dashboard.
+                                    </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction onClick={handleLogout} className="bg-destructive hover:bg-destructive/90">
+                                       Logout
+                                    </AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                 </div>
+            </header>
+             <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8 overflow-auto">
+                 <MotionDiv 
+                    key={pathname}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, ease: 'easeInOut' }}
+                    className="h-full relative"
+                >
+                   {children}
+                </MotionDiv>
+             </main>
+         </div>
+       </div>
   )
 }
 
 export default function DriverLayout({ children }: { children: React.ReactNode }) {
     return (
         <NotificationsProvider>
+          <DriverProvider>
             <DriverLayoutContent>{children}</DriverLayoutContent>
-            <Toaster />
+          </DriverProvider>
+          <Toaster />
         </NotificationsProvider>
     );
 }
