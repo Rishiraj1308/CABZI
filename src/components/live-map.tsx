@@ -1,3 +1,4 @@
+
 'use client'
 
 import { useEffect, useRef, forwardRef, useImperativeHandle, useCallback } from "react";
@@ -262,8 +263,16 @@ const LiveMap = forwardRef<any, LiveMapProps>((props, ref) => {
         }
 
         // Add partner/rider groups
-        props.activePartners?.forEach(p => allEntities.set(p.id, { ...p.location, type: p.status || p.type }));
-        props.activeRiders?.forEach(r => allEntities.set(r.id, { ...r.location, type: r.type }));
+        props.activePartners?.forEach(p => {
+          if (p.location) {
+            allEntities.set(p.id, { lat: p.location.lat, lon: p.location.lon, type: p.status || p.type });
+          }
+        });
+        props.activeRiders?.forEach(r => {
+          if (r.location) {
+            allEntities.set(r.id, { lat: r.location.lat, lon: r.location.lon, type: r.type });
+          }
+        });
         
         const currentMarkerIds = new Set(markersRef.current.keys());
 
@@ -276,7 +285,12 @@ const LiveMap = forwardRef<any, LiveMapProps>((props, ref) => {
 
         // Add or update markers
         allEntities.forEach((entity, id) => {
-            updateMarker(id, new L.LatLng(entity.lat, entity.lon), entity.type);
+            // CRITICAL FIX: Ensure lat and lon are valid numbers before creating a marker
+            if (typeof entity.lat === 'number' && typeof entity.lon === 'number') {
+                updateMarker(id, new L.LatLng(entity.lat, entity.lon), entity.type);
+            } else {
+                console.warn(`Invalid location data for entity ${id}:`, entity);
+            }
         });
 
         if (markerAnimationRef.current.size > 0 && !animationFrameRef.current) {
@@ -331,3 +345,4 @@ const LiveMap = forwardRef<any, LiveMapProps>((props, ref) => {
 
 LiveMap.displayName = 'LiveMap';
 export default LiveMap;
+
