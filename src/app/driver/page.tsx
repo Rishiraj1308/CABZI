@@ -6,7 +6,7 @@ import Image from 'next/image'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
-import { Star, History, IndianRupee, Power, KeyRound, Clock, MapPin, Route, Navigation, CheckCircle } from 'lucide-react'
+import { Star, History, IndianRupee, Power, KeyRound, Clock, MapPin, Route, Navigation, CheckCircle, Sparkles, Eye } from 'lucide-react'
 import {
   AlertDialog,
   AlertDialogContent,
@@ -24,7 +24,9 @@ import {
   where,
   onSnapshot,
   Timestamp,
-  GeoPoint
+  GeoPoint,
+  serverTimestamp,
+  getDoc
 } from 'firebase/firestore'
 import { useFirebase } from '@/firebase/client-provider'
 import dynamic from 'next/dynamic'
@@ -141,6 +143,7 @@ export default function DriverDashboardPage() {
       }
     });
     return () => unsub();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [db, activeRide?.id]);
 
   // Timer for request
@@ -433,5 +436,3 @@ export default function DriverDashboardPage() {
     </div>
   );
 }
-
-```
