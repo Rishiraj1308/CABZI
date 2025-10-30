@@ -356,57 +356,37 @@ const LiveMap = forwardRef<any, LiveMapProps>((props, ref) => {
         animationFrameRef.current = requestAnimationFrame(animate);
     }, []);
 
-    // Effect for a single, secondary marker (e.g., the mechanic or the driver)
+    // UNIFIED Effect for driver/partner markers
     useEffect(() => {
         const map = mapInstanceRef.current;
         if (!map) return;
         const L = require('leaflet');
-        
+
+        const allEntities = [...(props.activePartners || [])];
+        // Add single driverLocation to the list of entities to be processed if it exists
         if (props.driverLocation && typeof props.driverLocation.lat === 'number' && typeof props.driverLocation.lon === 'number') {
-            const { lat, lon } = props.driverLocation;
-            const partner = props.activePartners?.find(p => p.location.lat === lat && p.location.lon === lon);
-            const iconType = partner ? partner.type : 'driver';
-            
-            const targetPos = new L.LatLng(lat, lon);
-
-            if (driverMarkerRef.current) {
-                const currentPos = driverMarkerRef.current.getLatLng();
-                 if (!currentPos.equals(targetPos)) {
-                    markerAnimationRef.current.set('driver-marker', { startPos: currentPos, targetPos: targetPos, startTime: performance.now() });
-                    if (!animationFrameRef.current) {
-                        startAnimationLoop();
-                    }
-                 }
-                driverMarkerRef.current.setIcon(createIcon(iconType));
-
-            } else {
-                driverMarkerRef.current = L.marker([lat, lon], { icon: createIcon(iconType) }).addTo(map);
-                if(!props.riderLocation){ 
-                    map.flyTo([lat, lon], 16);
-                }
-            }
-        } else if (driverMarkerRef.current) {
-            map.removeLayer(driverMarkerRef.current);
-            driverMarkerRef.current = null;
+            allEntities.push({
+                id: 'driver-marker', // Use a consistent ID
+                name: 'Current Driver',
+                type: 'driver',
+                location: { lat: props.driverLocation.lat, lon: props.driverLocation.lon }
+            });
         }
-    }, [props.driverLocation, props.activePartners, props.riderLocation, startAnimationLoop]);
-    
-    // Combined effect for multiple active entities (Admin/Main Homepage view)
-    useEffect(() => {
-        const map = mapInstanceRef.current;
-        if (!map) return;
-        const L = require('leaflet');
-
-        const allEntities = [...(props.activePartners || []), ...(props.activeRiders || [])];
-        const currentMarkerIds = new Set(Array.from(markersRef.current.keys()));
-        const newEntityIds = new Set(allEntities.map(e => e.id));
         
+        const currentMarkerIds = new Set(Array.from(markersRef.current.keys()));
+        if (driverMarkerRef.current) currentMarkerIds.add('driver-marker');
+
+        const newEntityIds = new Set(allEntities.map(e => e.id));
+
         // Remove old markers
         currentMarkerIds.forEach(id => {
             if (!newEntityIds.has(id)) {
-                const marker = markersRef.current.get(id);
-                if (marker) map.removeLayer(marker);
+                let markerToRemove = markersRef.current.get(id);
+                if (id === 'driver-marker') markerToRemove = driverMarkerRef.current;
+                
+                if (markerToRemove) map.removeLayer(markerToRemove);
                 markersRef.current.delete(id);
+                if (id === 'driver-marker') driverMarkerRef.current = null;
                 markerAnimationRef.current.delete(id);
             }
         });
@@ -417,7 +397,8 @@ const LiveMap = forwardRef<any, LiveMapProps>((props, ref) => {
             const latLng = new L.LatLng(location.lat, location.lon);
             const icon = createIcon(type === 'ambulance' ? 'ambulance' : status || type);
 
-            let marker = markersRef.current.get(id);
+            let marker = id === 'driver-marker' ? driverMarkerRef.current : markersRef.current.get(id);
+            
             if (marker) {
                 const currentPos = marker.getLatLng();
                 if (!currentPos.equals(latLng)) {
@@ -426,7 +407,11 @@ const LiveMap = forwardRef<any, LiveMapProps>((props, ref) => {
                 marker.setIcon(icon);
             } else {
                 marker = L.marker(latLng, { icon }).addTo(map);
-                markersRef.current.set(id, marker);
+                if (id === 'driver-marker') {
+                    driverMarkerRef.current = marker;
+                } else {
+                    markersRef.current.set(id, marker);
+                }
             }
              if(props.enableCursorTooltip){
               marker.bindTooltip(`<b>${name}</b><br>${vehicle || type}`);
@@ -437,8 +422,7 @@ const LiveMap = forwardRef<any, LiveMapProps>((props, ref) => {
             startAnimationLoop();
         }
 
-    }, [props.activePartners, props.activeRiders, props.enableCursorTooltip, startAnimationLoop]);
-
+    }, [props.activePartners, props.driverLocation, props.enableCursorTooltip, startAnimationLoop]);
 
     // Effect for the cursor tooltip on admin map
     useEffect(() => {
