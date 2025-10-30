@@ -110,6 +110,7 @@ interface HospitalData {
     totalBeds?: number;
     bedsOccupied?: number;
     location?: GeoPoint;
+    isOnline?: boolean;
 }
 
 export default function HospitalMissionControl({ 
@@ -347,7 +348,6 @@ export default function HospitalMissionControl({
                 location: partnerData.location || new GeoPoint(28.6139, 77.2090)
             });
             
-            // Link ambulance to the driver
             const driverRef = doc(db, `ambulances/${partnerData.id}/drivers`, selectedDriver.id);
             await updateDoc(driverRef, {
                 assignedAmbulanceId: newAmbulanceDoc.id,
@@ -476,11 +476,9 @@ export default function HospitalMissionControl({
 
         const batch = writeBatch(db);
 
-        // 1. Delete the driver from the hospital's private subcollection
         const hospitalDriverRef = doc(db, `ambulances/${partnerData.id}/drivers`, driver.id);
         batch.delete(hospitalDriverRef);
         
-        // 2. Find and delete the driver from the global collection to revoke login
         const globalDriverQuery = query(collection(db, 'ambulanceDrivers'), where('phone', '==', driver.phone));
         const globalDriverSnap = await getDocs(globalDriverQuery);
 
@@ -579,7 +577,7 @@ export default function HospitalMissionControl({
         return name.substring(0, 2);
     }
 
-    if (isLoading || isPartnerLoading) {
+    if (isPartnerLoading || isDataLoading) {
       return (
           <div className="grid lg:grid-cols-3 gap-6 h-full">
               <div className="lg:col-span-2 space-y-6">
@@ -695,26 +693,40 @@ export default function HospitalMissionControl({
                                     <TableHeader><TableRow><TableHead>Ambulance</TableHead><TableHead>Driver</TableHead><TableHead>Status</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader>
                                     <TableBody>
                                         {fleet.map(a => (
-                                            <TableRow key={a.id}>
-                                                <TableCell className="font-semibold">{a.name} <span className="text-xs text-muted-foreground font-normal">({a.type})</span></TableCell>
-                                                <TableCell>{a.driverName}</TableCell>
-                                                <TableCell><Badge className={cn(a.status === 'Available' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800')}>{a.status}</Badge></TableCell>
-                                                <TableCell className="text-right">
-                                                    <AlertDialog>
-                                                        <DropdownMenu>
-                                                            <DropdownMenuTrigger asChild><Button variant="ghost" className="h-8 w-8 p-0"><span className="sr-only">Open menu</span><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
-                                                            <DropdownMenuContent align="end">
-                                                                <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                                                <AlertDialogTrigger asChild><DropdownMenuItem className="text-destructive focus:text-destructive" onSelect={(e) => e.preventDefault()}><Trash2 className="mr-2 h-4 w-4"/> Delete Ambulance</DropdownMenuItem></AlertDialogTrigger>
-                                                            </DropdownMenuContent>
-                                                        </DropdownMenu>
-                                                        <AlertDialogContent>
-                                                            <AlertDialogHeader><AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle><AlertDialogDescription>This will permanently remove <span className="font-bold">{a.name}</span> from your fleet. This action cannot be undone.</AlertDialogDescription></AlertDialogHeader>
-                                                            <AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={() => handleDeleteAmbulance(a)} className="bg-destructive hover:bg-destructive/90">Yes, delete ambulance</AlertDialogAction></AlertDialogFooter>
-                                                        </AlertDialogContent>
-                                                    </AlertDialog>
-                                                </TableCell>
-                                            </TableRow>
+                                          <TableRow key={a.id}>
+                                            <TableCell className="font-semibold">{a.name} <span className="text-xs text-muted-foreground font-normal">({a.type})</span></TableCell>
+                                            <TableCell>{a.driverName}</TableCell>
+                                            <TableCell><Badge className={cn(a.status === 'Available' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800')}>{a.status}</Badge></TableCell>
+                                            <TableCell className="text-right">
+                                              <AlertDialog>
+                                                <DropdownMenu>
+                                                  <DropdownMenuTrigger asChild>
+                                                    <Button variant="ghost" className="h-8 w-8 p-0"><span className="sr-only">Open menu</span><MoreHorizontal className="h-4 w-4" /></Button>
+                                                  </DropdownMenuTrigger>
+                                                  <DropdownMenuContent align="end">
+                                                    <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                                    <AlertDialogTrigger asChild>
+                                                      <DropdownMenuItem className="text-destructive focus:text-destructive" onSelect={(e) => e.preventDefault()}>
+                                                        <Trash2 className="mr-2 h-4 w-4" /> Delete Ambulance
+                                                      </DropdownMenuItem>
+                                                    </AlertDialogTrigger>
+                                                  </DropdownMenuContent>
+                                                </DropdownMenu>
+                                                <AlertDialogContent>
+                                                  <AlertDialogHeader>
+                                                    <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                                    <AlertDialogDescription>
+                                                      This will permanently remove <span className="font-bold">{a.name}</span> from your fleet. This action cannot be undone.
+                                                    </AlertDialogDescription>
+                                                  </AlertDialogHeader>
+                                                  <AlertDialogFooter>
+                                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                    <AlertDialogAction onClick={() => handleDeleteAmbulance(a)} className="bg-destructive hover:bg-destructive/90">Yes, delete ambulance</AlertDialogAction>
+                                                  </AlertDialogFooter>
+                                                </AlertDialogContent>
+                                              </AlertDialog>
+                                            </TableCell>
+                                          </TableRow>
                                         ))}
                                         {fleet.length === 0 && <TableRow><TableCell colSpan={4} className="text-center h-24">No ambulances added.</TableCell></TableRow>}
                                     </TableBody>
