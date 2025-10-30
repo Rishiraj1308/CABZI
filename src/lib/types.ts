@@ -68,5 +68,8 @@ export interface GarageRequest {
 
 
 export interface JobRequest extends RideData {
-    // This can be extended if job requests have more specific fields than rides
+    riderName?: string;
+    riderGender?: string;
+    rideType?: string;
+    distance?: number;
 }

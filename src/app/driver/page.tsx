@@ -113,9 +113,9 @@ export default function DriverDashboardPage() {
       setAvailableJobs([]);
       return;
     }
-
+  
     console.log("🚀 Firestore listener started...");
-
+  
     const q = query(collection(db, "rides"), where("status", "==", "searching"));
     const unsub = onSnapshot(q, (snapshot) => {
       console.log("📡 Listener update:", snapshot.size);
@@ -129,23 +129,21 @@ export default function DriverDashboardPage() {
           ...rideData,
         } as JobRequest);
       });
-
-      setAvailableJobs((currentJobs) => {
-        // Only play sound if there's a new job that wasn't there before
-        if (newJobs.length > 0 && currentJobs.length === 0) {
-           console.log("🚨 New ride request!");
-           notificationSoundRef.current?.play().catch(e => console.warn("Sound blocked:", e));
-        }
-        return newJobs;
-      });
-      
+  
+      // This logic ensures sound plays only when the list goes from empty to non-empty
+      if (newJobs.length > 0 && availableJobs.length === 0) {
+        console.log("🚨 New ride request!");
+        notificationSoundRef.current?.play().catch(e => console.warn("Sound blocked:", e));
+      }
+  
+      setAvailableJobs(newJobs);
     });
-
+  
     return () => {
       console.log("🧹 Listener cleaned up");
       unsub();
     };
-  }, [db, isOnline, activeRide]);
+  }, [db, isOnline, activeRide, availableJobs.length]);
 
   // Timer for request
   useEffect(() => {
@@ -249,41 +247,71 @@ export default function DriverDashboardPage() {
         </CardContent>
       </Card>
 
-      {/* Ride Request Popup */}
       <AlertDialog open={!!jobRequest}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2">
-              <AlertTriangle className="w-8 h-8 text-primary" /> New Ride Request!
-            </AlertDialogTitle>
-            <AlertDialogDescription>Please review the details and respond quickly.</AlertDialogDescription>
+            <AlertDialogTitle>New Ride Request!</AlertDialogTitle>
+            <AlertDialogDescription>A new ride is available. Please review and respond quickly.</AlertDialogDescription>
           </AlertDialogHeader>
-          <div className="relative space-y-3 py-4">
-            <div className="absolute top-0 right-0 w-12 h-12 flex items-center justify-center rounded-full border-4 border-primary text-primary font-bold text-xl">
-              {requestTimeout}
-            </div>
-            <div><Label>Pickup</Label><p className="font-semibold">{jobRequest?.pickup?.address}</p></div>
-            <div><Label>Drop</Label><p className="font-semibold">{jobRequest?.destination?.address}</p></div>
-            <div><Label>Estimated Fare</Label><p className="font-bold text-xl text-green-600">₹{jobRequest?.fare}</p></div>
-          </div>
-          <AlertDialogFooter className="grid grid-cols-2">
+          {jobRequest && (
+            <>
+              <div className="absolute top-4 right-4 w-12 h-12 flex items-center justify-center rounded-full border-4 border-primary text-primary font-bold text-2xl">
+                {requestTimeout}
+              </div>
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center text-xl font-bold">
+                  {jobRequest?.riderName?.[0] || 'R'}
+                </div>
+                <div>
+                  <p className="font-bold">{jobRequest?.riderName}</p>
+                  <p className="text-sm text-muted-foreground capitalize">{jobRequest?.riderGender}</p>
+                </div>
+                <Badge variant="outline" className="ml-auto">{jobRequest?.rideType}</Badge>
+              </div>
+              <div className="h-40 w-full rounded-md overflow-hidden border">
+                <LiveMap
+                  riderLocation={jobRequest.pickup?.location}
+                  destinationLocation={jobRequest.destination?.location}
+                  zoom={11}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4 text-center">
+                <div className="p-2 bg-muted rounded-md">
+                  <p className="text-xs text-muted-foreground">Est. Fare</p>
+                  <p className="font-bold text-lg text-green-600">₹{jobRequest.fare}</p>
+                </div>
+                <div className="p-2 bg-muted rounded-md">
+                  <p className="text-xs text-muted-foreground">Distance</p>
+                  <p className="font-bold text-lg">{jobRequest.distance ? `${jobRequest.distance.toFixed(1)} km` : 'N/A'}</p>
+                </div>
+              </div>
+            </>
+          )}
+          <AlertDialogFooter className="grid grid-cols-2 gap-2">
             <Button variant="destructive" onClick={() => handleDeclineJob()}>Decline</Button>
             <Button onClick={() => {
-              if (!jobRequest || !partnerData || !db) return
-              if (requestTimerRef.current) clearInterval(requestTimerRef.current)
-              const jobRef = doc(db, 'rides', jobRequest.id)
+              if (!jobRequest || !partnerData || !db) return;
+              if (requestTimerRef.current) clearInterval(requestTimerRef.current);
+              const jobRef = doc(db, 'rides', jobRequest.id);
               updateDoc(jobRef, {
                 status: 'accepted',
                 driverId: partnerData.id,
                 driverName: partnerData.name,
+                driverDetails: {
+                  name: partnerData.name,
+                  vehicle: `${partnerData.vehicleBrand} ${partnerData.vehicleName}`,
+                  rating: partnerData.rating,
+                  photoUrl: partnerData.photoUrl,
+                  phone: partnerData.phone,
+                },
               }).then(() => {
-                setAvailableJobs((prev) => prev.filter((j) => j.id !== jobRequest.id))
-                setActiveRide({ id: jobRequest.id, ...jobRequest } as RideData)
-                localStorage.setItem('activeRideId', jobRequest.id)
+                setAvailableJobs((prev) => prev.filter((j) => j.id !== jobRequest.id));
+                setActiveRide({ id: jobRequest.id, ...jobRequest } as RideData);
+                localStorage.setItem('activeRideId', jobRequest.id);
               }).catch((err) => {
-                console.error("❌ Error accepting job:", err)
-                toast({ variant: 'destructive', title: 'Error', description: 'Could not accept job. It might have been taken.' })
-              })
+                console.error("❌ Error accepting job:", err);
+                toast({ variant: 'destructive', title: 'Error', description: 'Could not accept job. It might have been taken.' });
+              });
             }}>Accept Ride</Button>
           </AlertDialogFooter>
         </AlertDialogContent>
