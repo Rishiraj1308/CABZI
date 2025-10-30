@@ -1,5 +1,4 @@
 
-
 'use client'
 
 import React, { useState, useEffect, useCallback, createContext, useContext } from 'react'
@@ -12,7 +11,7 @@ import { Toaster } from '@/components/ui/toaster'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog"
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
 import { useToast } from '@/hooks/use-toast'
 import BrandLogo from '@/components/brand-logo'
 import { useTheme } from 'next-themes'
@@ -103,11 +102,11 @@ export default function CureLayout({ children }: { children: React.ReactNode }) 
   const [navItems, setNavItems] = useState<any[]>([]);
   const [isSessionLoading, setIsSessionLoading] = useState(true);
   
-  const handleLogout = useCallback(async () => {
+  const handleLogout = useCallback(() => {
     if(partnerData && db) {
         try {
             const cureRef = doc(db, 'ambulances', partnerData.id);
-            await updateDoc(cureRef, { isOnline: false });
+            updateDoc(cureRef, { isOnline: false });
         } catch (error) {
           console.error("Failed to update logout status for cure partner:", error);
         }
@@ -179,10 +178,13 @@ export default function CureLayout({ children }: { children: React.ReactNode }) 
                 setNavItems(menu);
             }
             setIsSessionLoading(false);
+        }, (error) => {
+             console.error("CureLayout onSnapshot error:", error);
+             setIsSessionLoading(false);
         });
 
     } catch (e) {
-        console.error("CureLayout snapshot error:", e);
+        console.error("CureLayout session parsing error:", e);
         if (!isOnboardingPage) handleLogout();
         setIsSessionLoading(false);
     }
@@ -192,7 +194,7 @@ export default function CureLayout({ children }: { children: React.ReactNode }) 
         if (unsubPartner) unsubPartner();
     };
 
-  }, [db, user, isUserLoading, handleLogout, auth, pathname, router]);
+  }, [db, user, isUserLoading]);
 
   
   if (pathname === '/cure/onboarding') {
