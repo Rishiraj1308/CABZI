@@ -85,6 +85,8 @@ export default function RideStatus({
   
   const prevStatusRef = React.useRef<string | null>(null);
 
+  const rideData = ride as RideData; // FIX: Moved to top level scope
+
   useEffect(() => {
     // When ride status changes from 'searching' to 'accepted', trigger the animation sequence.
     if (prevStatusRef.current === 'searching' && ride.status === 'accepted') {
@@ -189,8 +191,6 @@ export default function RideStatus({
                 return <p>Unknown ambulance status: {caseData.status}</p>;
         }
     }
-
-    const rideData = ride as RideData;
     
     if (isGarageRequest) {
         switch(rideData.status) {
