@@ -455,9 +455,18 @@ export default function RideStatus({
                             </AlertDialogFooter>
                         </AlertDialogContent>
                     </AlertDialog>
-                    <Button variant="ghost" size="icon" className="rounded-full">
-                        <MessageSquare className="w-5 h-5" />
-                    </Button>
+                     <div className="flex">
+                        {rideData.driverDetails?.phone && (
+                          <Button asChild variant="ghost" size="icon" className="rounded-full">
+                            <a href={`tel:${rideData.driverDetails.phone}`}>
+                                <Phone className="w-5 h-5" />
+                            </a>
+                          </Button>
+                        )}
+                        <Button variant="ghost" size="icon" className="rounded-full">
+                            <MessageSquare className="w-5 h-5" />
+                        </Button>
+                    </div>
                 </CardFooter>
             )}
         </Card>
