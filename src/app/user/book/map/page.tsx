@@ -81,7 +81,6 @@ function BookRideMapComponent() {
     
     const [activeRide, setActiveRide] = useState<RideData | null>(null);
 
-
     const getAddress = useCallback(async (lat: number, lon: number): Promise<string | null> => {
         try {
             const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`);
@@ -101,8 +100,9 @@ function BookRideMapComponent() {
                 }
             })
         }
-    },[user, db])
+    },[user, db]);
 
+    // This effect runs once to get the initial destination from the URL and the user's current location.
     useEffect(() => {
         const destQuery = searchParams.get('search');
         if (!destQuery) {
@@ -112,18 +112,21 @@ function BookRideMapComponent() {
         }
 
         const fetchInitialData = async () => {
+            // Get user's current location
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    const coords = { lat: position.coords.latitude, lon: position.coords.longitude };
+                    setUserLocation(coords);
+                },
+                () => {
+                    // Fallback location if user denies access
+                    setUserLocation({ lat: 28.6139, lon: 77.2090 }); 
+                    toast({ variant: 'destructive', title: "Location Access Denied" });
+                }
+            );
+            
+            // Geocode the destination from URL
             try {
-                navigator.geolocation.getCurrentPosition(
-                    (position) => {
-                        const coords = { lat: position.coords.latitude, lon: position.coords.longitude };
-                        setUserLocation(coords);
-                    },
-                    () => {
-                        setUserLocation({ lat: 28.6139, lon: 77.2090 });
-                        toast({ variant: 'destructive', title: "Location Access Denied" });
-                    }
-                );
-                
                 const results = await searchPlace(destQuery);
                 if (results.length > 0) {
                     const place = results[0];
@@ -142,7 +145,7 @@ function BookRideMapComponent() {
         fetchInitialData();
     }, [searchParams, router, toast]);
 
-
+    // This effect runs only when the user's location or destination changes to calculate the route and fares.
     useEffect(() => {
         if (!userLocation || !destination?.coords) return;
 
@@ -161,7 +164,8 @@ function BookRideMapComponent() {
                         }
                         const config = fareConfig[rt.name];
                         if (!config) return { ...rt, fare: 'N/A', eta: 'N/A' };
-                        const totalFare = Math.round((config.base + (config.perKm * (route.distance / 1000)) + config.serviceFee) / 5) * 5;
+                        // Add a 20% buffer for traffic/time
+                        const totalFare = Math.round(((config.base + (config.perKm * (route.distance / 1000))) * 1.2) / 5) * 5;
                         return { 
                             ...rt, 
                             fare: `₹${totalFare}`, 
@@ -181,19 +185,21 @@ function BookRideMapComponent() {
         fetchRouteAndFares();
     }, [userLocation, destination, toast, session?.gender]);
     
+    // This effect listens for updates on the active ride.
     useEffect(() => {
         if (!db || !activeRide?.id) return;
     
         const unsub = onSnapshot(doc(db, 'rides', activeRide.id), (docSnap) => {
             if (docSnap.exists()) {
                 const rideData = { id: docSnap.id, ...docSnap.data() } as RideData;
-                setActiveRide(rideData);
+                setActiveRide(rideData); // Update state with the new data
+                // Check if the ride is completed or cancelled
                 if (['completed', 'cancelled_by_driver', 'cancelled_by_rider'].includes(rideData.status)) {
                      setTimeout(() => {
                         localStorage.removeItem('activeRideId');
                         setActiveRide(null);
                         setRouteGeometry(null);
-                    }, 3000);
+                    }, 5000); // 5-second delay before clearing
                 }
             } else {
                  localStorage.removeItem('activeRideId');
@@ -202,9 +208,25 @@ function BookRideMapComponent() {
             }
         });
     
-        return () => unsub();
+        return () => unsub(); // Cleanup on component unmount or when activeRide.id changes
     }, [db, activeRide?.id]);
     
+     // New effect to check for an active ride on initial load
+    useEffect(() => {
+        if (!db) return;
+        const activeRideId = localStorage.getItem('activeRideId');
+        if (activeRideId) {
+            const rideRef = doc(db, 'rides', activeRideId);
+            getDoc(rideRef).then(docSnap => {
+                if (docSnap.exists()) {
+                    setActiveRide({ id: docSnap.id, ...docSnap.data() } as RideData);
+                } else {
+                    localStorage.removeItem('activeRideId');
+                }
+            });
+        }
+    }, [db]);
+
     const handleConfirmRide = async () => {
        if (!userLocation || !destination?.coords || !session || !db) return;
     
@@ -232,7 +254,7 @@ function BookRideMapComponent() {
 
         try {
             const docRef = await addDoc(collection(db, 'rides'), rideData);
-            setActiveRide({ id: docRef.id, ...rideData });
+            setActiveRide({ id: docRef.id, ...rideData } as RideData);
             localStorage.setItem('activeRideId', docRef.id);
         } catch (error) {
             toast({ variant: 'destructive', title: 'Booking Failed' });
@@ -317,9 +339,20 @@ function BookRideMapComponent() {
                             <Button size="lg" className="h-12 text-base font-bold col-span-4" disabled={isLoading || isBooking} onClick={handleConfirmRide}>
                                 {isBooking ? 'Confirming...' : `Confirm ${selectedRide}`}
                             </Button>
-                            <Button variant="outline" size="lg" className="h-12">
-                                <Shield/>
-                            </Button>
+                             <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                    <Button variant="outline" size="lg" className="h-12">
+                                        <Shield/>
+                                    </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                    <AlertDialogHeader><AlertDialogTitle>Safety Toolkit</AlertDialogTitle></AlertDialogHeader>
+                                    <div className="py-4 space-y-2">
+                                        <Button variant="outline" className="w-full justify-start gap-2" onClick={() => toast({title: "Coming Soon!"})}><MapPin className="w-4 h-4"/> Share Ride Details</Button>
+                                        <Button variant="outline" className="w-full justify-start gap-2"><a href="tel:112"><Phone className="w-4 h-4"/> Call Emergency Services</a></Button>
+                                    </div>
+                                </AlertDialogContent>
+                            </AlertDialog>
                         </CardFooter>
                     </>
                  )}
