@@ -44,21 +44,24 @@ function getDistance(lat1: number, lon1: number, lat2: number, lon2: number) {
 }
 
 const handleRideDispatch = async (rideData: any, rideId: string) => {
+    // Correctly get the base vehicle type (e.g., "Cab" from "Cab (Lite)")
+    const rideTypeBase = rideData.rideType.split(' ')[0].trim();
+
     let partnersQuery = db.collection('partners')
         .where('isOnline', '==', true)
-        .where('status', '==', 'online') // Ensure partner is not on a trip
-        .where('vehicleType', '==', rideData.rideType);
-
-    // If ride type is "Cabzi Pink", filter for women partners who have opted in.
-    if (rideData.rideType === 'Cabzi Pink') {
-        partnersQuery = partnersQuery.where('isCabziPinkPartner', '==', true)
+        .where('status', '==', 'online');
+        // We cannot use multiple inequality filters, so vehicleType will be filtered in the function
+    
+    // If ride type is "Curocity Pink", add specific filters.
+    if (rideData.rideType === 'Curocity Pink') {
+        partnersQuery = partnersQuery.where('isCurocityPinkPartner', '==', true)
                                    .where('gender', '==', 'female');
     }
 
     const partnersSnapshot = await partnersQuery.get();
     
     if (partnersSnapshot.empty) {
-        console.log('No online partners found for the ride criteria.');
+        console.log(`No online partners found for ride type: ${rideData.rideType} (Base: ${rideTypeBase}).`);
         await db.doc(`rides/${rideId}`).update({ status: 'no_drivers_available' });
         return;
     }
@@ -67,9 +70,10 @@ const handleRideDispatch = async (rideData: any, rideId: string) => {
     const nearbyPartners = partnersSnapshot.docs
         .map(doc => ({ id: doc.id, ...doc.data() } as Partner))
         .filter(partner => {
-            if (!partner.currentLocation) return false;
-            const partnerLocation = partner.currentLocation as GeoPoint;
-            const distance = getDistance(rideLocation.latitude, rideLocation.longitude, partnerLocation.latitude, partnerLocation.longitude);
+            if (!partner.currentLocation || !partner.vehicleType.startsWith(rideTypeBase)) return false;
+            
+            const distance = getDistance(rideLocation.latitude, rideLocation.longitude, partner.currentLocation.latitude, partner.currentLocation.longitude);
+            partner.distanceToRider = distance; // Temporarily attach distance
             return distance < 10; // 10km radius
         });
     
@@ -79,34 +83,44 @@ const handleRideDispatch = async (rideData: any, rideId: string) => {
         return;
     }
 
-    const tokens = nearbyPartners.map(p => p.fcmToken).filter((t): t is string => !!t);
-    if (tokens.length > 0) {
-        // Create a serializable payload by converting complex objects to strings/numbers.
-        const payloadData = {
-            type: 'new_ride_request',
-            rideId: rideId,
-            pickupAddress: rideData.pickup.address,
-            destinationAddress: rideData.destination.address,
-            pickupLocation: JSON.stringify(rideData.pickup.location),
-            destinationLocation: JSON.stringify(rideData.destination.location),
-            createdAt: rideData.createdAt.toMillis().toString(),
-            fare: String(rideData.fare),
-            rideType: rideData.rideType,
-            status: rideData.status,
-            riderName: rideData.riderName,
-            riderId: rideData.riderId,
-            riderGender: rideData.riderGender,
-            otp: rideData.otp,
-        };
+    // Send personalized notifications with ETA and distance
+    for (const partner of nearbyPartners) {
+        if (partner.fcmToken) {
+            const distanceToRider = partner.distanceToRider;
+            const eta = distanceToRider * 2; // Simple ETA calculation (e.g., 2 mins per km)
 
-        const message = {
-            data: payloadData,
-            tokens: tokens,
-        };
-        await messaging.sendEachForMulticast(message);
-        console.log(`Ride request ${rideId} sent to ${tokens.length} partners.`);
-    } else {
-        console.log('No partners with FCM tokens found for this ride request.');
+            const payloadData = {
+                type: 'new_ride_request',
+                rideId: rideId,
+                pickupAddress: rideData.pickup.address,
+                destinationAddress: rideData.destination.address,
+                pickupLocation: JSON.stringify(rideData.pickup.location),
+                destinationLocation: JSON.stringify(rideData.destination.location),
+                createdAt: rideData.createdAt.toMillis().toString(),
+                fare: String(rideData.fare),
+                rideType: rideData.rideType,
+                status: rideData.status,
+                riderName: rideData.riderName,
+                riderId: rideData.riderId,
+                riderGender: rideData.riderGender,
+                otp: rideData.otp,
+                distance: String(rideData.distance),
+                driverDistance: String(distanceToRider), // Specific distance for this driver
+                driverEta: String(eta), // Specific ETA for this driver
+            };
+            
+            const message = {
+                data: payloadData,
+                token: partner.fcmToken,
+            };
+
+            try {
+                await messaging.send(message);
+                console.log(`Ride request ${rideId} sent to partner ${partner.id}.`);
+            } catch (error) {
+                console.error(`Failed to send notification to partner ${partner.id}:`, error);
+            }
+        }
     }
 }
 
@@ -138,11 +152,27 @@ const handleGarageRequestDispatch = async (requestData: any, requestId: string) 
     
     const tokens = nearbyMechanics.map(m => m.fcmToken).filter((t): t is string => !!t);
     if (tokens.length > 0) {
+        // Correctly serialize the data for FCM payload
+        const payloadData = {
+            type: 'new_garage_request',
+            requestId: requestId,
+            driverId: requestData.driverId,
+            driverName: requestData.driverName,
+            driverPhone: requestData.driverPhone,
+            issue: requestData.issue,
+            location: JSON.stringify(requestData.location),
+            status: requestData.status,
+            otp: requestData.otp,
+            createdAt: requestData.createdAt.toMillis().toString(), // CRITICAL FIX
+        };
         const message = {
-            data: { type: 'new_garage_request', requestId, ...requestData },
+            data: payloadData,
             tokens: tokens,
         };
         await messaging.sendEachForMulticast(message);
+        console.log(`Garage request ${requestId} sent to ${tokens.length} mechanics.`);
+    } else {
+         console.log('No mechanics with FCM tokens found for this request.');
     }
 }
 
@@ -237,11 +267,39 @@ export const emergencyCaseUpdater = onDocumentUpdated('emergencyCases/{caseId}',
 
     const dataBefore = snapshot.before.data();
     const dataAfter = snapshot.after.data();
+    const caseId = event.params.caseId;
+    
+    const logRef = db.collection('emergencyCases').doc(caseId).collection('logs');
+    let logMessage = '';
 
-    // If a hospital rejects the case (by adding their ID to rejectedBy), re-run dispatch.
-    if (dataAfter.status === 'pending' && dataAfter.rejectedBy?.length > dataBefore.rejectedBy?.length) {
-        console.log(`Re-dispatching emergency case: ${event.params.caseId} due to rejection.`);
-        await handleEmergencyDispatch(dataAfter, event.params.caseId);
+    // Logic for Status Change Logging
+    if (dataBefore.status !== dataAfter.status) {
+        const actor = dataAfter.status.includes('_by_') ? dataAfter.status.split('_by_')[1] : 'system';
+        logMessage = `Status changed from ${dataBefore.status} to ${dataAfter.status} by ${actor}.`;
+    }
+
+    // Logic for Rejection Logging
+    const rejectedBefore = dataBefore.rejectedBy || [];
+    const rejectedAfter = dataAfter.rejectedBy || [];
+    if (rejectedAfter.length > rejectedBefore.length) {
+        const newRejectorId = rejectedAfter.find((id: string) => !rejectedBefore.includes(id));
+        logMessage = `Case rejected by partner ${newRejectorId}. Re-dispatching.`;
+    }
+    
+    if (logMessage) {
+        await logRef.add({
+            timestamp: serverTimestamp(),
+            message: logMessage,
+            dataBefore,
+            dataAfter
+        });
+    }
+
+
+    // Logic for Re-dispatching
+    if (dataAfter.status === 'pending' && rejectedAfter.length > rejectedBefore.length) {
+        console.log(`Re-dispatching emergency case: ${caseId} due to rejection.`);
+        await handleEmergencyDispatch(dataAfter, caseId);
     }
 });
 
