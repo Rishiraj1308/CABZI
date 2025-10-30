@@ -234,10 +234,6 @@ export default function DriverDashboardPage() {
                             <CardTitle>Your Dashboard</CardTitle>
                             <CardDescription>You are currently <span className={isOnline ? "font-bold text-green-600" : "font-bold text-destructive"}>{isOnline ? "Online" : "Offline"}</span>.</CardDescription>
                         </div>
-                        <div className="flex items-center space-x-2">
-                            <Switch id="online-status" checked={isOnline} onCheckedChange={handleOnlineStatusChange} className="data-[state=checked]:bg-green-500" />
-                            <Label htmlFor="online-status" className="font-bold text-lg">{isOnline ? 'ONLINE' : 'OFFLINE'}</Label>
-                        </div>
                     </div>
                 </CardHeader>
                 {isOnline && (
@@ -319,4 +315,3 @@ export default function DriverDashboardPage() {
         </div>
     );
 }
-
