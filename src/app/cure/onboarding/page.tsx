@@ -10,7 +10,7 @@ import { Label } from '@/components/ui/label'
 import { useToast } from '@/hooks/use-toast'
 import Link from 'next/link'
 import BrandLogo from '@/components/brand-logo'
-import { db } from '@/lib/firebase'
+import { useDb } from '@/firebase/client-provider'
 import { collection, addDoc, serverTimestamp, GeoPoint, query, where, getDocs, limit } from "firebase/firestore";
 import { ArrowLeft } from 'lucide-react'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -40,6 +40,7 @@ const serviceCategories = [
 export default function CureOnboardingPage() {
     const { toast } = useToast()
     const router = useRouter()
+    const db = useDb();
     const [isLoading, setIsLoading] = useState(false)
     const [currentStep, setCurrentStep] = useState(1);
     const totalSteps = 4;

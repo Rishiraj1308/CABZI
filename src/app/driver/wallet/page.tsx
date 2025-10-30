@@ -1,4 +1,5 @@
 
+
 'use client'
 
 import React, { useState, useEffect } from 'react'
@@ -7,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { IndianRupee, TrendingUp, PiggyBank, CircleHelp, Landmark, KeyRound, Download, Banknote, Building, Sparkles, Send, ScanLine, QrCode } from 'lucide-react'
 import { Progress } from '@/components/ui/progress'
-import { db } from '@/lib/firebase'
+import { useDb } from '@/firebase/client-provider'
 import { collection, query, where, onSnapshot, doc, getDoc, runTransaction, addDoc, Timestamp, orderBy, updateDoc, serverTimestamp } from 'firebase/firestore'
 import { useToast } from '@/hooks/use-toast'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -15,7 +16,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import Image from 'next/image'
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle, AlertDialogFooter } from '@/components/ui/alert-dialog'
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog'
 
 
 interface BankDetails {
@@ -50,6 +51,7 @@ export default function WalletPage() {
     const [enteredPin, setEnteredPin] = useState('');
     const [isBankDetailsDialogOpen, setIsBankDetailsDialogOpen] = useState(false);
     const { toast } = useToast();
+    const db = useDb();
 
     // PIN Management State
     const [isPinSet, setIsPinSet] = useState(false);
@@ -119,7 +121,7 @@ export default function WalletPage() {
 
         return () => unsubscribePartner();
 
-    }, [isWalletVisible, toast]);
+    }, [isWalletVisible, toast, db]);
 
     const handlePinSubmit = () => {
         const storedPin = localStorage.getItem('curocity-user-pin');
@@ -154,7 +156,7 @@ export default function WalletPage() {
     
     const handleBankDetailsSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        if (!partner) return;
+        if (!partner || !db) return;
         
         const formData = new FormData(e.currentTarget);
         const accountHolderName = formData.get('holderName') as string;
@@ -181,7 +183,7 @@ export default function WalletPage() {
     }
     
     const handleLoanDisbursement = async () => {
-        if (!partner) {
+        if (!partner || !db) {
             toast({ variant: 'destructive', title: 'Error', description: 'Partner data not found.' });
             return;
         }
@@ -451,7 +453,6 @@ export default function WalletPage() {
                                 alt="UPI QR Code"
                                 width={200}
                                 height={200}
-                                data-ai-hint="qr code"
                             />
                         </div>
                         <p className="font-semibold text-lg text-center">{partner?.upiId || '...'}</p>
@@ -541,7 +542,7 @@ export default function WalletPage() {
            <Card>
              <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                    <PiggyBank className="text-primary"/> Goal Planner
+                    <PiggyBank className="text-primary"/> AI Goal Planner
                 </CardTitle>
                  <CardDescription>Save for your goals and get smart tips from our AI planner.</CardDescription>
              </CardHeader>

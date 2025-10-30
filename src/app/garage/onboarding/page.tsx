@@ -1,4 +1,5 @@
 
+
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
@@ -10,7 +11,7 @@ import { Label } from '@/components/ui/label'
 import { useToast } from '@/hooks/use-toast'
 import Link from 'next/link'
 import BrandLogo from '@/components/brand-logo'
-import { db } from '@/lib/firebase'
+import { useDb } from '@/firebase/client-provider'
 import { collection, addDoc, serverTimestamp, GeoPoint, query, where, getDocs, writeBatch, doc } from "firebase/firestore";
 import { Checkbox } from '@/components/ui/checkbox'
 import dynamic from 'next/dynamic'
@@ -47,6 +48,7 @@ export default function GarageOnboardingPage() {
     const [selectedServices, setSelectedServices] = useState<string[]>([]);
     const [location, setLocation] = useState<{ address: string, coords: { lat: number, lon: number } } | null>(null);
     const mapRef = useRef<any>(null);
+    const db = useDb();
 
     useEffect(() => {
         setIsMounted(true)

@@ -10,7 +10,7 @@ import { Gem, ShieldCheck, Wrench, HeartHandshake, Star, TrendingUp, CircleHelp,
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 import { useToast } from '@/hooks/use-toast'
-import { db } from '@/lib/firebase'
+import { useDb } from '@/firebase/client-provider'
 import { doc, onSnapshot, updateDoc, Timestamp, query, collection, where } from 'firebase/firestore'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
@@ -86,6 +86,7 @@ export default function SubscriptionPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [partnerId, setPartnerId] = useState<string | null>(null);
   const [currentSubscription, setCurrentSubscription] = useState<Subscription | null>(null);
+  const db = useDb();
 
   useEffect(() => {
     if (!db) {
@@ -117,7 +118,7 @@ export default function SubscriptionPage() {
     }
     
     return () => unsubSettings();
-  }, []);
+  }, [db]);
 
   const handleActivatePlan = async (planName: string) => {
     if (!partnerId || !db) {
@@ -296,5 +297,3 @@ export default function SubscriptionPage() {
      </div>
   )
 }
-
-    

@@ -1,4 +1,6 @@
 
+
+      
 'use client'
 
 import { useState, useEffect } from 'react'
@@ -8,7 +10,7 @@ import { Gem, ShieldCheck, TrendingUp, Star, Sparkles, Server, BarChart, Users, 
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 import { useToast } from '@/hooks/use-toast'
-import { db } from '@/lib/firebase'
+import { useDb } from '@/firebase/client-provider'
 import { doc, onSnapshot, updateDoc, Timestamp, query, collection, where } from 'firebase/firestore'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
@@ -83,6 +85,7 @@ export default function CureSubscriptionPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [partnerId, setPartnerId] = useState<string | null>(null);
   const [currentSubscription, setCurrentSubscription] = useState<Subscription | null>(null);
+  const db = useDb();
 
   useEffect(() => {
     if (!db) {
@@ -97,7 +100,7 @@ export default function CureSubscriptionPage() {
     });
 
     // Fetch partner subscription details
-    const session = localStorage.getItem('cabzi-cure-session');
+    const session = localStorage.getItem('curocity-cure-session');
     if(session) {
         const { phone } = JSON.parse(session);
         const partnerQuery = query(collection(db, 'ambulances'), where('phone', '==', phone));
@@ -114,7 +117,7 @@ export default function CureSubscriptionPage() {
     }
     
     return () => unsubSettings();
-  }, []);
+  }, [db]);
 
   const handleActivatePlan = async (planName: string) => {
     if (!partnerId || !db) {
