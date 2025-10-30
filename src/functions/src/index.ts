@@ -45,8 +45,9 @@ function getDistance(lat1: number, lon1: number, lat2: number, lon2: number) {
 
 const handleRideDispatch = async (rideData: any, rideId: string) => {
     let partnersQuery = db.collection('partners')
-        .where('isOnline', '==', true);
-
+        .where('isOnline', '==', true)
+        .where('status', '==', 'online') // Ensure partner is not on a trip
+        
     // This logic is critical. It extracts the base vehicle type.
     // e.g., "Cab (Lite)" -> "Cab", "Auto" -> "Auto", "Bike" -> "Bike"
     const rideTypeBase = rideData.rideType.split('(')[0].trim();
@@ -143,11 +144,27 @@ const handleGarageRequestDispatch = async (requestData: any, requestId: string) 
     
     const tokens = nearbyMechanics.map(m => m.fcmToken).filter((t): t is string => !!t);
     if (tokens.length > 0) {
+        // Correctly serialize the data for FCM payload
+        const payloadData = {
+            type: 'new_garage_request',
+            requestId: requestId,
+            driverId: requestData.driverId,
+            driverName: requestData.driverName,
+            driverPhone: requestData.driverPhone,
+            issue: requestData.issue,
+            location: JSON.stringify(requestData.location),
+            status: requestData.status,
+            otp: requestData.otp,
+            createdAt: requestData.createdAt.toMillis().toString(),
+        };
         const message = {
-            data: { type: 'new_garage_request', requestId, ...requestData },
+            data: payloadData,
             tokens: tokens,
         };
         await messaging.sendEachForMulticast(message);
+        console.log(`Garage request ${requestId} sent to ${tokens.length} mechanics.`);
+    } else {
+         console.log('No mechanics with FCM tokens found for this request.');
     }
 }
 
@@ -455,9 +472,3 @@ export const simulateHighDemand = onCall(async (request) => {
 
     return { success: true, message: `High demand alert triggered for ${zoneName}.` };
 });
-
-    
-
-    
-
-    
