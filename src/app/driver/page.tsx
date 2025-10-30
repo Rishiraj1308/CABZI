@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
-import { Star, History, IndianRupee, Power, AlertTriangle, Sparkles } from 'lucide-react'
+import { Star, History, IndianRupee, Power, AlertTriangle, Sparkles, Eye } from 'lucide-react'
 import {
   AlertDialog,
   AlertDialogContent,
@@ -17,7 +17,8 @@ import {
 } from "@/components/ui/alert-dialog"
 import { useToast } from '@/hooks/use-toast'
 import { doc, updateDoc, GeoPoint, serverTimestamp, onSnapshot, collection, query, where, Timestamp } from 'firebase/firestore'
-import { useFirebase } from '@/firebase/client-provider'
+import { useFirebase, useMessaging } from '@/firebase/client-provider'
+import { onMessage } from 'firebase/messaging'
 import dynamic from 'next/dynamic'
 import type { JobRequest, RideData } from '@/lib/types'
 import { AnimatePresence, motion } from 'framer-motion'
@@ -25,13 +26,16 @@ import RideStatus from '@/components/ride-status'
 import SearchingIndicator from '@/components/ui/searching-indicator'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useDriver } from './layout'
+import Image from 'next/image'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
+import { Input } from '../ui/input'
 
 const LiveMap = dynamic(() => import('@/components/live-map'), { 
     ssr: false,
     loading: () => <div className="w-full h-full bg-muted flex items-center justify-center"><p>Loading Map...</p></div>
 });
 
-const StatCard = ({ title, value, icon: Icon, isLoading }: { title: string, value: string, icon: React.ElementType, isLoading?: boolean }) => (
+const StatCard = ({ title, value, icon: Icon, isLoading, onValueClick }: { title: string, value: string, icon: React.ElementType, isLoading?: boolean, onValueClick?: () => void }) => (
     <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">{title}</CardTitle>
@@ -41,7 +45,9 @@ const StatCard = ({ title, value, icon: Icon, isLoading }: { title: string, valu
              {isLoading ? (
                 <Skeleton className="h-8 w-20" />
             ) : (
-                <div className="text-2xl font-bold">{value}</div>
+                 <div className="text-2xl font-bold cursor-pointer" onClick={onValueClick}>
+                    {value}
+                </div>
             )}
         </CardContent>
     </Card>
@@ -52,74 +58,92 @@ export default function DriverDashboardPage() {
     const [activeRide, setActiveRide] = useState<RideData | null>(null);
     const [requestTimeout, setRequestTimeout] = useState(15);
     const requestTimerRef = useRef<NodeJS.Timeout | null>(null);
+    const [isEarningsVisible, setIsEarningsVisible] = useState(false);
+    const [isPinDialogOpen, setIsPinDialogOpen] = useState(false);
+    const [pin, setPin] = useState('');
+    const earningsTimerRef = useRef<NodeJS.Timeout | null>(null);
+    const notificationSoundRef = useRef<HTMLAudioElement | null>(null);
     
     const { partnerData, isLoading: isDriverLoading } = useDriver(); 
 
     const { db } = useFirebase();
+    const messaging = useMessaging();
     const { toast } = useToast();
     const liveMapRef = useRef<any>(null);
 
     const isOnline = partnerData?.isOnline || false;
     const jobRequest = availableJobs.length > 0 ? availableJobs[0] : null;
 
-    const getDistance = useCallback((lat1:number, lon1:number, lat2:number, lon2:number) => {
-      const R = 6371; // Radius of the earth in km
-      const dLat = (lat2-lat1) * Math.PI / 180;
-      const dLon = (lon2-lon1) * Math.PI / 180;
-      const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(lat1* Math.PI/180) * Math.cos(lat2* Math.PI/180) * Math.sin(dLon/2) * Math.sin(dLon/2);
-      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-      return R * c; // distance in km
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            notificationSoundRef.current = new Audio('/sounds/notification.mp3');
+        }
     }, []);
 
-    // Stable listener for new ride requests
+    // Listen for new ride requests via FCM
     useEffect(() => {
-        if (!db || !isOnline || activeRide || !partnerData?.currentLocation || !partnerData.vehicleType) {
+        if (!messaging || !isOnline || activeRide || !partnerData?.id) {
             return;
         }
 
-        const twentySecondsAgo = Timestamp.fromMillis(Date.now() - 20000);
-        const ridesRef = collection(db, 'rides');
-        let q = query(
-            ridesRef, 
-            where('status', '==', 'searching'),
-            where('createdAt', '>=', twentySecondsAgo)
-        );
+        const unsubscribe = onMessage(messaging, (payload) => {
+            console.log('FCM Message received in driver dashboard.', payload);
+            const { type, rideId, ...jobData } = payload.data || {};
 
-        const vehicleTypeBase = partnerData.vehicleType.split(' ')[0];
-        if(vehicleTypeBase) {
-             q = query(q, where('rideType', '==', vehicleTypeBase));
-        }
-        
-        if (partnerData.isCabziPinkPartner) {
-            q = query(q, where('riderGender', '==', 'female'));
-        }
-
-        const unsubscribe = onSnapshot(q, (snapshot) => {
-            const newJobs: JobRequest[] = [];
-            snapshot.docChanges().forEach((change) => {
-                if (change.type === 'added') {
-                    const job = { id: change.doc.id, ...change.doc.data() } as JobRequest;
-                    const distance = getDistance(
-                        partnerData.currentLocation!.latitude, partnerData.currentLocation!.longitude,
-                        job.pickup.location.latitude, job.pickup.location.longitude
-                    );
-                    if (distance < 10) { 
-                       newJobs.push({...job, distance});
+            if(type === 'new_ride_request' && rideId) {
+                const newJobRequest: JobRequest = {
+                    id: rideId,
+                    ...jobData,
+                    pickup: { address: jobData.pickupAddress, location: JSON.parse(jobData.pickupLocation || '{}') },
+                    destination: { address: jobData.destinationAddress, location: JSON.parse(jobData.destinationLocation || '{}') },
+                    fare: parseFloat(jobData.fare),
+                    createdAt: new Timestamp(parseInt(jobData.createdAt) / 1000, 0),
+                } as JobRequest;
+                
+                // Add to the front of the queue if not already present
+                setAvailableJobs(prevJobs => {
+                    if (prevJobs.some(job => job.id === newJobRequest.id)) {
+                        return prevJobs;
                     }
-                }
-            });
+                    return [newJobRequest, ...prevJobs];
+                });
 
-            if (newJobs.length > 0) {
-                 setAvailableJobs(prevJobs => {
-                     const existingIds = new Set(prevJobs.map(j => j.id));
-                     const uniqueNewJobs = newJobs.filter(j => !existingIds.has(j.id));
-                     return [...uniqueNewJobs, ...prevJobs].sort((a,b) => b.createdAt.toMillis() - a.createdAt.toMillis());
-                 });
+                notificationSoundRef.current?.play().catch(e => console.error("Audio play failed:", e));
             }
         });
 
         return () => unsubscribe();
-    }, [db, isOnline, activeRide, partnerData?.currentLocation, partnerData?.vehicleType, partnerData?.isCabziPinkPartner, getDistance]);
+    }, [messaging, isOnline, partnerData, activeRide]);
+
+    useEffect(() => {
+        // This effect is responsible for managing the countdown timer for the oldest job request.
+        let timer: NodeJS.Timeout | null = null;
+        if (jobRequest) {
+            setRequestTimeout(15); // Reset timer for the new job
+            timer = setInterval(() => {
+                setRequestTimeout(prev => {
+                    if (prev <= 1) {
+                        if (timer) clearInterval(timer);
+                        handleDeclineJob(true); // Automatically decline the current jobRequest
+                        return 0;
+                    }
+                    return prev - 1;
+                });
+            }, 1000);
+            requestTimerRef.current = timer;
+        } else {
+            setRequestTimeout(15);
+            if (requestTimerRef.current) {
+                clearInterval(requestTimerRef.current);
+            }
+        }
+    
+        return () => {
+            if (timer) clearInterval(timer);
+        };
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+      }, [jobRequest]);
+
 
     const handleOnlineStatusChange = async (checked: boolean) => {
         if (!partnerData || !db) return;
@@ -172,6 +196,27 @@ export default function DriverDashboardPage() {
         localStorage.removeItem('activeRideId');
     }
 
+     const handlePinSubmit = () => {
+      const storedPin = localStorage.getItem('curocity-user-pin');
+      if (!storedPin) {
+          toast({ variant: 'destructive', title: 'PIN Not Set', description: 'Please set a UPI PIN from your wallet first.' });
+          return;
+      }
+      if (pin === storedPin) {
+          setIsEarningsVisible(true);
+          setIsPinDialogOpen(false);
+          setPin('');
+          toast({ title: 'Earnings Revealed', description: 'Your earnings for today are now visible.' });
+
+          if (earningsTimerRef.current) clearTimeout(earningsTimerRef.current);
+          earningsTimerRef.current = setTimeout(() => {
+              setIsEarningsVisible(false);
+          }, 10000);
+      } else {
+          toast({ variant: 'destructive', title: 'Invalid PIN', description: 'Please enter the correct 4-digit PIN.' });
+      }
+    }
+
     if (activeRide) {
         return (
              <div className="flex justify-center items-center h-full">
@@ -205,7 +250,13 @@ export default function DriverDashboardPage() {
             </Card>
 
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                <StatCard title="Today's Earnings" value={`₹${(partnerData?.todaysEarnings || 0).toLocaleString()}`} icon={IndianRupee} isLoading={isDriverLoading} />
+                 <StatCard 
+                    title="Today's Earnings" 
+                    value={isEarningsVisible ? `₹${(partnerData?.todaysEarnings || 0).toLocaleString()}` : '₹ ****'} 
+                    icon={IndianRupee} 
+                    isLoading={isDriverLoading}
+                    onValueClick={() => !isEarningsVisible && setIsPinDialogOpen(true)}
+                />
                 <StatCard title="Today's Rides" value={partnerData?.jobsToday?.toString() || '0'} icon={History} isLoading={isDriverLoading} />
                 <StatCard title="Acceptance Rate" value={`${partnerData?.acceptanceRate || '95'}%`} icon={Power} isLoading={isDriverLoading} />
                 <StatCard title="Rating" value={partnerData?.rating?.toString() || '4.9'} icon={Star} isLoading={isDriverLoading} />
@@ -240,6 +291,31 @@ export default function DriverDashboardPage() {
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
+            <Dialog open={isPinDialogOpen} onOpenChange={setIsPinDialogOpen}>
+                <DialogContent className="max-w-xs">
+                    <DialogHeader>
+                        <DialogTitle>Enter PIN to View</DialogTitle>
+                        <DialogDescription>For your privacy, please enter your PIN to see today's earnings.</DialogDescription>
+                    </DialogHeader>
+                    <div className="flex flex-col items-center justify-center gap-4 py-4">
+                        <Label htmlFor="pin-input" className="sr-only">Enter PIN</Label>
+                        <Input 
+                            id="pin-input" 
+                            type="password" 
+                            inputMode="numeric" 
+                            maxLength={4}
+                            value={pin}
+                            onChange={(e) => setPin(e.target.value)}
+                            className="text-center text-2xl font-bold tracking-[1em] w-40" 
+                            placeholder="••••"
+                            autoFocus
+                        />
+                    </div>
+                    <DialogFooter>
+                        <Button type="button" className="w-full" onClick={handlePinSubmit}>Submit</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }
