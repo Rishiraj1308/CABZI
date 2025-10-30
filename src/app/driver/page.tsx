@@ -202,6 +202,7 @@ export default function DriverDashboardPage() {
                 photoUrl: partnerData.photoUrl,
                 phone: partnerData.phone,
             },
+            driverEta: jobRequest.driverEta, // Pass the ETA to the ride document
         });
         await updateDoc(partnerRef, { status: 'on_trip' });
 
