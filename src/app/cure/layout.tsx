@@ -1,11 +1,10 @@
 
-
 'use client'
 
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, createContext, useContext } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { LayoutDashboard, LogOut, Sun, Moon, Bell, Ambulance, NotebookText, User, PanelLeft, History, Gem, Landmark, Stethoscope, BarChart, ShieldCheck, Users as UsersIcon } from 'lucide-react'
+import { LayoutDashboard, LogOut, Sun, Moon, Bell, Ambulance, NotebookText, User, PanelLeft, History, Gem, Landmark, Stethoscope, BarChart, ShieldCheck, Users as UsersIcon, Hospital } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Toaster } from '@/components/ui/toaster'
@@ -20,6 +19,37 @@ import { useFirebase } from '@/firebase/client-provider'
 import { doc, updateDoc, onSnapshot } from 'firebase/firestore'
 import { MotionDiv } from '@/components/ui/motion-div'
 import { Skeleton } from '@/components/ui/skeleton'
+
+// Define the shape of the partner data and context
+interface PartnerData {
+    id: string;
+    name: string;
+    phone: string;
+    isErFull: boolean;
+    totalBeds?: number;
+    bedsOccupied?: number;
+    location?: any;
+    isOnline?: boolean;
+    businessType?: string;
+    clinicType?: string;
+}
+
+interface CureContextType {
+    partnerData: PartnerData | null;
+    isLoading: boolean;
+}
+
+// Create the context
+const CureContext = createContext<CureContextType | null>(null);
+
+// Create a custom hook to use the context
+export const useCurePartner = () => {
+    const context = useContext(CureContext);
+    if (!context) {
+        throw new Error('useCurePartner must be used within a CureLayout');
+    }
+    return context;
+}
 
 function ThemeToggle() {
     const { setTheme } = useTheme()
@@ -41,19 +71,41 @@ function ThemeToggle() {
     )
 }
 
+function CureNav({ navItems }: { navItems: any[] }) {
+  const pathname = usePathname();
+  return (
+    <nav className="grid items-start gap-1 px-4 text-sm font-medium md:flex md:flex-row md:items-center md:gap-5 md:px-0">
+      {navItems.map((item) => (
+        <Link
+          key={item.href}
+          href={item.href}
+          className={cn(
+            'flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary md:p-0',
+            pathname === item.href && 'text-primary'
+          )}
+          passHref
+        >
+            <item.icon className="h-4 w-4 md:hidden" />
+            {item.label}
+        </Link>
+      ))}
+    </nav>
+  );
+}
+
 export default function CureLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const { toast } = useToast();
-  const [session, setSession] = useState<any>(null);
+  const [partnerData, setPartnerData] = useState<PartnerData | null>(null);
   const { db, auth, user, isUserLoading } = useFirebase();
   const [navItems, setNavItems] = useState<any[]>([]);
   const [isSessionLoading, setIsSessionLoading] = useState(true);
-
+  
   const handleLogout = useCallback(async () => {
-    if(session && db) {
+    if(partnerData && db) {
         try {
-            const cureRef = doc(db, 'ambulances', session.partnerId);
+            const cureRef = doc(db, 'ambulances', partnerData.id);
             await updateDoc(cureRef, { isOnline: false });
         } catch (error) {
           console.error("Failed to update logout status for cure partner:", error);
@@ -67,12 +119,10 @@ export default function CureLayout({ children }: { children: React.ReactNode }) 
         description: 'You have been successfully logged out.'
     });
     router.push('/');
-  }, [auth, db, router, session, toast]);
+  }, [auth, db, router, partnerData, toast]);
 
   useEffect(() => {
-    if (isUserLoading) {
-      return;
-    }
+    if (isUserLoading) return;
     
     const isOnboardingPage = pathname.includes('/cure/onboarding');
     if (!user) {
@@ -82,54 +132,52 @@ export default function CureLayout({ children }: { children: React.ReactNode }) 
     }
 
     const sessionString = localStorage.getItem('curocity-cure-session');
-    if (!sessionString && !isOnboardingPage) {
-        handleLogout();
+    if (!sessionString) {
+        if (!isOnboardingPage) handleLogout();
         setIsSessionLoading(false);
         return;
     }
-
+    
     let unsubPartner: () => void = () => {};
-    if(sessionString && db) {
-        try {
-            const sessionData = JSON.parse(sessionString);
-            if (!sessionData.role || sessionData.role !== 'cure' || !sessionData.partnerId) {
-                if (!isOnboardingPage) handleLogout();
-                setIsSessionLoading(false);
-                return;
-            }
-            setSession(sessionData);
-
-            const partnerRef = doc(db, 'ambulances', sessionData.partnerId);
-            unsubPartner = onSnapshot(partnerRef, (doc) => {
-                if (doc.exists()) {
-                    const data = doc.data();
-                    const isHospital = data.businessType?.toLowerCase().includes('hospital');
-                    const menu = isHospital
-                        ? [
-                            { href: '/cure', label: 'Mission Control', icon: LayoutDashboard },
-                            { href: '/cure/fleet', label: 'Fleet & Staff', icon: UsersIcon },
-                            { href: '/cure/doctors', label: 'Doctors Roster', icon: Stethoscope },
-                            { href: '/cure/insurance', label: 'Insurance', icon: ShieldCheck },
-                            { href: '/cure/billing', label: 'Billing', icon: Landmark },
-                            { href: '/cure/analytics', label: 'Analytics', icon: BarChart },
-                            { href: '/cure/subscription', label: 'Subscription', icon: Gem },
-                          ]
-                        : [
-                            { href: '/cure', label: 'Dashboard', icon: LayoutDashboard },
-                            { href: '/cure/doctors', label: 'Appointments', icon: Stethoscope },
-                            { href: '/cure/billing', label: 'Billing', icon: Landmark },
-                            { href: '/cure/subscription', label: 'Subscription', icon: Gem },
-                          ];
-                    setNavItems(menu);
-                }
-                setIsSessionLoading(false);
-            });
-
-        } catch (e) {
-            handleLogout();
+    try {
+        const sessionData = JSON.parse(sessionString);
+         if (!sessionData.role || sessionData.role !== 'cure' || !sessionData.partnerId) {
+            if (!isOnboardingPage) handleLogout();
             setIsSessionLoading(false);
+            return;
         }
-    } else {
+
+        const partnerRef = doc(db, 'ambulances', sessionData.partnerId);
+        unsubPartner = onSnapshot(partnerRef, (doc) => {
+            if (doc.exists()) {
+                const data = doc.data();
+                const partner: PartnerData = { id: doc.id, ...data } as PartnerData;
+                setPartnerData(partner);
+
+                const isHospital = partner.clinicType?.toLowerCase().includes('hospital');
+                const menu = isHospital
+                    ? [
+                        { href: '/cure', label: 'Mission Control', icon: LayoutDashboard },
+                        { href: '/cure/fleet', label: 'Fleet & Staff', icon: UsersIcon },
+                        { href: '/cure/doctors', label: 'Doctors Roster', icon: Stethoscope },
+                        { href: '/cure/insurance', label: 'Insurance', icon: ShieldCheck },
+                        { href: '/cure/billing', label: 'Billing', icon: Landmark },
+                        { href: '/cure/analytics', label: 'Analytics', icon: BarChart },
+                        { href: '/cure/subscription', label: 'Subscription', icon: Gem },
+                      ]
+                    : [
+                        { href: '/cure', label: 'Dashboard', icon: LayoutDashboard },
+                        { href: '/cure/doctors', label: 'Appointments', icon: Stethoscope },
+                        { href: '/cure/billing', label: 'Billing', icon: Landmark },
+                        { href: '/cure/subscription', label: 'Subscription', icon: Gem },
+                      ];
+                setNavItems(menu);
+            }
+            setIsSessionLoading(false);
+        });
+
+    } catch (e) {
+        handleLogout();
         setIsSessionLoading(false);
     }
     
@@ -138,33 +186,12 @@ export default function CureLayout({ children }: { children: React.ReactNode }) 
   }, [db, user, isUserLoading, pathname, router, handleLogout]);
 
   
-  function CureNav() {
-    const pathname = usePathname()
-    return (
-      <nav className="grid items-start gap-1 px-4 text-sm font-medium md:flex md:flex-row md:items-center md:gap-5 md:px-0">
-        {navItems.map((item) => (
-          <Link
-            key={item.href}
-            href={item.href}
-            className={cn(
-              'flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary md:p-0',
-              pathname === item.href && 'text-primary'
-            )}
-          >
-            <item.icon className="h-4 w-4 md:hidden" />
-            {item.label}
-          </Link>
-        ))}
-      </nav>
-    );
-  }
-
   if (pathname === '/cure/onboarding') {
     return (
-      <>
+      <CureContext.Provider value={{ partnerData, isLoading: isSessionLoading }}>
         {children}
         <Toaster />
-      </>
+      </CureContext.Provider>
     )
   }
 
@@ -195,97 +222,99 @@ export default function CureLayout({ children }: { children: React.ReactNode }) 
   }
 
   return (
-    <div className="flex min-h-screen w-full flex-col">
-      <header className="sticky top-0 flex h-16 items-center gap-4 border-b bg-background/95 backdrop-blur-sm px-4 md:px-6 z-50">
-         <nav className="hidden flex-col gap-6 text-lg font-medium md:flex md:flex-row md:items-center md:gap-5 lg:gap-6">
-           <Link
-             href="/"
-             className="flex items-center gap-2 text-lg font-semibold md:text-base"
-             passHref legacyBehavior>
-             <a>
-                <BrandLogo />
-                <span className="ml-2 text-xs font-semibold px-2 py-1 rounded-full bg-red-500/20 text-red-600">Cure</span>
-             </a>
-           </Link>
-            <div className="w-px bg-border h-6 mx-2"></div>
-            <CureNav />
-         </nav>
-         <Sheet>
-           <SheetTrigger asChild>
-             <Button
-               variant="outline"
-               size="icon"
-               className="shrink-0 md:hidden"
-             >
-               <PanelLeft className="h-5 w-5" />
-               <span className="sr-only">Toggle navigation menu</span>
-             </Button>
-           </SheetTrigger>
-           <SheetContent side="left" className="p-0">
-              <SheetHeader className="flex h-16 items-center border-b px-6">
-                 <SheetTitle>
-                    <Link href="/" className="flex items-center gap-2 font-semibold">
-                        <BrandLogo />
-                        <span className="ml-2 text-xs font-semibold px-2 py-1 rounded-full bg-red-500/20 text-red-600">Cure</span>
-                    </Link>
-                 </SheetTitle>
-              </SheetHeader>
-              <CureNav />
-           </SheetContent>
-         </Sheet>
-         <div className="flex w-full items-center gap-4 md:ml-auto md:gap-2 lg:gap-4">
-            <div className="ml-auto flex-1 sm:flex-initial"></div>
-            <ThemeToggle/>
-           <DropdownMenu>
-             <DropdownMenuTrigger asChild>
-               <Button variant="secondary" size="icon" className="rounded-full">
-                 <Avatar className="h-8 w-8">
-                    <AvatarImage src="https://placehold.co/40x40.png" alt={session?.name} data-ai-hint="hospital building" />
-                    <AvatarFallback>{getInitials(session?.name || '').toUpperCase()}</AvatarFallback>
-                 </Avatar>
-                 <span className="sr-only">Toggle user menu</span>
-               </Button>
-             </DropdownMenuTrigger>
-             <DropdownMenuContent align="end">
-               <DropdownMenuLabel>My Account</DropdownMenuLabel>
-               <DropdownMenuSeparator />
-               <DropdownMenuItem onClick={() => router.push('/cure/profile')}>Profile</DropdownMenuItem>
-               <DropdownMenuItem>Support</DropdownMenuItem>
-               <DropdownMenuSeparator />
-               <AlertDialog>
-                 <AlertDialogTrigger asChild>
-                    <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:text-destructive">
-                      Logout
-                    </DropdownMenuItem>
-                 </AlertDialogTrigger>
-                 <AlertDialogContent>
-                     <AlertDialogHeader>
-                         <AlertDialogTitle>Are you sure you want to log out?</AlertDialogTitle>
-                     </AlertDialogHeader>
-                     <AlertDialogFooter>
-                         <AlertDialogCancel>Cancel</AlertDialogCancel>
-                         <AlertDialogAction onClick={handleLogout} className="bg-destructive hover:bg-destructive/90">
-                             Logout
-                         </AlertDialogAction>
-                     </AlertDialogFooter>
-                 </AlertDialogContent>
-               </AlertDialog>
-             </DropdownMenuContent>
-           </DropdownMenu>
-         </div>
-       </header>
-      <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
-        <MotionDiv 
-            key={pathname}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, ease: 'easeInOut' }}
-            className="h-full"
-        >
-          {children}
-        </MotionDiv>
-      </main>
-      <Toaster />
-    </div>
+    <CureContext.Provider value={{ partnerData, isLoading: isSessionLoading }}>
+      <div className="flex min-h-screen w-full flex-col">
+        <header className="sticky top-0 flex h-16 items-center gap-4 border-b bg-background/95 backdrop-blur-sm px-4 md:px-6 z-50">
+          <nav className="hidden flex-col gap-6 text-lg font-medium md:flex md:flex-row md:items-center md:gap-5 lg:gap-6">
+            <Link
+              href="/"
+              className="flex items-center gap-2 text-lg font-semibold md:text-base"
+              passHref legacyBehavior>
+              <a>
+                  <BrandLogo />
+                  <span className="ml-2 text-xs font-semibold px-2 py-1 rounded-full bg-red-500/20 text-red-600">Cure</span>
+              </a>
+            </Link>
+              <div className="w-px bg-border h-6 mx-2"></div>
+              <CureNav navItems={navItems} />
+          </nav>
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button
+                variant="outline"
+                size="icon"
+                className="shrink-0 md:hidden"
+              >
+                <PanelLeft className="h-5 w-5" />
+                <span className="sr-only">Toggle navigation menu</span>
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="left" className="p-0">
+                <SheetHeader className="flex h-16 items-center border-b px-6">
+                  <SheetTitle>
+                      <Link href="/" className="flex items-center gap-2 font-semibold">
+                          <BrandLogo />
+                          <span className="ml-2 text-xs font-semibold px-2 py-1 rounded-full bg-red-500/20 text-red-600">Cure</span>
+                      </Link>
+                  </SheetTitle>
+                </SheetHeader>
+                <CureNav navItems={navItems} />
+            </SheetContent>
+          </Sheet>
+          <div className="flex w-full items-center gap-4 md:ml-auto md:gap-2 lg:gap-4 justify-end">
+              <div className="ml-auto flex-1 sm:flex-initial"></div>
+              <ThemeToggle/>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="secondary" size="icon" className="rounded-full">
+                  <Avatar className="h-8 w-8">
+                      <AvatarImage src="https://placehold.co/40x40.png" alt={partnerData?.name} data-ai-hint="hospital building" />
+                      <AvatarFallback>{getInitials(partnerData?.name || '').toUpperCase()}</AvatarFallback>
+                  </Avatar>
+                  <span className="sr-only">Toggle user menu</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => router.push('/cure/profile')}>Profile</DropdownMenuItem>
+                <DropdownMenuItem>Support</DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                      <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:text-destructive">
+                        Logout
+                      </DropdownMenuItem>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                      <AlertDialogHeader>
+                          <AlertDialogTitle>Are you sure you want to log out?</AlertDialogTitle>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction onClick={handleLogout} className="bg-destructive hover:bg-destructive/90">
+                              Logout
+                          </AlertDialogAction>
+                      </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </header>
+        <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
+          <MotionDiv 
+              key={pathname}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, ease: 'easeInOut' }}
+              className="h-full"
+          >
+            {children}
+          </MotionDiv>
+        </main>
+        <Toaster />
+      </div>
+    </CureContext.Provider>
   );
 }

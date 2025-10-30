@@ -116,11 +116,9 @@ interface HospitalData {
 export default function HospitalMissionControl({ 
     partnerData, 
     isLoading: isPartnerLoading, 
-    renderChecklistManagement 
 }: { 
     partnerData: HospitalData | null, 
     isLoading: boolean,
-    renderChecklistManagement: () => React.ReactNode
 }) {
     const [fleet, setFleet] = useState<AmbulanceVehicle[]>([]);
     const [drivers, setDrivers] = useState<AmbulanceDriver[]>([]);
@@ -596,69 +594,8 @@ export default function HospitalMissionControl({
     return (
         <div className="grid lg:grid-cols-3 gap-6 items-start h-full">
             {/* Left Column */}
-            <div className="lg:col-span-1 space-y-6">
-                 <Card className={cn("transition-all", ongoingCase && 'opacity-30')}>
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2"><Waves className="w-5 h-5 text-primary" /> Action Feed</CardTitle>
-                        <CardDescription>Live incoming requests will appear here.</CardDescription>
-                         <div className="pt-2 flex gap-2">
-                            <Button onClick={simulateNewCase} size="sm" variant="outline">Create Test Alert</Button>
-                        </div>
-                    </CardHeader>
-                    <CardContent className="space-y-4 max-h-96 overflow-y-auto pr-2">
-                         {ongoingCase ? (
-                             <div className="text-center text-muted-foreground py-10">
-                                <p className="font-bold">A case is already in progress.</p>
-                                <p className="text-sm">Please resolve the ongoing case before accepting new requests.</p>
-                            </div>
-                         ) : incomingRequests.length > 0 ? (
-                            incomingRequests.map(req => (
-                                <Card key={req.id} className="bg-destructive/10 border-destructive shadow-lg animate-pulse-intense">
-                                    <CardHeader className="p-4">
-                                        {getSeverityBadge(req.severity)}
-                                        <CardDescription className="pt-2">New {req.severity || 'Non-Critical'} case from patient {req.riderName}.</CardDescription>
-                                    </CardHeader>
-                                    <CardFooter className="p-4 pt-0 grid grid-cols-3 gap-2">
-                                         <Button variant="outline" asChild><a href={`tel:${req.phone}`}><Phone className="w-4 h-4"/> Call Patient</a></Button>
-                                        <Dialog>
-                                            <DialogTrigger asChild><Button className="w-full col-span-1">Accept</Button></DialogTrigger>
-                                            <DialogContent>
-                                                <DialogHeader><DialogTitle>Dispatch Ambulance</DialogTitle><DialogDescription>Select an available ambulance for this case.</DialogDescription></DialogHeader>
-                                                <div className="py-4 space-y-2 max-h-60 overflow-y-auto">
-                                                    {fleet.filter(a => a.status === 'Available').map(a => (<Button key={a.id} variant="outline" className="w-full justify-start h-12" onClick={() => handleAcceptRequest(req, a.id)}><Ambulance className="mr-4"/><div><p className="font-semibold">{a.name}</p><p className="text-xs text-muted-foreground">{a.type}</p></div></Button>))}
-                                                    {fleet.filter(a => a.status === 'Available').length === 0 && (<p className="text-center text-muted-foreground py-4">No ambulances are currently available.</p>)}
-                                                </div>
-                                            </DialogContent>
-                                        </Dialog>
-                                        <Button variant="destructive" className="w-full col-span-1" onClick={() => handleRejectRequest(req.id)}>Reject</Button>
-                                    </CardFooter>
-                                </Card>
-                            ))
-                         ) : (
-                            <div className="text-center text-muted-foreground h-48 flex items-center justify-center flex-col">
-                                <SearchingIndicator partnerType="cure" />
-                                <p className="mt-4 font-semibold">Listening for emergency requests...</p>
-                            </div>
-                        )}
-                    </CardContent>
-                </Card>
-                {ongoingCase && (
-                    <Card className="bg-primary/5 border-primary animate-fade-in">
-                        <CardHeader><CardTitle className="flex items-center gap-2"><Siren className="w-6 h-6 text-primary animate-pulse"/> Ongoing Case</CardTitle><CardDescription>Patient: {ongoingCase.riderName}</CardDescription></CardHeader>
-                        <CardContent className="space-y-4">
-                            <div className="flex gap-4 p-4 rounded-lg bg-background">
-                                <Avatar className="w-16 h-16"><AvatarImage src={'https://placehold.co/100x100.png'} alt="Patient" data-ai-hint="patient portrait" /><AvatarFallback>P</AvatarFallback></Avatar>
-                                <div className="space-y-1"><h3 className="font-bold">{ongoingCase.riderName}</h3><p className="text-sm text-muted-foreground flex items-center gap-2"><Phone className="w-3 h-3"/> {ongoingCase.phone}</p><p className="text-sm font-semibold text-primary flex items-center gap-2"><Ambulance className="w-3 h-3"/> {ongoingCase.assignedAmbulanceName}</p></div>
-                            </div>
-                            <Button className="w-full bg-blue-600 hover:bg-blue-700" size="lg" onClick={() => window.open(`https://www.google.com/maps/dir/?api=1&destination=${ongoingCase.location.latitude},${ongoingCase.location.longitude}`, '_blank')}><Navigation className="mr-2 h-5 w-5"/> Navigate</Button>
-                        </CardContent>
-                    </Card>
-                )}
-            </div>
-            
-            {/* Middle Column */}
-            <div className="lg:col-span-1 space-y-6">
-                 <div className="h-64 rounded-lg overflow-hidden border">
+            <div className="lg:col-span-2 space-y-6">
+                <div className="h-96 rounded-lg overflow-hidden border">
                     <LiveMap 
                         activePartners={mapFleet} 
                         riderLocation={patientLocation}
@@ -700,29 +637,15 @@ export default function HospitalMissionControl({
                                             <TableCell className="text-right">
                                               <AlertDialog>
                                                 <DropdownMenu>
-                                                  <DropdownMenuTrigger asChild>
-                                                    <Button variant="ghost" className="h-8 w-8 p-0"><span className="sr-only">Open menu</span><MoreHorizontal className="h-4 w-4" /></Button>
-                                                  </DropdownMenuTrigger>
+                                                  <DropdownMenuTrigger asChild><Button variant="ghost" className="h-8 w-8 p-0"><span className="sr-only">Open menu</span><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
                                                   <DropdownMenuContent align="end">
                                                     <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                                    <AlertDialogTrigger asChild>
-                                                      <DropdownMenuItem className="text-destructive focus:text-destructive" onSelect={(e) => e.preventDefault()}>
-                                                        <Trash2 className="mr-2 h-4 w-4" /> Delete Ambulance
-                                                      </DropdownMenuItem>
-                                                    </AlertDialogTrigger>
+                                                    <AlertDialogTrigger asChild><DropdownMenuItem className="text-destructive focus:text-destructive" onSelect={(e) => e.preventDefault()}><Trash2 className="mr-2 h-4 w-4"/> Delete Ambulance</DropdownMenuItem></AlertDialogTrigger>
                                                   </DropdownMenuContent>
                                                 </DropdownMenu>
                                                 <AlertDialogContent>
-                                                  <AlertDialogHeader>
-                                                    <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                                                    <AlertDialogDescription>
-                                                      This will permanently remove <span className="font-bold">{a.name}</span> from your fleet. This action cannot be undone.
-                                                    </AlertDialogDescription>
-                                                  </AlertDialogHeader>
-                                                  <AlertDialogFooter>
-                                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                                    <AlertDialogAction onClick={() => handleDeleteAmbulance(a)} className="bg-destructive hover:bg-destructive/90">Yes, delete ambulance</AlertDialogAction>
-                                                  </AlertDialogFooter>
+                                                  <AlertDialogHeader><AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle><AlertDialogDescription>This will permanently remove <span className="font-bold">{a.name}</span> from your fleet. This action cannot be undone.</AlertDialogDescription></AlertDialogHeader>
+                                                  <AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={() => handleDeleteAmbulance(a)} className="bg-destructive hover:bg-destructive/90">Yes, delete ambulance</AlertDialogAction></AlertDialogFooter>
                                                 </AlertDialogContent>
                                               </AlertDialog>
                                             </TableCell>
@@ -802,7 +725,7 @@ export default function HospitalMissionControl({
                         </Card>
                     </TabsContent>
                     <TabsContent value="checklist" className="mt-4">
-                         {renderChecklistManagement()}
+                         <p>Checklist management will appear here.</p>
                     </TabsContent>
                 </Tabs>
             </div>
