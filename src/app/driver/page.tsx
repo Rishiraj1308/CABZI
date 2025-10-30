@@ -85,8 +85,10 @@ export default function DriverDashboardPage() {
             where('createdAt', '>=', twentySecondsAgo)
         );
 
-        const vehicleTypePrefix = partnerData.vehicleType.split(' ')[0];
-        q = query(q, where('rideType', '==', vehicleTypePrefix));
+        const vehicleTypeBase = partnerData.vehicleType.split(' ')[0];
+        if(vehicleTypeBase) {
+             q = query(q, where('rideType', '==', vehicleTypeBase));
+        }
         
         if (partnerData.isCabziPinkPartner) {
             q = query(q, where('riderGender', '==', 'female'));

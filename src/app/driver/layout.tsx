@@ -65,14 +65,22 @@ function DriverProvider({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
 
     const handleLogout = useCallback(() => {
-        if (partnerData?.id && db) {
-            setDoc(doc(db, 'partners', partnerData.id), { isOnline: false, lastSeen: serverTimestamp() }, { merge: true }).catch(error => {
-                console.warn("Failed to update status on logout (non-critical):", error);
-            });
+        const sessionString = localStorage.getItem('curocity-session');
+        if (sessionString && db) {
+            try {
+                const sessionData = JSON.parse(sessionString);
+                if (sessionData.partnerId) {
+                    setDoc(doc(db, 'partners', sessionData.partnerId), { isOnline: false, lastSeen: serverTimestamp() }, { merge: true }).catch(error => {
+                        console.warn("Failed to update status on logout (non-critical):", error);
+                    });
+                }
+            } catch (e) {
+                console.error("Error parsing session on logout:", e);
+            }
         }
         localStorage.removeItem('curocity-session');
         router.push('/');
-    }, [db, partnerData, router]);
+    }, [db, router]);
     
     useEffect(() => {
         if (isAuthLoading || !db) return;
@@ -244,10 +252,18 @@ function DriverLayoutContent({ children }: { children: React.ReactNode }) {
 
   const handleLogout = useCallback(() => {
     if (auth) auth.signOut();
-    if (partnerData?.id && db) {
-        setDoc(doc(db, 'partners', partnerData.id), { isOnline: false, lastSeen: serverTimestamp() }, { merge: true }).catch(error => {
-            console.warn("Failed to update status on logout (non-critical):", error);
-        });
+    const sessionString = localStorage.getItem('curocity-session');
+    if (sessionString && db) {
+        try {
+            const sessionData = JSON.parse(sessionString);
+            if (sessionData.partnerId) {
+                setDoc(doc(db, 'partners', sessionData.partnerId), { isOnline: false, lastSeen: serverTimestamp() }, { merge: true }).catch(error => {
+                    console.warn("Failed to update status on logout (non-critical):", error);
+                });
+            }
+        } catch (e) {
+            console.error("Error parsing session on logout:", e);
+        }
     }
     
     localStorage.removeItem('curocity-session');
@@ -259,7 +275,7 @@ function DriverLayoutContent({ children }: { children: React.ReactNode }) {
         description: 'You have been successfully logged out.'
     });
     router.push('/');
-  }, [auth, db, partnerData?.id, router, toast, theme, setTheme]);
+  }, [auth, db, router, toast, theme, setTheme]);
 
    useEffect(() => {
     let heartbeatInterval: NodeJS.Timeout | null = null;
