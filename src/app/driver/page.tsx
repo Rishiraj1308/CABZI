@@ -280,8 +280,8 @@ export default function DriverDashboardPage() {
               
               <div className="h-40 w-full rounded-md overflow-hidden border">
                 <LiveMap
-                  riderLocation={jobRequest.pickup?.location}
-                  destinationLocation={jobRequest.destination?.location}
+                  riderLocation={jobRequest.pickup?.location ? { lat: jobRequest.pickup.location.latitude, lon: jobRequest.pickup.location.longitude } : undefined}
+                  destinationLocation={jobRequest.destination?.location ? { lat: jobRequest.destination.location.latitude, lon: jobRequest.destination.location.longitude } : undefined}
                   zoom={11}
                 />
               </div>
@@ -292,11 +292,11 @@ export default function DriverDashboardPage() {
                 </div>
                  <div className="p-2 bg-muted rounded-md">
                   <p className="text-xs text-muted-foreground">To Pickup</p>
-                  <p className="font-bold text-lg">{jobRequest.driverDistance ? `${jobRequest.driverDistance.toFixed(1)} km` : 'N/A'}</p>
+                  <p className="font-bold text-lg">{jobRequest.driverDistance ? `${parseFloat(jobRequest.driverDistance).toFixed(1)} km` : 'N/A'}</p>
                 </div>
                 <div className="p-2 bg-muted rounded-md">
                   <p className="text-xs text-muted-foreground">Est. Arrival</p>
-                  <p className="font-bold text-lg">{jobRequest.driverEta ? `${Math.ceil(jobRequest.driverEta)} min` : 'N/A'}</p>
+                  <p className="font-bold text-lg">{jobRequest.driverEta ? `${Math.ceil(parseFloat(jobRequest.driverEta))} min` : 'N/A'}</p>
                 </div>
               </div>
             </>
