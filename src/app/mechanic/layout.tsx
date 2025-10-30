@@ -1,8 +1,7 @@
 
-
 'use client'
 
-import React, { useState, useEffect, useRef, useCallback } from 'react'
+import React, { useState, useEffect, useRef, useCallback, createContext, useContext } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { LayoutDashboard, Landmark, History, User, PanelLeft, LogOut, Sun, Moon } from 'lucide-react'
@@ -27,9 +26,101 @@ import { useToast } from '@/hooks/use-toast'
 import BrandLogo from '@/components/brand-logo'
 import { useTheme } from 'next-themes'
 import { useFirebase } from '@/firebase/client-provider'
-import { doc, updateDoc, serverTimestamp, GeoPoint } from 'firebase/firestore'
+import { doc, updateDoc, serverTimestamp } from 'firebase/firestore'
 import { MotionDiv } from '@/components/ui/motion-div'
 import { Skeleton } from '@/components/ui/skeleton'
+
+// Centralized Partner Provider
+interface PartnerDataContextType {
+    partnerData: any;
+    isLoading: boolean;
+}
+
+const PartnerDataContext = createContext<PartnerDataContextType | null>(null);
+
+export const usePartnerData = () => {
+    const context = useContext(PartnerDataContext);
+    if (!context) {
+        throw new Error('usePartnerData must be used within a PartnerProvider');
+    }
+    return context;
+};
+
+function PartnerProvider({ children, partnerType }: { children: React.ReactNode, partnerType: 'driver' | 'mechanic' }) {
+    const [partnerData, setPartnerData] = useState<any>(null);
+    const [isLoading, setIsLoading] = useState(true);
+    const { db, user, isUserLoading } = useFirebase();
+    const router = useRouter();
+    const { toast } = useToast();
+    const pathname = usePathname();
+
+    const handleLogout = useCallback(() => {
+        if (partnerData?.id && db) {
+            updateDoc(doc(db, partnerType === 'driver' ? 'partners' : 'mechanics', partnerData.id), { 
+                isOnline: false, 
+                isAvailable: false, 
+                lastSeen: serverTimestamp() 
+            }).catch(e => console.warn("Failed to update status on logout:", e));
+        }
+        localStorage.removeItem(`curocity-${partnerType === 'driver' ? 'session' : 'resq-session'}`);
+        router.push('/');
+    }, [db, partnerData, partnerType, router]);
+    
+    useEffect(() => {
+        if (isUserLoading || !db) return;
+
+        const isOnboarding = pathname.includes('onboarding');
+        if (!user) {
+            if (!isOnboarding) router.replace('/login?role=driver');
+            setIsLoading(false);
+            return;
+        }
+
+        const sessionKey = `curocity-${partnerType === 'driver' ? 'session' : 'resq-session'}`;
+        const session = localStorage.getItem(sessionKey);
+        
+        if (!session) {
+            if (!isOnboarding) handleLogout();
+            setIsLoading(false);
+            return;
+        }
+
+        let unsubscribe: (() => void) | null = null;
+        try {
+            const sessionData = JSON.parse(session);
+            const collectionName = partnerType === 'driver' ? 'partners' : 'mechanics';
+            const partnerDocRef = doc(db, collectionName, sessionData.partnerId);
+
+            unsubscribe = onSnapshot(partnerDocRef, (docSnap) => {
+                if (docSnap.exists()) {
+                    setPartnerData({ id: docSnap.id, ...docSnap.data() });
+                } else {
+                    if (!isOnboarding) handleLogout();
+                }
+                setIsLoading(false);
+            }, (error) => {
+                console.error("Snapshot error:", error);
+                if (!isOnboarding) handleLogout();
+                setIsLoading(false);
+            });
+        } catch (e) {
+            if (!isOnboarding) handleLogout();
+            setIsLoading(false);
+        }
+        
+        return () => {
+            if (unsubscribe) unsubscribe();
+        };
+
+    }, [isUserLoading, user, db, handleLogout, pathname, router, partnerType]);
+
+    return (
+        <PartnerDataContext.Provider value={{ partnerData, isLoading }}>
+            {children}
+        </PartnerDataContext.Provider>
+    );
+}
+
 
 const navItems = [
   { href: '/mechanic', label: 'Dashboard', icon: LayoutDashboard },
@@ -79,23 +170,14 @@ function ThemeToggle() {
     )
 }
 
-export default function MechanicLayout({ children }: { children: React.ReactNode }) {
+function MechanicLayoutContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const { toast } = useToast();
-  const [userName, setUserName] = useState('');
-  const { db, auth, user, isUserLoading } = useFirebase();
-  const mechanicDocRef = useRef<any>(null);
-  const [isSessionLoading, setIsSessionLoading] = useState(true);
+  const { auth } = useFirebase();
+  const { partnerData, isLoading: isSessionLoading } = usePartnerData();
 
-  const handleLogout = useCallback(async () => {
-    if (mechanicDocRef.current) {
-        try {
-            await updateDoc(mechanicDocRef.current, { isAvailable: false, lastSeen: serverTimestamp() });
-        } catch (error) {
-            console.error("Failed to update logout status for mechanic:", error);
-        }
-    }
+  const handleLogout = useCallback(() => {
     if (auth) auth.signOut();
     localStorage.removeItem('curocity-resq-session');
     localStorage.removeItem('curocity-session');
@@ -106,47 +188,8 @@ export default function MechanicLayout({ children }: { children: React.ReactNode
     router.push('/');
   }, [auth, router, toast]);
 
-  useEffect(() => {
-      if (isUserLoading) return;
-      
-      const isOnboarding = pathname.includes('/mechanic/onboarding') || pathname.includes('/garage/onboarding');
-      if (!user) {
-          if (!isOnboarding) router.replace('/login?role=driver');
-          setIsSessionLoading(false);
-          return;
-      }
-      
-      const sessionString = localStorage.getItem('curocity-resq-session');
-      if (!sessionString) {
-        if (!isOnboarding) handleLogout();
-        setIsSessionLoading(false);
-        return;
-      }
-
-      try {
-          const sessionData = JSON.parse(sessionString);
-          if (!sessionData.role || sessionData.role !== 'mechanic' || !sessionData.partnerId) {
-              if (!isOnboarding) handleLogout();
-              setIsSessionLoading(false);
-              return;
-          }
-          setUserName(sessionData.name);
-          mechanicDocRef.current = doc(db, 'mechanics', sessionData.partnerId);
-      } catch (e) {
-          handleLogout();
-      } finally {
-          setIsSessionLoading(false);
-      }
-
-  }, [pathname, db, user, isUserLoading, router, handleLogout]);
-
-  if (pathname === '/mechanic/onboarding' || pathname === '/garage/onboarding') {
-    return (
-      <>
-        {children}
-        <Toaster />
-      </>
-    )
+  if (pathname.includes('/onboarding')) {
+    return <>{children}<Toaster /></>;
   }
 
   if (isSessionLoading) {
@@ -179,14 +222,9 @@ export default function MechanicLayout({ children }: { children: React.ReactNode
     <div className="flex min-h-screen w-full flex-col">
       <header className="sticky top-0 z-50 flex h-16 items-center gap-4 border-b bg-background/95 px-4 backdrop-blur-sm md:px-6">
          <nav className="hidden flex-col gap-6 text-lg font-medium md:flex md:flex-row md:items-center md:gap-5 lg:gap-6">
-           <Link
-             href="/"
-             className="flex items-center gap-2 text-lg font-semibold md:text-base"
-             passHref legacyBehavior>
-                <a>
-                    <BrandLogo />
-                    <span className="ml-2 text-xs font-semibold px-2 py-1 rounded-full bg-orange-500/20 text-orange-600">ResQ</span>
-                </a>
+           <Link href="/" className="flex items-center gap-2 text-lg font-semibold md:text-base">
+                <BrandLogo />
+                <span className="ml-2 text-xs font-semibold px-2 py-1 rounded-full bg-orange-500/20 text-orange-600">ResQ</span>
            </Link>
             <div className="w-px bg-border h-6 mx-2"></div>
             <MechanicNav />
@@ -218,8 +256,8 @@ export default function MechanicLayout({ children }: { children: React.ReactNode
              <DropdownMenuTrigger asChild>
                <Button variant="secondary" size="icon" className="rounded-full">
                  <Avatar className="h-8 w-8">
-                   <AvatarImage src="https://i.pravatar.cc/40?u=mechanic" alt={userName} data-ai-hint="mechanic portrait" />
-                   <AvatarFallback>{getInitials(userName).toUpperCase()}</AvatarFallback>
+                   <AvatarImage src="https://i.pravatar.cc/40?u=mechanic" alt={partnerData?.name} data-ai-hint="mechanic portrait" />
+                   <AvatarFallback>{getInitials(partnerData?.name).toUpperCase()}</AvatarFallback>
                  </Avatar>
                  <span className="sr-only">Toggle user menu</span>
                </Button>
@@ -227,7 +265,7 @@ export default function MechanicLayout({ children }: { children: React.ReactNode
              <DropdownMenuContent align="end">
                <DropdownMenuLabel>My Account</DropdownMenuLabel>
                <DropdownMenuSeparator />
-               <DropdownMenuItem onClick={() => router.push('/mechanic/profile')}>Profile</DropdownMenuItem>
+               <DropdownMenuItem onSelect={() => router.push('/mechanic/profile')}>Profile</DropdownMenuItem>
                <DropdownMenuItem>Support</DropdownMenuItem>
                <DropdownMenuSeparator />
                <AlertDialog>
@@ -270,3 +308,15 @@ export default function MechanicLayout({ children }: { children: React.ReactNode
     </div>
   );
 }
+
+export default function MechanicLayout({ children }: { children: React.ReactNode }) {
+    return (
+        <PartnerProvider partnerType="mechanic">
+            <MechanicLayoutContent>
+                {children}
+            </MechanicLayoutContent>
+        </PartnerProvider>
+    )
+}
+
+    

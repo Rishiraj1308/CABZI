@@ -176,7 +176,6 @@ function DriverLayoutContent({ children }: { children: React.ReactNode }) {
     if (auth) auth.signOut();
     
     localStorage.removeItem('curocity-session');
-    localStorage.removeItem('curocity-resq-session');
     
     if (theme === 'pink') setTheme('system');
 
@@ -185,12 +184,10 @@ function DriverLayoutContent({ children }: { children: React.ReactNode }) {
         description: 'You have been successfully logged out.'
     });
     router.push('/');
-  }, [auth, db, partnerData, router, toast, theme, setTheme]);
+  }, [auth, db, partnerData?.id, router, toast, theme, setTheme]);
 
   useEffect(() => {
-    let unsubPartner: (() => void) | undefined;
-  
-    if (isAuthLoading) return;
+    if (isAuthLoading || !db) return;
   
     const isOnboardingPage = pathname.includes('/driver/onboarding');
   
@@ -201,55 +198,55 @@ function DriverLayoutContent({ children }: { children: React.ReactNode }) {
     }
   
     const session = localStorage.getItem('curocity-session');
-    if (!session && !isOnboardingPage) {
-        handleLogout();
+    if (!session) {
+        if (!isOnboardingPage) handleLogout();
+        setIsSessionLoading(false);
         return;
     }
     
-    if(session){
-        try {
-            const sessionData = JSON.parse(session);
-            if (!sessionData.role || sessionData.role !== 'driver' || !sessionData.partnerId) {
-                if (!isOnboardingPage) handleLogout();
-                setIsSessionLoading(false);
-                return;
-            }
+    let unsubPartner: (() => void) | undefined;
+    let isSubscribed = true;
 
-            const partnerDocRef = doc(db, 'partners', sessionData.partnerId);
-            unsubPartner = onSnapshot(partnerDocRef, (docSnap) => {
-                if (docSnap.exists()) {
-                    const data = docSnap.data();
-                    const fetchedPartnerData = { id: docSnap.id, ...data } as PartnerData;
-
-                    const isPink = data.isCabziPinkPartner || false;
-                    if (isPink && theme !== 'pink') setTheme('pink');
-                    else if (!isPink && theme === 'pink') setTheme('system');
-
-                    setPartnerData(fetchedPartnerData);
-                } else {
-                    console.error("Partner document not found with ID:", sessionData.partnerId);
-                    if (!isOnboardingPage) handleLogout();
-                }
-                setIsSessionLoading(false);
-            }, (error) => {
-                console.error("Error with partner data snapshot:", error);
-                if (!isOnboardingPage) handleLogout();
-                setIsSessionLoading(false);
-            });
-        } catch (e) {
+    try {
+        const sessionData = JSON.parse(session);
+        if (!sessionData.role || sessionData.role !== 'driver' || !sessionData.partnerId) {
             if (!isOnboardingPage) handleLogout();
             setIsSessionLoading(false);
+            return;
         }
-    } else {
-         setIsSessionLoading(false);
+
+        const partnerDocRef = doc(db, 'partners', sessionData.partnerId);
+        unsubPartner = onSnapshot(partnerDocRef, (docSnap) => {
+            if (!isSubscribed) return;
+            if (docSnap.exists()) {
+                const data = docSnap.data();
+                const fetchedPartnerData = { id: docSnap.id, ...data } as PartnerData;
+
+                const isPink = data.isCabziPinkPartner || false;
+                if (isPink && theme !== 'pink') setTheme('pink');
+                else if (!isPink && theme === 'pink') setTheme('system');
+
+                setPartnerData(fetchedPartnerData);
+            } else {
+                console.error("Partner document not found with ID:", sessionData.partnerId);
+                if (!isOnboardingPage) handleLogout();
+            }
+            setIsSessionLoading(false);
+        }, (error) => {
+            console.error("Error with partner data snapshot:", error);
+            if (!isOnboardingPage) handleLogout();
+            setIsSessionLoading(false);
+        });
+    } catch (e) {
+        if (!isOnboardingPage) handleLogout();
+        setIsSessionLoading(false);
     }
   
     return () => {
-      if (unsubPartner) {
-        unsubPartner();
-      }
+      isSubscribed = false;
+      if (unsubPartner) unsubPartner();
     };
-}, [isAuthLoading, user, db, router, pathname, handleLogout, theme, setTheme]);
+}, [isAuthLoading, user, db, handleLogout, pathname, router, theme, setTheme]);
 
 
    useEffect(() => {
@@ -412,3 +409,5 @@ export default function DriverLayout({ children }: { children: React.ReactNode }
         </NotificationsProvider>
     );
 }
+
+    
