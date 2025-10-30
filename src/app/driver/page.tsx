@@ -61,7 +61,7 @@ const StatCard = ({ title, value, icon: Icon, isLoading, onValueClick }: { title
 )
 
 export default function DriverDashboardPage() {
-  const [availableJobs, setAvailableJobs] = useState<JobRequest[]>([])
+  const [jobRequest, setJobRequest] = useState<JobRequest | null>(null);
   const [activeRide, setActiveRide] = useState<RideData | null>(null)
   const [requestTimeout, setRequestTimeout] = useState(15)
   const requestTimerRef = useRef<NodeJS.Timeout | null>(null)
@@ -75,8 +75,7 @@ export default function DriverDashboardPage() {
   const [enteredOtp, setEnteredOtp] = useState('');
 
 
-  const isOnline = partnerData?.isOnline || false
-  const jobRequest = availableJobs.length > 0 ? availableJobs[0] : null
+  const isOnline = partnerData?.isOnline || false;
 
   // 🔔 Setup sound
   useEffect(() => {
@@ -98,37 +97,41 @@ export default function DriverDashboardPage() {
       toast({ variant: 'destructive', title: 'Error', description: 'Could not update your status.' });
     }
   };
-
-  // 🔥 Firestore listener for ride requests
+  
+  // This effect listens for ride requests via FCM (or a direct query for web)
+  // This is a simplified version for demonstration.
   useEffect(() => {
     if (!db || !isOnline || activeRide) {
-      setAvailableJobs([]);
-      return;
+        setJobRequest(null);
+        return;
     }
-  
-    const q = query(collection(db, "rides"), where("status", "==", "searching"));
-    const unsub = onSnapshot(q, (snapshot) => {
+
+    const q = query(
+        collection(db, "rides"),
+        where("status", "==", "searching"),
+        // A real app would also query by location/zone
+    );
+    const unsubscribe = onSnapshot(q, (snapshot) => {
         const newJobs: JobRequest[] = [];
+        let newJobToShow: JobRequest | null = null;
         snapshot.forEach((doc) => {
-            const rideData = doc.data();
-            newJobs.push({
-                id: doc.id,
-                ...rideData
-            } as JobRequest);
+            const rideData = { id: doc.id, ...doc.data() } as JobRequest;
+            // In a real app, you might get multiple. For simplicity, we only show one.
+            if (!jobRequest && !acceptedJob) {
+                newJobToShow = rideData;
+            }
         });
 
-        if (newJobs.length > 0 && availableJobs.length === 0) {
-          if (notificationSoundRef.current) {
-            notificationSoundRef.current.play().catch(e => console.warn("Sound blocked until user interaction:", e));
-          }
+        if (newJobToShow) {
+            notificationSoundRef.current?.play().catch(e => console.warn("Sound blocked until user interaction:", e));
+            setJobRequest(newJobToShow);
         }
-        setAvailableJobs(newJobs);
     });
-    return () => unsub();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [db, isOnline, activeRide]);
-  
-    // Listen for updates on an active ride
+
+    return () => unsubscribe();
+}, [db, isOnline, activeRide, jobRequest, acceptedJob]);
+
+  // Listen for updates on an active ride
   useEffect(() => {
     if (!db || !activeRide?.id) return;
     const unsub = onSnapshot(doc(db, 'rides', activeRide.id), (docSnap) => {
@@ -170,7 +173,7 @@ export default function DriverDashboardPage() {
   const handleDeclineJob = (isTimeout = false) => {
     if (!jobRequest) return
     if (requestTimerRef.current) clearInterval(requestTimerRef.current)
-    setAvailableJobs((prev) => prev.filter((j) => j.id !== jobRequest.id))
+    setJobRequest(null);
     if (!isTimeout) toast({ title: "Job Declined" })
     else toast({ variant: 'destructive', title: "Request Timed Out" })
   }
@@ -200,13 +203,14 @@ export default function DriverDashboardPage() {
                 vehicle: `${partnerData.vehicleBrand} ${partnerData.vehicleName}`,
                 rating: partnerData.rating ?? 5.0,
                 photoUrl: partnerData.photoUrl,
-                phone: partnerData.phone,
+                phone: partnerData.phone, // Ensure phone is included
             },
+            driverEta: jobRequest.driverEta, // Pass through ETA
         });
         await updateDoc(partnerRef, { status: 'on_trip' });
 
-        setAvailableJobs((prev) => prev.filter((j) => j.id !== jobRequest.id));
-        setActiveRide({ id: jobRequest.id, ...jobRequest, status: 'accepted' } as RideData);
+        setJobRequest(null);
+        setActiveRide({ ...jobRequest, status: 'accepted' } as RideData);
         localStorage.setItem('activeRideId', jobRequest.id);
     } catch (err) {
         console.error("❌ Error accepting job:", err);
@@ -401,11 +405,11 @@ export default function DriverDashboardPage() {
                 </div>
                  <div className="p-2 bg-muted rounded-md">
                   <p className="text-xs text-muted-foreground">To Pickup</p>
-                  <p className="font-bold text-lg">~5 km</p>
+                  <p className="font-bold text-lg">~{jobRequest.driverDistance?.toFixed(1)} km</p>
                 </div>
                 <div className="p-2 bg-muted rounded-md">
                   <p className="text-xs text-muted-foreground">Est. Arrival</p>
-                  <p className="font-bold text-lg">~8 min</p>
+                  <p className="font-bold text-lg">~{Math.ceil(jobRequest.driverEta || 0)} min</p>
                 </div>
               </div>
             </>
