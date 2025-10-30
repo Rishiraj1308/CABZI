@@ -6,7 +6,7 @@ import Image from 'next/image'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
-import { Star, History, IndianRupee, Power, AlertTriangle, Sparkles, Eye } from 'lucide-react'
+import { Star, History, IndianRupee, Power, AlertTriangle, Sparkles, Eye, MapPin, Route } from 'lucide-react'
 import {
   AlertDialog,
   AlertDialogContent,
@@ -23,6 +23,7 @@ import {
   query,
   where,
   onSnapshot,
+  Timestamp,
 } from 'firebase/firestore'
 import { useFirebase } from '@/firebase/client-provider'
 import dynamic from 'next/dynamic'
@@ -75,23 +76,23 @@ export default function DriverDashboardPage() {
 
   // 🔔 Setup sound
   useEffect(() => {
-    // This effect now correctly handles sound unlocking on the first user interaction.
-    const unlockSound = () => {
-      if (notificationSoundRef.current?.paused) {
-        notificationSoundRef.current.play().then(() => {
-          notificationSoundRef.current?.pause();
-          if (notificationSoundRef.current) notificationSoundRef.current.currentTime = 0;
-        }).catch(e => console.warn("Audio unlock failed, will try again."));
-      }
-      window.removeEventListener('click', unlockSound);
-    };
     if (typeof window !== 'undefined') {
       notificationSoundRef.current = new Audio('/sounds/notification.mp3')
-      window.addEventListener('click', unlockSound);
+      const unlockSound = () => {
+        if (notificationSoundRef.current?.paused) {
+          notificationSoundRef.current.play().then(() => {
+            notificationSoundRef.current?.pause();
+            if (notificationSoundRef.current) notificationSoundRef.current.currentTime = 0;
+          }).catch(e => console.warn("Audio unlock failed, will try again."));
+        }
+        window.removeEventListener('click', unlockSound, true);
+      };
+      window.addEventListener('click', unlockSound, true);
+      
+      return () => {
+        window.removeEventListener('click', unlockSound, true);
+      };
     }
-    return () => {
-      window.removeEventListener('click', unlockSound);
-    };
   }, []);
 
   const handleAvailabilityChange = async (checked: boolean) => {
@@ -119,30 +120,30 @@ export default function DriverDashboardPage() {
   
     const q = query(collection(db, "rides"), where("status", "==", "searching"));
     const unsub = onSnapshot(q, (snapshot) => {
-      console.log("📡 Listener update:", snapshot.size);
-      
-      const newJobs: JobRequest[] = [];
-      snapshot.forEach((doc) => {
-        const rideData = doc.data();
-        console.log("📄 Ride detected:", rideData);
-        newJobs.push({
-          id: doc.id,
-          ...rideData,
-        } as JobRequest);
-      });
-  
-      // This logic ensures sound plays only when the list goes from empty to non-empty
-      if (newJobs.length > 0 && availableJobs.length === 0) {
-        console.log("🚨 New ride request!");
-        notificationSoundRef.current?.play().catch(e => console.warn("Sound blocked:", e));
-      }
-  
-      setAvailableJobs(newJobs);
+        console.log("📡 Listener update:", snapshot.size);
+        
+        const newJobs: JobRequest[] = [];
+        snapshot.forEach((doc) => {
+            const rideData = doc.data();
+            console.log("📄 Ride detected:", rideData);
+            newJobs.push({
+                id: doc.id,
+                ...rideData
+            } as JobRequest);
+        });
+
+        // This logic ensures sound plays only when the list goes from empty to non-empty
+        if (newJobs.length > 0 && availableJobs.length === 0) {
+            console.log("🚨 New ride request!");
+            notificationSoundRef.current?.play().catch(e => console.warn("Sound blocked:", e));
+        }
+
+        setAvailableJobs(newJobs);
     });
-  
+
     return () => {
-      console.log("🧹 Listener cleaned up");
-      unsub();
+        console.log("🧹 Listener cleaned up");
+        unsub();
     };
   }, [db, isOnline, activeRide]);
 
@@ -269,6 +270,18 @@ export default function DriverDashboardPage() {
                 </div>
                 <Badge variant="outline" className="ml-auto">{jobRequest?.rideType}</Badge>
               </div>
+
+               <div className="space-y-2 text-sm">
+                   <div className="flex items-start gap-2">
+                       <MapPin className="w-4 h-4 mt-1 text-green-500 flex-shrink-0" />
+                       <p><span className="font-semibold">Pickup:</span> {jobRequest.pickup?.address}</p>
+                   </div>
+                   <div className="flex items-start gap-2">
+                       <MapPin className="w-4 h-4 mt-1 text-red-500 flex-shrink-0" />
+                       <p><span className="font-semibold">Drop:</span> {jobRequest.destination?.address}</p>
+                   </div>
+               </div>
+              
               <div className="h-40 w-full rounded-md overflow-hidden border">
                 <LiveMap
                   riderLocation={jobRequest.pickup?.location}
@@ -276,14 +289,18 @@ export default function DriverDashboardPage() {
                   zoom={11}
                 />
               </div>
-              <div className="grid grid-cols-2 gap-4 text-center">
+              <div className="grid grid-cols-3 gap-2 text-center">
                 <div className="p-2 bg-muted rounded-md">
                   <p className="text-xs text-muted-foreground">Est. Fare</p>
                   <p className="font-bold text-lg text-green-600">₹{jobRequest.fare}</p>
                 </div>
+                 <div className="p-2 bg-muted rounded-md">
+                  <p className="text-xs text-muted-foreground">To Pickup</p>
+                  <p className="font-bold text-lg">{jobRequest.driverDistance ? `${jobRequest.driverDistance.toFixed(1)} km` : 'N/A'}</p>
+                </div>
                 <div className="p-2 bg-muted rounded-md">
-                  <p className="text-xs text-muted-foreground">Distance</p>
-                  <p className="font-bold text-lg">{jobRequest.distance ? `${jobRequest.distance.toFixed(1)} km` : 'N/A'}</p>
+                  <p className="text-xs text-muted-foreground">Est. Arrival</p>
+                  <p className="font-bold text-lg">{jobRequest.driverEta ? `${Math.ceil(jobRequest.driverEta)} min` : 'N/A'}</p>
                 </div>
               </div>
             </>
