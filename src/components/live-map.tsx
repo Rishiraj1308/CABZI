@@ -27,9 +27,6 @@ const LiveMap = forwardRef<any, LiveMapProps>((props, ref) => {
     const mapInstanceRef = useRef<L.Map | null>(null);
     const markersRef = useRef<Map<string, L.Marker>>(new Map());
     const routeLayerRef = useRef<L.Polyline | null>(null);
-    const riderMarkerRef = useRef<L.Marker | null>(null);
-    const destinationMarkerRef = useRef<L.Marker | null>(null);
-    const cursorTooltipRef = useRef<L.Tooltip | null>(null);
     const locateControlRef = useRef<any | null>(null);
     const animationFrameRef = useRef<number | null>(null);
     const tileLayerRef = useRef<L.TileLayer | null>(null);
@@ -78,7 +75,6 @@ const LiveMap = forwardRef<any, LiveMapProps>((props, ref) => {
                         
                         locateControlRef.current?.start();
                     } else {
-                        // If map is not ready, retry after a short delay
                         setTimeout(tryLocate, 100);
                     }
                 };
@@ -101,41 +97,10 @@ const LiveMap = forwardRef<any, LiveMapProps>((props, ref) => {
         const animationClass = options.isPulsing ? 'animation: pulse 1.5s infinite;' : '';
         
         switch (type) {
-            case 'hospital':
-                iconHtml = `<div style="background-color: #4f46e5; border-radius: 9999px; padding: 4px; display:flex; align-items:center; justify-content:center; box-shadow: 0 1px 4px rgba(0,0,0,0.2); border: 1.5px solid white;"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-hospital"><path d="M12 6v4"/><path d="M14 14h-4"/><path d="M14 18v-4"/><path d="M14 10h-4"/><path d="M18 12h2a2 2 0 0 1 2 2v6a2 2 0 0 1-2-2H4a2 2 0 0 1-2-2v-9a2 2 0 0 1 2-2h2"/><path d="M18 22V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v18"/></svg></div>`;
-                iconSize = [20, 20];
-                iconAnchor = [10, 10];
-                break;
-            case 'sos_medical':
-            case 'ambulance':
-                iconHtml = `<div style="background-color: #ef4444; border-radius: 9999px; padding: 4px; display:flex; align-items:center; justify-content:center; box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.4); border: 1.5px solid white; ${animationClass}">${pulseAnimation}<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-ambulance"><path d="M10 10H6"/><path d="M8 8v4"/><path d="M14 18V9a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h10.5a2.5 2.5 0 0 0 2.5-2.5V18"/><path d="M18 18h2a2 2 0 0 0 2-2v-4a2 2 0 0 0-2-2h-2v8Z"/><path d="M12 11h4"/><path d="M18 15h-2.5"/><circle cx="7" cy="18" r="2"/><circle cx="17" cy="18" r="2"/></svg></div>`;
-                iconSize = [options.isPulsing ? 36 : 20, options.isPulsing ? 36 : 20];
-                iconAnchor = [options.isPulsing ? 18 : 10, options.isPulsing ? 18 : 10];
-                break;
-            case 'sos_mechanical':
-                iconHtml = `<div style="background-color: #eab308; border-radius: 9999px; padding: 8px; display:flex; align-items:center; justify-content:center; box-shadow: 0 0 0 4px rgba(234, 179, 8, 0.5); border: 2px solid white; animation: pulse 1.5s infinite;"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-wrench"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg></div>
-                <style>@keyframes pulse { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.1); opacity: 0.7; } }</style>`;
-                iconSize = [36, 36];
-                iconAnchor = [18, 18];
-                break;
-             case 'sos_security':
-                iconHtml = `<div style="background-color: #3b82f6; border-radius: 9999px; padding: 8px; display:flex; align-items:center; justify-content:center; box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.5); border: 2px solid white; animation: pulse 1.5s infinite;"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-shield"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.5 3.81 17 5 19 5a1 1 0 0 1 1 1z"/></svg></div>
-                <style>@keyframes pulse { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.1); opacity: 0.7; } }</style>`;
-                iconSize = [36, 36];
-                iconAnchor = [18, 18];
-                break;
             case 'driver':
-            case 'online':
-            case 'on_trip':
-                iconHtml = `<div style="width: 32px; height: 32px; transform: rotate(90deg);"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512" fill="hsl(var(--primary))" style="filter: drop-shadow(0px 2px 2px rgba(0,0,0,0.4));"><path d="M384 192c0-87.4-117-144-144-144c-30.9 0-58.5 40.2-76.8 64H128c-17.7 0-32 14.3-32 32s14.3 32 32 32h64c17.7 0 32-14.3 32-32c0-12.8-13-24-24-24H208V32c0-17.7-14.3-32-32-32H32C14.3 0 0 14.3 0 32v224c0 77.3 103.5 128 192 128s192-50.7 192-128V224c0-17.7-14.3-32-32-32s-32 14.3-32 32v32c0 23.6-26.3 48-96 48s-96-24.4-96-48V128c0-17.7 14.3-32 32-32h4.8c18.5-23.8 45.9-64 76.8-64c27 0 144 56.6 144 144v64c0 53-64 96-128 96S64 429 64 376v-32c0-17.7-14.3-32-32-32s-32 14.3-32 32v32c0 88.4 100.3 160 224 160s224-71.6 224-160V192z"/></svg></div>`;
+                 iconHtml = `<div style="width: 32px; height: 32px; transform: rotate(90deg);"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512" fill="hsl(var(--primary))" style="filter: drop-shadow(0px 2px 2px rgba(0,0,0,0.4));"><path d="M384 192c0-87.4-117-144-144-144c-30.9 0-58.5 40.2-76.8 64H128c-17.7 0-32 14.3-32 32s14.3 32 32 32h64c17.7 0 32-14.3 32-32c0-12.8-13-24-24-24H208V32c0-17.7-14.3-32-32-32H32C14.3 0 0 14.3 0 32v224c0 77.3 103.5 128 192 128s192-50.7 192-128V224c0-17.7-14.3-32-32-32s-32 14.3-32 32v32c0 23.6-26.3 48-96 48s-96-24.4-96-48V128c0-17.7 14.3-32 32-32h4.8c18.5-23.8 45.9-64 76.8-64c27 0 144 56.6 144 144v64c0 53-64 96-128 96S64 429 64 376v-32c0-17.7-14.3-32-32-32s-32 14.3-32 32v32c0 88.4 100.3 160 224 160s224-71.6 224-160V192z"/></svg></div>`;
                 iconSize = [32, 32];
                 iconAnchor = [16, 16];
-                break;
-            case 'mechanic':
-            case 'available':
-                iconHtml = `<div style="background-color: hsl(var(--accent)); border-radius: 9999px; padding: 4px; display:flex; align-items:center; justify-content:center; box-shadow: 0 1px 4px rgba(0,0,0,0.2); border: 1.5px solid white;"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="hsl(var(--accent-foreground))" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-wrench"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg></div>`;
-                 iconSize = [20, 20];
-                 iconAnchor = [10, 10];
                 break;
             case 'rider':
                  iconHtml = `<div style="width: 12px; height: 12px; background-color: #22c55e; border-radius: 50%; border: 2px solid white; box-shadow: 0 0 8px #22c55e; animation: rider-pulse 2s infinite ease-in-out;"><style>@keyframes rider-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }</style></div>`;
@@ -147,7 +112,7 @@ const LiveMap = forwardRef<any, LiveMapProps>((props, ref) => {
                  iconSize = [16, 16];
                  iconAnchor = [8, 8];
                  break;
-            default: // location marker
+            default: // location marker and other types
                 iconHtml = `<div style="background-color: #1d4ed8; width: 24px; height: 24px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.3);"></div>`;
                 break;
         }
@@ -175,6 +140,8 @@ const LiveMap = forwardRef<any, LiveMapProps>((props, ref) => {
             zoomControl: false,
         });
         mapInstanceRef.current = map;
+        
+        setTimeout(() => map.invalidateSize(), 100);
 
         const isDark = resolvedTheme === 'dark';
         const initialUrl = isDark 
@@ -204,29 +171,14 @@ const LiveMap = forwardRef<any, LiveMapProps>((props, ref) => {
             drawCircle: false,
         }).addTo(map);
 
-        const onFound = (e: any) => {
+        map.on('locationfound', (e: any) => {
             const { lat, lng } = e.latlng;
             getAddress(lat, lng).then(address => {
                 if (address && props.onLocationFound) {
                     props.onLocationFound(address, { lat, lon: lng });
                 }
             });
-             if (mapInstanceRef.current) {
-                mapInstanceRef.current.flyTo([lat, lng], 16);
-            }
-        };
-
-        map.on('locationfound', onFound);
-        
-        map.whenReady(() => {
-            if (props.onLocationFound) {
-                 locateControlRef.current?.start();
-            }
         });
-
-        setTimeout(() => {
-            map.invalidateSize();
-        }, 100);
 
     }, [getAddress, props, resolvedTheme, props.zoom]);
 
@@ -245,10 +197,6 @@ const LiveMap = forwardRef<any, LiveMapProps>((props, ref) => {
         if (!map) return;
         const L = require('leaflet');
 
-        if (animationFrameRef.current) {
-            cancelAnimationFrame(animationFrameRef.current);
-        }
-
         if (routeLayerRef.current) {
             map.removeLayer(routeLayerRef.current);
             routeLayerRef.current = null;
@@ -265,45 +213,77 @@ const LiveMap = forwardRef<any, LiveMapProps>((props, ref) => {
                 dashArray: '10, 10'
             }).addTo(map);
 
-            if (props.driverLocation && props.riderLocation) {
-                 map.flyToBounds(L.latLngBounds(routeCoords), { padding: [50, 50], maxZoom: 16 });
-            } else if (!props.isTripInProgress && routeCoords.length > 0) {
-                 map.flyToBounds(L.latLngBounds(routeCoords), { padding: [50, 50] });
-            }
+             map.flyToBounds(L.latLngBounds(routeCoords), { padding: [50, 50], maxZoom: 16 });
         }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [JSON.stringify(props.routeGeometry)]);
+    }, [props.routeGeometry]);
 
-    useEffect(() => {
+    const updateMarker = (id: string, latLng: L.LatLng, type: string) => {
         const map = mapInstanceRef.current;
         if (!map) return;
         const L = require('leaflet');
-        
-        if (props.riderLocation && typeof props.riderLocation.lat === 'number' && typeof props.riderLocation.lon === 'number') {
-            const { lat, lon } = props.riderLocation;
-            if (riderMarkerRef.current) {
-                riderMarkerRef.current.setLatLng([lat, lon]);
-            } else {
-                riderMarkerRef.current = L.marker([lat, lon], { icon: createIcon('rider') }).addTo(map);
+
+        let marker = markersRef.current.get(id);
+        const icon = createIcon(type);
+
+        if (marker) {
+            const currentPos = marker.getLatLng();
+            if (!currentPos.equals(latLng)) {
+                markerAnimationRef.current.set(id, { startPos: currentPos, targetPos: latLng, startTime: performance.now() });
             }
-        } else if (riderMarkerRef.current) {
-            map.removeLayer(riderMarkerRef.current);
-            riderMarkerRef.current = null;
+            marker.setIcon(icon); // Update icon in case it changed (e.g. status)
+        } else {
+            marker = L.marker(latLng, { icon }).addTo(map);
+            markersRef.current.set(id, marker);
         }
+    };
+
+    const removeMarker = (id: string) => {
+        const map = mapInstanceRef.current;
+        if (!map) return;
         
-         if (props.isTripInProgress && props.destinationLocation && typeof props.destinationLocation.lat === 'number' && typeof props.destinationLocation.lon === 'number') {
-            const { lat, lon } = props.destinationLocation;
-            if (destinationMarkerRef.current) {
-                destinationMarkerRef.current.setLatLng([lat, lon]);
-            } else {
-                destinationMarkerRef.current = L.marker([lat, lon], { icon: createIcon('destination') }).addTo(map);
-            }
-        } else if (destinationMarkerRef.current) {
-            map.removeLayer(destinationMarkerRef.current);
-            destinationMarkerRef.current = null;
+        const markerToRemove = markersRef.current.get(id);
+        if (markerToRemove) {
+            map.removeLayer(markerToRemove);
+            markersRef.current.delete(id);
+            markerAnimationRef.current.delete(id);
+        }
+    };
+    
+    // Unified Marker Management
+    useEffect(() => {
+        const L = require('leaflet');
+        const allEntities = new Map<string, { lat: number; lon: number; type: string }>();
+
+        // Add special markers
+        if (props.driverLocation) allEntities.set('__driver', { ...props.driverLocation, type: 'driver' });
+        if (props.riderLocation) allEntities.set('__rider', { ...props.riderLocation, type: 'rider' });
+        if (props.isTripInProgress && props.destinationLocation) {
+            allEntities.set('__destination', { ...props.destinationLocation, type: 'destination' });
         }
 
-    }, [props.riderLocation, props.destinationLocation, props.isTripInProgress]);
+        // Add partner/rider groups
+        props.activePartners?.forEach(p => allEntities.set(p.id, { ...p.location, type: p.status || p.type }));
+        props.activeRiders?.forEach(r => allEntities.set(r.id, { ...r.location, type: r.type }));
+        
+        const currentMarkerIds = new Set(markersRef.current.keys());
+
+        // Remove markers that are no longer present
+        currentMarkerIds.forEach(id => {
+            if (!allEntities.has(id)) {
+                removeMarker(id);
+            }
+        });
+
+        // Add or update markers
+        allEntities.forEach((entity, id) => {
+            updateMarker(id, new L.LatLng(entity.lat, entity.lon), entity.type);
+        });
+
+        if (markerAnimationRef.current.size > 0 && !animationFrameRef.current) {
+            startAnimationLoop();
+        }
+    }, [props]);
+
 
     const startAnimationLoop = useCallback(() => {
         if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
@@ -343,120 +323,6 @@ const LiveMap = forwardRef<any, LiveMapProps>((props, ref) => {
     
         animationFrameRef.current = requestAnimationFrame(animate);
     }, []);
-
-    useEffect(() => {
-        const map = mapInstanceRef.current;
-        if (!map) return;
-        const L = require('leaflet');
-
-        const allEntities: ActiveEntity[] = [];
-        if (props.activePartners) {
-            allEntities.push(...props.activePartners);
-        }
-        if (props.driverLocation) {
-            allEntities.push({
-                id: 'driver-marker',
-                name: 'Current Driver',
-                type: 'driver',
-                location: props.driverLocation,
-            });
-        }
-        if (props.activeRiders) {
-            allEntities.push(...props.activeRiders);
-        }
-
-        const currentMarkerIds = new Set(Array.from(markersRef.current.keys()));
-        const newEntityIds = new Set(allEntities.map(e => e.id));
-
-        // Remove old markers
-        currentMarkerIds.forEach(id => {
-            if (!newEntityIds.has(id)) {
-                const markerToRemove = markersRef.current.get(id);
-                if (markerToRemove) {
-                    map.removeLayer(markerToRemove);
-                }
-                markersRef.current.delete(id);
-                markerAnimationRef.current.delete(id);
-            }
-        });
-
-        // Add/Update markers
-        allEntities.forEach(entity => {
-            const { id, location, type, status, name, vehicle } = entity;
-            if (!location || typeof location.lat !== 'number' || typeof location.lon !== 'number') return;
-            
-            const latLng = new L.LatLng(location.lat, location.lon);
-            const icon = createIcon(type === 'ambulance' ? 'ambulance' : status || type);
-            
-            let marker = markersRef.current.get(id);
-            
-            if (marker) {
-                const currentPos = marker.getLatLng();
-                if (!currentPos.equals(latLng)) {
-                    markerAnimationRef.current.set(id, { startPos: currentPos, targetPos: latLng, startTime: performance.now() });
-                }
-                marker.setIcon(icon);
-            } else {
-                marker = L.marker(latLng, { icon }).addTo(map);
-                markersRef.current.set(id, marker);
-            }
-
-            if(props.enableCursorTooltip) {
-                marker.bindTooltip(`<b>${name}</b><br>${vehicle || type}`);
-            }
-        });
-
-         if (markerAnimationRef.current.size > 0 && !animationFrameRef.current) {
-            startAnimationLoop();
-        }
-
-    }, [props.activePartners, props.driverLocation, props.activeRiders, props.enableCursorTooltip, startAnimationLoop]);
-
-
-    useEffect(() => {
-        const map = mapInstanceRef.current;
-        if (!map || !props.enableCursorTooltip) return;
-        const L = require('leaflet');
-
-        if (!cursorTooltipRef.current) {
-            cursorTooltipRef.current = L.tooltip({
-                permanent: false,
-                direction: 'right',
-                offset: [10, 0],
-                className: 'cursor-tooltip'
-            });
-        }
-        
-        const updateTooltip = (e: L.LeafletMouseEvent) => {
-            const allEntities = [...(props.activePartners || []), ...(props.activeRiders || [])];
-            if (allEntities.length === 0) {
-                 cursorTooltipRef.current?.setLatLng(e.latlng).setContent('No active entities nearby.').addTo(map);
-                return
-            };
-
-            const nearbyDrivers = allEntities.filter(p => p.type === 'driver' && e.latlng.distanceTo([p.location.lat, p.location.lon]) < 5000).length;
-            const nearbyMechanics = allEntities.filter(p => p.type === 'mechanic' && e.latlng.distanceTo([p.location.lat, p.location.lon]) < 5000).length;
-            const nearbyRiders = allEntities.filter(p => p.type === 'rider' && e.latlng.distanceTo([p.location.lat, p.location.lon]) < 5000).length;
-            const nearbyAmbulances = allEntities.filter(p => p.type === 'ambulance' && e.latlng.distanceTo([p.location.lat, p.location.lon]) < 5000).length;
-
-            const content = `
-                <div style="font-weight: bold; margin-bottom: 5px;">Nearby (5km):</div>
-                <div style="display: flex; align-items: center; gap: 5px;">🚗 <strong>${nearbyDrivers}</strong> Drivers</div>
-                <div style="display: flex; align-items: center; gap: 5px;">🔧 <strong>${nearbyMechanics}</strong> Mechanics</div>
-                <div style="display: flex; align-items: center; gap: 5px;">🚑 <strong>${nearbyAmbulances}</strong> Ambulances</div>
-                <div style="display: flex; align-items: center; gap: 5px;">👤 <strong>${nearbyRiders}</strong> Riders</div>
-            `;
-            
-            cursorTooltipRef.current?.setLatLng(e.latlng).setContent(content).addTo(map);
-        };
-
-        map.on('mousemove', updateTooltip);
-
-        return () => {
-            map.off('mousemove', updateTooltip);
-        };
-    }, [props.enableCursorTooltip, props.activePartners, props.activeRiders, props]);
-
 
     return (
         <div id="map-container" className="w-full h-full z-0" ref={mapContainerRef}></div>
