@@ -168,12 +168,12 @@ function DriverLayoutContent({ children }: { children: React.ReactNode }) {
   const [isSessionLoading, setIsSessionLoading] = useState(true);
   
   const handleLogout = useCallback(() => {
+    if (auth) auth.signOut();
     if (partnerData?.id && db) {
         setDoc(doc(db, 'partners', partnerData.id), { isOnline: false, lastSeen: serverTimestamp() }, { merge: true }).catch(error => {
             console.warn("Failed to update status on logout (non-critical):", error);
         });
     }
-    if (auth) auth.signOut();
     
     localStorage.removeItem('curocity-session');
     
@@ -218,6 +218,7 @@ function DriverLayoutContent({ children }: { children: React.ReactNode }) {
         const partnerDocRef = doc(db, 'partners', sessionData.partnerId);
         unsubPartner = onSnapshot(partnerDocRef, (docSnap) => {
             if (!isSubscribed) return;
+
             if (docSnap.exists()) {
                 const data = docSnap.data();
                 const fetchedPartnerData = { id: docSnap.id, ...data } as PartnerData;
@@ -409,5 +410,3 @@ export default function DriverLayout({ children }: { children: React.ReactNode }
         </NotificationsProvider>
     );
 }
-
-    

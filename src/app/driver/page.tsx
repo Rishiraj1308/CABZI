@@ -1,6 +1,7 @@
+
 'use client'
 
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
@@ -61,17 +62,30 @@ export default function DriverDashboardPage() {
     const isOnline = partnerData?.isOnline || false;
     const jobRequest = availableJobs.length > 0 ? availableJobs[0] : null;
 
+    const getDistance = useCallback((lat1:number, lon1:number, lat2:number, lon2:number) => {
+      const R = 6371; // Radius of the earth in km
+      const dLat = (lat2-lat1) * Math.PI / 180;
+      const dLon = (lon2-lon1) * Math.PI / 180;
+      const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(lat1* Math.PI/180) * Math.cos(lat2* Math.PI/180) * Math.sin(dLon/2) * Math.sin(dLon/2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+      return R * c; // distance in km
+    }, []);
+
     // New onSnapshot listener for ride requests
     useEffect(() => {
         if (!db || !isOnline || activeRide) return;
 
         const twentySecondsAgo = Timestamp.fromMillis(Date.now() - 20000);
         const ridesRef = collection(db, 'rides');
-        const q = query(
+        let q = query(
             ridesRef, 
             where('status', '==', 'searching'),
             where('createdAt', '>=', twentySecondsAgo)
         );
+        // Add rideType filter if vehicleType is available
+        if (partnerData?.vehicleType) {
+            q = query(q, where('rideType', '==', partnerData.vehicleType));
+        }
 
         const unsubscribe = onSnapshot(q, (snapshot) => {
             const newJobs: JobRequest[] = [];
@@ -81,17 +95,14 @@ export default function DriverDashboardPage() {
                 if (change.type === 'added') {
                     const job = { id: change.doc.id, ...change.doc.data() } as JobRequest;
                     
-                    // Simple distance check (you can make this more complex)
-                    // This is a rough check; a geo-query in the Cloud Function is better for production
-                    if (partnerData?.currentLocation && job.pickup) {
-                        // Assuming job.pickup is a GeoPoint. If not, this needs adjustment.
+                    if (partnerData?.currentLocation && job.pickup?.location) {
                         const distance = getDistance(
                             partnerData.currentLocation.latitude, partnerData.currentLocation.longitude,
-                            job.pickup.latitude, job.pickup.longitude
+                            job.pickup.location.latitude, job.pickup.location.longitude
                         );
-                        if (distance < 10) { // Only consider jobs within 10km
+                        if (distance < 10) { 
                            newJobs.push(job);
-                           playSound = true; // A new relevant job has appeared
+                           playSound = true;
                         }
                     } else {
                          newJobs.push(job);
@@ -110,17 +121,7 @@ export default function DriverDashboardPage() {
         });
 
         return () => unsubscribe();
-    }, [db, isOnline, activeRide, partnerData?.currentLocation]);
-
-    // Simple distance calculator
-    const getDistance = (lat1:number, lon1:number, lat2:number, lon2:number) => {
-      const R = 6371; // Radius of the earth in km
-      const dLat = (lat2-lat1) * Math.PI / 180;
-      const dLon = (lon2-lon1) * Math.PI / 180;
-      const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(lat1* Math.PI/180) * Math.cos(lat2* Math.PI/180) * Math.sin(dLon/2) * Math.sin(dLon/2);
-      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-      return R * c; // distance in km
-    }
+    }, [db, isOnline, activeRide, partnerData?.currentLocation, partnerData?.vehicleType, getDistance]);
 
     const handleOnlineStatusChange = async (checked: boolean) => {
         if (!partnerData || !db) return;
@@ -198,9 +199,9 @@ export default function DriverDashboardPage() {
                 </CardHeader>
                 {isOnline && (
                      <CardContent className="text-center py-12">
-                        <SearchingIndicator partnerType="path" className="w-24 h-24" />
-                        <h3 className="text-xl font-bold mt-4">Waiting for Rides...</h3>
-                        <p className="text-muted-foreground text-sm">Your location is being shared to get nearby requests.</p>
+                        <SearchingIndicator partnerType="path" className="w-32 h-32" />
+                        <h3 className="text-3xl font-bold mt-4">Waiting for Rides...</h3>
+                        <p className="text-muted-foreground">Your location is being shared to get nearby requests.</p>
                      </CardContent>
                 )}
             </Card>
