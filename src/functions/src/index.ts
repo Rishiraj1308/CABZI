@@ -47,8 +47,9 @@ const handleRideDispatch = async (rideData: any, rideId: string) => {
     let partnersQuery = db.collection('partners')
         .where('isOnline', '==', true);
 
-    // FIX: Match base vehicle type (e.g. "Cab" for "Cab (Lite)")
-    const rideTypeBase = rideData.rideType.split(' ')[0]; 
+    // This logic is critical. It extracts the base vehicle type.
+    // e.g., "Cab (Lite)" -> "Cab", "Auto" -> "Auto", "Bike" -> "Bike"
+    const rideTypeBase = rideData.rideType.split('(')[0].trim();
     if (rideTypeBase) {
         partnersQuery = partnersQuery.where('vehicleType', '==', rideTypeBase);
     }
@@ -62,7 +63,7 @@ const handleRideDispatch = async (rideData: any, rideId: string) => {
     const partnersSnapshot = await partnersQuery.get();
     
     if (partnersSnapshot.empty) {
-        console.log(`No online partners found for ride type: ${rideData.rideType}.`);
+        console.log(`No online partners found for ride type: ${rideData.rideType} (Base: ${rideTypeBase}).`);
         await db.doc(`rides/${rideId}`).update({ status: 'no_drivers_available' });
         return;
     }
