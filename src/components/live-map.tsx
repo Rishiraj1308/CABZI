@@ -19,6 +19,7 @@ interface LiveMapProps {
     onLocationFound?: (address: string, coords: { lat: number, lon: number }) => void;
     enableCursorTooltip?: boolean;
     isTripInProgress?: boolean;
+    zoom?: number;
 }
 
 const LiveMap = forwardRef<any, LiveMapProps>((props, ref) => {
@@ -172,7 +173,7 @@ const LiveMap = forwardRef<any, LiveMapProps>((props, ref) => {
         
         const map = L.map(mapContainerRef.current, {
             center: [28.6139, 77.2090], // Delhi
-            zoom: 11,
+            zoom: props.zoom || 11,
             zoomControl: false,
         });
         mapInstanceRef.current = map;
@@ -225,11 +226,12 @@ const LiveMap = forwardRef<any, LiveMapProps>((props, ref) => {
             }
         });
 
+        // CRITICAL FIX: Invalidate map size after a short delay
         setTimeout(() => {
             map.invalidateSize();
         }, 100);
 
-    }, [getAddress, props, resolvedTheme]);
+    }, [getAddress, props, resolvedTheme, props.zoom]);
 
     // Effect to switch map theme when the app's theme changes
     useEffect(() => {
