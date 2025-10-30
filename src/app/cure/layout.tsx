@@ -123,39 +123,43 @@ export default function CureLayout({ children }: { children: React.ReactNode }) 
   }, [auth, db, partnerData, router, toast]);
 
   useEffect(() => {
-    if (isUserLoading) return;
-    
+    if (isUserLoading || !db) return;
+
     const isOnboardingPage = pathname.includes('/cure/onboarding');
+
     if (!user) {
-      if (!isOnboardingPage) router.replace('/login?role=driver');
-      setIsSessionLoading(false);
-      return;
+        if (!isOnboardingPage) router.replace('/login?role=driver');
+        setIsSessionLoading(false);
+        return;
     }
 
     const sessionString = localStorage.getItem('curocity-cure-session');
     if (!sessionString) {
-        if (!isOnboardingPage) handleLogout();
+        if (!isOnboardingPage && auth) handleLogout();
         setIsSessionLoading(false);
         return;
     }
-    
-    let unsubPartner: () => void = () => {};
+
+    let unsubPartner: (() => void) | null = null;
+    let isSubscribed = true;
+
     try {
         const sessionData = JSON.parse(sessionString);
-         if (!sessionData.role || sessionData.role !== 'cure' || !sessionData.partnerId) {
+        if (!sessionData.role || sessionData.role !== 'cure' || !sessionData.partnerId) {
             if (!isOnboardingPage) handleLogout();
             setIsSessionLoading(false);
             return;
         }
 
         const partnerRef = doc(db, 'ambulances', sessionData.partnerId);
-        unsubPartner = onSnapshot(partnerRef, (doc) => {
-            if (doc.exists()) {
-                const data = doc.data();
-                const partner: PartnerData = { id: doc.id, ...data } as PartnerData;
+        unsubPartner = onSnapshot(partnerRef, (docSnap) => {
+            if (!isSubscribed) return;
+            if (docSnap.exists()) {
+                const data = docSnap.data();
+                const partner: PartnerData = { id: docSnap.id, ...data } as PartnerData;
                 setPartnerData(partner);
 
-                const isHospital = partner.clinicType?.toLowerCase().includes('hospital');
+                const isHospital = partner.businessType?.toLowerCase().includes('hospital');
                 const menu = isHospital
                     ? [
                         { href: '/cure', label: 'Mission Control', icon: LayoutDashboard },
@@ -178,13 +182,17 @@ export default function CureLayout({ children }: { children: React.ReactNode }) 
         });
 
     } catch (e) {
-        handleLogout();
+        console.error("CureLayout snapshot error:", e);
+        if (!isOnboardingPage) handleLogout();
         setIsSessionLoading(false);
     }
     
-    return () => unsubPartner();
+    return () => {
+        isSubscribed = false;
+        if (unsubPartner) unsubPartner();
+    };
 
-  }, [db, user, isUserLoading, handleLogout, pathname, router]);
+  }, [db, user, isUserLoading, handleLogout, auth, pathname, router]);
 
   
   if (pathname === '/cure/onboarding') {
