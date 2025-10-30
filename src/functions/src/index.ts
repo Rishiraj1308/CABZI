@@ -100,6 +100,7 @@ const handleRideDispatch = async (rideData: any, rideId: string) => {
             riderId: rideData.riderId,
             riderGender: rideData.riderGender,
             otp: rideData.otp,
+            distance: String(rideData.distance), // CRITICAL FIX: Add distance to payload
         };
 
         const message = {
@@ -469,5 +470,3 @@ export const simulateHighDemand = onCall(async (request) => {
 
     return { success: true, message: `High demand alert triggered for ${zoneName}.` };
 });
-
-    
