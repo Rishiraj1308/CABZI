@@ -95,8 +95,8 @@ export default function DriverDashboardPage() {
             console.log("Rides listener fired. Found documents:", snapshot.size);
             const newJobs: JobRequest[] = [];
             snapshot.forEach((doc) => {
-                console.log("Processing doc:", doc.id, doc.data());
                 const rideData = doc.data();
+                console.log("Processing doc:", doc.id, rideData);
                 newJobs.push({
                   id: doc.id,
                   ...rideData,
@@ -111,8 +111,9 @@ export default function DriverDashboardPage() {
                   createdAt: rideData.createdAt,
                 } as JobRequest);
             });
-
-            if (newJobs.length > availableJobs.length && newJobs.length > 0) {
+            
+            // If new jobs are found and we weren't showing any before, play a sound.
+            if (newJobs.length > 0 && availableJobs.length === 0) {
                  notificationSoundRef.current?.play().catch(e => console.error("Audio play failed:", e));
             }
             setAvailableJobs(newJobs);
@@ -188,6 +189,14 @@ export default function DriverDashboardPage() {
           toast({ variant: 'destructive', title: 'Invalid PIN', description: 'Please enter the correct 4-digit PIN.' });
       }
     }
+    
+    useEffect(() => {
+        return () => {
+            if (earningsTimerRef.current) {
+                clearTimeout(earningsTimerRef.current);
+            }
+        };
+    }, []);
 
     if (activeRide) {
         return (
