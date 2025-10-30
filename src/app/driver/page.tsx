@@ -90,6 +90,7 @@ export default function DriverDashboardPage() {
             const { type, rideId, ...jobData } = payload.data || {};
 
             if(type === 'new_ride_request' && rideId) {
+                // Critical Fix: Parse the JSON stringified location data
                 const newJobRequest: JobRequest = {
                     id: rideId,
                     ...jobData,
@@ -313,3 +314,5 @@ export default function DriverDashboardPage() {
         </div>
     );
 }
+
+    
