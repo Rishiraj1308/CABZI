@@ -311,7 +311,7 @@ export default function RideStatus({
                         >
                             <CardHeader className="p-0 text-center">
                                 <CardTitle>Driver is on the way!</CardTitle>
-                                <CardDescription className="flex items-center justify-center gap-1"><Clock className="w-3 h-3"/> {rideData.driverEta ? `Arriving in ${Math.ceil(rideData.driverEta)} min` : 'Calculating ETA...'}</CardDescription>
+                                <CardDescription className="flex items-center justify-center gap-1"><Clock className="w-3 h-3"/> Arriving in {Math.ceil(rideData.driverEta || 5)} min</CardDescription>
                             </CardHeader>
                             <div className="p-3 rounded-lg bg-muted flex items-center gap-3">
                                 <Avatar className="w-12 h-12"><AvatarImage src={rideData.driverDetails?.photoUrl} alt={rideData.driverDetails?.name} /><AvatarFallback>{rideData.driverDetails?.name?.substring(0,2)}</AvatarFallback></Avatar>

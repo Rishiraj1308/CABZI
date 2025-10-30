@@ -202,7 +202,6 @@ export default function DriverDashboardPage() {
                 photoUrl: partnerData.photoUrl,
                 phone: partnerData.phone,
             },
-            driverEta: jobRequest.driverEta, // Pass the ETA to the ride document
         });
         await updateDoc(partnerRef, { status: 'on_trip' });
 
@@ -402,11 +401,11 @@ export default function DriverDashboardPage() {
                 </div>
                  <div className="p-2 bg-muted rounded-md">
                   <p className="text-xs text-muted-foreground">To Pickup</p>
-                  <p className="font-bold text-lg">{jobRequest.driverDistance ? `${parseFloat(jobRequest.driverDistance).toFixed(1)} km` : 'N/A'}</p>
+                  <p className="font-bold text-lg">~5 km</p>
                 </div>
                 <div className="p-2 bg-muted rounded-md">
                   <p className="text-xs text-muted-foreground">Est. Arrival</p>
-                  <p className="font-bold text-lg">{jobRequest.driverEta ? `${Math.ceil(parseFloat(jobRequest.driverEta))} min` : 'N/A'}</p>
+                  <p className="font-bold text-lg">~8 min</p>
                 </div>
               </div>
             </>
