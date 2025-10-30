@@ -16,7 +16,7 @@ import type { RideData, ClientSession } from '@/lib/types'
 import { cn } from '@/lib/utils'
 import { BikeIcon, AutoIcon, CabIcon } from '@/components/icons'
 import { HeartHandshake, Clock, IndianRupee, Shield } from 'lucide-react'
-import RideStatus from '@/components/ride-status' // Import RideStatus
+import RideStatus from '@/components/ride-status'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -70,7 +70,7 @@ function BookRideMapComponent() {
     const { db, user } = useFirebase();
     const [session, setSession] = useState<ClientSession | null>(null);
     
-    const [userLocation, setUserLocation] = useState<{ lat: number, lon: number } | null>(null);
+    const [userLocation, setUserLocation] = useState<{ lat: number; lon: number } | null>(null);
     const [destination, setDestination] = useState<LocationWithCoords | null>(null);
     const [routeGeometry, setRouteGeometry] = useState(null);
     const [routeInfo, setRouteInfo] = useState<{distance: number, duration: number} | null>(null);
@@ -79,7 +79,6 @@ function BookRideMapComponent() {
     const [isLoading, setIsLoading] = useState(true);
     const [isBooking, setIsBooking] = useState(false);
     
-    // This state will hold the active ride data fetched from Firestore in real-time
     const [activeRide, setActiveRide] = useState<RideData | null>(null);
 
 
@@ -105,33 +104,27 @@ function BookRideMapComponent() {
     },[user, db])
 
     useEffect(() => {
-        const fetchInitialData = async () => {
-            const destQuery = searchParams.get('search');
-            if (!destQuery) {
-                 toast({ variant: "destructive", title: "No destination selected." });
-                 router.back();
-                 return;
-            }
+        const destQuery = searchParams.get('search');
+        if (!destQuery) {
+             toast({ variant: "destructive", title: "No destination selected." });
+             router.back();
+             return;
+        }
 
+        const fetchInitialData = async () => {
             try {
-                // Get user's current location first
                 navigator.geolocation.getCurrentPosition(
                     (position) => {
-                        const coords = {
-                            lat: position.coords.latitude,
-                            lon: position.coords.longitude
-                        };
+                        const coords = { lat: position.coords.latitude, lon: position.coords.longitude };
                         setUserLocation(coords);
                     },
                     () => {
-                        // Fallback location if user denies permission
                         setUserLocation({ lat: 28.6139, lon: 77.2090 });
-                        toast({ variant: 'destructive', title: "Location Access Denied", description: "Using default location. Your ride fare might be inaccurate." });
+                        toast({ variant: 'destructive', title: "Location Access Denied" });
                     }
                 );
-
-                // Geocode the destination query
-                const results = await (await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(destQuery)}&format=json&limit=1`)).json();
+                
+                const results = await searchPlace(destQuery);
                 if (results.length > 0) {
                     const place = results[0];
                     setDestination({ 
@@ -142,7 +135,6 @@ function BookRideMapComponent() {
                      toast({ variant: "destructive", title: "Destination Not Found" });
                 }
             } catch (error) {
-                console.error("Failed to get destination coordinates:", error);
                  toast({ variant: "destructive", title: "Error", description: "Could not find coordinates for the destination." });
             }
         };
@@ -152,44 +144,35 @@ function BookRideMapComponent() {
 
 
     useEffect(() => {
-        const fetchRouteAndFares = async () => {
-            if (!userLocation || !destination?.coords) return;
-            setIsLoading(true);
+        if (!userLocation || !destination?.coords) return;
 
+        const fetchRouteAndFares = async () => {
+            setIsLoading(true);
             try {
-                const routeData = await getRoute(userLocation, destination.coords);
+                const routeData = await getRoute(userLocation, destination.coords!);
                 if (routeData.routes && routeData.routes.length > 0) {
                     const route = routeData.routes[0];
                     setRouteGeometry(route.geometry);
-                    setRouteInfo({
-                        distance: route.distance / 1000, // meters to km
-                        duration: Math.round(route.duration / 60) // seconds to minutes
-                    });
+                    setRouteInfo({ distance: route.distance / 1000, duration: Math.round(route.duration / 60) });
                     
                     const updatedRideTypes = initialRideTypes.map(rt => {
                         if (rt.name === 'Curocity Pink' && session?.gender !== 'female') {
                             return { ...rt, fare: 'N/A', eta: 'N/A' };
                         }
-
                         const config = fareConfig[rt.name];
                         if (!config) return { ...rt, fare: 'N/A', eta: 'N/A' };
-                        
-                        const calculatedFare = config.base + (config.perKm * (route.distance / 1000)) + config.serviceFee;
-                        const totalFare = Math.round(calculatedFare / 5) * 5; // Round to nearest 5
-                        
+                        const totalFare = Math.round((config.base + (config.perKm * (route.distance / 1000)) + config.serviceFee) / 5) * 5;
                         return { 
                             ...rt, 
                             fare: `₹${totalFare}`, 
                             fareDetails: { ...config, total: totalFare },
-                            eta: `${Math.round(route.duration / 60) + 3} min` // Adding a buffer for finding driver
+                            eta: `${Math.round(route.duration / 60) + 3} min`
                         };
                     });
                     setRideTypes(updatedRideTypes);
-
                 }
             } catch (error) {
-                console.error("Failed to fetch route:", error);
-                toast({ variant: "destructive", title: "Routing Error", description: "Could not calculate the route."});
+                toast({ variant: "destructive", title: "Routing Error" });
             } finally {
                 setIsLoading(false);
             }
@@ -198,15 +181,14 @@ function BookRideMapComponent() {
         fetchRouteAndFares();
     }, [userLocation, destination, toast, session?.gender]);
     
-    // **NEW**: Effect to listen to the active ride document
     useEffect(() => {
         if (!db || !activeRide?.id) return;
     
         const unsub = onSnapshot(doc(db, 'rides', activeRide.id), (docSnap) => {
             if (docSnap.exists()) {
                 const rideData = { id: docSnap.id, ...docSnap.data() } as RideData;
-                setActiveRide(rideData); // Update the state with the latest ride data
-                if (rideData.status === 'completed' || rideData.status.startsWith('cancelled')) {
+                setActiveRide(rideData);
+                if (['completed', 'cancelled_by_driver', 'cancelled_by_rider'].includes(rideData.status)) {
                      setTimeout(() => {
                         localStorage.removeItem('activeRideId');
                         setActiveRide(null);
@@ -250,11 +232,9 @@ function BookRideMapComponent() {
 
         try {
             const docRef = await addDoc(collection(db, 'rides'), rideData);
-            // Set the activeRide state immediately to switch the UI
             setActiveRide({ id: docRef.id, ...rideData });
             localStorage.setItem('activeRideId', docRef.id);
         } catch (error) {
-            console.error("Error creating ride:", error);
             toast({ variant: 'destructive', title: 'Booking Failed' });
         } finally {
             setIsBooking(false);
@@ -263,14 +243,13 @@ function BookRideMapComponent() {
     
     const handleCancelRide = async () => {
         if (!db || !activeRide) return;
-
         const rideRef = doc(db, 'rides', activeRide.id);
         try {
             await updateDoc(rideRef, { status: 'cancelled_by_rider' });
             toast({ variant: 'destructive', title: 'Ride Cancelled' });
             localStorage.removeItem('activeRideId');
             setActiveRide(null);
-            setRouteGeometry(null); // Clear route on cancel
+            setRouteGeometry(null);
         } catch (error) {
             toast({ variant: 'destructive', title: 'Cancellation failed' });
         }
