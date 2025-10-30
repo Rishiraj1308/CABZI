@@ -39,9 +39,38 @@ const recentTrips = [
 
 export default function BookRidePage() {
     const router = useRouter();
+    const [pickupAddress, setPickupAddress] = useState('Locating...');
     const [destination, setDestination] = useState('');
     const [searchResults, setSearchResults] = useState<any[]>([]);
     const [isSearching, setIsSearching] = useState(false);
+
+    const getAddressFromCoords = useCallback(async (lat: number, lon: number) => {
+        try {
+            const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`);
+            const data = await response.json();
+            return data.display_name || 'Unknown Location';
+        } catch (error) {
+            console.error("Error fetching address:", error);
+            return 'Could not fetch address';
+        }
+    }, []);
+
+    useEffect(() => {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                async (position) => {
+                    const { latitude, longitude } = position.coords;
+                    const address = await getAddressFromCoords(latitude, longitude);
+                    setPickupAddress(address);
+                },
+                () => {
+                    setPickupAddress('Location access denied');
+                }
+            );
+        } else {
+            setPickupAddress('Geolocation not supported');
+        }
+    }, [getAddressFromCoords]);
 
     const containerVariants = {
         hidden: { opacity: 0 },
@@ -111,7 +140,11 @@ export default function BookRidePage() {
                         <CardContent className="p-3 relative">
                             <div className="flex items-center gap-4 py-2 px-2 rounded-lg">
                                 <div className="w-2.5 h-2.5 rounded-full bg-green-500 ring-2 ring-green-500/30"/>
-                                <p className="font-semibold text-base text-muted-foreground">Current Location</p>
+                                {pickupAddress === 'Locating...' ? (
+                                    <Skeleton className="h-5 w-48" />
+                                ) : (
+                                    <p className="font-semibold text-base text-muted-foreground truncate">{pickupAddress}</p>
+                                )}
                             </div>
                             <div className="border-l-2 border-dotted border-border h-4 ml-[13px] my-1"></div>
                             <div className="flex items-center gap-4 py-2 px-2 rounded-lg">
