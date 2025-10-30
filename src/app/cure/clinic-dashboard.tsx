@@ -1,13 +1,13 @@
 
 'use client'
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Stethoscope, Calendar, Users, BarChart, FileText, Clock, UserCheck, UserPlus, MoreHorizontal, Trash2, Phone, ArrowLeft } from 'lucide-react';
+import { Stethoscope, Calendar, Users, BarChart, FileText, Clock, UserCheck, UserPlus, MoreHorizontal, Trash2, Phone, ArrowLeft, Video, Building } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { useDb } from '@/firebase/client-provider';
+import { useDb, useFirebase } from '@/firebase/client-provider';
 import { collection, query, where, onSnapshot, Timestamp, orderBy, getDocs, doc, updateDoc, deleteDoc, addDoc, serverTimestamp, writeBatch, limit } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
@@ -35,7 +35,6 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Progress } from '@/components/ui/progress';
 import { Switch } from '@/components/ui/switch';
 import { cn } from '@/lib/utils';
@@ -102,27 +101,38 @@ const ClinicDashboard = () => {
     const [generatedCreds, setGeneratedCreds] = useState<{ id: string, pass: string, role: string } | null>(null);
     const [isCredsDialogOpen, setIsCredsDialogOpen] = useState(false);
     const [currentFormStep, setCurrentFormStep] = useState(1);
-    const db = useDb();
+    const { user, db } = useFirebase();
     const { toast } = useToast();
 
     const [hospitalId, setHospitalId] = useState<string | null>(null);
     const [hospitalName, setHospitalName] = useState<string | null>(null);
     
 
+    const handleLogout = useCallback(() => {
+        // This function is stable and can be used in dependencies
+    }, []);
+
     useEffect(() => {
-        if (!db) {
+        if (!db || !user) {
             setIsLoading(false);
             return;
         }
 
-        const session = localStorage.getItem('curocity-cure-session');
-        if (!session) {
-            toast({ variant: 'destructive', title: 'Error', description: 'Session not found. Please log in again.' });
-            setIsLoading(false); 
+        const sessionStr = localStorage.getItem('curocity-cure-session');
+        if (!sessionStr) {
+             handleLogout();
+             return;
+        }
+        
+        let sessionData;
+        try {
+            sessionData = JSON.parse(sessionStr);
+        } catch (e) {
+            handleLogout();
             return;
-        };
+        }
 
-        const { partnerId, name } = JSON.parse(session);
+        const { partnerId, name } = sessionData;
         setHospitalId(partnerId);
         setHospitalName(name);
 
@@ -132,6 +142,8 @@ const ClinicDashboard = () => {
             return;
         }
         
+        let isSubscribed = true;
+
         const todayStart = startOfDay(new Date());
         const todayEnd = endOfDay(new Date());
 
@@ -144,26 +156,30 @@ const ClinicDashboard = () => {
         );
 
         const unsubAppts = onSnapshot(apptQuery, (snapshot) => {
+            if (!isSubscribed) return;
             const apptsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Appointment));
             setAppointments(apptsData);
         }, (error) => {
+            if (!isSubscribed) return;
             console.error("Error fetching appointments: ", error);
             toast({ variant: 'destructive', title: "Error", description: 'Could not fetch appointments.' });
         });
         
         const doctorsQuery = query(collection(db, `ambulances/${partnerId}/doctors`));
         const unsubDoctors = onSnapshot(doctorsQuery, (snapshot) => {
+            if (!isSubscribed) return;
             const doctorsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Doctor));
             setDoctors(doctorsData);
             setIsLoading(false);
         });
 
         return () => {
+            isSubscribed = false;
             unsubAppts();
             unsubDoctors();
         };
 
-    }, [db, toast]);
+    }, [db, user, toast, handleLogout]);
     
     const stats = useMemo(() => {
         const checkedInCount = appointments.filter(a => a.status === 'In Queue').length;
@@ -218,7 +234,6 @@ const ClinicDashboard = () => {
             
             const batch = writeBatch(db);
             
-            // 1. Create record in the hospital's private subcollection
             const hospitalDoctorsRef = collection(db, `ambulances/${hospitalId}/doctors`);
             const newDoctorDocRefInHospital = doc(hospitalDoctorsRef);
             const doctorData = { 
@@ -233,14 +248,13 @@ const ClinicDashboard = () => {
             
             batch.set(newDoctorDocRefInHospital, doctorData);
 
-            // 2. Create record in the global 'doctors' collection for login
             const newDoctorDocRefGlobal = doc(globalDoctorsRef, newDoctorDocRefInHospital.id);
             batch.set(newDoctorDocRefGlobal, {
                  id: newDoctorDocRefInHospital.id, 
                  name, phone, email, partnerId, password,
                  hospitalId, hospitalName,
                  createdAt: serverTimestamp(),
-                 status: 'pending_verification' // Global status
+                 status: 'pending_verification' 
             });
 
             await batch.commit();
@@ -265,11 +279,9 @@ const ClinicDashboard = () => {
         
         const batch = writeBatch(db);
 
-        // 1. Delete from hospital's subcollection
         const hospitalDoctorRef = doc(db, `ambulances/${hospitalId}/doctors`, doctorId);
         batch.delete(hospitalDoctorRef);
 
-        // 2. Delete from global collection to revoke login
         const globalDoctorRef = doc(db, 'doctors', doctorId);
         batch.delete(globalDoctorRef);
         
@@ -394,7 +406,7 @@ const ClinicDashboard = () => {
                             <CardTitle>Doctor Schedules</CardTitle>
                             <CardDescription>View and manage doctor availability for the upcoming week.</CardDescription>
                         </CardHeader>
-                        <CardContent className="h-48 flex items-center justify-center">
+                        <CardContent>
                              <Table>
                                 <TableHeader>
                                     <TableRow>
