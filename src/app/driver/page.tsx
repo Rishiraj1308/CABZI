@@ -3,10 +3,10 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 import Image from 'next/image'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
-import { Star, History, IndianRupee, Power, AlertTriangle, Sparkles, Eye, MapPin, Route } from 'lucide-react'
+import { Star, History, IndianRupee, Power, KeyRound, Clock, MapPin, Route, Navigation, CheckCircle } from 'lucide-react'
 import {
   AlertDialog,
   AlertDialogContent,
@@ -34,7 +34,6 @@ import { useDriver } from './layout'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import SearchingIndicator from '@/components/ui/searching-indicator'
-import RideStatus from '@/components/ride-status'
 import { Switch } from '@/components/ui/switch'
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
@@ -71,6 +70,8 @@ export default function DriverDashboardPage() {
   const { partnerData, isLoading: isDriverLoading } = useDriver()
   const { db } = useFirebase()
   const { toast } = useToast()
+  const [enteredOtp, setEnteredOtp] = useState('');
+
 
   const isOnline = partnerData?.isOnline || false
   const jobRequest = availableJobs.length > 0 ? availableJobs[0] : null
@@ -79,20 +80,6 @@ export default function DriverDashboardPage() {
   useEffect(() => {
     if (typeof window !== 'undefined') {
       notificationSoundRef.current = new Audio('/sounds/notification.mp3')
-      const unlockSound = () => {
-        if (notificationSoundRef.current?.paused) {
-          notificationSoundRef.current.play().then(() => {
-            notificationSoundRef.current?.pause();
-            if (notificationSoundRef.current) notificationSoundRef.current.currentTime = 0;
-          }).catch(e => console.warn("Audio unlock failed, will try again."));
-        }
-        window.removeEventListener('click', unlockSound, true);
-      };
-      window.addEventListener('click', unlockSound, true);
-      
-      return () => {
-        window.removeEventListener('click', unlockSound, true);
-      };
     }
   }, []);
 
@@ -100,7 +87,7 @@ export default function DriverDashboardPage() {
     if (!partnerData || !db) return;
     const partnerRef = doc(db, 'partners', partnerData.id);
     try {
-      await updateDoc(partnerRef, { isOnline: checked });
+      await updateDoc(partnerRef, { isOnline: checked, status: checked ? 'online' : 'offline' });
       toast({
         title: checked ? "You are now ONLINE" : "You are OFFLINE",
         description: checked ? "You will start receiving ride requests." : "You won't receive new requests.",
@@ -128,21 +115,33 @@ export default function DriverDashboardPage() {
             } as JobRequest);
         });
 
-        // This logic ensures sound plays only when the list goes from empty to non-empty
         if (newJobs.length > 0 && availableJobs.length === 0) {
           if (notificationSoundRef.current) {
             notificationSoundRef.current.play().catch(e => console.warn("Sound blocked until user interaction:", e));
           }
         }
-
         setAvailableJobs(newJobs);
     });
-
-    return () => {
-        unsub();
-    };
+    return () => unsub();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [db, isOnline, activeRide]);
+  
+    // Listen for updates on an active ride
+  useEffect(() => {
+    if (!db || !activeRide?.id) return;
+    const unsub = onSnapshot(doc(db, 'rides', activeRide.id), (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        if (data.status === 'cancelled_by_rider') {
+          toast({ variant: 'destructive', title: 'Ride Cancelled by User' });
+          resetAfterRide();
+        } else {
+          setActiveRide({ id: docSnap.id, ...data } as RideData);
+        }
+      }
+    });
+    return () => unsub();
+  }, [db, activeRide?.id]);
 
   // Timer for request
   useEffect(() => {
@@ -176,6 +175,10 @@ export default function DriverDashboardPage() {
   const resetAfterRide = () => {
     setActiveRide(null)
     localStorage.removeItem('activeRideId')
+    // Set driver status back to online after a ride
+    if (partnerData?.id && db) {
+        updateDoc(doc(db, 'partners', partnerData.id), { status: 'online' });
+    }
   }
 
   const handleAcceptJob = async () => {
@@ -183,6 +186,7 @@ export default function DriverDashboardPage() {
     if (requestTimerRef.current) clearInterval(requestTimerRef.current);
     
     const jobRef = doc(db, 'rides', jobRequest.id);
+    const partnerRef = doc(db, 'partners', partnerData.id);
     try {
         await updateDoc(jobRef, {
             status: 'accepted',
@@ -191,18 +195,40 @@ export default function DriverDashboardPage() {
             driverDetails: {
                 name: partnerData.name,
                 vehicle: `${partnerData.vehicleBrand} ${partnerData.vehicleName}`,
-                rating: partnerData.rating ?? 5.0, // Ensure rating is not undefined
+                rating: partnerData.rating ?? 5.0,
                 photoUrl: partnerData.photoUrl,
                 phone: partnerData.phone,
             },
         });
+        await updateDoc(partnerRef, { status: 'on_trip' });
+
         setAvailableJobs((prev) => prev.filter((j) => j.id !== jobRequest.id));
-        setActiveRide({ id: jobRequest.id, ...jobRequest } as RideData);
+        setActiveRide({ id: jobRequest.id, ...jobRequest, status: 'accepted' } as RideData);
         localStorage.setItem('activeRideId', jobRequest.id);
     } catch (err) {
         console.error("❌ Error accepting job:", err);
         toast({ variant: 'destructive', title: 'Error', description: 'Could not accept job. It might have been taken.' });
     }
+  }
+  
+  const handleUpdateRideStatus = async (newStatus: 'arrived' | 'in-progress' | 'payment_pending') => {
+    if (!activeRide || !db) return;
+    const rideRef = doc(db, 'rides', activeRide.id);
+    try {
+        await updateDoc(rideRef, { status: newStatus });
+        setActiveRide(prev => prev ? {...prev, status: newStatus} : null);
+    } catch (e) {
+        toast({variant: 'destructive', title: 'Error', description: 'Could not update ride status.'})
+    }
+  }
+  
+  const handleVerifyOtp = () => {
+      if (enteredOtp === activeRide?.otp) {
+          handleUpdateRideStatus('in-progress');
+          toast({title: 'OTP Verified!', description: 'Trip has started.', className: 'bg-green-600 text-white'});
+      } else {
+          toast({variant: 'destructive', title: 'Invalid OTP'});
+      }
   }
 
   const handlePinSubmit = () => {
@@ -226,61 +252,102 @@ export default function DriverDashboardPage() {
     ? { lat: partnerData.currentLocation.latitude, lon: partnerData.currentLocation.longitude }
     : undefined;
 
-  if (activeRide) {
-    return (
-      <div className="flex justify-center items-center h-full">
-        <RideStatus 
-            ride={activeRide} 
-            onCancel={resetAfterRide} 
-            onDone={resetAfterRide} 
-            isTripInProgress={activeRide?.status === 'in-progress'}
-        />
-      </div>
-    )
-  }
+    const renderActiveRide = () => {
+        if (!activeRide) return null;
+        
+        const isNavigatingToRider = ['accepted', 'arrived'].includes(activeRide.status);
+        const destinationLocation = isNavigatingToRider ? activeRide.pickup.location : activeRide.destination.location;
+        const navigateUrl = destinationLocation ? `https://www.google.com/maps/dir/?api=1&destination=${destinationLocation.latitude},${destinationLocation.longitude}` : '#';
+
+        return (
+            <Card className="shadow-lg animate-fade-in w-full">
+                <CardHeader>
+                    <CardTitle className="capitalize">{activeRide.status.replace('_', ' ')}</CardTitle>
+                    <CardDescription>Rider: {activeRide.riderName}</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                     <div className="h-48 w-full rounded-md overflow-hidden border">
+                         <LiveMap 
+                             driverLocation={driverLocation} 
+                             riderLocation={activeRide.pickup.location ? { lat: activeRide.pickup.location.latitude, lon: activeRide.pickup.location.longitude } : undefined}
+                             destinationLocation={activeRide.destination.location ? { lat: activeRide.destination.location.latitude, lon: activeRide.destination.location.longitude } : undefined}
+                             isTripInProgress={activeRide.status === 'in-progress'}
+                          />
+                     </div>
+                     {activeRide.status === 'arrived' && (
+                        <div className="space-y-2">
+                           <Label htmlFor="otp">Enter Rider's OTP</Label>
+                           <div className="flex gap-2">
+                              <Input id="otp" value={enteredOtp} onChange={(e) => setEnteredOtp(e.target.value)} placeholder="4-Digit OTP" maxLength={4}/>
+                              <Button onClick={handleVerifyOtp}><CheckCircle className="w-4 h-4 mr-2"/>Verify & Start</Button>
+                           </div>
+                        </div>
+                     )}
+                     <Button asChild size="lg" className="w-full bg-blue-600 hover:bg-blue-700 text-white">
+                         <a href={navigateUrl} target="_blank" rel="noopener noreferrer">
+                             <Navigation className="mr-2 h-5 w-5"/>
+                             Navigate to {isNavigatingToRider ? 'Pickup' : 'Destination'}
+                         </a>
+                     </Button>
+                </CardContent>
+                <CardFooter>
+                    {activeRide.status === 'accepted' && (
+                        <Button className="w-full" size="lg" onClick={() => handleUpdateRideStatus('arrived')}>Arrived at Pickup</Button>
+                    )}
+                    {activeRide.status === 'in-progress' && (
+                        <Button className="w-full bg-destructive hover:bg-destructive/80" size="lg" onClick={() => handleUpdateRideStatus('payment_pending')}>End Trip</Button>
+                    )}
+                </CardFooter>
+            </Card>
+        );
+    }
 
   return (
     <div className="space-y-6">
-      <Card className="shadow-lg">
-        <CardHeader>
-          <div className="flex justify-between items-center">
-            <CardTitle>Your Dashboard</CardTitle>
-            <div className="flex items-center space-x-2">
-                <Switch id="online-status" checked={isOnline} onCheckedChange={handleAvailabilityChange} />
-                <Label htmlFor="online-status" className={cn("font-semibold", isOnline ? "text-green-600" : "text-muted-foreground")}>
-                    {isOnline ? "ONLINE" : "OFFLINE"}
-                </Label>
-            </div>
-          </div>
-        </CardHeader>
-        {isOnline ? (
-          <CardContent className="text-center py-12">
-            <SearchingIndicator partnerType="path" className="w-32 h-32" />
-            <h3 className="text-3xl font-bold mt-4">Waiting for Rides...</h3>
-            <p className="text-muted-foreground">Your location is being shared to get nearby requests.</p>
-          </CardContent>
-        ) : (
-          <CardContent className="text-center py-12">
-             <CardDescription>You are currently offline. Go online to receive ride requests.</CardDescription>
-          </CardContent>
-        )}
-      </Card>
+       {activeRide ? renderActiveRide() : (
+           <>
+              <Card className="shadow-lg">
+                <CardHeader>
+                  <div className="flex justify-between items-center">
+                    <CardTitle>Your Dashboard</CardTitle>
+                    <div className="flex items-center space-x-2">
+                        <Switch id="online-status" checked={isOnline} onCheckedChange={handleAvailabilityChange} />
+                        <Label htmlFor="online-status" className={cn("font-semibold", isOnline ? "text-green-600" : "text-muted-foreground")}>
+                            {isOnline ? "ONLINE" : "OFFLINE"}
+                        </Label>
+                    </div>
+                  </div>
+                </CardHeader>
+                {isOnline ? (
+                  <CardContent className="text-center py-12">
+                    <SearchingIndicator partnerType="path" className="w-32 h-32" />
+                    <h3 className="text-3xl font-bold mt-4">Waiting for Rides...</h3>
+                    <p className="text-muted-foreground">Your location is being shared to get nearby requests.</p>
+                  </CardContent>
+                ) : (
+                  <CardContent className="text-center py-12">
+                     <CardDescription>You are currently offline. Go online to receive ride requests.</CardDescription>
+                  </CardContent>
+                )}
+              </Card>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <StatCard title="Today's Earnings" value={isEarningsVisible ? `₹${(partnerData?.todaysEarnings || 0).toLocaleString()}` : '₹ ****'} icon={IndianRupee} isLoading={isDriverLoading} onValueClick={() => !isEarningsVisible && setIsPinDialogOpen(true)} />
-        <StatCard title="Today's Rides" value={partnerData?.jobsToday?.toString() || '0'} icon={History} isLoading={isDriverLoading} />
-        <StatCard title="Acceptance Rate" value={`${partnerData?.acceptanceRate || '95'}%`} icon={Power} isLoading={isDriverLoading} />
-        <StatCard title="Rating" value={partnerData?.rating?.toString() || '4.9'} icon={Star} isLoading={isDriverLoading} />
-      </div>
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                <StatCard title="Today's Earnings" value={isEarningsVisible ? `₹${(partnerData?.todaysEarnings || 0).toLocaleString()}` : '₹ ****'} icon={IndianRupee} isLoading={isDriverLoading} onValueClick={() => !isEarningsVisible && setIsPinDialogOpen(true)} />
+                <StatCard title="Today's Rides" value={partnerData?.jobsToday?.toString() || '0'} icon={History} isLoading={isDriverLoading} />
+                <StatCard title="Acceptance Rate" value={`${partnerData?.acceptanceRate || '95'}%`} icon={Power} isLoading={isDriverLoading} />
+                <StatCard title="Rating" value={partnerData?.rating?.toString() || '4.9'} icon={Star} isLoading={isDriverLoading} />
+              </div>
 
-      <Card className="bg-gradient-to-r from-primary to-primary/90 text-primary-foreground border-none">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2"><Sparkles className="text-yellow-300" /> AI Earnings Coach</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p>Focus on the Cyber Hub area between 5 PM - 8 PM. High demand is expected, and you could earn up to 30% more.</p>
-        </CardContent>
-      </Card>
+              <Card className="bg-gradient-to-r from-primary to-primary/90 text-primary-foreground border-none">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2"><Sparkles className="text-yellow-300" /> AI Earnings Coach</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p>Focus on the Cyber Hub area between 5 PM - 8 PM. High demand is expected, and you could earn up to 30% more.</p>
+                </CardContent>
+              </Card>
+            </>
+       )}
 
       <AlertDialog open={!!jobRequest}>
         <AlertDialogContent>
@@ -366,3 +433,5 @@ export default function DriverDashboardPage() {
     </div>
   );
 }
+
+```
