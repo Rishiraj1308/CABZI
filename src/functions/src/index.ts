@@ -44,17 +44,17 @@ function getDistance(lat1: number, lon1: number, lat2: number, lon2: number) {
 }
 
 const handleRideDispatch = async (rideData: any, rideId: string) => {
+    // Correctly get the base vehicle type (e.g., "Cab" from "Cab (Lite)")
+    const rideTypeBase = rideData.rideType.split(' ')[0].trim();
+
     let partnersQuery = db.collection('partners')
         .where('isOnline', '==', true)
         .where('status', '==', 'online') // Ensure partner is not on a trip
-        
-    const rideTypeBase = rideData.rideType.split('(')[0].trim();
-    if (rideTypeBase) {
-        partnersQuery = partnersQuery.where('vehicleType', '==', rideTypeBase);
-    }
+        .where('vehicleType', '==', rideTypeBase);
     
+    // If ride type is "Curocity Pink", add specific filters.
     if (rideData.rideType === 'Curocity Pink') {
-        partnersQuery = partnersQuery.where('isCabziPinkPartner', '==', true)
+        partnersQuery = partnersQuery.where('isCurocityPinkPartner', '==', true)
                                    .where('gender', '==', 'female');
     }
 
@@ -84,6 +84,7 @@ const handleRideDispatch = async (rideData: any, rideId: string) => {
 
     const tokens = nearbyPartners.map(p => p.fcmToken).filter((t): t is string => !!t);
     if (tokens.length > 0) {
+        // Create a serializable payload, converting Timestamp to string.
         const payloadData = {
             type: 'new_ride_request',
             rideId: rideId,
@@ -91,7 +92,7 @@ const handleRideDispatch = async (rideData: any, rideId: string) => {
             destinationAddress: rideData.destination.address,
             pickupLocation: JSON.stringify(rideData.pickup.location),
             destinationLocation: JSON.stringify(rideData.destination.location),
-            createdAt: rideData.createdAt.toMillis().toString(),
+            createdAt: rideData.createdAt.toMillis().toString(), // CRITICAL FIX
             fare: String(rideData.fare),
             rideType: rideData.rideType,
             status: rideData.status,
@@ -151,7 +152,7 @@ const handleGarageRequestDispatch = async (requestData: any, requestId: string) 
             location: JSON.stringify(requestData.location),
             status: requestData.status,
             otp: requestData.otp,
-            createdAt: requestData.createdAt.toMillis().toString(),
+            createdAt: requestData.createdAt.toMillis().toString(), // CRITICAL FIX
         };
         const message = {
             data: payloadData,
