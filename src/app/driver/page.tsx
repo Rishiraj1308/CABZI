@@ -35,6 +35,7 @@ import SearchingIndicator from '@/components/ui/searching-indicator'
 import RideStatus from '@/components/ride-status'
 import { Switch } from '@/components/ui/switch'
 import { cn } from '@/lib/utils'
+import { Badge } from '@/components/ui/badge'
 
 const LiveMap = dynamic(() => import('@/components/live-map'), { ssr: false })
 
@@ -143,7 +144,7 @@ export default function DriverDashboardPage() {
       console.log("🧹 Listener cleaned up");
       unsub();
     };
-  }, [db, isOnline, activeRide, availableJobs.length]);
+  }, [db, isOnline, activeRide]);
 
   // Timer for request
   useEffect(() => {
