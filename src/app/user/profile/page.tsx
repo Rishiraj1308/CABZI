@@ -94,6 +94,7 @@ export default function UserProfilePage() {
                     if (data.healthProfile) setHealthProfile(data.healthProfile);
                     if (data.insurance) setInsurance(data.insurance);
                 } else {
+                    // Fallback using auth data if firestore doc doesn't exist yet
                     setProfileData({
                         name: user.displayName || 'User',
                         phone: user.phoneNumber || '',
