@@ -38,7 +38,7 @@ function getDistance(lat1: number, lon1: number, lat2: number, lon2: number) {
         Math.sin(dLat/2) * Math.sin(dLat/2) +
         Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
         Math.sin(dLon/2) * Math.sin(dLon/2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     const d = R * c; // Distance in km
     return d;
 }
@@ -49,8 +49,8 @@ const handleRideDispatch = async (rideData: any, rideId: string) => {
 
     let partnersQuery = db.collection('partners')
         .where('isOnline', '==', true)
-        .where('status', '==', 'online') // Ensure partner is not on a trip
-        .where('vehicleType', '==', rideTypeBase);
+        .where('status', '==', 'online');
+        // We cannot use multiple inequality filters, so vehicleType will be filtered in the function
     
     // If ride type is "Curocity Pink", add specific filters.
     if (rideData.rideType === 'Curocity Pink') {
@@ -70,9 +70,10 @@ const handleRideDispatch = async (rideData: any, rideId: string) => {
     const nearbyPartners = partnersSnapshot.docs
         .map(doc => ({ id: doc.id, ...doc.data() } as Partner))
         .filter(partner => {
-            if (!partner.currentLocation) return false;
-            const partnerLocation = partner.currentLocation as GeoPoint;
-            const distance = getDistance(rideLocation.latitude, rideLocation.longitude, partnerLocation.latitude, partnerLocation.longitude);
+            if (!partner.currentLocation || partner.vehicleType !== rideTypeBase) return false;
+            
+            const distance = getDistance(rideLocation.latitude, rideLocation.longitude, partner.currentLocation.latitude, partner.currentLocation.longitude);
+            partner.distanceToRider = distance; // Temporarily attach distance
             return distance < 10; // 10km radius
         });
     
@@ -82,35 +83,44 @@ const handleRideDispatch = async (rideData: any, rideId: string) => {
         return;
     }
 
-    const tokens = nearbyPartners.map(p => p.fcmToken).filter((t): t is string => !!t);
-    if (tokens.length > 0) {
-        // Create a serializable payload, converting Timestamp to string.
-        const payloadData = {
-            type: 'new_ride_request',
-            rideId: rideId,
-            pickupAddress: rideData.pickup.address,
-            destinationAddress: rideData.destination.address,
-            pickupLocation: JSON.stringify(rideData.pickup.location),
-            destinationLocation: JSON.stringify(rideData.destination.location),
-            createdAt: rideData.createdAt.toMillis().toString(), // CRITICAL FIX
-            fare: String(rideData.fare),
-            rideType: rideData.rideType,
-            status: rideData.status,
-            riderName: rideData.riderName,
-            riderId: rideData.riderId,
-            riderGender: rideData.riderGender,
-            otp: rideData.otp,
-            distance: String(rideData.distance), // CRITICAL FIX: Add distance to payload
-        };
+    // Send personalized notifications with ETA and distance
+    for (const partner of nearbyPartners) {
+        if (partner.fcmToken) {
+            const distanceToRider = partner.distanceToRider;
+            const eta = distanceToRider * 2; // Simple ETA calculation (e.g., 2 mins per km)
 
-        const message = {
-            data: payloadData,
-            tokens: tokens,
-        };
-        await messaging.sendEachForMulticast(message);
-        console.log(`Ride request ${rideId} sent to ${tokens.length} partners.`);
-    } else {
-        console.log('No partners with FCM tokens found for this ride request.');
+            const payloadData = {
+                type: 'new_ride_request',
+                rideId: rideId,
+                pickupAddress: rideData.pickup.address,
+                destinationAddress: rideData.destination.address,
+                pickupLocation: JSON.stringify(rideData.pickup.location),
+                destinationLocation: JSON.stringify(rideData.destination.location),
+                createdAt: rideData.createdAt.toMillis().toString(),
+                fare: String(rideData.fare),
+                rideType: rideData.rideType,
+                status: rideData.status,
+                riderName: rideData.riderName,
+                riderId: rideData.riderId,
+                riderGender: rideData.riderGender,
+                otp: rideData.otp,
+                distance: String(rideData.distance),
+                driverDistance: String(distanceToRider), // Specific distance for this driver
+                driverEta: String(eta), // Specific ETA for this driver
+            };
+            
+            const message = {
+                data: payloadData,
+                token: partner.fcmToken,
+            };
+
+            try {
+                await messaging.send(message);
+                console.log(`Ride request ${rideId} sent to partner ${partner.id}.`);
+            } catch (error) {
+                console.error(`Failed to send notification to partner ${partner.id}:`, error);
+            }
+        }
     }
 }
 
