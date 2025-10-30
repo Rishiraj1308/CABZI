@@ -1,4 +1,3 @@
-
 'use client'
 
 import React, { useState, useEffect, useCallback, createContext, useContext } from 'react'
@@ -16,7 +15,7 @@ import { useToast } from '@/hooks/use-toast'
 import BrandLogo from '@/components/brand-logo'
 import { useTheme } from 'next-themes'
 import { useFirebase } from '@/firebase/client-provider'
-import { doc, updateDoc, onSnapshot } from 'firebase/firestore'
+import { doc, onSnapshot } from 'firebase/firestore'
 import { MotionDiv } from '@/components/ui/motion-div'
 import { Skeleton } from '@/components/ui/skeleton'
 
@@ -114,9 +113,9 @@ export default function CureLayout({ children }: { children: React.ReactNode }) 
   }, [auth, router, toast]);
 
   useEffect(() => {
-    if (isUserLoading || !db) return;
-
     const isOnboardingPage = pathname.includes('/cure/onboarding');
+    
+    if (isUserLoading || !db) return;
 
     if (!user) {
         if (!isOnboardingPage) router.replace('/login?role=driver');
@@ -167,7 +166,7 @@ export default function CureLayout({ children }: { children: React.ReactNode }) 
                       ];
                 setNavItems(menu);
             } else {
-                 if (!isOnboardingPage) handleLogout();
+                if (!isOnboardingPage) handleLogout();
             }
             setIsSessionLoading(false);
         }, (error) => {

@@ -1,15 +1,14 @@
-
 'use client'
 
-import React, { useState, useEffect } from 'react'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import React from 'react'
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import HospitalMissionControl from './hospital-dashboard'
 import ClinicDashboard from './clinic-dashboard'
-import { useCurePartner } from './layout' // Import the new context hook
+import { useCurePartner } from './layout'
 
 export default function CureDashboardPage() {
-    const { partnerData, isLoading } = useCurePartner(); // Use the context hook
+    const { partnerData, isLoading } = useCurePartner();
 
     if (isLoading) {
         return (
@@ -31,7 +30,6 @@ export default function CureDashboardPage() {
     const facilityType = partnerData?.clinicType?.toLowerCase().includes('clinic') ? 'clinic' : 'hospital';
 
     if (facilityType === 'hospital') {
-        // Pass the already fetched data down as props
         return (
             <HospitalMissionControl
                 partnerData={partnerData}

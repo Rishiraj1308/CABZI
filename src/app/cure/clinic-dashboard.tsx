@@ -1,4 +1,3 @@
-
 'use client'
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
@@ -107,9 +106,8 @@ const ClinicDashboard = () => {
     const [hospitalId, setHospitalId] = useState<string | null>(null);
     const [hospitalName, setHospitalName] = useState<string | null>(null);
     
-
     const handleLogout = useCallback(() => {
-        // This function is stable and can be used in dependencies
+        // Placeholder for logout logic
     }, []);
 
     useEffect(() => {
@@ -121,6 +119,7 @@ const ClinicDashboard = () => {
         const sessionStr = localStorage.getItem('curocity-cure-session');
         if (!sessionStr) {
              handleLogout();
+             setIsLoading(false);
              return;
         }
         
@@ -129,6 +128,7 @@ const ClinicDashboard = () => {
             sessionData = JSON.parse(sessionStr);
         } catch (e) {
             handleLogout();
+            setIsLoading(false);
             return;
         }
 
@@ -156,21 +156,24 @@ const ClinicDashboard = () => {
         );
 
         const unsubAppts = onSnapshot(apptQuery, (snapshot) => {
-            if (!isSubscribed) return;
-            const apptsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Appointment));
-            setAppointments(apptsData);
+            if (isSubscribed) {
+                const apptsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Appointment));
+                setAppointments(apptsData);
+            }
         }, (error) => {
-            if (!isSubscribed) return;
-            console.error("Error fetching appointments: ", error);
-            toast({ variant: 'destructive', title: "Error", description: 'Could not fetch appointments.' });
+            if (isSubscribed) {
+                console.error("Error fetching appointments: ", error);
+                toast({ variant: 'destructive', title: "Error", description: 'Could not fetch appointments.' });
+            }
         });
         
         const doctorsQuery = query(collection(db, `ambulances/${partnerId}/doctors`));
         const unsubDoctors = onSnapshot(doctorsQuery, (snapshot) => {
-            if (!isSubscribed) return;
-            const doctorsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Doctor));
-            setDoctors(doctorsData);
-            setIsLoading(false);
+            if (isSubscribed) {
+                const doctorsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Doctor));
+                setDoctors(doctorsData);
+                setIsLoading(false);
+            }
         });
 
         return () => {
@@ -558,5 +561,3 @@ const ClinicDashboard = () => {
 };
 
 export default ClinicDashboard;
-
-    

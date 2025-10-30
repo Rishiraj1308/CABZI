@@ -1,4 +1,3 @@
-
 'use client'
 
 import React, { useState, useEffect, useRef, useMemo } from 'react'
@@ -198,40 +197,44 @@ export default function HospitalMissionControl({
     };
     
     useEffect(() => {
-        if (!partnerData?.id || !db) {
-            setIsDataLoading(false);
+        if (isPartnerLoading || !partnerData?.id || !db) {
+            setIsDataLoading(isPartnerLoading);
             return;
         }
+        
+        let isSubscribed = true;
 
         const fleetRef = collection(db, `ambulances/${partnerData.id}/fleet`);
         const unsubFleet = onSnapshot(fleetRef, (snapshot) => {
-            const fleetData = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as AmbulanceVehicle));
-            setFleet(fleetData);
+             if (isSubscribed) setFleet(snapshot.docs.map(d => ({ id: d.id, ...d.data() } as AmbulanceVehicle)));
         });
         
         const driversRef = query(collection(db, `ambulances/${partnerData.id}/drivers`), orderBy('createdAt', 'desc'));
         const unsubDrivers = onSnapshot(driversRef, (snapshot) => {
-            const driversData = snapshot.docs.map(d => ({id: d.id, ...d.data()} as AmbulanceDriver));
-            setDrivers(driversData);
+            if (isSubscribed) setDrivers(snapshot.docs.map(d => ({id: d.id, ...d.data()} as AmbulanceDriver)));
         });
 
         const allCasesQuery = query(collection(db, "emergencyCases"), where("assignedPartner.id", "==", partnerData.id), orderBy("createdAt", "desc"));
         const unsubAllCases = onSnapshot(allCasesQuery, (snapshot) => {
-            const activeCase = snapshot.docs
-                .map(d => ({ id: d.id, ...d.data() } as OngoingCase))
-                .find(c => c.status !== 'completed' && c.status !== 'cancelled_by_rider' && c.status !== 'cancelled_by_partner' && c.status !== 'cancelled_by_admin');
-            setOngoingCase(activeCase || null);
+            if (isSubscribed) {
+                const activeCase = snapshot.docs
+                    .map(d => ({ id: d.id, ...d.data() } as OngoingCase))
+                    .find(c => c.status !== 'completed' && c.status !== 'cancelled_by_rider' && c.status !== 'cancelled_by_partner' && c.status !== 'cancelled_by_admin');
+                setOngoingCase(activeCase || null);
+            }
         });
 
         const requestsRef = query(collection(db, "emergencyCases"), where("status", "==", "pending"));
         const unsubRequests = onSnapshot(requestsRef, (snapshot) => {
-            let requestsData = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as EmergencyRequest))
-                .filter(req => !req.rejectedBy?.includes(partnerData.id!));
-            
-            setIncomingRequests(requestsData);
+            if (isSubscribed) {
+                let requestsData = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as EmergencyRequest))
+                    .filter(req => !req.rejectedBy?.includes(partnerData.id!));
+                setIncomingRequests(requestsData);
+            }
         });
         
         const fetchAnalytics = async () => {
+             if (!isSubscribed) return;
             const casesQuery = query(collection(db, 'emergencyCases'), where('assignedPartner.id', '==', partnerData.id), where('status', '==', 'completed'));
             const snapshot = await getDocs(casesQuery);
             const cases = snapshot.docs.map(d => d.data());
@@ -253,20 +256,21 @@ export default function HospitalMissionControl({
             const onDutyAmbulances = fleetSnapshot.docs.filter(d => d.data().status === 'On-Duty').length;
             const fleetUtilization = totalAmbulances > 0 ? (onDutyAmbulances / totalAmbulances) * 100 : 0;
 
-            setAnalytics({ totalCases, avgResponseTime, fleetUtilization });
+            if (isSubscribed) setAnalytics({ totalCases, avgResponseTime, fleetUtilization });
         };
 
         fetchAnalytics();
-        setIsDataLoading(false);
+        if(isSubscribed) setIsDataLoading(false);
 
         return () => {
+            isSubscribed = false;
             unsubFleet();
             unsubAllCases();
             unsubDrivers();
             unsubRequests();
             if (watchIdRef.current) navigator.geolocation.clearWatch(watchIdRef.current);
         };
-    }, [partnerData, db]);
+    }, [partnerData, db, isPartnerLoading]);
     
      useEffect(() => {
         if (ongoingCase?.assignedAmbulanceId && partnerData?.id && db) {
@@ -275,7 +279,6 @@ export default function HospitalMissionControl({
                 (pos) => {
                     const newGeoPoint = new GeoPoint(pos.coords.latitude, pos.coords.longitude);
                     updateDoc(ambulanceRef, { location: newGeoPoint });
-                    // Also update the main case document for rider to track
                     updateDoc(doc(db, 'emergencyCases', ongoingCase.id), { partnerLocation: newGeoPoint });
                 },
                 (err) => console.error("Could not get ambulance location:", err),
@@ -353,7 +356,6 @@ export default function HospitalMissionControl({
             });
 
             toast({ title: 'Ambulance Added', description: `${newAmbulanceName} has been added to your fleet.`});
-            // Reset form and close dialog
             setIsAddAmbulanceOpen(false);
             setNewAmbulanceName('');
             setNewAmbulanceType('');
@@ -605,7 +607,7 @@ export default function HospitalMissionControl({
                  <Tabs defaultValue="fleet" className="w-full">
                     <TabsList className="grid w-full grid-cols-2">
                         <TabsTrigger value="fleet">Fleet & Drivers</TabsTrigger>
-                        <TabsTrigger value="checklist">Pre-Duty Checklist</TabsTrigger>
+                        <TabsTrigger value="checklist" disabled>Pre-Duty Checklist</TabsTrigger>
                     </TabsList>
                     <TabsContent value="fleet" className="mt-4">
                          <Card>
