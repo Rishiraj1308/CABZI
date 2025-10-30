@@ -1,4 +1,3 @@
-
 'use client'
 
 import { useEffect, useRef, forwardRef, useImperativeHandle, useCallback } from "react";
@@ -29,7 +28,6 @@ const LiveMap = forwardRef<any, LiveMapProps>((props, ref) => {
     const markersRef = useRef<Map<string, L.Marker>>(new Map());
     const routeLayerRef = useRef<L.Polyline | null>(null);
     const riderMarkerRef = useRef<L.Marker | null>(null);
-    const driverMarkerRef = useRef<L.Marker | null>(null);
     const destinationMarkerRef = useRef<L.Marker | null>(null);
     const cursorTooltipRef = useRef<L.Tooltip | null>(null);
     const locateControlRef = useRef<any | null>(null);
@@ -191,10 +189,10 @@ const LiveMap = forwardRef<any, LiveMapProps>((props, ref) => {
         locateControlRef.current = new (L.Control as any).Locate({
             position: 'bottomright',
             strings: { title: "Show my location" },
-            flyTo: true, // Auto-zoom to user location on find
+            flyTo: true,
             keepCurrentZoomLevel: false,
             locateOptions: {
-                maxZoom: 16, // Zoom in closer
+                maxZoom: 16,
                 watch: true,
                 enableHighAccuracy: true,
             },
@@ -226,29 +224,22 @@ const LiveMap = forwardRef<any, LiveMapProps>((props, ref) => {
             }
         });
 
-        // CRITICAL FIX: Invalidate map size after a short delay
         setTimeout(() => {
             map.invalidateSize();
         }, 100);
 
     }, [getAddress, props, resolvedTheme, props.zoom]);
 
-    // Effect to switch map theme when the app's theme changes
     useEffect(() => {
         if (!tileLayerRef.current) return;
-        
         const isDark = resolvedTheme === 'dark';
-        
         const newUrl = isDark
             ? 'https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png'
             : 'https://tiles.stadiamaps.com/tiles/alidade_smooth/{z}/{x}/{y}{r}.png';
-        
         tileLayerRef.current.setUrl(newUrl);
-
     }, [resolvedTheme]);
 
 
-    // Effect for route updates with animation
     useEffect(() => {
         const map = mapInstanceRef.current;
         if (!map) return;
@@ -283,13 +274,11 @@ const LiveMap = forwardRef<any, LiveMapProps>((props, ref) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [JSON.stringify(props.routeGeometry)]);
 
-    // Effect for a single, primary user marker (e.g., the stranded driver or the rider)
     useEffect(() => {
         const map = mapInstanceRef.current;
         if (!map) return;
         const L = require('leaflet');
         
-        // Handle rider/pickup location
         if (props.riderLocation && typeof props.riderLocation.lat === 'number' && typeof props.riderLocation.lon === 'number') {
             const { lat, lon } = props.riderLocation;
             if (riderMarkerRef.current) {
@@ -302,7 +291,6 @@ const LiveMap = forwardRef<any, LiveMapProps>((props, ref) => {
             riderMarkerRef.current = null;
         }
         
-        // Conditionally handle destination location based on trip progress
          if (props.isTripInProgress && props.destinationLocation && typeof props.destinationLocation.lat === 'number' && typeof props.destinationLocation.lon === 'number') {
             const { lat, lon } = props.destinationLocation;
             if (destinationMarkerRef.current) {
@@ -323,10 +311,10 @@ const LiveMap = forwardRef<any, LiveMapProps>((props, ref) => {
         const animate = (timestamp: number) => {
             const L = require('leaflet');
             let hasActiveAnimations = false;
-            const duration = 1000; // 1 second for the glide animation
+            const duration = 1000;
     
             markerAnimationRef.current.forEach((anim, id) => {
-                const marker = markersRef.current.get(id) || driverMarkerRef.current;
+                const marker = markersRef.current.get(id);
                 if (!marker) {
                     markerAnimationRef.current.delete(id);
                     return;
@@ -356,37 +344,38 @@ const LiveMap = forwardRef<any, LiveMapProps>((props, ref) => {
         animationFrameRef.current = requestAnimationFrame(animate);
     }, []);
 
-    // UNIFIED Effect for driver/partner markers
     useEffect(() => {
         const map = mapInstanceRef.current;
         if (!map) return;
         const L = require('leaflet');
 
-        const allEntities = [...(props.activePartners || [])];
-        // Add single driverLocation to the list of entities to be processed if it exists
-        if (props.driverLocation && typeof props.driverLocation.lat === 'number' && typeof props.driverLocation.lon === 'number') {
+        const allEntities: ActiveEntity[] = [];
+        if (props.activePartners) {
+            allEntities.push(...props.activePartners);
+        }
+        if (props.driverLocation) {
             allEntities.push({
-                id: 'driver-marker', // Use a consistent ID
+                id: 'driver-marker',
                 name: 'Current Driver',
                 type: 'driver',
-                location: { lat: props.driverLocation.lat, lon: props.driverLocation.lon }
+                location: props.driverLocation,
             });
         }
-        
-        const currentMarkerIds = new Set(Array.from(markersRef.current.keys()));
-        if (driverMarkerRef.current) currentMarkerIds.add('driver-marker');
+        if (props.activeRiders) {
+            allEntities.push(...props.activeRiders);
+        }
 
+        const currentMarkerIds = new Set(Array.from(markersRef.current.keys()));
         const newEntityIds = new Set(allEntities.map(e => e.id));
 
         // Remove old markers
         currentMarkerIds.forEach(id => {
             if (!newEntityIds.has(id)) {
-                let markerToRemove = markersRef.current.get(id);
-                if (id === 'driver-marker') markerToRemove = driverMarkerRef.current;
-                
-                if (markerToRemove) map.removeLayer(markerToRemove);
+                const markerToRemove = markersRef.current.get(id);
+                if (markerToRemove) {
+                    map.removeLayer(markerToRemove);
+                }
                 markersRef.current.delete(id);
-                if (id === 'driver-marker') driverMarkerRef.current = null;
                 markerAnimationRef.current.delete(id);
             }
         });
@@ -394,10 +383,12 @@ const LiveMap = forwardRef<any, LiveMapProps>((props, ref) => {
         // Add/Update markers
         allEntities.forEach(entity => {
             const { id, location, type, status, name, vehicle } = entity;
+            if (!location || typeof location.lat !== 'number' || typeof location.lon !== 'number') return;
+            
             const latLng = new L.LatLng(location.lat, location.lon);
             const icon = createIcon(type === 'ambulance' ? 'ambulance' : status || type);
-
-            let marker = id === 'driver-marker' ? driverMarkerRef.current : markersRef.current.get(id);
+            
+            let marker = markersRef.current.get(id);
             
             if (marker) {
                 const currentPos = marker.getLatLng();
@@ -407,14 +398,11 @@ const LiveMap = forwardRef<any, LiveMapProps>((props, ref) => {
                 marker.setIcon(icon);
             } else {
                 marker = L.marker(latLng, { icon }).addTo(map);
-                if (id === 'driver-marker') {
-                    driverMarkerRef.current = marker;
-                } else {
-                    markersRef.current.set(id, marker);
-                }
+                markersRef.current.set(id, marker);
             }
-             if(props.enableCursorTooltip){
-              marker.bindTooltip(`<b>${name}</b><br>${vehicle || type}`);
+
+            if(props.enableCursorTooltip) {
+                marker.bindTooltip(`<b>${name}</b><br>${vehicle || type}`);
             }
         });
 
@@ -422,9 +410,9 @@ const LiveMap = forwardRef<any, LiveMapProps>((props, ref) => {
             startAnimationLoop();
         }
 
-    }, [props.activePartners, props.driverLocation, props.enableCursorTooltip, startAnimationLoop]);
+    }, [props.activePartners, props.driverLocation, props.activeRiders, props.enableCursorTooltip, startAnimationLoop]);
 
-    // Effect for the cursor tooltip on admin map
+
     useEffect(() => {
         const map = mapInstanceRef.current;
         if (!map || !props.enableCursorTooltip) return;
@@ -477,4 +465,3 @@ const LiveMap = forwardRef<any, LiveMapProps>((props, ref) => {
 
 LiveMap.displayName = 'LiveMap';
 export default LiveMap;
-    
