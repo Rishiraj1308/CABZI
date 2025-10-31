@@ -94,7 +94,7 @@ export default function RideStatus({
   }, []);
 
   const playSound = (soundRef: React.RefObject<HTMLAudioElement>) => {
-    soundRef.current?.play().catch(e => console.log("Sound play failed:", e));
+    soundRef.current?.play().catch(e => console.warn("Sound play failed:", e));
   };
 
 
@@ -291,7 +291,7 @@ export default function RideStatus({
         case "searching":
             return (
                 <div className="text-center py-10 flex flex-col items-center">
-                    <SearchingIndicator partnerType="path" className="w-32 h-32" />
+                    <SearchingIndicator partnerType="path" className="w-48 h-48" />
                     <h3 className="text-3xl font-bold mt-4">Finding you a ride...</h3>
                     <p className="text-muted-foreground">Please wait while we connect you to a nearby partner.</p>
                 </div>
