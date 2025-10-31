@@ -290,52 +290,23 @@ export default function RideStatus({
     switch (rideData.status) {
         case "searching":
              return (
-                <div className="text-center py-10 flex flex-col items-center">
-                    <div className="relative w-48 h-48">
-                        <style>
-                            {`
-                                @keyframes ride-search-rotate {
-                                    from { transform: rotate(0deg); }
-                                    to { transform: rotate(360deg); }
-                                }
-                                @keyframes text-pulse {
-                                    0%, 100% { opacity: 0.5; }
-                                    50% { opacity: 1; }
-                                }
-                            `}
-                        </style>
-                        <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100">
-                            <circle
-                                cx="50" cy="50" r="45"
-                                fill="none"
-                                stroke="hsl(var(--border))"
-                                strokeWidth="2"
-                            />
-                             <circle
-                                cx="50" cy="50" r="45"
-                                fill="none"
-                                stroke="hsl(var(--primary))"
-                                strokeWidth="3"
-                                strokeDasharray="56.5 188.5"
-                                strokeLinecap="round"
-                                transform="rotate(-90 50 50)"
-                                className="animate-[ride-search-rotate_2s_linear_infinite]"
-                            />
-                        </svg>
-                        <div
-                            className="absolute inset-0 flex items-center justify-center animate-[ride-search-rotate_4s_linear_infinite_reverse]"
-                        >
-                            <Car className="w-10 h-10 text-primary" />
-                        </div>
-                    </div>
+                <div className="text-center py-10 flex flex-col items-center h-[260px] justify-center overflow-hidden">
+                    <motion.div
+                        key="searching-car"
+                        initial={{ x: "-110%" }}
+                        animate={{ x: "120%" }}
+                        transition={{ duration: 1.5, repeat: Infinity, ease: 'linear' }}
+                        className="w-48 h-28 z-0 mx-auto"
+                    >
+                         <Image src="/car.svg" alt="Searching for car" layout="fill" objectFit="contain" className="opacity-70" data-ai-hint="car illustration" />
+                    </motion.div>
                     <motion.h3
-                        className="text-3xl font-bold mt-8 text-muted-foreground"
+                        className="text-3xl font-bold mt-4 text-muted-foreground"
                         animate={{ opacity: [0.5, 1, 0.5] }}
                         transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
                     >
                         Finding you a ride...
                     </motion.h3>
-                    <p className="text-muted-foreground">Connecting you to a nearby partner.</p>
                 </div>
             );
         case "accepted":
