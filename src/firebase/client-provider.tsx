@@ -1,21 +1,58 @@
 
-
 'use client';
 
 import React, { createContext, useContext, useEffect, useState, useMemo, type ReactNode } from 'react';
 import { initializeApp, getApps, getApp, type FirebaseApp } from 'firebase/app';
 import { getAuth, type Auth, onAuthStateChanged, type User } from 'firebase/auth';
-import { getFirestore, type Firestore, initializeFirestore, persistentLocalCache, persistentMultipleTabManager } from 'firebase/firestore';
+import { getFirestore, type Firestore, initializeFirestore, persistentLocalCache, persistentMultipleTabManager, enableIndexedDbPersistence } from 'firebase/firestore';
 import { getFunctions, type Functions } from 'firebase/functions';
 import { getMessaging, type Messaging } from 'firebase/messaging';
 import { firebaseConfig } from './config';
 import { FirebaseErrorListener } from '@/components/FirebaseErrorListener';
 
+// --- Start of Singleton Initialization ---
+
+// Initialize Firebase App
+const app: FirebaseApp = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+const auth: Auth = getAuth(app);
+const functions: Functions = getFunctions(app);
+
+// Initialize Firestore with offline persistence, handling potential re-initialization errors.
+let db: Firestore;
+try {
+  db = initializeFirestore(app, {
+    localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
+  });
+} catch (e: any) {
+  if (e.code === 'failed-precondition') {
+    console.warn("Firestore offline persistence failed to initialize. This can happen with multiple open tabs. Falling back to in-memory persistence.");
+    db = getFirestore(app); // Fallback to default in-memory cache
+  } else if (e.code === 'invalid-argument') {
+    // This error means Firestore is already initialized, so we just get the existing instance.
+    db = getFirestore(app);
+  } else {
+    // For other errors, we re-throw them.
+    throw e;
+  }
+}
+
+// Initialize Messaging only on the client-side where it's supported
+let messaging: Messaging | null = null;
+if (typeof window !== 'undefined' && 'Notification' in window) {
+  try {
+    messaging = getMessaging(app);
+  } catch (e) {
+    console.warn('Firebase Messaging not supported in this environment or failed to initialize.');
+  }
+}
+
+// --- End of Singleton Initialization ---
+
 interface FirebaseContextValue {
-  firebaseApp: FirebaseApp | null;
-  auth: Auth | null;
-  db: Firestore | null;
-  functions: Functions | null;
+  firebaseApp: FirebaseApp;
+  auth: Auth;
+  db: Firestore;
+  functions: Functions;
   messaging: Messaging | null;
   user: User | null;
   isUserLoading: boolean;
@@ -24,75 +61,26 @@ interface FirebaseContextValue {
 const FirebaseContext = createContext<FirebaseContextValue | undefined>(undefined);
 
 export function FirebaseProviderClient({ children }: { children: ReactNode }) {
-  const [services, setServices] = useState<{
-    firebaseApp: FirebaseApp | null;
-    auth: Auth | null;
-    db: Firestore | null;
-    functions: Functions | null;
-    messaging: Messaging | null;
-  }>({
-    firebaseApp: null,
-    auth: null,
-    db: null,
-    functions: null,
-    messaging: null,
-  });
-
   const [user, setUser] = useState<User | null>(null);
   const [isUserLoading, setIsUserLoading] = useState(true);
 
   useEffect(() => {
-    // This effect runs only once to initialize all Firebase services.
-    const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
-    const authInstance = getAuth(app);
-    const functionsInstance = getFunctions(app);
-
-    // Initialize Firestore with offline persistence enabled.
-    const dbInstance = initializeFirestore(app, {
-      localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setUser(user);
+      setIsUserLoading(false);
     });
-
-    let messagingInstance: Messaging | null = null;
-    if (typeof window !== 'undefined' && 'Notification' in window) {
-      try {
-        messagingInstance = getMessaging(app);
-      } catch (e) {
-        console.warn('Firebase Messaging not supported in this environment.');
-      }
-    }
-    
-    setServices({
-        firebaseApp: app,
-        auth: authInstance,
-        db: dbInstance,
-        functions: functionsInstance,
-        messaging: messagingInstance,
-    });
+    return () => unsubscribe();
   }, []);
 
-  useEffect(() => {
-    if (services.auth) {
-        const unsubscribe = onAuthStateChanged(services.auth, (user) => {
-          setUser(user);
-          setIsUserLoading(false);
-        });
-
-        return () => unsubscribe();
-    } else {
-        setIsUserLoading(false); // No auth service, so not loading user
-    }
-  }, [services.auth]);
-
   const memoizedValue = useMemo(() => ({
-    ...services,
+    firebaseApp: app,
+    auth,
+    db,
+    functions,
+    messaging,
     user,
     isUserLoading,
-  }), [services, user, isUserLoading]);
-
-  // Do not render children until Firebase services are initialized
-  if (!services.firebaseApp) {
-    return null; // Or a full-page loader
-  }
+  }), [user, isUserLoading]);
 
   return (
     <FirebaseContext.Provider value={memoizedValue}>
