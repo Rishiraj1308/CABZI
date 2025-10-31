@@ -2,8 +2,6 @@
 'use client';
 
 import React from 'react';
-import Lottie from 'lottie-react';
-import animationData from './lottie-finding-driver.json';
 import { cn } from '@/lib/utils';
 import { Car, Wrench, Ambulance } from 'lucide-react';
 
@@ -13,9 +11,18 @@ interface SearchingIndicatorProps {
 }
 
 const colorClasses = {
-    path: 'text-primary',
-    resq: 'text-amber-500',
-    cure: 'text-red-600',
+    path: {
+        ring: 'stroke-primary',
+        icon: 'text-primary',
+    },
+    resq: {
+        ring: 'stroke-amber-500',
+        icon: 'text-amber-600',
+    },
+    cure: {
+        ring: 'stroke-red-600',
+        icon: 'text-red-600',
+    },
 }
 
 const icons = {
@@ -25,17 +32,56 @@ const icons = {
 }
 
 const SearchingIndicator: React.FC<SearchingIndicatorProps> = ({ partnerType, className }) => {
-    const colorClass = colorClasses[partnerType];
+    const colors = colorClasses[partnerType];
     const Icon = icons[partnerType];
     
     return (
         <div className={cn("relative w-48 h-48 mx-auto flex items-center justify-center", className)}>
-            <Lottie 
-                animationData={animationData} 
-                className="absolute inset-0 w-full h-full"
-            />
-            <div className={cn("w-16 h-16 rounded-full flex items-center justify-center bg-background shadow-inner", colorClass)}>
-                 <Icon className="w-8 h-8" />
+            <style>
+                {`
+                    @keyframes pulse-ring {
+                        0% {
+                            transform: scale(0.33);
+                            opacity: 1;
+                        }
+                        80%, 100% {
+                            transform: scale(1);
+                            opacity: 0;
+                        }
+                    }
+                `}
+            </style>
+            <svg viewBox="0 0 100 100" className="absolute inset-0 w-full h-full">
+                <circle
+                    className={cn("origin-center", colors.ring)}
+                    cx="50"
+                    cy="50"
+                    r="45"
+                    strokeWidth="2"
+                    fill="none"
+                    style={{ animation: 'pulse-ring 3s cubic-bezier(0.215, 0.61, 0.355, 1) infinite' }}
+                />
+                <circle
+                    className={cn("origin-center", colors.ring)}
+                    cx="50"
+                    cy="50"
+                    r="45"
+                    strokeWidth="2"
+                    fill="none"
+                    style={{ animation: 'pulse-ring 3s cubic-bezier(0.215, 0.61, 0.355, 1) infinite', animationDelay: '1s' }}
+                />
+                 <circle
+                    className={cn("origin-center", colors.ring)}
+                    cx="50"
+                    cy="50"
+                    r="45"
+                    strokeWidth="2"
+                    fill="none"
+                    style={{ animation: 'pulse-ring 3s cubic-bezier(0.215, 0.61, 0.355, 1) infinite', animationDelay: '2s' }}
+                />
+            </svg>
+            <div className={cn("w-20 h-20 rounded-full flex items-center justify-center bg-background shadow-md", colors.icon)}>
+                 <Icon className="w-10 h-10" />
             </div>
         </div>
     );
