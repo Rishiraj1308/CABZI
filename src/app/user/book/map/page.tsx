@@ -310,6 +310,7 @@ function BookRideMapComponent() {
                         riderLocation={pickup?.coords}
                         destinationLocation={destination?.coords}
                         routeGeometry={routeGeometry}
+                        isTripInProgress={activeRide?.status === 'in-progress'}
                     />
                 </div>
                  <div className="absolute top-4 left-4 z-10">

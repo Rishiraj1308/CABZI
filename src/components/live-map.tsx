@@ -89,7 +89,7 @@ const LiveMap = forwardRef<any, LiveMapProps>((props, ref) => {
     }));
     
     // Icon creation utility
-    const createIcon = (type: ActiveEntity['type'] | EntityStatus | 'location' | string, options: { isPulsing?: boolean } = {}) => {
+    const createIcon = (type: ActiveEntity['type'] | EntityStatus | 'location' | 'destination' | string, options: { isPulsing?: boolean } = {}) => {
         const L = require('leaflet');
         let iconHtml;
         let iconSize: [number, number] = [24, 24];
@@ -258,9 +258,10 @@ const LiveMap = forwardRef<any, LiveMapProps>((props, ref) => {
         // Add special markers
         if (props.driverLocation) allEntities.set('__driver', { ...props.driverLocation, type: 'driver' });
         if (props.riderLocation) allEntities.set('__rider', { ...props.riderLocation, type: 'rider' });
-        if (props.isTripInProgress && props.destinationLocation) {
+        if (props.destinationLocation) {
             allEntities.set('__destination', { ...props.destinationLocation, type: 'destination' });
         }
+
 
         // Add partner/rider groups
         props.activePartners?.forEach(p => {
