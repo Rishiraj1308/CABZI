@@ -1,4 +1,5 @@
 
+
 'use client'
 
 import React, { useState, useEffect, useRef, useCallback } from 'react'
@@ -112,7 +113,6 @@ export default function DriverDashboardPage() {
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
         if (snapshot.docs.length > 0) {
-            // Prevent showing a new request if one is already being displayed or a ride is active
             if (jobRequest || activeRide) return;
 
             const rideDoc = snapshot.docs[0];
@@ -475,5 +475,3 @@ export default function DriverDashboardPage() {
     </div>
   );
 }
-
-    

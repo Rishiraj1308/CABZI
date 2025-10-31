@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React, { createContext, useContext, useEffect, useState, useMemo, type ReactNode } from 'react';
@@ -46,16 +47,10 @@ export function FirebaseProviderClient({ children }: { children: ReactNode }) {
     const authInstance = getAuth(app);
     const functionsInstance = getFunctions(app);
 
-    // Correctly initialize Firestore with persistence only once.
-    // We try to get it first, and if it fails, we initialize it.
-    let dbInstance;
-    try {
-        dbInstance = getFirestore(app);
-    } catch (e) {
-        dbInstance = initializeFirestore(app, {
-            localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
-        });
-    }
+    // Initialize Firestore with offline persistence enabled.
+    const dbInstance = initializeFirestore(app, {
+      localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
+    });
 
     let messagingInstance: Messaging | null = null;
     if (typeof window !== 'undefined' && 'Notification' in window) {
