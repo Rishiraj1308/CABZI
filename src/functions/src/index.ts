@@ -1,4 +1,5 @@
 
+
 'use server';
 /**
  * @fileOverview This file contains server-side Cloud Functions for dispatching
@@ -74,10 +75,14 @@ const handleRideDispatch = async (initialRideData: any, rideId: string) => {
     }
 
     const rideLocation = rideData.pickup.location as GeoPoint;
+    const rejectedBy = rideData.rejectedBy || [];
+    
     const nearbyPartners = partnersSnapshot.docs
         .map(doc => ({ id: doc.id, ...doc.data() } as Partner))
         .filter(partner => {
-            if (!partner.currentLocation || !partner.vehicleType.startsWith(rideTypeBase)) return false;
+            if (!partner.currentLocation || !partner.vehicleType.startsWith(rideTypeBase) || rejectedBy.includes(partner.id)) {
+                 return false;
+            }
             
             const distance = getDistance(rideLocation.latitude, rideLocation.longitude, partner.currentLocation.latitude, partner.currentLocation.longitude);
             partner.distanceToRider = distance; 
@@ -485,3 +490,4 @@ export const simulateHighDemand = onCall(async (request) => {
 
     return { success: true, message: `High demand alert triggered for ${zoneName}.` };
 });
+

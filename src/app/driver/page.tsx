@@ -28,7 +28,8 @@ import {
   GeoPoint,
   serverTimestamp,
   getDoc,
-  runTransaction
+  runTransaction,
+  arrayUnion
 } from 'firebase/firestore'
 import { useFirebase } from '@/firebase/client-provider'
 import dynamic from 'next/dynamic'
@@ -41,6 +42,8 @@ import SearchingIndicator from '@/components/ui/searching-indicator'
 import { Switch } from '@/components/ui/switch'
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
+import { motion, AnimatePresence } from 'framer-motion'
+
 
 const LiveMap = dynamic(() => import('@/components/live-map'), { ssr: false })
 
@@ -75,9 +78,23 @@ export default function DriverDashboardPage() {
   const { db } = useFirebase()
   const { toast } = useToast()
   const [enteredOtp, setEnteredOtp] = useState('');
+  const [showDriverDetails, setShowDriverDetails] = useState(false)
+  const prevStatusRef = React.useRef<string | null>(null)
+
+  const drivingSoundRef = useRef<HTMLAudioElement | null>(null)
+  const hornSoundRef = useRef<HTMLAudioElement | null>(null)
 
 
   const isOnline = partnerData?.isOnline || false;
+
+  useEffect(() => {
+    drivingSoundRef.current = new Audio('/sounds/car-driving.mp3')
+    hornSoundRef.current = new Audio('/sounds/car-horn.mp3')
+  }, [])
+  
+  const playSound = (soundRef: React.RefObject<HTMLAudioElement>) => {
+    soundRef.current?.play().catch(e => console.warn("Sound play failed:", e))
+  }
 
   // 🔔 Setup sound
   useEffect(() => {
@@ -101,7 +118,7 @@ export default function DriverDashboardPage() {
   };
   
   // This effect listens for ride requests.
-  useEffect(() => {
+   useEffect(() => {
     if (!db || !isOnline || activeRide || jobRequest) {
         return;
     }
@@ -112,19 +129,22 @@ export default function DriverDashboardPage() {
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
-        if (snapshot.docs.length > 0) {
-            if (jobRequest || activeRide) return;
+        if (jobRequest || activeRide) return; // Don't process new requests if one is already active
 
-            const rideDoc = snapshot.docs[0];
-            const rideData = { id: rideDoc.id, ...rideDoc.data() } as JobRequest;
-            
+        const potentialJobs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as JobRequest));
+        const newJob = potentialJobs.find(job => 
+            !job.rejectedBy?.includes(partnerData.id)
+        );
+
+        if (newJob) {
             notificationSoundRef.current?.play().catch(e => console.warn("Sound blocked until user interaction:", e));
-            setJobRequest(rideData);
+            setJobRequest(newJob);
         }
     });
 
     return () => unsubscribe();
-  }, [db, isOnline, activeRide, jobRequest]);
+  }, [db, isOnline, activeRide, jobRequest, partnerData?.id]);
+
 
   // Listen for updates on an active ride
   useEffect(() => {
@@ -165,9 +185,15 @@ export default function DriverDashboardPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [jobRequest])
 
-  const handleDeclineJob = (isTimeout = false) => {
-    if (!jobRequest) return
+  const handleDeclineJob = async (isTimeout = false) => {
+    if (!jobRequest || !partnerData?.id || !db) return
     if (requestTimerRef.current) clearInterval(requestTimerRef.current)
+    
+    const jobRef = doc(db, 'rides', jobRequest.id);
+    await updateDoc(jobRef, {
+        rejectedBy: arrayUnion(partnerData.id)
+    });
+
     setJobRequest(null);
     if (!isTimeout) toast({ title: "Job Declined" })
     else toast({ variant: 'destructive', title: "Request Timed Out" })
@@ -243,7 +269,7 @@ export default function DriverDashboardPage() {
     }
   };  
 
- const handleUpdateRideStatus = async (status: 'arrived' | 'in-progress' | 'payment_pending') => {
+  const handleUpdateRideStatus = async (status: 'arrived' | 'in-progress' | 'payment_pending') => {
     if (!activeRide || !db) return;
     const rideRef = doc(db, 'rides', activeRide.id);
     try {
@@ -289,6 +315,25 @@ export default function DriverDashboardPage() {
       toast({ variant: 'destructive', title: 'Invalid PIN', description: 'Please enter the correct 4-digit PIN.' })
     }
   }
+
+    useEffect(() => {
+    if (prevStatusRef.current === 'searching' && activeRide?.status === 'accepted') {
+      playSound(drivingSoundRef);
+      setShowDriverDetails(false); 
+      const timer = setTimeout(() => {
+        setShowDriverDetails(true);
+      }, 2000);
+      return () => clearTimeout(timer);
+    } else if (activeRide?.status === 'accepted') {
+      setShowDriverDetails(true);
+    }
+    
+    if (prevStatusRef.current === 'accepted' && activeRide?.status === 'arrived') {
+        playSound(hornSoundRef);
+    }
+    
+    prevStatusRef.current = activeRide?.status || null;
+  }, [activeRide?.status]);
   
   const driverLocation = partnerData?.currentLocation
     ? { lat: partnerData.currentLocation.latitude, lon: partnerData.currentLocation.longitude }
@@ -475,3 +520,4 @@ export default function DriverDashboardPage() {
     </div>
   );
 }
+
