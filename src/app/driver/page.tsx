@@ -112,12 +112,11 @@ export default function DriverDashboardPage() {
         // A real app would also query by location/zone
     );
     const unsubscribe = onSnapshot(q, (snapshot) => {
-        const newJobs: JobRequest[] = [];
         let newJobToShow: JobRequest | null = null;
         snapshot.forEach((doc) => {
             const rideData = { id: doc.id, ...doc.data() } as JobRequest;
             // In a real app, you might get multiple. For simplicity, we only show one.
-            if (!jobRequest && !acceptedJob) {
+            if (!jobRequest) {
                 newJobToShow = rideData;
             }
         });
@@ -129,7 +128,7 @@ export default function DriverDashboardPage() {
     });
 
     return () => unsubscribe();
-}, [db, isOnline, activeRide, jobRequest, acceptedJob]);
+}, [db, isOnline, activeRide, jobRequest]);
 
   // Listen for updates on an active ride
   useEffect(() => {
@@ -440,3 +439,5 @@ export default function DriverDashboardPage() {
     </div>
   );
 }
+
+    
