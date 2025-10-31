@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import {
   Card,
@@ -85,20 +85,35 @@ export default function RideStatus({
   
   const prevStatusRef = React.useRef<string | null>(null);
 
-  const rideData = ride as RideData; // FIX: Moved to top level scope
+  const drivingSoundRef = useRef<HTMLAudioElement | null>(null);
+  const hornSoundRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
-    // When ride status changes from 'searching' to 'accepted', trigger the animation sequence.
+    drivingSoundRef.current = new Audio('/sounds/car-driving.mp3');
+    hornSoundRef.current = new Audio('/sounds/car-horn.mp3');
+  }, []);
+
+  const playSound = (soundRef: React.RefObject<HTMLAudioElement>) => {
+    soundRef.current?.play().catch(e => console.log("Sound play failed:", e));
+  };
+
+
+  const rideData = ride as RideData;
+
+  useEffect(() => {
     if (prevStatusRef.current === 'searching' && ride.status === 'accepted') {
-      setShowDriverDetails(false); // Make sure details are hidden initially
-      // The car animation will play for about 2 seconds, then we show the details.
+      playSound(drivingSoundRef);
+      setShowDriverDetails(false); 
       const timer = setTimeout(() => {
         setShowDriverDetails(true);
       }, 2000);
       return () => clearTimeout(timer);
     } else if (ride.status === 'accepted') {
-      // If the component mounts and the status is already 'accepted', just show the details directly.
       setShowDriverDetails(true);
+    }
+    
+    if (prevStatusRef.current === 'accepted' && ride.status === 'arrived') {
+        playSound(hornSoundRef);
     }
     
     prevStatusRef.current = ride.status;

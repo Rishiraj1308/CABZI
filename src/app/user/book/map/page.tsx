@@ -1,7 +1,7 @@
 
 'use client'
 
-import React, { useState, useEffect, useCallback, Suspense } from 'react'
+import React, { useState, useEffect, useCallback, Suspense, useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import { ArrowLeft, MapPin, X, Shield, Phone, Siren, Clock, IndianRupee } from 'lucide-react'
 import { getRoute, searchPlace } from '@/lib/routing'
@@ -80,6 +80,25 @@ function BookRideMapComponent() {
     const [isBooking, setIsBooking] = useState(false);
     
     const [activeRide, setActiveRide] = useState<RideData | null>(null);
+
+    // Refs for audio elements
+    const doorSoundRef = useRef<HTMLAudioElement | null>(null);
+    const engineStartSoundRef = useRef<HTMLAudioElement | null>(null);
+
+    // Initialize audio on component mount
+    useEffect(() => {
+        doorSoundRef.current = new Audio('/sounds/door-open.mp3');
+        engineStartSoundRef.current = new Audio('/sounds/engine-start.mp3');
+    }, []);
+
+    const playSound = (soundRef: React.RefObject<HTMLAudioElement>) => {
+        soundRef.current?.play().catch(e => console.log("Sound play failed:", e));
+    };
+
+    const handleSelectRideType = (rideName: string) => {
+        setSelectedRide(rideName);
+        playSound(doorSoundRef);
+    }
 
     const getAddress = useCallback(async (lat: number, lon: number): Promise<string | null> => {
         try {
@@ -239,6 +258,7 @@ function BookRideMapComponent() {
             return;
         }
 
+        playSound(engineStartSoundRef);
         setIsBooking(true); 
 
         const generatedOtp = Math.floor(1000 + Math.random() * 9000).toString();
@@ -317,7 +337,7 @@ function BookRideMapComponent() {
                                 rideTypes.map(rt => (
                                     <Card 
                                         key={rt.name} 
-                                        onClick={() => rt.fare !== 'N/A' && setSelectedRide(rt.name)}
+                                        onClick={() => rt.fare !== 'N/A' && handleSelectRideType(rt.name)}
                                         className={cn(
                                         "flex items-center p-3 gap-3 cursor-pointer transition-all", 
                                         selectedRide === rt.name && 'ring-2 ring-primary', 
