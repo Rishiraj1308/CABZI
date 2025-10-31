@@ -70,7 +70,8 @@ const handleRideDispatch = async (rideData: any, rideId: string) => {
     const nearbyPartners = partnersSnapshot.docs
         .map(doc => ({ id: doc.id, ...doc.data() } as Partner))
         .filter(partner => {
-            if (!partner.currentLocation || partner.vehicleType !== rideTypeBase) return false;
+            // Correctly check vehicleType. It should start with the base type.
+            if (!partner.currentLocation || !partner.vehicleType.startsWith(rideTypeBase)) return false;
             
             const distance = getDistance(rideLocation.latitude, rideLocation.longitude, partner.currentLocation.latitude, partner.currentLocation.longitude);
             partner.distanceToRider = distance; // Temporarily attach distance
@@ -86,7 +87,7 @@ const handleRideDispatch = async (rideData: any, rideId: string) => {
     // Send personalized notifications with ETA and distance
     for (const partner of nearbyPartners) {
         if (partner.fcmToken) {
-            const distanceToRider = partner.distanceToRider;
+            const distanceToRider = partner.distanceToRider || 0; // Default to 0 if undefined
             const eta = distanceToRider * 2; // Simple ETA calculation (e.g., 2 mins per km)
 
             const payloadData = {
