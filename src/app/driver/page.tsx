@@ -129,7 +129,7 @@ export default function DriverDashboardPage() {
     });
 
     return () => unsubscribe();
-}, [db, isOnline, activeRide]);
+}, [db, isOnline, activeRide, jobRequest]);
 
   // Listen for updates on an active ride
   useEffect(() => {
@@ -190,55 +190,88 @@ export default function DriverDashboardPage() {
   const handleAcceptJob = async () => {
     if (!jobRequest || !partnerData || !db) return;
     if (requestTimerRef.current) clearInterval(requestTimerRef.current);
-    
+  
     const jobRef = doc(db, 'rides', jobRequest.id);
-    const partnerRef = doc(db, 'partners', partnerData.id); // Define partnerRef
-
+    const partnerRef = doc(db, 'partners', partnerData.id);
+  
     try {
       await runTransaction(db, async (transaction) => {
         const jobDoc = await transaction.get(jobRef);
-        if (!jobDoc.exists() || jobDoc.data().status !== 'searching') {
-          throw new Error("Job is no longer available.");
+        if (!jobDoc.exists()) throw new Error("Ride not found.");
+        const jobData = jobDoc.data();
+  
+        // 🚫 Already accepted by someone
+        if (jobData.status !== 'searching') {
+          throw new Error("This ride has already been accepted by another driver.");
         }
-        
-        transaction.update(jobRef, {
-            status: 'accepted',
-            driverId: partnerData.id,
-            driverName: partnerData.name,
-            driverDetails: {
-                name: partnerData.name,
-                vehicle: `${partnerData.vehicleBrand} ${partnerData.vehicleName}`,
-                rating: partnerData.rating ?? 5.0,
-                photoUrl: partnerData.photoUrl,
-                phone: partnerData.phone,
-            },
-            driverEta: jobRequest.driverEta,
+  
+        // ✅ Prepare clean data
+        const updateData: any = {
+          status: 'accepted',
+          driverId: partnerData.id,
+          driverName: partnerData.name,
+          driverDetails: {
+            name: partnerData.name,
+            vehicle: `${partnerData.vehicleBrand || ''} ${partnerData.vehicleName || ''}`.trim(),
+            rating: partnerData.rating ?? 5.0,
+            photoUrl: partnerData.photoUrl || '',
+            phone: partnerData.phone || '',
+          },
+          acceptedAt: serverTimestamp(),
+          driverEta: jobRequest.driverEta,
+        };
+  
+        // ✅ Clean undefined/null fields
+        Object.keys(updateData).forEach((key) => {
+          if (updateData[key] === undefined || updateData[key] === null) {
+            delete updateData[key];
+          }
         });
-
+  
+        transaction.update(jobRef, updateData);
         transaction.update(partnerRef, { status: 'on_trip' });
       });
-
-        setJobRequest(null);
-        setActiveRide({ ...jobRequest, status: 'accepted' } as RideData);
-        localStorage.setItem('activeRideId', jobRequest.id);
-
-    } catch (err: any) {
-        console.error("❌ Error accepting job:", err);
-        toast({ variant: 'destructive', title: 'Could not accept job', description: err.message || 'It might have been taken by another driver.' });
-        setJobRequest(null);
-    }
-  }
   
-  const handleUpdateRideStatus = async (newStatus: 'arrived' | 'in-progress' | 'payment_pending') => {
+      // ✅ After success
+      setJobRequest(null);
+      setActiveRide({ ...jobRequest, status: 'accepted' } as RideData);
+      localStorage.setItem('activeRideId', jobRequest.id);
+  
+      toast({
+        title: 'Ride Accepted!',
+        description: 'Get ready to navigate to the pickup location.',
+      });
+    } catch (err: any) {
+      console.error("❌ Error accepting job:", err);
+      toast({
+        variant: 'destructive',
+        title: 'Could not accept job',
+        description: err.message || 'It might have been taken by another driver.',
+      });
+      setJobRequest(null);
+    }
+  };  
+
+  const handleUpdateRideStatus = async (status: 'arrived' | 'in-progress' | 'payment_pending') => {
     if (!activeRide || !db) return;
     const rideRef = doc(db, 'rides', activeRide.id);
     try {
-        await updateDoc(rideRef, { status: newStatus });
-        setActiveRide(prev => prev ? {...prev, status: newStatus} : null);
-    } catch (e) {
-        toast({variant: 'destructive', title: 'Error', description: 'Could not update ride status.'})
+        await updateDoc(rideRef, { status });
+        // Optimistically update local state to reflect the change immediately
+        setActiveRide(prev => prev ? ({ ...prev, status } as RideData) : null);
+        toast({
+            title: "Ride Status Updated",
+            description: `Status is now: ${status.replace('_', ' ')}`,
+        });
+    } catch (error) {
+        console.error("Error updating ride status:", error);
+        toast({
+            variant: 'destructive',
+            title: 'Update Failed',
+            description: 'Could not update the ride status.',
+        });
     }
-  }
+  };
   
   const handleVerifyOtp = () => {
       if (enteredOtp === activeRide?.otp) {
