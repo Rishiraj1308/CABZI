@@ -29,12 +29,14 @@ export interface PartnerData {
 
 export interface RideData {
     id: string;
+    riderName?: string;
     pickup: { address: string; location: { latitude: number; longitude: number; } };
     destination: { address: string; location: { latitude: number; longitude: number; } };
-    status: "searching" | "accepted" | "in-progress" | "completed" | "cancelled_by_driver" | "cancelled_by_rider" | "payment_pending";
+    status: "searching" | "accepted" | "arrived" | "in-progress" | "completed" | "cancelled_by_driver" | "cancelled_by_rider" | "payment_pending";
     otp?: string;
     driverDetails?: { name: string; vehicle: string; rating: number; photoUrl: string; phone: string; location?: GeoPoint };
     driverEta?: number | null;
+    driverDistance?: number | null;
     fare?: number;
     distance?: number;
     routeGeometry?: any;
@@ -73,6 +75,8 @@ export interface JobRequest extends Omit<RideData, 'pickup' | 'destination'> {
     riderGender?: string;
     rideType?: string;
     distance?: number;
+    driverDistance?: number;
+    driverEta?: number;
     pickup: { address: string; location: GeoPoint; };
     destination: { address: string; location: GeoPoint; };
     createdAt: any;

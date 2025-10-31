@@ -26,7 +26,8 @@ import {
   Timestamp,
   GeoPoint,
   serverTimestamp,
-  getDoc
+  getDoc,
+  runTransaction
 } from 'firebase/firestore'
 import { useFirebase } from '@/firebase/client-provider'
 import dynamic from 'next/dynamic'
@@ -128,7 +129,7 @@ export default function DriverDashboardPage() {
     });
 
     return () => unsubscribe();
-}, [db, isOnline, activeRide, jobRequest]);
+}, [db, isOnline, activeRide]);
 
   // Listen for updates on an active ride
   useEffect(() => {
@@ -191,8 +192,16 @@ export default function DriverDashboardPage() {
     if (requestTimerRef.current) clearInterval(requestTimerRef.current);
     
     const jobRef = doc(db, 'rides', jobRequest.id);
+    const partnerRef = doc(db, 'partners', partnerData.id); // Define partnerRef
+
     try {
-        await updateDoc(jobRef, {
+      await runTransaction(db, async (transaction) => {
+        const jobDoc = await transaction.get(jobRef);
+        if (!jobDoc.exists() || jobDoc.data().status !== 'searching') {
+          throw new Error("Job is no longer available.");
+        }
+        
+        transaction.update(jobRef, {
             status: 'accepted',
             driverId: partnerData.id,
             driverName: partnerData.name,
@@ -201,18 +210,22 @@ export default function DriverDashboardPage() {
                 vehicle: `${partnerData.vehicleBrand} ${partnerData.vehicleName}`,
                 rating: partnerData.rating ?? 5.0,
                 photoUrl: partnerData.photoUrl,
-                phone: partnerData.phone, // Ensure phone is included
+                phone: partnerData.phone,
             },
-            driverEta: jobRequest.driverEta, // Pass through ETA
+            driverEta: jobRequest.driverEta,
         });
-        await updateDoc(partnerRef, { status: 'on_trip' });
+
+        transaction.update(partnerRef, { status: 'on_trip' });
+      });
 
         setJobRequest(null);
         setActiveRide({ ...jobRequest, status: 'accepted' } as RideData);
         localStorage.setItem('activeRideId', jobRequest.id);
-    } catch (err) {
+
+    } catch (err: any) {
         console.error("❌ Error accepting job:", err);
-        toast({ variant: 'destructive', title: 'Error', description: 'Could not accept job. It might have been taken.' });
+        toast({ variant: 'destructive', title: 'Could not accept job', description: err.message || 'It might have been taken by another driver.' });
+        setJobRequest(null);
     }
   }
   
@@ -438,5 +451,3 @@ export default function DriverDashboardPage() {
     </div>
   );
 }
-
-    
