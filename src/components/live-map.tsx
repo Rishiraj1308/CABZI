@@ -285,7 +285,6 @@ const LiveMap = forwardRef<any, LiveMapProps>((props, ref) => {
 
         // Add or update markers
         allEntities.forEach((entity, id) => {
-            // CRITICAL FIX: Ensure lat and lon are valid numbers before creating a marker
             if (typeof entity.lat === 'number' && typeof entity.lon === 'number') {
                 updateMarker(id, new L.LatLng(entity.lat, entity.lon), entity.type);
             } else {
@@ -345,4 +344,3 @@ const LiveMap = forwardRef<any, LiveMapProps>((props, ref) => {
 
 LiveMap.displayName = 'LiveMap';
 export default LiveMap;
-

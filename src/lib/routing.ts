@@ -22,7 +22,11 @@ export async function searchPlace(query: string): Promise<any> {
     // Bias search results to India
     url.searchParams.append('countrycodes', 'in');
 
-    const response = await axios.get(url.toString());
+    const response = await axios.get(url.toString(), {
+        headers: {
+            'User-Agent': 'Curocity/1.0 (contact@curocity.com)'
+        }
+    });
     return response.data;
   } catch (error: any) {
     console.error("Nominatim search error:", error.response ? error.response.data : error.message);
