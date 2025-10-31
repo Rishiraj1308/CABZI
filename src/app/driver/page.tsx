@@ -99,37 +99,32 @@ export default function DriverDashboardPage() {
     }
   };
   
-  // This effect listens for ride requests via FCM (or a direct query for web)
-  // This is a simplified version for demonstration.
+  // This effect listens for ride requests.
   useEffect(() => {
-    if (!db || !isOnline || activeRide) {
-        setJobRequest(null);
+    if (!db || !isOnline || activeRide || jobRequest) {
         return;
     }
 
     const q = query(
         collection(db, "rides"),
         where("status", "==", "searching"),
-        // A real app would also query by location/zone
     );
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-        let newJobToShow: JobRequest | null = null;
-        snapshot.forEach((doc) => {
-            const rideData = { id: doc.id, ...doc.data() } as JobRequest;
-            // In a real app, you might get multiple. For simplicity, we only show one.
-            if (!jobRequest) {
-                newJobToShow = rideData;
-            }
-        });
 
-        if (newJobToShow) {
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+        if (snapshot.docs.length > 0) {
+            // Prevent showing a new request if one is already being displayed or a ride is active
+            if (jobRequest || activeRide) return;
+
+            const rideDoc = snapshot.docs[0];
+            const rideData = { id: rideDoc.id, ...rideDoc.data() } as JobRequest;
+            
             notificationSoundRef.current?.play().catch(e => console.warn("Sound blocked until user interaction:", e));
-            setJobRequest(newJobToShow);
+            setJobRequest(rideData);
         }
     });
 
     return () => unsubscribe();
-}, [db, isOnline, activeRide, jobRequest]);
+  }, [db, isOnline, activeRide, jobRequest]);
 
   // Listen for updates on an active ride
   useEffect(() => {
@@ -200,12 +195,10 @@ export default function DriverDashboardPage() {
         if (!jobDoc.exists()) throw new Error("Ride not found.");
         const jobData = jobDoc.data();
   
-        // 🚫 Already accepted by someone
         if (jobData.status !== 'searching') {
           throw new Error("This ride has already been accepted by another driver.");
         }
   
-        // ✅ Prepare clean data
         const updateData: any = {
           status: 'accepted',
           driverId: partnerData.id,
@@ -221,7 +214,6 @@ export default function DriverDashboardPage() {
           driverEta: jobRequest.driverEta,
         };
   
-        // ✅ Clean undefined/null fields
         Object.keys(updateData).forEach((key) => {
           if (updateData[key] === undefined || updateData[key] === null) {
             delete updateData[key];
@@ -232,7 +224,6 @@ export default function DriverDashboardPage() {
         transaction.update(partnerRef, { status: 'on_trip' });
       });
   
-      // ✅ After success
       setJobRequest(null);
       setActiveRide({ ...jobRequest, status: 'accepted' } as RideData);
       localStorage.setItem('activeRideId', jobRequest.id);
@@ -242,7 +233,7 @@ export default function DriverDashboardPage() {
         description: 'Get ready to navigate to the pickup location.',
       });
     } catch (err: any) {
-      console.error("❌ Error accepting job:", err);
+      console.error("Error accepting job:", err);
       toast({
         variant: 'destructive',
         title: 'Could not accept job',
@@ -252,7 +243,7 @@ export default function DriverDashboardPage() {
     }
   };  
 
-  const handleUpdateRideStatus = async (status: 'arrived' | 'in-progress' | 'payment_pending') => {
+ const handleUpdateRideStatus = async (status: 'arrived' | 'in-progress' | 'payment_pending') => {
     if (!activeRide || !db) return;
     const rideRef = doc(db, 'rides', activeRide.id);
     try {
@@ -484,3 +475,5 @@ export default function DriverDashboardPage() {
     </div>
   );
 }
+
+    
