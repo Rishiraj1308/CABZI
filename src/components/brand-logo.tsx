@@ -2,7 +2,6 @@
 'use client'
 
 import { cn } from '@/lib/utils'
-import SearchingIndicator from './ui/searching-indicator';
 
 interface BrandLogoProps {
   className?: string;
@@ -43,7 +42,7 @@ const NewLogoIcon = ({ className }: { className?: string }) => {
               .tire-tread-group {
                 animation: rotate-tire 30s linear infinite;
                 transform-origin: center;
-                filter: drop-shadow(2px 2px 2px rgba(0,0,0,0.2)) drop-shadow(5px 5px 5px rgba(0,0,0,0.1));
+                filter: drop-shadow(2px 2px 2px rgba(0,0,0,0.2)) drop-shadow(5px 5px 5px rgba(0,0,0,0.15));
               }
               .heartbeat-line-animate {
                   stroke-dasharray: 24;
