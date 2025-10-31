@@ -4,85 +4,59 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
 import { Car, Wrench, Ambulance } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 interface SearchingIndicatorProps {
   partnerType: 'path' | 'resq' | 'cure';
   className?: string;
 }
 
-const colorClasses = {
+const config = {
     path: {
-        ring: 'stroke-primary',
-        icon: 'text-primary',
+        icon: Car,
+        color: 'hsl(var(--primary))',
     },
     resq: {
-        ring: 'stroke-amber-500',
-        icon: 'text-amber-600',
+        icon: Wrench,
+        color: 'hsl(var(--amber-500, 24 9.8% 30%))',
     },
     cure: {
-        ring: 'stroke-red-600',
-        icon: 'text-red-600',
+        icon: Ambulance,
+        color: 'hsl(var(--destructive))',
     },
-}
-
-const icons = {
-    path: Car,
-    resq: Wrench,
-    cure: Ambulance,
 }
 
 const SearchingIndicator: React.FC<SearchingIndicatorProps> = ({ partnerType, className }) => {
-    const colors = colorClasses[partnerType];
-    const Icon = icons[partnerType];
+    const { icon: Icon, color } = config[partnerType];
     
     return (
         <div className={cn("relative w-48 h-48 mx-auto flex items-center justify-center", className)}>
-            <style>
-                {`
-                    @keyframes pulse-ring {
-                        0% {
-                            transform: scale(0.33);
-                            opacity: 1;
-                        }
-                        80%, 100% {
-                            transform: scale(1);
-                            opacity: 0;
-                        }
-                    }
-                `}
-            </style>
-            <svg viewBox="0 0 100 100" className="absolute inset-0 w-full h-full">
-                <circle
-                    className={cn("origin-center", colors.ring)}
-                    cx="50"
-                    cy="50"
-                    r="45"
-                    strokeWidth="2"
-                    fill="none"
-                    style={{ animation: 'pulse-ring 3s cubic-bezier(0.215, 0.61, 0.355, 1) infinite' }}
-                />
-                <circle
-                    className={cn("origin-center", colors.ring)}
-                    cx="50"
-                    cy="50"
-                    r="45"
-                    strokeWidth="2"
-                    fill="none"
-                    style={{ animation: 'pulse-ring 3s cubic-bezier(0.215, 0.61, 0.355, 1) infinite', animationDelay: '1s' }}
-                />
-                 <circle
-                    className={cn("origin-center", colors.ring)}
-                    cx="50"
-                    cy="50"
-                    r="45"
-                    strokeWidth="2"
-                    fill="none"
-                    style={{ animation: 'pulse-ring 3s cubic-bezier(0.215, 0.61, 0.355, 1) infinite', animationDelay: '2s' }}
-                />
-            </svg>
-            <div className={cn("w-20 h-20 rounded-full flex items-center justify-center bg-background shadow-md", colors.icon)}>
-                 <Icon className="w-10 h-10" />
-            </div>
+            <motion.div
+                className="absolute inset-0"
+                animate={{ rotate: 360 }}
+                transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
+            >
+                <svg viewBox="0 0 100 100" className="w-full h-full">
+                    <defs>
+                        <radialGradient id={`gradient-${partnerType}`} cx="50%" cy="50%" r="50%">
+                            <stop offset="0%" style={{ stopColor: color, stopOpacity: 0.3 }} />
+                            <stop offset="100%" style={{ stopColor: color, stopOpacity: 0 }} />
+                        </radialGradient>
+                    </defs>
+                    <path
+                        d="M 50,50 L 50,5 A 45,45 0 0,1 95,50 Z"
+                        fill={`url(#gradient-${partnerType})`}
+                    />
+                </svg>
+            </motion.div>
+            
+            <motion.div
+                className="w-20 h-20 rounded-full flex items-center justify-center bg-background shadow-lg"
+                animate={{ scale: [1, 1.05, 1] }}
+                transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+            >
+                 <Icon className="w-10 h-10" style={{ color }} />
+            </motion.div>
         </div>
     );
 };
