@@ -191,7 +191,6 @@ export default function DriverDashboardPage() {
     if (requestTimerRef.current) clearInterval(requestTimerRef.current);
     
     const jobRef = doc(db, 'rides', jobRequest.id);
-    const partnerRef = doc(db, 'partners', partnerData.id);
     try {
         await updateDoc(jobRef, {
             status: 'accepted',
