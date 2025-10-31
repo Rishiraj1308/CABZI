@@ -43,16 +43,23 @@ function getDistance(lat1: number, lon1: number, lat2: number, lon2: number) {
     return d;
 }
 
-const handleRideDispatch = async (rideData: any, rideId: string) => {
-    // Correctly get the base vehicle type (e.g., "Cab" from "Cab (Lite)")
+const handleRideDispatch = async (initialRideData: any, rideId: string) => {
+    // CRITICAL FIX: Re-fetch the document to get the latest status
+    const rideRef = db.doc(`rides/${rideId}`);
+    const rideDoc = await rideRef.get();
+
+    if (!rideDoc.exists || rideDoc.data()?.status !== 'searching') {
+        console.log(`Ride ${rideId} is no longer valid for dispatch (status is not 'searching' or doc deleted). Halting dispatch.`);
+        return;
+    }
+    const rideData = rideDoc.data();
+
     const rideTypeBase = rideData.rideType.split(' ')[0].trim();
 
     let partnersQuery = db.collection('partners')
         .where('isOnline', '==', true)
-        .where('status', '==', 'online');
-        // We cannot use multiple inequality filters, so vehicleType will be filtered in the function
+        .where('status', '==', 'online'); 
     
-    // If ride type is "Curocity Pink", add specific filters.
     if (rideData.rideType === 'Curocity Pink') {
         partnersQuery = partnersQuery.where('isCurocityPinkPartner', '==', true)
                                    .where('gender', '==', 'female');
@@ -70,11 +77,10 @@ const handleRideDispatch = async (rideData: any, rideId: string) => {
     const nearbyPartners = partnersSnapshot.docs
         .map(doc => ({ id: doc.id, ...doc.data() } as Partner))
         .filter(partner => {
-            // Correctly check vehicleType. It should start with the base type.
             if (!partner.currentLocation || !partner.vehicleType.startsWith(rideTypeBase)) return false;
             
             const distance = getDistance(rideLocation.latitude, rideLocation.longitude, partner.currentLocation.latitude, partner.currentLocation.longitude);
-            partner.distanceToRider = distance; // Temporarily attach distance
+            partner.distanceToRider = distance; 
             return distance < 10; // 10km radius
         });
     
@@ -84,11 +90,10 @@ const handleRideDispatch = async (rideData: any, rideId: string) => {
         return;
     }
 
-    // Send personalized notifications with ETA and distance
     for (const partner of nearbyPartners) {
         if (partner.fcmToken) {
-            const distanceToRider = partner.distanceToRider || 0; // Default to 0 if undefined
-            const eta = distanceToRider * 2; // Simple ETA calculation (e.g., 2 mins per km)
+            const distanceToRider = partner.distanceToRider || 0;
+            const eta = distanceToRider * 2; // Simple ETA calculation
 
             const payloadData = {
                 type: 'new_ride_request',
@@ -106,8 +111,8 @@ const handleRideDispatch = async (rideData: any, rideId: string) => {
                 riderGender: rideData.riderGender,
                 otp: rideData.otp,
                 distance: String(rideData.distance),
-                driverDistance: String(distanceToRider), // Specific distance for this driver
-                driverEta: String(eta), // Specific ETA for this driver
+                driverDistance: String(distanceToRider),
+                driverEta: String(eta),
             };
             
             const message = {
@@ -153,7 +158,6 @@ const handleGarageRequestDispatch = async (requestData: any, requestId: string) 
     
     const tokens = nearbyMechanics.map(m => m.fcmToken).filter((t): t is string => !!t);
     if (tokens.length > 0) {
-        // Correctly serialize the data for FCM payload
         const payloadData = {
             type: 'new_garage_request',
             requestId: requestId,
@@ -164,7 +168,7 @@ const handleGarageRequestDispatch = async (requestData: any, requestId: string) 
             location: JSON.stringify(requestData.location),
             status: requestData.status,
             otp: requestData.otp,
-            createdAt: requestData.createdAt.toMillis().toString(), // CRITICAL FIX
+            createdAt: requestData.createdAt.toMillis().toString(),
         };
         const message = {
             data: payloadData,
