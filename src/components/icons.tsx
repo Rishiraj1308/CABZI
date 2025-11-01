@@ -17,9 +17,7 @@ export function AutoIcon(props: SVGProps<SVGSVGElement>) {
 
 export function CabIcon(props: SVGProps<SVGSVGElement>) {
     return (
-        <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" {...props}>
-            <path fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 17H9V6l2-3h2l2 3v11M5 17a2 2 0 1 0 4 0a2 2 0 1 0-4 0m10 0a2 2 0 1 0 4 0a2 2 0 1 0-4 0M3 11h18"/>
-        </svg>
+        <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" {...props}><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 17a2 2 0 1 0-4 0a2 2 0 0 0 4 0Zm14 0a2 2 0 1 0-4 0a2 2 0 0 0 4 0ZM5 17H3V6a1 1 0 0 1 1-1h9v12H9M12 17V5H3M12 5l1.5-3.5A.5 .5 0 0 1 14 1h3a.5.5 0 0 1 .5.5L19 5h2a1 1 0 0 1 1 1v4h-3"/></svg>
     )
 }
 
