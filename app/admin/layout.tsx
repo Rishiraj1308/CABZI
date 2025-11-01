@@ -132,6 +132,10 @@ export default function AdminLayout({
          </Link>
        </div>
        
+        <div className="hidden md:flex items-center gap-4 mx-auto">
+            <AdminNav />
+        </div>
+
        <div className="ml-auto flex items-center gap-4">
            <ThemeToggle />
            <DropdownMenu>
@@ -175,10 +179,6 @@ export default function AdminLayout({
          </DropdownMenu>
        </div>
       </header>
-
-      <div className="hidden md:flex h-14 items-center border-b bg-background px-6">
-        <AdminNav />
-      </div>
 
       <main className="flex flex-1 flex-col p-4 md:p-8 gap-4 md:gap-8">
         <MotionDiv
