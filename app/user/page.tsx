@@ -50,30 +50,6 @@ const ServiceCard = ({
   </button>
 )
 
-const recentTrips = [
-    {
-        icon: MapPin,
-        title: "Connaught Place",
-        description: "New Delhi, Delhi",
-        distance: "5.2 km",
-        time: "15 min"
-    },
-    {
-        icon: MapPin,
-        title: "Indira Gandhi International Airport",
-        description: "New Delhi, Delhi",
-        distance: "18.7 km",
-        time: "45 min"
-    },
-    {
-        icon: MapPin,
-        title: "Select Citywalk",
-        description: "Saket, New Delhi",
-        distance: "12.1 km",
-        time: "30 min"
-    },
-]
-
 export default function ServicePortalPage() {
   const router = useRouter()
   const { t } = useLanguage()
@@ -119,20 +95,6 @@ export default function ServicePortalPage() {
       router.push(service.href);
     }
   };
-
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: { staggerChildren: 0.1 }
-    }
-  };
-  
-  const itemVariants = {
-      hidden: { opacity: 0, y: 20 },
-      visible: { opacity: 1, y: 0 }
-  };
-
 
   return (
     <>
@@ -190,41 +152,11 @@ export default function ServicePortalPage() {
                   <MapPin className="h-3.5 w-3.5 mr-1.5" /> Nearest clinic
                 </Button>
                 <Button variant="ghost" className="rounded-full px-3 py-1.5 text-xs font-medium">
-                  <History className="h-3.5 w-3.5 mr-1.5" /> Recently used
+                  <History className="h-3.5 w-3.5 mr-1.5" /> Recent Activity
                 </Button>
               </div>
             </div>
             
-            <motion.div 
-              className="mt-8 space-y-2"
-              variants={containerVariants}
-              initial="hidden"
-              animate="visible"
-            >
-              <h3 className="font-bold text-lg text-foreground">Recent Trips</h3>
-              {recentTrips.map((trip, index) => (
-                  <motion.div 
-                      key={trip.title}
-                      variants={itemVariants}
-                  >
-                      <div className="flex items-center gap-4 p-3 rounded-lg hover:bg-card/50 cursor-pointer transition-colors">
-                          <div className="p-3 bg-card rounded-full border">
-                              <trip.icon className="w-5 h-5 text-muted-foreground" />
-                          </div>
-                          <div className="flex-1">
-                              <p className="font-semibold">{trip.title}</p>
-                              <p className="text-sm text-muted-foreground">{trip.description}</p>
-                          </div>
-                          <div className="text-right">
-                              <p className="text-sm font-semibold">{trip.distance}</p>
-                              <p className="text-xs text-muted-foreground">{trip.time}</p>
-                          </div>
-                      </div>
-                  </motion.div>
-              ))}
-            </motion.div>
-
-
             <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
               {services.map(service => (
                 <ServiceCard key={service.id} service={service} onClick={() => handleServiceClick(service)} />
