@@ -1,4 +1,3 @@
-
 'use client'
 
 import React, { useState, useEffect, useRef, useCallback } from 'react'
@@ -558,7 +557,7 @@ export default function HomePage() {
                  <p className="text-center text-sm leading-loose text-muted-foreground md:text-left">
                     Built by Team Curocity. All rights reserved. &copy; {new Date().getFullYear()}
                   </p>
-                  <Link href="/admin-login" legacyBehavior>
+                  <Link href="/admin" legacyBehavior>
                     <a className="text-muted-foreground hover:text-primary transition-colors">
                       <Shield size={16} />
                       <span className="sr-only">Admin Login</span>
