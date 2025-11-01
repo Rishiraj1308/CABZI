@@ -108,11 +108,9 @@ export default function UserDashboard() {
     // Effect to check for any active service on load and listen for updates
     useEffect(() => {
         if (!db || !session) return;
-
         let unsubscribe: (() => void) | null = null;
         
         const checkAndSubscribe = () => {
-            // Check for active ride
             const rideId = localStorage.getItem('activeRideId');
             if (rideId) {
                 const rideRef = doc(db, 'rides', rideId);
@@ -126,7 +124,6 @@ export default function UserDashboard() {
                 return;
             }
             
-            // Check for active emergency case
             const qCure = query(collection(db, "emergencyCases"), where("riderId", "==", session.userId), where("status", "in", ["pending", "accepted", "onTheWay", "arrived", "inTransit"]));
             unsubscribe = onSnapshot(qCure, (snapshot) => {
                 if (!snapshot.empty) {
@@ -137,7 +134,6 @@ export default function UserDashboard() {
                 }
             });
             
-             // Check for active ResQ request
             const qResq = query(collection(db, "garageRequests"), where("driverId", "==", session.userId), where("status", "not-in", ["completed", "cancelled_by_driver", "cancelled_by_mechanic"]));
              unsubscribe = onSnapshot(qResq, (snapshot) => {
                 if (!snapshot.empty) {
@@ -150,10 +146,7 @@ export default function UserDashboard() {
         }
         
         checkAndSubscribe();
-        return () => {
-            if (unsubscribe) unsubscribe();
-        };
-
+        return () => { if (unsubscribe) unsubscribe(); };
     }, [db, session, resetFlow, activeAmbulanceCase, activeGarageRequest]);
 
     const servicesByCat = serviceCards.reduce((acc, service) => {
