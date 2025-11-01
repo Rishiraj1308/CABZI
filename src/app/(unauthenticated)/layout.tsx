@@ -1,4 +1,3 @@
-
 'use client'
 
 import { Toaster } from '@/components/ui/toaster';
@@ -21,47 +20,39 @@ function UnauthenticatedLayoutContent({ children }: { children: React.ReactNode 
     }
 
     if (user) {
-      // User is logged in with Firebase, now check localStorage for role hints
-      // This helps redirect faster on subsequent visits.
-      const primarySession = localStorage.getItem('curocity-session');
-      if (primarySession) {
-          try {
-              const { role } = JSON.parse(primarySession);
-              if (role) {
-                   if (role === 'admin') router.replace('/admin');
-                   else router.replace(`/${role}`);
-                   return; // Exit early
-              }
-          } catch (e) {
-              // Invalid session data, remove it
-              localStorage.removeItem('curocity-session');
-          }
-      }
-      
-      // Check other specific partner sessions if primary is not found
-      const partnerSessionKeys = ['curocity-resq-session', 'curocity-cure-session', 'curocity-ambulance-session', 'curocity-doctor-session'];
-      for (const key of partnerSessionKeys) {
-          const session = localStorage.getItem(key);
-          if (session) {
-              try {
-                  const { role } = JSON.parse(session);
-                  if (role) {
-                      router.replace(`/${role}`);
-                      return; // Exit early
-                  }
-              } catch (e) {
-                  localStorage.removeItem(key);
-              }
-          }
-      }
+        // User is logged in with Firebase, redirect based on stored session role
+        const sessionKeys = [
+            'curocity-session',
+            'curocity-resq-session',
+            'curocity-cure-session',
+            'curocity-ambulance-session',
+            'curocity-doctor-session'
+        ];
 
-      // If firebase user exists but no session role, default to user dashboard
-      // This can happen on first login via Google/Phone before session is fully set
-      router.replace('/user');
-      return;
+        for (const key of sessionKeys) {
+            const session = localStorage.getItem(key);
+            if (session) {
+                try {
+                    const { role } = JSON.parse(session);
+                    if (role) {
+                        const path = role === 'user' ? '/user' : `/${role}`;
+                        router.replace(path);
+                        return; // Exit after successful redirect
+                    }
+                } catch (e) {
+                    // Invalid session data, remove it and continue checking
+                    localStorage.removeItem(key);
+                }
+            }
+        }
+      
+        // If Firebase user exists but no valid session role, default to user dashboard
+        // This is a safe fallback.
+        router.replace('/user');
+        return;
 
     } else {
-        // No user is logged in, okay to show the children (login page)
+        // No user is logged in, it's safe to show the children (login page, etc.)
         setShowChildren(true);
     }
 
