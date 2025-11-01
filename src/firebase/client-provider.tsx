@@ -4,7 +4,7 @@
 import React, { createContext, useContext, useEffect, useState, useMemo, type ReactNode } from 'react';
 import { initializeApp, getApps, getApp, type FirebaseApp } from 'firebase/app';
 import { getAuth, type Auth, onAuthStateChanged, type User } from 'firebase/auth';
-import { getFirestore, type Firestore, enableIndexedDbPersistence } from 'firebase/firestore';
+import { getFirestore, type Firestore, enableIndexedDbPersistence, initializeFirestore, memoryLocalCache } from 'firebase/firestore';
 import { getFunctions, type Functions } from 'firebase/functions';
 import { getMessaging, type Messaging } from 'firebase/messaging';
 import { firebaseConfig } from './config';
@@ -20,18 +20,11 @@ let messaging: Messaging | null = null;
 if (typeof window !== 'undefined') {
   app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
   auth = getAuth(app);
-  db = getFirestore(app);
+  // Use initializeFirestore to handle persistence settings
+  db = initializeFirestore(app, {
+      localCache: memoryLocalCache(),
+  });
   functions = getFunctions(app);
-
-  try {
-    enableIndexedDbPersistence(db);
-  } catch (error: any) {
-    if (error.code === 'failed-precondition') {
-      console.warn('Firebase persistence failed. Multiple tabs open?');
-    } else if (error.code !== 'unimplemented') {
-      console.error('Firebase persistence error:', error);
-    }
-  }
 
   if ('Notification' in window && 'serviceWorker' in navigator && 'PushManager' in window) {
     messaging = getMessaging(app);

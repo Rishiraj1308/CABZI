@@ -1,3 +1,4 @@
+
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
@@ -534,7 +535,6 @@ export default function LoginPage() {
                 </Link>
               </div>
               <CardTitle className="text-2xl mt-4">{getPageTitle()}</CardTitle>
-              <CardDescription>
                 <AnimatePresence mode="wait">
                     <motion.p
                         key={step + roleFromQuery}
@@ -542,11 +542,11 @@ export default function LoginPage() {
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: 10 }}
                         transition={{ duration: 0.2 }}
+                        className="text-sm text-muted-foreground"
                     >
                        {getPageDescription()}
                     </motion.p>
                 </AnimatePresence>
-              </CardDescription>
             </CardHeader>
             <CardContent>
               <AnimatePresence mode="wait">
@@ -554,18 +554,18 @@ export default function LoginPage() {
               </AnimatePresence>
                 
                 <div className="mt-4 text-center text-sm text-muted-foreground space-y-2">
-                    {roleFromQuery === 'user' && (
-                        <p>Want to partner with us? <Link href="/partner-hub" className="underline text-primary">Become a Partner</Link></p>
-                    )}
-                    {isPartnerFlow && (
-                        <p>Looking for a ride? <Link href="/login?role=user" className="underline text-primary" onClick={() => {setStep('login'); setInputType('none'); setIdentifier('');}}>Login as a User</Link></p>
-                    )}
+                    {roleFromQuery === 'user' ? (
+                        <div>Want to partner with us? <Link href="/partner-hub" className="underline text-primary">Become a Partner</Link></div>
+                    ) : isPartnerFlow ? (
+                         <div>Looking for a ride? <Link href="/login?role=user" className="underline text-primary" onClick={() => {setStep('login'); setInputType('none'); setIdentifier('');}}>Login as a User</Link></div>
+                    ): null}
+                    
                     {roleFromQuery !== 'admin' && (
-                         <p>
+                         <div>
                             <Link href="/login?role=admin" className="text-xs underline" onClick={() => setStep('login')}>
                                 Admin Login
                             </Link>
-                        </p>
+                        </div>
                     )}
                 </div>
             </CardContent>
