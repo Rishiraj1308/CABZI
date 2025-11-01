@@ -1,32 +1,23 @@
 
 'use client'
 
-import React, { useState, useEffect, useRef, useCallback } from 'react'
+import React, { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Button } from '@/components/ui/button'
-import BrandLogo, { NewLogoIcon } from '@/components/brand-logo'
+import { Button, buttonVariants } from '@/components/ui/button'
+import BrandLogo from '@/components/brand-logo'
 import {
-  ArrowRight, Car, Wrench, Ambulance, Landmark, CheckCircle, Shield, IndianRupee, Signal, Wifi, Battery, Sun, Moon, Globe, User, LogIn, Star, MapPin, Clock, Bike, Phone, Share2, Siren, Send, ScanLine, NotebookText, Banknote, Sparkles, PiggyBank, HeartHandshake, CircleHelp, Hand, Briefcase, Home, MessageSquare, Calendar, Building, BrainCircuit, AppWindow,
-  History, Menu, Languages, Mic, X, ArrowUpRight, AlertTriangle, MessageCircle, TestTube, LifeBuoy, Orbit, Search
+  Car, Wrench, Ambulance, Calendar, TestTube, Search, X, Mic, AlertTriangle, Phone, History, MapPin, ArrowUpRight, Clock, Home, MessageCircle, Shield, Languages, User, Sun, Moon
 } from 'lucide-react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card'
+import { motion } from 'framer-motion'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
 import { useLanguage } from '@/hooks/use-language'
 import { useTheme } from 'next-themes'
-import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from '@/components/ui/dropdown-menu'
-import { Carousel, CarouselContent, CarouselItem, type CarouselApi } from '@/components/ui/carousel'
-import Autoplay from "embla-carousel-autoplay"
-import { BikeIcon, AutoIcon, CabIcon } from '@/components/icons'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import dynamic from 'next/dynamic'
-import { Progress } from '@/components/ui/progress'
-import { useRouter } from 'next/navigation'
-import { useToast } from '@/hooks/use-toast'
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/components/ui/dropdown-menu'
 import { Input } from '@/components/ui/input'
-import { AlertDialog, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog'
-import { buttonVariants } from '@/components/ui/button';
-import { AlertDialogCancel, AlertDialogAction } from '@/components/ui/alert-dialog';
+import { AlertDialog, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogCancel, AlertDialogAction } from '@/components/ui/alert-dialog'
+import { useToast } from '@/hooks/use-toast'
 
 const ServiceCard = ({
   service,
@@ -77,7 +68,7 @@ export default function ServicePortalPage() {
 
   const serviceData = [
     { id: 'ride', href: '/user/book', icon: Car, title: 'Ride', description: 'On-demand transport to clinics', tag: '5–10m', tagIcon: Clock, iconBg: 'bg-emerald-400/15', iconRing: 'ring-emerald-400/30', iconColor: 'text-emerald-300', tagBg: 'bg-emerald-400/10', tagBorder: 'border-emerald-400/30', tagColor: 'text-emerald-200', label: 'ride transport car taxi clinic mobility hospital cab' },
-    { id: 'resq', href: '/user/resq', icon: LifeBuoy, title: 'ResQ', description: 'On-site assistance for minor issues', tag: 'On-Demand', tagIcon: Wrench, iconBg: 'bg-amber-400/15', iconRing: 'ring-amber-400/30', iconColor: 'text-amber-300', tagBg: 'bg-amber-400/10', tagBorder: 'border-amber-400/30', tagColor: 'text-amber-200', label: 'resq on-site assistance home help nurse minor issues support' },
+    { id: 'resq', href: '/user/resq', icon: Wrench, title: 'ResQ', description: 'On-site assistance for minor issues', tag: 'On-Demand', tagIcon: Wrench, iconBg: 'bg-amber-400/15', iconRing: 'ring-amber-400/30', iconColor: 'text-amber-300', tagBg: 'bg-amber-400/10', tagBorder: 'border-amber-400/30', tagColor: 'text-amber-200', label: 'resq on-site assistance home help nurse minor issues support' },
     { id: 'sos', onClick: () => setIsSosModalOpen(true), icon: Ambulance, title: 'Emergency SOS', description: 'Connect to 24/7 emergency line', tag: '24/7', tagIcon: AlertTriangle, iconBg: 'bg-red-500/20', iconRing: 'ring-red-500/40', iconColor: 'text-red-300', tagBg: 'bg-red-400/10', tagBorder: 'border-red-400/40', tagColor: 'text-red-200', label: 'sos emergency ambulance urgent help police fire medical' },
     { id: 'appointment', href: '/user/appointments', icon: Calendar, title: 'Book Appointment', description: 'Clinics, specialists, telehealth', tag: 'Next: 1–2d', tagIcon: Clock, iconBg: 'bg-sky-400/15', iconRing: 'ring-sky-400/30', iconColor: 'text-sky-300', tagBg: 'bg-sky-400/10', tagBorder: 'border-sky-400/30', tagColor: 'text-sky-200', label: 'book appointment doctor specialist telehealth clinic schedule calendar' },
     { id: 'lab_tests', href: '/user/lab-tests', icon: TestTube, title: 'Lab Tests', description: 'Home sample pickup available', tag: 'Home pickup', tagIcon: Home, iconBg: 'bg-fuchsia-400/15', iconRing: 'ring-fuchsia-400/30', iconColor: 'text-fuchsia-300', tagBg: 'bg-fuchsia-400/10', tagBorder: 'border-fuchsia-400/30', tagColor: 'text-fuchsia-200', label: 'lab tests diagnostics blood test home pickup reports' }
@@ -85,6 +76,10 @@ export default function ServicePortalPage() {
   
   useEffect(() => {
     setServices(serviceData);
+     // Force dark theme for this design
+    if (theme !== 'dark') {
+      setTheme('dark');
+    }
   }, []);
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -154,10 +149,10 @@ export default function ServicePortalPage() {
               </div>
 
               <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
-                <Button variant="ghost" className="rounded-full px-3 py-1.5 text-xs font-medium" title="Nearest clinic">
+                <Button variant="ghost" className="rounded-full px-3 py-1.5 text-xs font-medium">
                   <MapPin className="h-3.5 w-3.5 mr-1.5" /> Nearest clinic
                 </Button>
-                <Button variant="ghost" className="rounded-full px-3 py-1.5 text-xs font-medium" title="Recently used">
+                <Button variant="ghost" className="rounded-full px-3 py-1.5 text-xs font-medium">
                   <History className="h-3.5 w-3.5 mr-1.5" /> Recently used
                 </Button>
               </div>
@@ -169,11 +164,6 @@ export default function ServicePortalPage() {
               ))}
             </div>
 
-            {services.length === 0 && !searchQuery && (
-                <div className="mt-4 rounded-xl border border-white/10 bg-white/5 p-5 text-center">
-                    <p className="text-sm text-white/70">No services available at the moment.</p>
-                </div>
-            )}
             {services.length === 0 && searchQuery && (
                  <div className="mt-4 rounded-xl border border-white/10 bg-white/5 p-5 text-center">
                     <div className="mx-auto inline-flex h-10 w-10 items-center justify-center rounded-full bg-white/5 border border-white/10">
@@ -202,8 +192,8 @@ export default function ServicePortalPage() {
                             <AlertTriangle className="h-5 w-5" />
                         </span>
                         <div>
-                        <AlertDialogTitle className="text-red-100">Confirm Emergency SOS</AlertDialogTitle>
-                        <AlertDialogDescription className="text-red-200/70">
+                        <AlertDialogTitle>Confirm Emergency SOS</AlertDialogTitle>
+                        <AlertDialogDescription>
                             We will connect you to emergency services and share your contact details.
                         </AlertDialogDescription>
                         </div>
@@ -219,7 +209,6 @@ export default function ServicePortalPage() {
                 </AlertDialogFooter>
             </AlertDialogContent>
         </AlertDialog>
-        
       </main>
     </>
   )
