@@ -116,6 +116,20 @@ export default function DriverDashboardPage() {
     }
   };
   
+    const handleDeclineJob = useCallback(async (isTimeout = false) => {
+    if (!jobRequest || !partnerData?.id || !db) return
+    if (requestTimerRef.current) clearInterval(requestTimerRef.current)
+    
+    const jobRef = doc(db, 'rides', jobRequest.id);
+    await updateDoc(jobRef, {
+        rejectedBy: arrayUnion(partnerData.id)
+    });
+
+    setJobRequest(null);
+    if (!isTimeout) toast({ title: "Job Declined" })
+    else toast({ variant: 'destructive', title: "Request Timed Out" })
+  }, [jobRequest, partnerData?.id, db, toast]);
+
   // This effect listens for ride requests.
    useEffect(() => {
     if (!db || !isOnline || activeRide || jobRequest || !partnerData?.id) {
@@ -162,20 +176,6 @@ export default function DriverDashboardPage() {
     return () => unsub();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [db, activeRide?.id]);
-
-  const handleDeclineJob = useCallback(async (isTimeout = false) => {
-    if (!jobRequest || !partnerData?.id || !db) return
-    if (requestTimerRef.current) clearInterval(requestTimerRef.current)
-    
-    const jobRef = doc(db, 'rides', jobRequest.id);
-    await updateDoc(jobRef, {
-        rejectedBy: arrayUnion(partnerData.id)
-    });
-
-    setJobRequest(null);
-    if (!isTimeout) toast({ title: "Job Declined" })
-    else toast({ variant: 'destructive', title: "Request Timed Out" })
-  }, [jobRequest, partnerData?.id, db, toast]);
 
   // Timer for request
   useEffect(() => {
@@ -390,9 +390,16 @@ export default function DriverDashboardPage() {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
         <div className="lg:col-span-2">
-            <Card className="h-[75vh]">
+           <Card className="h-[75vh]">
                 <CardContent className="p-0 h-full">
                      <LiveMap 
+                        onLocationFound={(address, coords) => {
+                            if (db && partnerData) {
+                                updateDoc(doc(db, 'partners', partnerData.id), {
+                                    currentLocation: new GeoPoint(coords.lat, coords.lon)
+                                });
+                            }
+                        }}
                         driverLocation={driverLocation}
                         isTripInProgress={activeRide?.status === 'in-progress'}
                      />
@@ -530,4 +537,3 @@ export default function DriverDashboardPage() {
     </div>
   );
 }
-

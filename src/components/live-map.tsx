@@ -153,33 +153,31 @@ const LiveMap = forwardRef<any, LiveMapProps>((props, ref) => {
         tileLayerRef.current = L.tileLayer(initialUrl, { attribution: initialAttribution }).addTo(map);
 
         L.control.zoom({ position: 'bottomright' }).addTo(map);
-        
-        locateControlRef.current = new (L.Control as any).Locate({
-            position: 'bottomright',
-            strings: { title: "Show my location" },
-            flyTo: true,
-            keepCurrentZoomLevel: false,
-            locateOptions: {
-                maxZoom: 16,
-                watch: true,
-                enableHighAccuracy: true,
-            },
-            drawMarker: true,
-             markerStyle: {
-                color: '#1d4ed8',
-                fillColor: '#60a5fa',
-            },
-            drawCircle: false,
-        }).addTo(map);
 
-        map.on('locationfound', (e: any) => {
-            const { lat, lng } = e.latlng;
-            getAddress(lat, lng).then(address => {
-                if (address && props.onLocationFound) {
-                    props.onLocationFound(address, { lat, lon: lng });
-                }
+        if (props.onLocationFound) {
+            locateControlRef.current = new (L.Control as any).Locate({
+                position: 'bottomright',
+                strings: { title: "Show my location" },
+                flyTo: true,
+                keepCurrentZoomLevel: false,
+                locateOptions: {
+                    maxZoom: 16,
+                    watch: true,
+                    enableHighAccuracy: true,
+                },
+            }).addTo(map);
+
+            map.on('locationfound', (e: any) => {
+                const { lat, lng } = e.latlng;
+                getAddress(lat, lng).then(address => {
+                    if (address && props.onLocationFound) {
+                        props.onLocationFound(address, { lat, lon: lng });
+                    }
+                });
             });
-        });
+            
+            locateControlRef.current?.start();
+        }
 
     }, [getAddress, props, resolvedTheme, props.zoom]);
 
@@ -231,7 +229,7 @@ const LiveMap = forwardRef<any, LiveMapProps>((props, ref) => {
             if (!currentPos.equals(latLng)) {
                 markerAnimationRef.current.set(id, { startPos: currentPos, targetPos: latLng, startTime: performance.now() });
             }
-            marker.setIcon(icon); // Update icon in case it changed (e.g. status)
+            marker.setIcon(icon);
         } else {
             marker = L.marker(latLng, { icon }).addTo(map);
             markersRef.current.set(id, marker);
@@ -296,7 +294,7 @@ const LiveMap = forwardRef<any, LiveMapProps>((props, ref) => {
         if (markerAnimationRef.current.size > 0 && !animationFrameRef.current) {
             startAnimationLoop();
         }
-    }, [props]);
+    }, [props.driverLocation, props.riderLocation, props.destinationLocation, props.activePartners, props.activeRiders]);
 
 
     const startAnimationLoop = useCallback(() => {
@@ -345,3 +343,4 @@ const LiveMap = forwardRef<any, LiveMapProps>((props, ref) => {
 
 LiveMap.displayName = 'LiveMap';
 export default LiveMap;
+
