@@ -3,7 +3,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Car, Wrench, Ambulance, Calendar, FlaskConical } from 'lucide-react';
+import { Car, Wrench, Ambulance, Calendar, FlaskConical, Search, MapPin, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
 import { AnimatePresence } from 'framer-motion';
@@ -14,6 +14,8 @@ import type { RideData, AmbulanceCase, GarageRequest, ClientSession } from '@/li
 import RideStatus from '@/components/ride-status';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 
 const LiveMap = dynamic(() => import('@/components/live-map'), {
     ssr: false,
@@ -68,6 +70,7 @@ export default function UserDashboard() {
     const { toast } = useToast();
     const router = useRouter();
     const { user, db } = useFirebase();
+    const [destination, setDestination] = useState('');
 
     const [activeRide, setActiveRide] = useState<RideData | null>(null);
     const [activeAmbulanceCase, setActiveAmbulanceCase] = useState<AmbulanceCase | null>(null);
@@ -89,11 +92,11 @@ export default function UserDashboard() {
                         gender: userData.gender
                     });
                 }
-                 setIsLoading(false); // Set loading to false after session is fetched or fails
-            }, () => setIsLoading(false)); // Also set loading to false on error
+                 setIsLoading(false); 
+            }, () => setIsLoading(false));
             return () => unsub();
         } else if (!user) {
-            setIsLoading(false); // If there's no user, we're not loading
+            setIsLoading(false);
         }
     }, [user, db]);
 
@@ -105,16 +108,11 @@ export default function UserDashboard() {
         localStorage.removeItem('activeGarageRequestId');
     }, []);
 
-    // Effect to check for any active service on load and listen for updates
     useEffect(() => {
-        if (!db || !session) {
-            return;
-        };
-
+        if (!db || !session) return;
         let unsubscribe: (() => void) | null = null;
         
         const checkAndSubscribe = () => {
-            // Check for active ride
             const rideId = localStorage.getItem('activeRideId');
             if (rideId) {
                 const rideRef = doc(db, 'rides', rideId);
@@ -128,7 +126,6 @@ export default function UserDashboard() {
                 return;
             }
             
-            // Check for active emergency case
             const qCure = query(collection(db, "emergencyCases"), where("riderId", "==", session.userId), where("status", "in", ["pending", "accepted", "onTheWay", "arrived", "inTransit"]));
             unsubscribe = onSnapshot(qCure, (snapshot) => {
                 if (!snapshot.empty) {
@@ -139,7 +136,6 @@ export default function UserDashboard() {
                 }
             });
             
-             // Check for active ResQ request
             const qResq = query(collection(db, "garageRequests"), where("driverId", "==", session.userId), where("status", "not-in", ["completed", "cancelled_by_driver", "cancelled_by_mechanic"]));
              unsubscribe = onSnapshot(qResq, (snapshot) => {
                 if (!snapshot.empty) {
@@ -152,19 +148,17 @@ export default function UserDashboard() {
         }
         
         checkAndSubscribe();
-        return () => {
-            if (unsubscribe) unsubscribe();
-        };
-
+        return () => { if (unsubscribe) unsubscribe(); };
     }, [db, session, resetFlow, activeAmbulanceCase, activeGarageRequest]);
 
-    const servicesByCat = serviceCards.reduce((acc, service) => {
-        if (!acc[service.category]) {
-            acc[service.category] = [];
+    const handleSearch = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (destination.trim()) {
+            router.push(`/user/book?destination=${encodeURIComponent(destination)}`);
+        } else {
+            router.push('/user/book');
         }
-        acc[service.category].push(service);
-        return acc;
-    }, {} as Record<string, typeof serviceCards>);
+    }
 
     const containerVariants = {
         hidden: { opacity: 0 },
@@ -183,75 +177,79 @@ export default function UserDashboard() {
     const activeService = activeRide || activeAmbulanceCase || activeGarageRequest;
 
     return (
-        <div className="h-full w-full flex flex-col">
-            <div className="flex-1 relative">
-                <div className="absolute inset-0 z-0">
-                    <LiveMap
-                        ref={liveMapRef}
-                        driverLocation={activeRide?.driverDetails?.location as any}
-                        riderLocation={activeRide?.pickup?.location as any}
-                        routeGeometry={activeRide?.routeGeometry}
-                        isTripInProgress={activeRide?.status === 'in-progress'}
-                    />
-                </div>
-            </div>
-            <div className="z-10 p-4">
-                <AnimatePresence mode="wait">
-                    {activeService ? (
-                        <RideStatus 
-                            key="ride-status"
+        <div className="p-4 md:p-6 space-y-8">
+            <AnimatePresence mode="wait">
+                {activeService ? (
+                     <motion.div
+                        key="ride-status"
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.9 }}
+                    >
+                         <RideStatus 
                             ride={activeService} 
                             isGarageRequest={!!activeGarageRequest}
                             onCancel={resetFlow} 
                             onDone={resetFlow}
                         />
-                    ) : (
-                        <MotionDiv 
-                            key="selection"
-                            className="space-y-4"
-                            initial={{y: 200, opacity: 0}}
-                            animate={{y: 0, opacity: 1}}
-                            exit={{y: 200, opacity: 0}}
-                            transition={{type: 'spring', stiffness: 100, damping: 20}}
-                        >
-                            <Card className="shadow-2xl">
-                                <CardHeader className="text-center pb-4">
-                                    <CardTitle>How can we help you today?</CardTitle>
-                                    <CardDescription>Choose a service to get started.</CardDescription>
-                                </CardHeader>
-                                <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    {Object.entries(servicesByCat).map(([category, services]) => (
-                                        <div key={category} className="space-y-3">
-                                            <h3 className="font-semibold text-center text-muted-foreground">{category}</h3>
-                                            <div className="grid grid-cols-2 gap-3">
-                                                {services.map((service, index) => (
-                                                    <Link key={service.title} href={service.href} legacyBehavior>
-                                                        <a onClick={(e) => {
-                                                            if (service.href === '#') {
-                                                                e.preventDefault();
-                                                                toast({ title: 'Coming Soon!', description: 'This feature is under development.' });
-                                                            }
-                                                        }}>
-                                                            <Card className="h-full transition-all text-center bg-background/80 backdrop-blur-sm hover:shadow-md hover:border-primary/30">
-                                                                <CardContent className="p-3 flex flex-col items-center justify-center gap-1">
-                                                                    <div className="p-2 bg-muted rounded-full">
-                                                                        <service.icon className={`w-5 h-5 ${service.color}`} />
-                                                                    </div>
-                                                                    <p className="font-semibold text-xs">{service.title}</p>
-                                                                </CardContent>
-                                                            </Card>
-                                                        </a>
-                                                    </Link>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    ))}
-                                </CardContent>
-                            </Card>
-                        </MotionDiv>
-                    )}
-                </AnimatePresence>
-            </div>
+                    </motion.div>
+                ) : (
+                <MotionDiv 
+                    key="dashboard"
+                    className="space-y-8"
+                    initial="hidden"
+                    animate="visible"
+                    variants={containerVariants}
+                >
+                    <motion.div variants={itemVariants}>
+                        <h1 className="text-3xl font-bold tracking-tight">How can we help you today, {session?.name}?</h1>
+                    </motion.div>
+                    
+                    <motion.div variants={itemVariants}>
+                         <form onSubmit={handleSearch}>
+                            <div className="relative">
+                                <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                                <Input
+                                    id="destination-search"
+                                    placeholder="Enter destination to book a ride..."
+                                    className="pl-12 h-14 text-base rounded-full shadow-lg"
+                                    value={destination}
+                                    onChange={(e) => setDestination(e.target.value)}
+                                />
+                                <Button type="submit" size="icon" className="absolute right-2 top-1/2 -translate-y-1/2 h-10 w-10 rounded-full">
+                                    <ArrowRight className="w-5 h-5"/>
+                                </Button>
+                            </div>
+                        </form>
+                    </motion.div>
+
+                    {Object.entries(serviceCards.reduce((acc, service) => {
+                        if (!acc[service.category]) acc[service.category] = [];
+                        acc[service.category].push(service);
+                        return acc;
+                    }, {} as Record<string, typeof serviceCards>)).map(([category, services]) => (
+                        <motion.div key={category} variants={itemVariants}>
+                            <h3 className="text-lg font-semibold mb-3">{category}</h3>
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                {services.map((service) => (
+                                    <Link key={service.title} href={service.href} passHref>
+                                        <Card className="h-full transition-all hover:shadow-lg hover:-translate-y-1 hover:border-primary/50 text-center cursor-pointer">
+                                            <CardContent className="p-4 flex flex-col items-center justify-center gap-2">
+                                                <div className="p-3 bg-muted rounded-full">
+                                                    <service.icon className={`w-6 h-6 ${service.color}`} />
+                                                </div>
+                                                <p className="font-semibold text-sm">{service.title}</p>
+                                                <p className="text-xs text-muted-foreground">{service.description}</p>
+                                            </CardContent>
+                                        </Card>
+                                    </Link>
+                                ))}
+                            </div>
+                        </motion.div>
+                    ))}
+                </MotionDiv>
+                )}
+            </AnimatePresence>
         </div>
     );
 }
