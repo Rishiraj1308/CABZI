@@ -1,38 +1,32 @@
 
 'use client'
 
-import React, { useState, useEffect, useRef } from 'react'
-import { useRouter } from 'next/navigation'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
-import BrandLogo from '@/components/brand-logo'
+import BrandLogo, { NewLogoIcon } from '@/components/brand-logo'
 import {
-  Car, Wrench, Ambulance, Calendar, FlaskConical, Search, MapPin,
-  History, Menu, User, Sun, Moon, Languages, Mic, X,
-  Clock, ArrowUpRight, AlertTriangle, MessageCircle, Phone, CheckCircle,
-  TestTube, LifeBuoy, Orbit
+  ArrowRight, Car, Wrench, Ambulance, Landmark, CheckCircle, Shield, IndianRupee, Signal, Wifi, Battery, Sun, Moon, Globe, User, LogIn, Star, MapPin, Clock, Bike, Phone, Share2, Siren, Send, ScanLine, NotebookText, Banknote, Sparkles, PiggyBank, HeartHandshake, CircleHelp, Hand, Briefcase, Home, MessageSquare, Calendar, Building, BrainCircuit, AppWindow,
+  History, Menu, Languages, Mic, X, ArrowUpRight, AlertTriangle, MessageCircle, TestTube, LifeBuoy, Orbit, Search
 } from 'lucide-react'
-import { useToast } from '@/hooks/use-toast'
+import { motion, AnimatePresence } from 'framer-motion'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card'
+import { cn } from '@/lib/utils'
 import { useLanguage } from '@/hooks/use-language'
 import { useTheme } from 'next-themes'
-import { cn } from '@/lib/utils'
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet"
-import {
-  AlertDialog,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogFooter,
-  AlertDialogAction,
-  AlertDialogCancel,
-} from "@/components/ui/alert-dialog"
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from '@/components/ui/dropdown-menu'
+import { Carousel, CarouselContent, CarouselItem, type CarouselApi } from '@/components/ui/carousel'
+import Autoplay from "embla-carousel-autoplay"
+import { BikeIcon, AutoIcon, CabIcon } from '@/components/icons'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import dynamic from 'next/dynamic'
+import { Progress } from '@/components/ui/progress'
+import { useRouter } from 'next/navigation'
+import { useToast } from '@/hooks/use-toast'
+import { Input } from '@/components/ui/input'
+import { AlertDialog, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog'
+import { buttonVariants } from '@/components/ui/button';
+import { AlertDialogCancel, AlertDialogAction } from '@/components/ui/alert-dialog';
 
 const ServiceCard = ({
   service,
