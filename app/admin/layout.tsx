@@ -109,7 +109,7 @@ export default function AdminLayout({
        <div className="flex items-center gap-2">
          <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
              <SheetTrigger asChild>
-                 <Button variant="outline" size="icon" className="shrink-0 md:hidden">
+                 <Button variant="outline" size="icon" className="shrink-0">
                      <PanelLeft className="h-5 w-5" />
                      <span className="sr-only">Toggle navigation menu</span>
                  </Button>
