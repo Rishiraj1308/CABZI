@@ -5,7 +5,7 @@ import React, { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button, buttonVariants } from '@/components/ui/button'
 import {
-  Car, Wrench, Ambulance, Calendar, TestTube, Search, X, Mic, AlertTriangle, Phone, History, MapPin, ArrowUpRight, Clock, MessageCircle, Shield
+  Car, Wrench, Ambulance, Calendar, TestTube, Search, X, Mic, AlertTriangle, Phone, History, MapPin, ArrowUpRight, Clock, MessageCircle, Shield, Home
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { cn } from '@/lib/utils'
@@ -98,25 +98,25 @@ export default function ServicePortalPage() {
     <>
       <main id="main" className="relative z-10 p-4">
         <section className="mx-auto max-w-7xl">
-          <div className="rounded-3xl border border-border bg-card/80 p-5 sm:p-8 md:p-10 shadow-[0_0_0_1px_rgba(255,255,255,0.06)_inset] backdrop-blur-sm">
+          <div className="rounded-3xl border border-white/10 bg-white/5 p-5 sm:p-8 md:p-10 shadow-[0_0_0_1px_rgba(255,255,255,0.06)_inset] backdrop-blur-sm">
             <div className="text-center">
               <h1 className="text-3xl sm:text-4xl md:text-5xl tracking-tight font-semibold">
                 How can we help you today?
               </h1>
-              <p className="mt-2 text-base sm:text-lg text-muted-foreground font-normal">
+              <p className="mt-2 text-base sm:text-lg text-white/70 font-normal">
                 Choose a service to get started.
               </p>
 
               <div className="mt-6 relative max-w-xl mx-auto">
                 <label htmlFor="serviceSearch" className="sr-only">Search services</label>
                 <div className="pointer-events-none absolute inset-y-0 left-0 pl-3 flex items-center">
-                  <Search className="h-4 w-4 text-muted-foreground" />
+                  <Search className="h-4 w-4 text-white/40" />
                 </div>
                 <Input
                   id="serviceSearch"
                   type="text"
                   autoComplete="off"
-                  className="w-full rounded-xl border-input bg-background/50 pl-9 pr-24 py-2.5 text-sm outline-none focus:ring-2 focus:ring-ring"
+                  className="w-full rounded-xl border border-white/10 bg-white/5 pl-9 pr-24 py-2.5 text-sm outline-none focus:ring-2 focus:ring-white/15"
                   placeholder="Search services (e.g., ride, lab, appointment)"
                   value={searchQuery}
                   onChange={handleSearch}
@@ -150,11 +150,11 @@ export default function ServicePortalPage() {
             </div>
 
             {services.length === 0 && searchQuery && (
-                 <div className="mt-4 rounded-xl border p-5 text-center">
-                    <div className="mx-auto inline-flex h-10 w-10 items-center justify-center rounded-full bg-muted">
-                        <Search className="h-4 w-4 text-muted-foreground"/>
+                 <div className="mt-4 rounded-xl border border-white/10 bg-white/5 p-5 text-center">
+                    <div className="mx-auto inline-flex h-10 w-10 items-center justify-center rounded-full bg-white/5 border border-white/10">
+                        <Search className="h-4 w-4 text-white/60"/>
                     </div>
-                    <p className="mt-2 text-sm text-muted-foreground">No services match your search.</p>
+                    <p className="mt-2 text-sm text-white/70">No services match your search.</p>
                 </div>
             )}
 
@@ -173,7 +173,7 @@ export default function ServicePortalPage() {
             <AlertDialogContent>
                 <AlertDialogHeader>
                     <div className="flex items-start gap-3">
-                        <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-red-100 dark:bg-red-500/20 ring-1 ring-red-500/50 text-red-600 dark:text-red-200">
+                        <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-red-500/20 ring-1 ring-red-500/50 text-red-200">
                             <AlertTriangle className="h-5 w-5" />
                         </span>
                         <div>
@@ -187,7 +187,7 @@ export default function ServicePortalPage() {
                 <AlertDialogFooter className="mt-5 grid grid-cols-2 gap-3">
                     <AlertDialogCancel>Cancel</AlertDialogCancel>
                     <AlertDialogAction asChild>
-                        <a href="tel:112" className={cn(buttonVariants({variant: "destructive"}), "bg-red-600 hover:bg-red-700")}>
+                        <a href="tel:112" className={cn(buttonVariants({variant: "destructive"}), "bg-red-500 hover:bg-red-400 text-black")}>
                            <Phone className="h-4 w-4 mr-2" /> Call now
                         </a>
                     </AlertDialogAction>
