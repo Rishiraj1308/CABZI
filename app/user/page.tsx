@@ -98,7 +98,7 @@ export default function ServicePortalPage() {
     <>
       <main id="main" className="relative z-10 p-4">
         <section className="mx-auto max-w-7xl">
-          <div className="rounded-3xl border border-border bg-card/50 p-5 sm:p-8 md:p-10 shadow-xl backdrop-blur-sm">
+          <div className="rounded-3xl border border-border bg-gray-500/10 p-5 sm:p-8 md:p-10 shadow-xl backdrop-blur-sm">
             <div className="text-center">
               <h1 className="text-3xl sm:text-4xl md:text-5xl tracking-tight font-semibold">
                 How can we help you today?
@@ -116,7 +116,7 @@ export default function ServicePortalPage() {
                   id="serviceSearch"
                   type="text"
                   autoComplete="off"
-                  className="w-full rounded-xl border-border bg-background pl-9 pr-24 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary"
+                  className="w-full rounded-xl border border-border bg-background pl-9 pr-24 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary"
                   placeholder="Search services (e.g., ride, lab, appointment)"
                   value={searchQuery}
                   onChange={handleSearch}
