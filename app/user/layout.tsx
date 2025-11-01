@@ -123,14 +123,14 @@ export default function UserLayout({
 
   if (!isMounted || isUserLoading) {
     return (
-        <div className="flex h-screen w-full flex-col bg-black">
-             <div className="absolute inset-0 -z-10 h-full w-full bg-white bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-size-[14px_24px]"><div className="absolute left-0 right-0 top-0 -z-10 m-auto h-[310px] w-[310px] rounded-full bg-fuchsia-400 opacity-20 blur-[100px]"></div></div>
+        <div className="flex h-screen w-full flex-col aurora-background">
+             {/* This is a simplified version of the final background, but it's better than black */}
         </div>
     );
   }
   
   return (
-    <div className="h-full antialiased bg-black text-white" style={{fontFamily: "Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, 'Helvetica Neue', 'Noto Sans', 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'sans-serif'"}}>
+    <div className="h-full antialiased bg-background text-foreground aurora-background" style={{fontFamily: "Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, 'Helvetica Neue', 'Noto Sans', 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'sans-serif'"}}>
       <header className="relative z-10">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <nav className="flex items-center justify-between py-4">
