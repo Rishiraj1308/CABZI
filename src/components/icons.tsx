@@ -17,9 +17,12 @@ export function AutoIcon(props: SVGProps<SVGSVGElement>) {
 
 export function CabIcon(props: SVGProps<SVGSVGElement>) {
     return (
-        <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" {...props}><path fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 17a2 2 0 1 0 4 0a2 2 0 1 0-4 0m14 0a2 2 0 1 0 4 0a2 2 0 1 0-4 0m-2-5h2.5c.8 0 1.5-.7 1.5-1.5S20.8 9 20 9H4.2c-.6 0-1.2.4-1.2 1s.6 1.8 1.2 1.8H15m-7-5l1.5-4.5h4L15 7H8Z" /></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" {...props}>
+            <path fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 17H9V6l2-3h2l2 3v11M5 17a2 2 0 1 0 4 0a2 2 0 1 0-4 0m10 0a2 2 0 1 0 4 0a2 2 0 1 0-4 0M3 11h18"/>
+        </svg>
     )
 }
+
 export function TotoIcon(props: SVGProps<SVGSVGElement>) { // Using a truck icon for "Toto"
     return (
         <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" {...props}><g fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"><path d="M5 17a2 2 0 1 0 4 0a2 2 0 1 0-4 0m10 0a2 2 0 1 0 4 0a2 2 0 1 0-4 0M5 17H3V6a1 1 0 0 1 1-1h9v12H9" /><path d="M14 17h1a1 1 0 0 0 1-1v-1m-1-8h4l3 4v4m-8-4v-4m0 4h-3" /></g></svg>
