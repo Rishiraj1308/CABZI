@@ -1,7 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  reactStrictMode: true, // optional, but recommended
-  swcMinify: true,       // recommended
+  reactStrictMode: true,
+  swcMinify: true,
   images: {
     remotePatterns: [
       {
@@ -19,12 +19,10 @@ const nextConfig = {
     ],
   },
   typescript: {
-    // Optional: Ignore TS errors in production builds
-    ignoreBuildErrors: true,
+    ignoreBuildErrors: true, // optional
   },
   eslint: {
-    // Optional: Ignore ESLint errors in production builds
-    ignoreDuringBuilds: true,
+    ignoreDuringBuilds: true, // optional
   },
 };
 
