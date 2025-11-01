@@ -1,11 +1,11 @@
 
 'use client'
 
-import React, { useState, useEffect, useRef, useCallback } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button, buttonVariants } from '@/components/ui/button'
 import {
-  Car, Wrench, Ambulance, Calendar, TestTube, Search, X, Mic, AlertTriangle, Phone, History, MapPin, ArrowUpRight, Clock, MessageCircle, Shield, Home
+  Car, Wrench, Ambulance, Calendar, TestTube, Search, X, Mic, AlertTriangle, Phone, History, MapPin, ArrowUpRight, Clock, MessageCircle, Shield
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { cn } from '@/lib/utils'
@@ -40,7 +40,7 @@ const ServiceCard = ({
     </div>
     <div className="flex items-center gap-2">
       {service.tag && (
-        <span className={cn("inline-flex items-center gap-1 rounded-full border px-2 py-1 text-[11px]", service.tagBg, service.tagBorder, service.tagColor)}>
+        <span className={cn("inline-flex items-center justify-center gap-1 rounded-full border px-2 py-1 text-[11px] w-20", service.tagBg, service.tagBorder, service.tagColor)}>
           <service.tagIcon className="h-3 w-3" />
           {service.tag}
         </span>
@@ -56,7 +56,6 @@ export default function ServicePortalPage() {
   const { toast } = useToast()
   
   const [searchQuery, setSearchQuery] = useState('');
-  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isSosModalOpen, setIsSosModalOpen] = useState(false);
   const [services, setServices] = useState<any[]>([]);
 
@@ -65,8 +64,8 @@ export default function ServicePortalPage() {
   const serviceData = [
     { id: 'ride', href: '/user/book', icon: Car, title: 'Ride', description: 'On-demand transport to clinics', tag: '5–10m', tagIcon: Clock, iconBg: 'bg-emerald-400/15', iconRing: 'ring-emerald-400/30', iconColor: 'text-emerald-500', tagBg: 'bg-emerald-100 dark:bg-emerald-900/30', tagBorder: 'border-emerald-400/30', tagColor: 'text-emerald-600 dark:text-emerald-200', label: 'ride transport car taxi clinic mobility hospital cab' },
     { id: 'resq', href: '/user/resq', icon: Wrench, title: 'ResQ', description: 'On-site assistance for minor issues', tag: 'On-Demand', tagIcon: Wrench, iconBg: 'bg-amber-400/15', iconRing: 'ring-amber-400/30', iconColor: 'text-amber-500', tagBg: 'bg-amber-100 dark:bg-amber-900/30', tagBorder: 'border-amber-400/30', tagColor: 'text-amber-600 dark:text-amber-200', label: 'resq on-site assistance home help nurse minor issues support' },
-    { id: 'sos', onClick: () => setIsSosModalOpen(true), icon: Ambulance, title: 'Emergency SOS', description: 'Connect to 24/7 emergency line', tag: '24/7', tagIcon: AlertTriangle, iconBg: 'bg-red-500/20', iconRing: 'ring-red-500/40', iconColor: 'text-red-500', tagBg: 'bg-red-400/10', tagBorder: 'border-red-400/40', tagColor: 'text-red-200', label: 'sos emergency ambulance urgent help police fire medical' },
-    { id: 'appointment', href: '/user/appointments', icon: Calendar, title: 'Book Appointment', description: 'Clinics, specialists, telehealth', tag: 'Next: 1–2d', tagIcon: Clock, iconBg: 'bg-sky-400/15', iconRing: 'ring-sky-400/30', iconColor: 'text-sky-300', tagBg: 'bg-sky-100 dark:bg-sky-900/30', tagBorder: 'border-sky-400/30', tagColor: 'text-sky-600 dark:text-sky-200', label: 'book appointment doctor specialist telehealth clinic schedule calendar' },
+    { id: 'sos', onClick: () => setIsSosModalOpen(true), icon: Ambulance, title: 'Emergency SOS', description: 'Connect to 24/7 emergency line', tag: '24/7', tagIcon: AlertTriangle, iconBg: 'bg-red-500/20', iconRing: 'ring-red-500/40', iconColor: 'text-red-500', tagBg: 'bg-red-400/10', tagBorder: 'border-red-400/40', tagColor: 'text-red-600', label: 'sos emergency ambulance urgent help police fire medical' },
+    { id: 'appointment', href: '/user/appointments', icon: Calendar, title: 'Book Appointment', description: 'Clinics, specialists, telehealth', tag: 'Next: 1–2d', tagIcon: Clock, iconBg: 'bg-sky-400/15', iconRing: 'ring-sky-400/30', iconColor: 'text-sky-500', tagBg: 'bg-sky-100 dark:bg-sky-900/30', tagBorder: 'border-sky-400/30', tagColor: 'text-sky-600 dark:text-sky-200', label: 'book appointment doctor specialist telehealth clinic schedule calendar' },
     { id: 'lab_tests', href: '/user/lab-tests', icon: TestTube, title: 'Lab Tests', description: 'Home sample pickup available', tag: 'Home pickup', tagIcon: Home, iconBg: 'bg-fuchsia-400/15', iconRing: 'ring-fuchsia-400/30', iconColor: 'text-fuchsia-500', tagBg: 'bg-fuchsia-100 dark:bg-fuchsia-900/30', tagBorder: 'border-fuchsia-400/30', tagColor: 'text-fuchsia-600 dark:text-fuchsia-200', label: 'lab tests diagnostics blood test home pickup reports' }
   ];
   
@@ -100,7 +99,7 @@ export default function ServicePortalPage() {
     <>
       <main id="main" className="relative z-10 p-4">
         <section className="mx-auto max-w-7xl">
-          <div className="rounded-3xl border border-border bg-gray-500/10 p-5 sm:p-8 md:p-10 shadow-xl backdrop-blur-sm">
+          <div className="rounded-3xl border border-border bg-gray-500/5 p-5 sm:p-8 md:p-10 shadow-xl backdrop-blur-sm">
             <div className="text-center">
               <h1 className="text-3xl sm:text-4xl md:text-5xl tracking-tight font-semibold">
                 {headingText.map((el, i) => (
@@ -151,7 +150,7 @@ export default function ServicePortalPage() {
                 <Button variant="ghost" className="rounded-full px-3 py-1.5 text-xs font-medium">
                   <MapPin className="h-3.5 w-3.5 mr-1.5" /> Nearest clinic
                 </Button>
-                <Button variant="ghost" className="rounded-full px-3 py-1.5 text-xs font-medium">
+                <Button variant="ghost" className="rounded-full px-3 py-1.5 text-xs font-medium" onClick={() => router.push('/user/activity')}>
                   <History className="h-3.5 w-3.5 mr-1.5" /> Recent Activity
                 </Button>
               </div>
