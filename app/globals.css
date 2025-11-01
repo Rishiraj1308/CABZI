@@ -16,10 +16,7 @@
     --popover: 180 50% 98%;
     --popover-foreground: 180 25% 20%;
  
-    --primary-h: 180deg;
-    --primary-s: 35%;
-    --primary-l: 25%;
-    --primary: var(--primary-h), var(--primary-s), var(--primary-l);
+    --primary: 180 35% 25%;
     --primary-foreground: 180 50% 98%;
  
     --secondary: 180 20% 94%;
@@ -28,10 +25,7 @@
     --muted: 180 20% 94%;
     --muted-foreground: 180 15% 45%;
  
-    --accent-h: 45deg;
-    --accent-s: 100%;
-    --accent-l: 50%;
-    --accent: var(--accent-h), var(--accent-s), var(--accent-l);
+    --accent: 45 100% 50%;
     --accent-foreground: 45 60% 10%;
  
     --destructive: 0 84.2% 60.2%;
@@ -54,10 +48,7 @@
     --popover: 180 35% 8%;
     --popover-foreground: 180 50% 98%;
  
-    --primary-h: 180deg;
-    --primary-s: 35%;
-    --primary-l: 30%;
-    --primary: var(--primary-h), var(--primary-s), var(--primary-l);
+    --primary: 180 35% 30%;
     --primary-foreground: 180 50% 98%;
  
     --secondary: 180 25% 15%;
@@ -66,10 +57,7 @@
     --muted: 180 25% 15%;
     --muted-foreground: 180 15% 65%;
  
-    --accent-h: 45deg;
-    --accent-s: 100%;
-    --accent-l: 50%;
-    --accent: var(--accent-h), var(--accent-s), var(--accent-l);
+    --accent: 45 100% 50%;
     --accent-foreground: 45 60% 10%;
  
     --destructive: 0 62.8% 30.6%;

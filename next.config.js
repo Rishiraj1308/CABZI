@@ -4,25 +4,16 @@ const nextConfig = {
   swcMinify: true,
   images: {
     remotePatterns: [
-      {
-        protocol: 'https',
-        hostname: 'placehold.co',
-      },
-      {
-        protocol: 'https',
-        hostname: 'picsum.photos',
-      },
-      {
-        protocol: 'https',
-        hostname: 'i.pravatar.cc',
-      },
+      { protocol: 'https', hostname: 'placehold.co' },
+      { protocol: 'https', hostname: 'picsum.photos' },
+      { protocol: 'https', hostname: 'i.pravatar.cc' },
     ],
   },
   typescript: {
-    ignoreBuildErrors: true, // optional
+    ignoreBuildErrors: true,
   },
   eslint: {
-    ignoreDuringBuilds: true, // optional
+    ignoreDuringBuilds: true,
   },
 };
 
