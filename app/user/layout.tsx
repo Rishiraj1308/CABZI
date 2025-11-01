@@ -121,7 +121,7 @@ export default function UserLayout({
   };
 
   const OuterContainer = ({ children }: { children: React.ReactNode }) => (
-     <div className={cn("h-full min-h-screen antialiased text-foreground aurora-background", "dark:bg-black dark:text-white")} style={{fontFamily: "Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, 'Helvetica Neue', 'Noto Sans', 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'sans-serif'"}}>
+     <div className={cn("h-full min-h-screen antialiased text-foreground aurora-background")} style={{fontFamily: "Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, 'Helvetica Neue', 'Noto Sans', 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'sans-serif'"}}>
       {children}
     </div>
   )
