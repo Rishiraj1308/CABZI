@@ -120,16 +120,23 @@ export default function UserLayout({
     duration: 0.5,
   };
 
+  const OuterContainer = ({ children }: { children: React.ReactNode }) => (
+     <div className={cn("h-full min-h-screen antialiased text-foreground aurora-background", "dark:bg-black dark:text-white")} style={{fontFamily: "Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, 'Helvetica Neue', 'Noto Sans', 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'sans-serif'"}}>
+      {children}
+    </div>
+  )
+
 
   if (!isMounted || isUserLoading) {
     return (
-        <div className="flex h-screen w-full flex-col aurora-background">
-        </div>
+        <OuterContainer>
+             <div className="flex h-screen w-full flex-col"></div>
+        </OuterContainer>
     );
   }
   
   return (
-    <div className={cn("h-full antialiased text-foreground aurora-background")} style={{fontFamily: "Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, 'Helvetica Neue', 'Noto Sans', 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'sans-serif'"}}>
+    <OuterContainer>
       <header className="relative z-10">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <nav className="flex items-center justify-between py-4">
@@ -153,7 +160,7 @@ export default function UserLayout({
         </div>
       </header>
         <AnimatePresence mode="wait">
-            <motion.div 
+            <motion.main 
                 key={pathname}
                 initial="initial"
                 animate="in"
@@ -162,7 +169,7 @@ export default function UserLayout({
                 transition={pageTransition}
             >
             {children}
-            </motion.div>
+            </motion.main>
         </AnimatePresence>
         <div className="fixed bottom-5 right-5 z-30 flex flex-col items-center gap-3">
             <Button className="h-12 w-12 rounded-full border border-border bg-card/50 backdrop-blur shadow-xl hover:bg-accent/80 inline-flex items-center justify-center focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-white/30" title="Open chat">
@@ -174,16 +181,16 @@ export default function UserLayout({
               <span className="sr-only">Safety</span>
             </Button>
         </div>
-        <footer className="mt-10 border-t border-border">
+        <footer className="mt-10 border-t border-border/30">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6 flex items-center justify-between">
             <p className="text-sm text-muted-foreground">© {new Date().getFullYear()} Curocity. All rights reserved.</p>
-            <div className="flex items-center gap-4 text-muted-foreground">
+            <div className="flex items-center gap-4 text-sm text-muted-foreground">
               <Link href="/terms" className="hover:text-primary focus:outline-none focus-visible:underline">Terms</Link>
               <Link href="/privacy" className="hover:text-primary focus:outline-none focus-visible:underline">Privacy</Link>
             </div>
           </div>
         </footer>
       <Toaster />
-    </div>
+    </OuterContainer>
   );
 }

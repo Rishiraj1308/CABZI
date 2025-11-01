@@ -8,8 +8,8 @@
 @layer base {
   :root {
     /* Polished Light Theme */
-    --background: 210 20% 98%; 
-    --foreground: 210 10% 23%;
+    --background: 210 40% 98%;
+    --foreground: 220 20% 10%;
 
     --card: 210 20% 98%;
     --card-foreground: 210 10% 23%;
@@ -17,7 +17,7 @@
     --popover: 210 20% 98%;
     --popover-foreground: 210 10% 23%;
  
-    --primary: 195 35% 35%; /* Slightly deeper teal */
+    --primary: 195 35% 35%;
     --primary-foreground: 210 20% 98%;
  
     --secondary: 210 20% 94%;
@@ -26,7 +26,7 @@
     --muted: 210 20% 94%;
     --muted-foreground: 210 10% 45%;
  
-    --accent: 45 95% 55%; /* Keep accent vibrant */
+    --accent: 45 95% 55%;
     --accent-foreground: 45 80% 5%;
  
     --destructive: 0 84.2% 60.2%;
@@ -116,34 +116,28 @@
       background-color: hsl(var(--background)); /* Base color */
     }
 
-    .dark .aurora-background::before {
+    .dark .aurora-background::before, .light .aurora-background::before {
       content: "";
       position: absolute;
       top: 0;
       left: 0;
       right: 0;
       bottom: 0;
-      z-index: -1; /* Ensure it's behind content */
-      background-image: 
-        radial-gradient(ellipse at 50% 0%, hsl(var(--primary) / 0.15), transparent 70%),
-        radial-gradient(ellipse at 80% 100%, hsl(190 80% 50% / 0.1), transparent 70%);
+      z-index: 0;
       background-size: 150% 150%;
       animation: aurora-glow 15s linear infinite alternate;
     }
 
+    .dark .aurora-background::before {
+        background-image: 
+        radial-gradient(ellipse at 50% 0%, hsl(var(--primary) / 0.15), transparent 70%),
+        radial-gradient(ellipse at 80% 100%, hsl(190 80% 50% / 0.1), transparent 70%);
+    }
+
     .light .aurora-background::before {
-      content: "";
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      z-index: -1; /* Ensure it's behind content */
-      background-image: 
+        background-image: 
         radial-gradient(ellipse at 50% 0%, hsl(var(--primary) / 0.08), transparent 80%),
         radial-gradient(ellipse at 100% 100%, hsl(200 80% 50% / 0.05), transparent 80%);
-      background-size: 150% 150%;
-      animation: aurora-glow 25s linear infinite alternate;
     }
     
     @keyframes aurora-glow {
