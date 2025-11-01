@@ -105,11 +105,11 @@ export default function AdminLayout({
 
   return (
     <div className="flex min-h-screen w-full flex-col bg-muted/40">
-      <header className="sticky top-0 z-40 flex h-16 items-center gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6">
+      <header className="sticky top-0 z-40 flex h-16 items-center gap-4 border-b bg-background px-4 sm:px-6">
        <div className="flex items-center gap-2">
          <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
              <SheetTrigger asChild>
-                 <Button variant="outline" size="icon" className="shrink-0 md:hidden">
+                 <Button variant="outline" size="icon" className="shrink-0">
                      <PanelLeft className="h-5 w-5" />
                      <span className="sr-only">Toggle navigation menu</span>
                  </Button>
@@ -128,7 +128,7 @@ export default function AdminLayout({
              </SheetContent>
          </Sheet>
          <div className="hidden md:block">
-            <AdminNav />
+            <h1 className="text-xl font-semibold">Admin Dashboard</h1>
          </div>
        </div>
 
