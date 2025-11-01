@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import { doc, getDoc, DocumentData, collection, query, orderBy, getDocs } from 'firebase/firestore';
-import { useFirestore } from '@/firebase/client-provider';
+import { useDb } from '@/firebase/client-provider';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -28,7 +28,7 @@ export default function PartnerDetails({ partnerId, initialPartnerType, hospital
     const [partner, setPartner] = useState<DocumentData | null>(null);
     const [transactions, setTransactions] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-    const db = useFirestore();
+    const db = useDb();
 
     useEffect(() => {
         const fetchPartnerData = async () => {

@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Suspense } from 'react';
@@ -6,7 +7,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
-import PartnerDetails from '@/app/admin/partner-details'; // Corrected import
+import PartnerDetails from '@/app/admin/partner-details';
 
 function PartnerDetailsPageContent() {
   const params = useParams();
