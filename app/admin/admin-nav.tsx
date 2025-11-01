@@ -227,7 +227,7 @@ export default function AdminNav() {
                <NavigationMenuItem>
                   <NavigationMenuTrigger>Management</NavigationMenuTrigger>
                   <NavigationMenuContent>
-                       <ul className="grid w-[400px] gap-3 p-4 md:w-[500px] md:grid-cols-2 lg:w-[600px] ">
+                       <ul className="grid w-[400px] gap-3 p-4 md:w-[600px] md:grid-cols-2 lg:w-[700px] ">
                           {navItems.management.map((item) => (
                              <ListItem key={item.title} title={item.title} href={item.href} icon={item.icon}>
                                {item.description}
@@ -240,7 +240,7 @@ export default function AdminNav() {
               <NavigationMenuItem>
                   <NavigationMenuTrigger>Financial</NavigationMenuTrigger>
                   <NavigationMenuContent>
-                       <ul className="grid w-[400px] gap-3 p-4 md:w-[500px] md:grid-cols-2 lg:w-[600px] ">
+                       <ul className="grid w-[400px] gap-3 p-4 md:w-[600px] md:grid-cols-2 lg:w-[700px] ">
                           {navItems.financial.map((item) => (
                              <ListItem key={item.title} title={item.title} href={item.href} icon={item.icon}>
                                {item.description}
@@ -253,7 +253,7 @@ export default function AdminNav() {
               <NavigationMenuItem>
                   <NavigationMenuTrigger>Growth &amp; Settings</NavigationMenuTrigger>
                   <NavigationMenuContent>
-                       <ul className="grid w-[400px] gap-3 p-4 md:w-[500px] md:grid-cols-2 lg:w-[600px] ">
+                       <ul className="grid w-[400px] gap-3 p-4 md:w-[600px] md:grid-cols-2 lg:w-[700px] ">
                           {navItems.growth.map((item) => (
                              <ListItem key={item.title} title={item.title} href={item.href} icon={item.icon}>
                                {item.description}
