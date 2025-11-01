@@ -140,18 +140,18 @@ export default function UserLayout({
       <header className="relative z-10">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <nav className="flex items-center justify-between py-4">
-                <Button id="openDrawer" onClick={() => setOpen(true)} className="inline-flex md:hidden items-center justify-center h-10 w-10 rounded-full border border-border bg-card/50 backdrop-blur hover:bg-accent/80 focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-white/30" aria-label="Open menu" aria-controls="drawer" aria-expanded="false" title="Open menu">
+                <Button id="openDrawer" onClick={() => setOpen(true)} className="inline-flex md:hidden items-center justify-center h-10 w-10 rounded-full border border-white/10 bg-white/5 backdrop-blur hover:bg-white/10 focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-white/30" aria-label="Open menu" aria-controls="drawer" aria-expanded="false" title="Open menu">
                     <Menu className="h-5 w-5"></Menu>
                 </Button>
 
-                 <Link href="/user" className="hidden md:inline-flex items-center gap-2 rounded-full border border-border bg-card/50 px-3 py-2 backdrop-blur hover:bg-accent/80 focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-white/30" aria-label="Home">
+                 <Link href="/user" className="hidden md:inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-2 backdrop-blur hover:bg-white/10 focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-white/30" aria-label="Home">
                     <BrandLogo iconClassName='w-8 h-8' />
                 </Link>
 
                 <div className="ml-auto flex items-center gap-2">
                     <ThemeToggle />
                     <LanguageToggle />
-                    <Button className="hidden sm:inline-flex items-center gap-2 rounded-full border border-border bg-card/50 px-3 py-2 text-sm font-medium backdrop-blur hover:bg-accent/80 focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-white/30" title="Manage account">
+                    <Button className="hidden sm:inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-2 text-sm font-medium backdrop-blur hover:bg-white/10 focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-white/30" title="Manage account">
                       <User className="h-4 w-4" />
                       <span className="tracking-tight">Account</span>
                     </Button>
@@ -172,21 +172,21 @@ export default function UserLayout({
             </motion.main>
         </AnimatePresence>
         <div className="fixed bottom-5 right-5 z-30 flex flex-col items-center gap-3">
-            <Button className="h-12 w-12 rounded-full border border-border bg-card/50 backdrop-blur shadow-xl hover:bg-accent/80 inline-flex items-center justify-center focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-white/30" title="Open chat">
+            <Button className="h-12 w-12 rounded-full border border-white/10 bg-white/5 backdrop-blur shadow-xl hover:bg-white/10 inline-flex items-center justify-center focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-white/30" title="Open chat">
               <MessageSquare className="h-5 w-5" />
               <span className="sr-only">Open chat</span>
             </Button>
-            <Button className="h-12 w-12 rounded-full border border-border bg-card/50 backdrop-blur shadow-xl hover:bg-accent/80 inline-flex items-center justify-center focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-white/30" title="Safety">
+            <Button className="h-12 w-12 rounded-full border border-white/10 bg-white/5 backdrop-blur shadow-xl hover:bg-white/10 inline-flex items-center justify-center focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-white/30" title="Safety">
               <Shield className="h-5 w-5" />
               <span className="sr-only">Safety</span>
             </Button>
         </div>
-        <footer className="mt-10 border-t border-border/30">
+        <footer className="mt-10 border-t border-white/10">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6 flex items-center justify-between">
-            <p className="text-sm text-muted-foreground">© {new Date().getFullYear()} Curocity. All rights reserved.</p>
-            <div className="flex items-center gap-4 text-sm text-muted-foreground">
-              <Link href="/terms" className="hover:text-primary focus:outline-none focus-visible:underline">Terms</Link>
-              <Link href="/privacy" className="hover:text-primary focus:outline-none focus-visible:underline">Privacy</Link>
+            <p className="text-sm text-white/60">© {new Date().getFullYear()} Curocity. All rights reserved.</p>
+            <div className="flex items-center gap-4 text-white/60">
+              <Link href="/terms" className="hover:text-white focus:outline-none focus-visible:underline">Terms</Link>
+              <Link href="/privacy" className="hover:text-white focus:outline-none focus-visible:underline">Privacy</Link>
             </div>
           </div>
         </footer>
@@ -194,4 +194,3 @@ export default function UserLayout({
     </OuterContainer>
   );
 }
-

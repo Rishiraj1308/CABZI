@@ -40,7 +40,7 @@
   }
  
   .dark {
-    /* Exact dark teal theme from the user's design */
+    /* Deep Dark Teal Theme - As per user's image */
     --background: 180 15% 5%;
     --foreground: 180 10% 95%;
  
@@ -191,4 +191,3 @@
   stroke-dasharray: 10 10;
   animation: electric-flow 1s linear infinite;
 }
-
