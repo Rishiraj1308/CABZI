@@ -1,9 +1,10 @@
+
 'use client'
 
 import { useState, useEffect, useMemo } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { useFirestore } from '@/firebase/client-provider'
+import { useDb } from '@/firebase/client-provider'
 import { collection, query, where, getDocs, Timestamp, orderBy } from 'firebase/firestore'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useToast } from '@/hooks/use-toast'
@@ -24,7 +25,7 @@ export default function AdminCustomersPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('')
   const { toast } = useToast();
-  const db = useFirestore();
+  const db = useDb();
 
   useEffect(() => {
     const fetchCustomers = async () => {

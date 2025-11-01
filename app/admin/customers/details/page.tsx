@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useMemo, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { useFirestore } from '@/firebase/client-provider';
+import { useDb } from '@/firebase/client-provider';
 import { doc, getDoc, collection, query, where, getDocs, Timestamp, orderBy } from 'firebase/firestore';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -33,7 +33,7 @@ interface Ride {
 function CustomerDetailsContent() {
     const searchParams = useSearchParams();
     const customerId = searchParams.get('id');
-    const db = useFirestore();
+    const db = useDb();
 
     const [customer, setCustomer] = useState<Customer | null>(null);
     const [rides, setRides] = useState<Ride[]>([]);

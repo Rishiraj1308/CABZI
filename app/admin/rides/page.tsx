@@ -1,10 +1,11 @@
+
 'use client'
 
 import { useState, useEffect, useMemo } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
-import { useFirestore } from '@/firebase/client-provider'
+import { useDb } from '@/firebase/client-provider'
 import { collection, query, getDocs, orderBy, Timestamp } from 'firebase/firestore'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useToast } from '@/hooks/use-toast'
@@ -27,7 +28,7 @@ export default function AdminRidesPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const { toast } = useToast();
-  const db = useFirestore();
+  const db = useDb();
 
   useEffect(() => {
     const fetchRides = async () => {

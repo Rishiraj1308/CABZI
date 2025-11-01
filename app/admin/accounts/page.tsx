@@ -10,7 +10,7 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useToast } from '@/hooks/use-toast'
 import { PlusCircle } from 'lucide-react'
-import { useFirestore } from '@/firebase/client-provider'
+import { useDb } from '@/firebase/client-provider'
 import { collection, addDoc, getDocs, orderBy, query, Timestamp } from 'firebase/firestore'
 import { Skeleton } from '@/components/ui/skeleton'
 
@@ -32,7 +32,7 @@ export default function AccountsPage() {
     const [amount, setAmount] = useState('');
     const [isLoading, setIsLoading] = useState(true);
     const { toast } = useToast();
-    const db = useFirestore();
+    const db = useDb();
 
     const fetchExpenses = async () => {
         if (!db) {

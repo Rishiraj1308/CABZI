@@ -5,7 +5,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Car, Wrench, Handshake, Users, CircleHelp, Activity, FilePieChart, Ambulance } from 'lucide-react'
-import { useFirestore } from '@/firebase/client-provider'
+import { useDb } from '@/firebase/client-provider'
 import { collection, query, Timestamp, orderBy, limit, where, getCountFromServer, getDocs } from 'firebase/firestore'
 import { Skeleton } from '@/components/ui/skeleton'
 import Link from 'next/link'
@@ -70,7 +70,7 @@ export default function AdminDashboardPage() {
         ongoingRides: 0,
     });
     const [isLoading, setIsLoading] = useState(true);
-    const db = useFirestore();
+    const db = useDb();
 
     useEffect(() => {
         if (!db) {

@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Search, CalendarCheck } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
-import { useFirestore } from '@/firebase/client-provider'
+import { useDb } from '@/firebase/client-provider'
 import { collection, query, orderBy, onSnapshot, Timestamp } from 'firebase/firestore'
 import { useToast } from '@/hooks/use-toast'
 
@@ -27,7 +27,7 @@ export default function AdminAppointmentsPage() {
     const [appointments, setAppointments] = useState<Appointment[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
-    const db = useFirestore();
+    const db = useDb();
     const { toast } = useToast();
     
     useEffect(() => {
