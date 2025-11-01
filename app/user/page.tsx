@@ -208,39 +208,44 @@ export default function UserDashboard() {
                     ) : (
                         <MotionDiv 
                             key="selection"
-                            className="space-y-8"
+                            className="space-y-4"
                             initial={{y: 200, opacity: 0}}
                             animate={{y: 0, opacity: 1}}
                             exit={{y: 200, opacity: 0}}
                             transition={{type: 'spring', stiffness: 100, damping: 20}}
                         >
                             <Card className="shadow-2xl">
-                                <CardHeader className="text-center">
+                                <CardHeader className="text-center pb-4">
                                     <CardTitle>How can we help you today?</CardTitle>
                                     <CardDescription>Choose a service to get started.</CardDescription>
                                 </CardHeader>
-                                <CardContent>
-                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                        {serviceCards.map((service, index) => (
-                                             <Link key={service.title} href={service.href} legacyBehavior>
-                                                <a onClick={(e) => {
-                                                    if (service.href === '#') {
-                                                        e.preventDefault();
-                                                        toast({ title: 'Coming Soon!', description: 'This feature is under development.' });
-                                                    }
-                                                }}>
-                                                    <Card className="h-full transition-all text-center bg-background/80 backdrop-blur-sm hover:shadow-lg hover:border-primary/50">
-                                                        <CardContent className="p-4 flex flex-col items-center justify-center gap-2">
-                                                            <div className="p-3 bg-muted rounded-full">
-                                                            <service.icon className={`w-6 h-6 ${service.color}`} />
-                                                            </div>
-                                                            <p className="font-semibold text-sm">{service.title}</p>
-                                                        </CardContent>
-                                                    </Card>
-                                                </a>
-                                            </Link>
-                                        ))}
-                                    </div>
+                                <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    {Object.entries(servicesByCat).map(([category, services]) => (
+                                        <div key={category} className="space-y-3">
+                                            <h3 className="font-semibold text-center text-muted-foreground">{category}</h3>
+                                            <div className="grid grid-cols-2 gap-3">
+                                                {services.map((service, index) => (
+                                                    <Link key={service.title} href={service.href} legacyBehavior>
+                                                        <a onClick={(e) => {
+                                                            if (service.href === '#') {
+                                                                e.preventDefault();
+                                                                toast({ title: 'Coming Soon!', description: 'This feature is under development.' });
+                                                            }
+                                                        }}>
+                                                            <Card className="h-full transition-all text-center bg-background/80 backdrop-blur-sm hover:shadow-md hover:border-primary/30">
+                                                                <CardContent className="p-3 flex flex-col items-center justify-center gap-1">
+                                                                    <div className="p-2 bg-muted rounded-full">
+                                                                        <service.icon className={`w-5 h-5 ${service.color}`} />
+                                                                    </div>
+                                                                    <p className="font-semibold text-xs">{service.title}</p>
+                                                                </CardContent>
+                                                            </Card>
+                                                        </a>
+                                                    </Link>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    ))}
                                 </CardContent>
                             </Card>
                         </MotionDiv>
