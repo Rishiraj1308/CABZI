@@ -2,7 +2,6 @@
 'use client'
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { BuilderComponent, builder } from "@builder.io/react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Car, Wrench, Ambulance, Calendar, FlaskConical } from 'lucide-react';
 import Link from 'next/link';
@@ -51,7 +50,7 @@ const serviceCards = [
         title: 'Book Appointment',
         description: 'Consult with doctors at partner hospitals.',
         icon: Calendar,
-        href: '/user/book-appointment',
+        href: '/user/appointments',
         color: 'text-blue-500',
         category: 'Health & Safety',
     },
