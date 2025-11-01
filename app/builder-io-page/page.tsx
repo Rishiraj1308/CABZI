@@ -1,24 +1,36 @@
+
 'use client';
 
 import React, { useState, useEffect } from 'react';
 import { builder, BuilderComponent } from '@builder.io/react';
 import { Skeleton } from '@/components/ui/skeleton';
 
-// IMPORTANT: Replace with your actual public API key from Builder.io
-const BUILDER_API_KEY = process.env.NEXT_PUBLIC_BUILDER_IO_API_KEY || '408472aa4411443ebecd8ae63561e97f';
-builder.init(BUILDER_API_KEY);
+// Initialize the Builder.io client with your public API key
+// This key is safely stored in your .env file
+const BUILDER_API_KEY = process.env.NEXT_PUBLIC_BUILDER_IO_API_KEY || '';
+if (BUILDER_API_KEY) {
+  builder.init(BUILDER_API_KEY);
+} else {
+  console.error("Builder.io API Key is missing. Please add NEXT_PUBLIC_BUILDER_IO_API_KEY to your .env file.");
+}
 
 export default function BuilderIoPage() {
   const [content, setContent] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    // Only run this if the API key is available
+    if (!BUILDER_API_KEY) {
+      setIsLoading(false);
+      return;
+    }
+
     async function fetchContent() {
       try {
+        // Fetch content from Builder.io that matches the current URL path
         const fetchedContent = await builder.get('page', {
-          // Fetch content targeting the current page's URL path
           userAttributes: {
-            urlPath: '/builder-io-page',
+            urlPath: window.location.pathname,
           },
         }).promise();
 
@@ -33,6 +45,15 @@ export default function BuilderIoPage() {
 
     fetchContent();
   }, []);
+
+  if (!BUILDER_API_KEY) {
+      return (
+          <div className="container py-8 text-center">
+             <h2 className="text-2xl font-semibold text-destructive">Builder.io API Key is Missing</h2>
+             <p className="mt-2 text-muted-foreground">Please make sure your `NEXT_PUBLIC_BUILDER_IO_API_KEY` is set in the `.env` file.</p>
+          </div>
+      )
+  }
 
   return (
     <div className="container py-8">
