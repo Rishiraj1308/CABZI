@@ -1,0 +1,110 @@
+
+@import 'leaflet/dist/leaflet.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Dark Theme (Default) */
+    --background: 220 20% 10%;
+    --foreground: 210 40% 98%;
+ 
+    --card: 220 20% 10%;
+    --card-foreground: 210 40% 98%;
+ 
+    --popover: 220 20% 10%;
+    --popover-foreground: 210 40% 98%;
+ 
+    --primary: 210 40% 98%;
+    --primary-foreground: 220 20% 10%;
+ 
+    --secondary: 220 20% 15%;
+    --secondary-foreground: 210 40% 98%;
+ 
+    --muted: 220 20% 15%;
+    --muted-foreground: 210 40% 60%;
+ 
+    --accent: 45 95% 55%;
+    --accent-foreground: 45 80% 5%;
+ 
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 210 20% 25%;
+    --input: 220 20% 15%;
+    --ring: 210 40% 60%;
+ 
+    --radius: 0.8rem;
+  }
+ 
+  .light {
+     /* This is a placeholder for now, the app defaults to dark mode per the design. */
+    --background: 210 40% 98%;
+    --foreground: 220 20% 10%;
+
+    --card: 210 20% 98%;
+    --card-foreground: 210 10% 23%;
+ 
+    --popover: 210 20% 98%;
+    --popover-foreground: 210 10% 23%;
+ 
+    --primary: 195 35% 35%;
+    --primary-foreground: 210 20% 98%;
+ 
+    --secondary: 210 20% 94%;
+    --secondary-foreground: 195 35% 35%;
+ 
+    --muted: 210 20% 94%;
+    --muted-foreground: 210 10% 45%;
+ 
+    --accent: 45 95% 55%;
+    --accent-foreground: 45 80% 5%;
+ 
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 210 20% 88%;
+    --input: 210 20% 88%;
+    --ring: 195 40% 50%;
+  }
+
+  .pink {
+    --background: 340 100% 97%;
+    --foreground: 340 82% 20%;
+    --card: 340 100% 97%;
+    --card-foreground: 340 82% 20%;
+    --popover: 340 100% 97%;
+    --popover-foreground: 340 82% 20%;
+    --primary: 340 90% 55%;
+    --primary-foreground: 340 82% 98%;
+    --secondary: 340 100% 94%;
+    --secondary-foreground: 340 90% 40%;
+    --muted: 340 100% 94%;
+    --muted-foreground: 340 82% 45%;
+    --accent: 330 90% 70%;
+    --accent-foreground: 340 82% 10%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 340 100% 88%;
+    --input: 340 100% 88%;
+    --ring: 340 90% 55%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Poppins', sans-serif;
+  }
+}
+
+.leaflet-container {
+    height: 100%;
+    width: 100%;
+    z-index: 0;
+}
