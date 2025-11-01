@@ -16,10 +16,9 @@ export default function BuilderIoPage() {
     async function fetchContent() {
       try {
         const fetchedContent = await builder.get('page', {
-          // Fetch content targeting the URL path `/example-page`
-          // In your Builder.io space, create a new page and set its URL to /example-page
+          // Fetch content targeting the current page's URL path
           userAttributes: {
-            urlPath: '/example-page',
+            urlPath: '/builder-io-page',
           },
         }).promise();
 
@@ -60,7 +59,7 @@ export default function BuilderIoPage() {
           <div className="text-center py-16">
             <h2 className="text-2xl font-semibold">Content Not Found</h2>
             <p className="mt-2 text-muted-foreground max-w-md mx-auto">
-              To see this page work, go to your Builder.io space, create a new page, and set its URL path to: <code className="bg-muted p-1 rounded font-mono text-sm">/example-page</code>. Then publish it and refresh this page.
+              To see this page work, go to your Builder.io space, create a new page, and set its URL path to: <code className="bg-muted p-1 rounded font-mono text-sm">/builder-io-page</code>. Then publish it and refresh this page.
             </p>
           </div>
         )}
