@@ -22,7 +22,7 @@ const ServiceCard = ({
   onClick: () => void
 }) => (
   <button
-    className="serviceCard group flex items-center justify-between rounded-2xl border border-border bg-card/50 p-5 sm:p-6 hover:bg-accent/10 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+    className="serviceCard group flex items-center justify-between rounded-2xl border border-border bg-card p-5 sm:p-6 hover:bg-accent/10 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
     role="button"
     tabIndex={0}
     title={service.title}
@@ -50,6 +50,30 @@ const ServiceCard = ({
   </button>
 )
 
+const recentTrips = [
+    {
+        icon: MapPin,
+        title: "Connaught Place",
+        description: "New Delhi, Delhi",
+        distance: "5.2 km",
+        time: "15 min"
+    },
+    {
+        icon: MapPin,
+        title: "Indira Gandhi International Airport",
+        description: "New Delhi, Delhi",
+        distance: "18.7 km",
+        time: "45 min"
+    },
+    {
+        icon: MapPin,
+        title: "Select Citywalk",
+        description: "Saket, New Delhi",
+        distance: "12.1 km",
+        time: "30 min"
+    },
+]
+
 export default function ServicePortalPage() {
   const router = useRouter()
   const { t } = useLanguage()
@@ -65,8 +89,8 @@ export default function ServicePortalPage() {
   const serviceData = [
     { id: 'ride', href: '/user/book', icon: Car, title: 'Ride', description: 'On-demand transport to clinics', tag: '5–10m', tagIcon: Clock, iconBg: 'bg-emerald-400/15', iconRing: 'ring-emerald-400/30', iconColor: 'text-emerald-500', tagBg: 'bg-emerald-100 dark:bg-emerald-900/30', tagBorder: 'border-emerald-400/30', tagColor: 'text-emerald-600 dark:text-emerald-200', label: 'ride transport car taxi clinic mobility hospital cab' },
     { id: 'resq', href: '/user/resq', icon: Wrench, title: 'ResQ', description: 'On-site assistance for minor issues', tag: 'On-Demand', tagIcon: Wrench, iconBg: 'bg-amber-400/15', iconRing: 'ring-amber-400/30', iconColor: 'text-amber-500', tagBg: 'bg-amber-100 dark:bg-amber-900/30', tagBorder: 'border-amber-400/30', tagColor: 'text-amber-600 dark:text-amber-200', label: 'resq on-site assistance home help nurse minor issues support' },
-    { id: 'sos', onClick: () => setIsSosModalOpen(true), icon: Ambulance, title: 'Emergency SOS', description: 'Connect to 24/7 emergency line', tag: '24/7', tagIcon: AlertTriangle, iconBg: 'bg-red-500/20', iconRing: 'ring-red-500/40', iconColor: 'text-red-500', tagBg: 'bg-red-100 dark:bg-red-900/30', tagBorder: 'border-red-400/40', tagColor: 'text-red-600 dark:text-red-200', label: 'sos emergency ambulance urgent help police fire medical' },
-    { id: 'appointment', href: '/user/appointments', icon: Calendar, title: 'Book Appointment', description: 'Clinics, specialists, telehealth', tag: 'Next: 1–2d', tagIcon: Clock, iconBg: 'bg-sky-400/15', iconRing: 'ring-sky-400/30', iconColor: 'text-sky-500', tagBg: 'bg-sky-100 dark:bg-sky-900/30', tagBorder: 'border-sky-400/30', tagColor: 'text-sky-600 dark:text-sky-200', label: 'book appointment doctor specialist telehealth clinic schedule calendar' },
+    { id: 'sos', onClick: () => setIsSosModalOpen(true), icon: Ambulance, title: 'Emergency SOS', description: 'Connect to 24/7 emergency line', tag: '24/7', tagIcon: AlertTriangle, iconBg: 'bg-red-500/20', iconRing: 'ring-red-500/40', iconColor: 'text-red-500', tagBg: 'bg-red-400/10', tagBorder: 'border-red-400/40', tagColor: 'text-red-200', label: 'sos emergency ambulance urgent help police fire medical' },
+    { id: 'appointment', href: '/user/appointments', icon: Calendar, title: 'Book Appointment', description: 'Clinics, specialists, telehealth', tag: 'Next: 1–2d', tagIcon: Clock, iconBg: 'bg-sky-400/15', iconRing: 'ring-sky-400/30', iconColor: 'text-sky-300', tagBg: 'bg-sky-100 dark:bg-sky-900/30', tagBorder: 'border-sky-400/30', tagColor: 'text-sky-600 dark:text-sky-200', label: 'book appointment doctor specialist telehealth clinic schedule calendar' },
     { id: 'lab_tests', href: '/user/lab-tests', icon: TestTube, title: 'Lab Tests', description: 'Home sample pickup available', tag: 'Home pickup', tagIcon: Home, iconBg: 'bg-fuchsia-400/15', iconRing: 'ring-fuchsia-400/30', iconColor: 'text-fuchsia-500', tagBg: 'bg-fuchsia-100 dark:bg-fuchsia-900/30', tagBorder: 'border-fuchsia-400/30', tagColor: 'text-fuchsia-600 dark:text-fuchsia-200', label: 'lab tests diagnostics blood test home pickup reports' }
   ];
   
@@ -95,6 +119,20 @@ export default function ServicePortalPage() {
       router.push(service.href);
     }
   };
+
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: { staggerChildren: 0.1 }
+    }
+  };
+  
+  const itemVariants = {
+      hidden: { opacity: 0, y: 20 },
+      visible: { opacity: 1, y: 0 }
+  };
+
 
   return (
     <>
@@ -156,6 +194,36 @@ export default function ServicePortalPage() {
                 </Button>
               </div>
             </div>
+            
+            <motion.div 
+              className="mt-8 space-y-2"
+              variants={containerVariants}
+              initial="hidden"
+              animate="visible"
+            >
+              <h3 className="font-bold text-lg text-foreground">Recent Trips</h3>
+              {recentTrips.map((trip, index) => (
+                  <motion.div 
+                      key={trip.title}
+                      variants={itemVariants}
+                  >
+                      <div className="flex items-center gap-4 p-3 rounded-lg hover:bg-card/50 cursor-pointer transition-colors">
+                          <div className="p-3 bg-card rounded-full border">
+                              <trip.icon className="w-5 h-5 text-muted-foreground" />
+                          </div>
+                          <div className="flex-1">
+                              <p className="font-semibold">{trip.title}</p>
+                              <p className="text-sm text-muted-foreground">{trip.description}</p>
+                          </div>
+                          <div className="text-right">
+                              <p className="text-sm font-semibold">{trip.distance}</p>
+                              <p className="text-xs text-muted-foreground">{trip.time}</p>
+                          </div>
+                      </div>
+                  </motion.div>
+              ))}
+            </motion.div>
+
 
             <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
               {services.map(service => (
