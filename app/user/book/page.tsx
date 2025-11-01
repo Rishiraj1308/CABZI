@@ -121,10 +121,10 @@ export default function BookRidePage() {
             animate="visible"
             variants={containerVariants}
         >
-            <header className="bg-gradient-to-br from-primary via-primary/90 to-black p-4 relative text-primary-foreground">
+            <header className="p-4 relative bg-background dark:bg-gradient-to-br dark:from-primary dark:via-primary/90 dark:to-black text-foreground dark:text-primary-foreground">
                 <div className="container mx-auto">
                     <motion.div variants={itemVariants}>
-                        <Button variant="ghost" size="icon" className="hover:bg-white/10" onClick={() => router.push('/user')}>
+                        <Button variant="ghost" size="icon" className="hover:bg-black/10 dark:hover:bg-white/10" onClick={() => router.push('/user')}>
                             <ArrowLeft className="w-5 h-5"/>
                         </Button>
                     </motion.div>
