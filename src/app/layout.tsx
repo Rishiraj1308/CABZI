@@ -4,10 +4,6 @@ import { Inter, Poppins } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
 import { Providers } from "./providers";
-import { Suspense } from "react";
-import { NewLogoIcon } from "@/components/brand-logo";
-import { motion, AnimatePresence } from 'framer-motion';
-
 
 const fontSans = Inter({
   subsets: ["latin"],

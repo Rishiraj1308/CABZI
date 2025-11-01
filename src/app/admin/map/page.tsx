@@ -1,3 +1,4 @@
+
 'use client'
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -5,7 +6,7 @@ import { Car, Wrench, Shield, Ambulance, Route, CircleDot, Activity, Users, View
 import { Skeleton } from '@/components/ui/skeleton';
 import dynamic from 'next/dynamic';
 import { Button } from '@/components/ui/button';
-import { useFirestore, useFunctions } from '@/firebase/client-provider';
+import { useDb, useFunctions } from '@/firebase/client-provider';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import { httpsCallable } from 'firebase/functions';
 import { useToast } from '@/hooks/use-toast';
@@ -48,7 +49,7 @@ export default function LiveMapPage() {
     const [allPartners, setAllPartners] = useState<ActiveEntity[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isHudVisible, setIsHudVisible] = useState(true);
-    const db = useFirestore();
+    const db = useDb();
     const functions = useFunctions();
     const { toast } = useToast();
 
