@@ -2,6 +2,7 @@
 'use client'
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { BuilderComponent, builder } from "@builder.io/react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Car, Wrench, Ambulance, Calendar, FlaskConical } from 'lucide-react';
 import Link from 'next/link';

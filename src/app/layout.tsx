@@ -1,9 +1,8 @@
-
-import type { Metadata } from 'next';
-import { Inter, Poppins } from 'next/font/google';
-import './globals.css';
-import { cn } from '@/lib/utils';
-import { Providers } from './providers'; // Import the new client-side provider
+import type { Metadata } from "next";
+import { Inter, Poppins } from "next/font/google";
+import "./globals.css";
+import { cn } from "@/lib/utils";
+import { Providers } from "./providers";
 
 const fontSans = Inter({
   subsets: ["latin"],
@@ -17,8 +16,9 @@ const fontPoppins = Poppins({
 });
 
 export const metadata: Metadata = {
-  title: 'Curocity - Your Partner on the Road',
-  description: 'A fair, transparent, and safe ride-hailing and emergency response platform.',
+  title: "Curocity - Your Partner on the Road",
+  description:
+    "A fair, transparent, and safe ride-hailing and emergency response platform.",
 };
 
 export default function RootLayout({
