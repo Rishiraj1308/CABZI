@@ -306,7 +306,7 @@ export default function LoginPage() {
               email: user.email || identifier,
               phone: user.phoneNumber ? user.phoneNumber.replace('+91','') : identifier,
               gender,
-              role: 'rider', 
+              role: 'user', 
               createdAt: serverTimestamp(),
               isOnline: false,
           });
