@@ -9,10 +9,12 @@ import { Button } from '@/components/ui/button'
 import { useToast } from '@/hooks/use-toast'
 import { useDb, useFunctions } from '@/firebase/client-provider'
 import { doc, getDoc, setDoc } from 'firebase/firestore'
-import { Building, Landmark, Save, FileText, IndianRupee, DatabaseZap } from 'lucide-react'
+import { Building, Landmark, Save, FileText, IndianRupee, DatabaseZap, Palette } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { httpsCallable } from 'firebase/functions'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Slider } from '@/components/ui/slider'
 
 
 interface CompanySettings {
@@ -31,6 +33,13 @@ interface CompanySettings {
     cinNumber: string;
     tradeLicense: string;
     aggregatorLicense: string;
+    // Theme
+    themePrimaryH?: number;
+    themePrimaryS?: number;
+    themePrimaryL?: number;
+    themeAccentH?: number;
+    themeAccentS?: number;
+    themeAccentL?: number;
 }
 
 export default function CompanySettingsPage() {
@@ -41,18 +50,50 @@ export default function CompanySettingsPage() {
     const db = useDb();
     const functions = useFunctions();
 
+    // Theme state
+    const [primaryH, setPrimaryH] = useState(180);
+    const [primaryS, setPrimaryS] = useState(35);
+    const [primaryL, setPrimaryL] = useState(25);
+    const [accentH, setAccentH] = useState(45);
+    const [accentS, setAccentS] = useState(100);
+    const [accentL, setAccentL] = useState(50);
+
+
     useEffect(() => {
         const fetchSettings = async () => {
             if (!db) return;
             const settingsRef = doc(db, 'company', 'settings');
             const docSnap = await getDoc(settingsRef);
             if (docSnap.exists()) {
-                setSettings(docSnap.data() as CompanySettings);
+                const data = docSnap.data() as CompanySettings;
+                setSettings(data);
+                // Set theme values from fetched data or defaults
+                setPrimaryH(data.themePrimaryH || 180);
+                setPrimaryS(data.themePrimaryS || 35);
+                setPrimaryL(data.themePrimaryL || 25);
+                setAccentH(data.themeAccentH || 45);
+                setAccentS(data.themeAccentS || 100);
+                setAccentL(data.themeAccentL || 50);
             }
             setIsLoading(false);
         }
         fetchSettings();
     }, [db]);
+    
+    // Apply theme changes dynamically
+    useEffect(() => {
+        document.documentElement.style.setProperty('--primary-h', `${primaryH}deg`);
+        document.documentElement.style.setProperty('--primary-s', `${primaryS}%`);
+        document.documentElement.style.setProperty('--primary-l', `${primaryL}%`);
+        document.documentElement.style.setProperty('--primary', `${primaryH} ${primaryS}% ${primaryL}%`);
+        
+        document.documentElement.style.setProperty('--accent-h', `${accentH}deg`);
+        document.documentElement.style.setProperty('--accent-s', `${accentS}%`);
+        document.documentElement.style.setProperty('--accent-l', `${accentL}%`);
+        document.documentElement.style.setProperty('--accent', `${accentH} ${accentS}% ${accentL}%`);
+
+    }, [primaryH, primaryS, primaryL, accentH, accentS, accentL]);
+
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setSettings(prev => ({ ...prev, [e.target.name]: e.target.value }));
@@ -69,10 +110,19 @@ export default function CompanySettingsPage() {
         }
         try {
             const settingsRef = doc(db, 'company', 'settings');
-            await setDoc(settingsRef, settings, { merge: true });
+            const newSettings = {
+                ...settings,
+                themePrimaryH: primaryH,
+                themePrimaryS: primaryS,
+                themePrimaryL: primaryL,
+                themeAccentH: accentH,
+                themeAccentS: accentS,
+                themeAccentL: accentL,
+            }
+            await setDoc(settingsRef, newSettings, { merge: true });
             toast({
                 title: 'Settings Saved',
-                description: 'Company details have been updated successfully.',
+                description: 'Company details and theme have been updated successfully.',
             });
         } catch (error) {
             console.error('Error saving settings:', error);
@@ -105,49 +155,13 @@ export default function CompanySettingsPage() {
         }
     }
     
-    if (isLoading) {
-        return (
-            <div className="space-y-6">
-                <Card>
-                    <CardHeader><Skeleton className="h-8 w-1/2"/><Skeleton className="h-4 w-3/4"/></CardHeader>
-                    <CardContent className="space-y-4"><Skeleton className="h-10 w-full"/><Skeleton className="h-10 w-full"/></CardContent>
-                </Card>
-                 <Card>
-                    <CardHeader><Skeleton className="h-8 w-1/2"/><Skeleton className="h-4 w-3/4"/></CardHeader>
-                    <CardContent className="space-y-4"><Skeleton className="h-10 w-full"/><Skeleton className="h-10 w-full"/></CardContent>
-                </Card>
-                 <Card>
-                    <CardHeader><Skeleton className="h-8 w-1/2"/><Skeleton className="h-4 w-3/4"/></CardHeader>
-                    <CardContent className="space-y-4"><Skeleton className="h-10 w-full"/><Skeleton className="h-10 w-full"/></CardContent>
-                </Card>
-            </div>
-        )
-    }
-
-    return (
-        <div className="space-y-6">
-            <Card>
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2"><DatabaseZap className="w-6 h-6"/> Developer Actions</CardTitle>
-                    <CardDescription>
-                       These actions are for development purposes and help in setting up the initial state of the application.
-                    </CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <Button onClick={handleSeedDatabase} disabled={isSeeding}>
-                       {isSeeding ? 'Seeding...' : 'Seed Database with Sample Data'}
-                    </Button>
-                     <p className="text-xs text-muted-foreground mt-2">
-                        This will populate your Firestore database with sample partners, mechanics, and hospitals to help you test the platform.
-                    </p>
-                </CardContent>
-            </Card>
-
+    const renderBusinessSettings = () => (
+         <div className="space-y-6">
             <Card>
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2"><Landmark className="w-6 h-6"/> Official Bank Details</CardTitle>
                     <CardDescription>
-                        This is the official company bank account where partners will deposit subscription fees. These details will be shown on the partner&apos;s subscription page.
+                        This is the official company bank account where partners will deposit subscription fees. These details will be shown on the partner's subscription page.
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -180,7 +194,7 @@ export default function CompanySettingsPage() {
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2"><IndianRupee className="w-6 h-6"/> Business &amp; Tax Information</CardTitle>
                     <CardDescription>
-                        Enter your company&apos;s official tax and identification details for compliance.
+                        Enter your company's official tax and identification details for compliance.
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -239,6 +253,104 @@ export default function CompanySettingsPage() {
                     </div>
                 </CardContent>
             </Card>
+        </div>
+    );
+    
+     const renderThemeSettings = () => (
+        <div className="space-y-6">
+            <Card>
+                <CardHeader>
+                    <CardTitle>Theme Customizer</CardTitle>
+                    <CardDescription>Adjust the application's color scheme in real-time. Changes are reflected across the app.</CardDescription>
+                </CardHeader>
+                <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                     <div className="space-y-4 p-4 border rounded-lg">
+                        <h4 className="font-semibold text-lg flex items-center">Primary Color <div className="w-5 h-5 rounded-full ml-2" style={{ backgroundColor: `hsl(${primaryH}, ${primaryS}%, ${primaryL}%)`}}/></h4>
+                        <div className="space-y-2">
+                            <Label>Hue ({primaryH})</Label>
+                            <Slider value={[primaryH]} onValueChange={(v) => setPrimaryH(v[0])} max={360} step={1} />
+                        </div>
+                         <div className="space-y-2">
+                            <Label>Saturation ({primaryS}%)</Label>
+                            <Slider value={[primaryS]} onValueChange={(v) => setPrimaryS(v[0])} max={100} step={1} />
+                        </div>
+                         <div className="space-y-2">
+                            <Label>Lightness ({primaryL}%)</Label>
+                            <Slider value={[primaryL]} onValueChange={(v) => setPrimaryL(v[0])} max={100} step={1} />
+                        </div>
+                     </div>
+                      <div className="space-y-4 p-4 border rounded-lg">
+                        <h4 className="font-semibold text-lg flex items-center">Accent Color <div className="w-5 h-5 rounded-full ml-2" style={{ backgroundColor: `hsl(${accentH}, ${accentS}%, ${accentL}%)`}}/></h4>
+                        <div className="space-y-2">
+                            <Label>Hue ({accentH})</Label>
+                            <Slider value={[accentH]} onValueChange={(v) => setAccentH(v[0])} max={360} step={1} />
+                        </div>
+                         <div className="space-y-2">
+                            <Label>Saturation ({accentS}%)</Label>
+                            <Slider value={[accentS]} onValueChange={(v) => setAccentS(v[0])} max={100} step={1} />
+                        </div>
+                         <div className="space-y-2">
+                            <Label>Lightness ({accentL}%)</Label>
+                            <Slider value={[accentL]} onValueChange={(v) => setAccentL(v[0])} max={100} step={1} />
+                        </div>
+                     </div>
+                </CardContent>
+            </Card>
+             <Card>
+                <CardHeader><CardTitle>Preview</CardTitle></CardHeader>
+                <CardContent className="flex items-center gap-4">
+                    <Button>Primary Button</Button>
+                    <Button className="bg-accent text-accent-foreground hover:bg-accent/90">Accent Button</Button>
+                    <Badge>Badge</Badge>
+                </CardContent>
+            </Card>
+        </div>
+    );
+
+    if (isLoading) {
+        return (
+            <div className="space-y-6">
+                <Card>
+                    <CardHeader><Skeleton className="h-8 w-1/2"/><Skeleton className="h-4 w-3/4"/></CardHeader>
+                    <CardContent className="space-y-4"><Skeleton className="h-10 w-full"/><Skeleton className="h-10 w-full"/></CardContent>
+                </Card>
+                 <Card>
+                    <CardHeader><Skeleton className="h-8 w-1/2"/><Skeleton className="h-4 w-3/4"/></CardHeader>
+                    <CardContent className="space-y-4"><Skeleton className="h-10 w-full"/><Skeleton className="h-10 w-full"/></CardContent>
+                </Card>
+            </div>
+        )
+    }
+
+    return (
+        <div className="space-y-6">
+             <Tabs defaultValue="business" className="w-full">
+                <TabsList className="grid w-full grid-cols-3">
+                    <TabsTrigger value="business"><Building className="w-4 h-4 mr-2"/>Business</TabsTrigger>
+                    <TabsTrigger value="theme"><Palette className="w-4 h-4 mr-2"/>Theme</TabsTrigger>
+                    <TabsTrigger value="dev"><DatabaseZap className="w-4 h-4 mr-2"/>Developer</TabsTrigger>
+                </TabsList>
+                <TabsContent value="business" className="mt-6">{renderBusinessSettings()}</TabsContent>
+                <TabsContent value="theme" className="mt-6">{renderThemeSettings()}</TabsContent>
+                <TabsContent value="dev" className="mt-6">
+                     <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2"><DatabaseZap className="w-6 h-6"/> Developer Actions</CardTitle>
+                            <CardDescription>
+                            These actions are for development purposes and help in setting up the initial state of the application.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <Button onClick={handleSeedDatabase} disabled={isSeeding}>
+                            {isSeeding ? 'Seeding...' : 'Seed Database with Sample Data'}
+                            </Button>
+                            <p className="text-xs text-muted-foreground mt-2">
+                                This will populate your Firestore database with sample partners, mechanics, and hospitals to help you test the platform.
+                            </p>
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+            </Tabs>
             
             <div className="flex justify-end">
                 <Button onClick={handleSave} size="lg">
