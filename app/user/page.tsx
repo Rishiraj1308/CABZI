@@ -93,10 +93,10 @@ export default function UserDashboard() {
                     });
                 }
                  setIsLoading(false); 
-            }, () => setIsLoading(false));
+            }, () => setIsLoading(false)); // Also set loading to false on error
             return () => unsub();
         } else if (!user) {
-            setIsLoading(false);
+            setIsLoading(false); // If there's no user, we're not loading
         }
     }, [user, db]);
 
@@ -180,7 +180,7 @@ export default function UserDashboard() {
         <div className="p-4 md:p-6 space-y-8">
             <AnimatePresence mode="wait">
                 {activeService ? (
-                     <motion.div
+                     <MotionDiv
                         key="ride-status"
                         initial={{ opacity: 0, scale: 0.9 }}
                         animate={{ opacity: 1, scale: 1 }}
@@ -192,7 +192,7 @@ export default function UserDashboard() {
                             onCancel={resetFlow} 
                             onDone={resetFlow}
                         />
-                    </motion.div>
+                    </MotionDiv>
                 ) : (
                 <MotionDiv 
                     key="dashboard"
@@ -201,11 +201,11 @@ export default function UserDashboard() {
                     animate="visible"
                     variants={containerVariants}
                 >
-                    <motion.div variants={itemVariants}>
+                    <MotionDiv variants={itemVariants}>
                         <h1 className="text-3xl font-bold tracking-tight">How can we help you today, {session?.name}?</h1>
-                    </motion.div>
+                    </MotionDiv>
                     
-                    <motion.div variants={itemVariants}>
+                    <MotionDiv variants={itemVariants}>
                          <form onSubmit={handleSearch}>
                             <div className="relative">
                                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
@@ -221,14 +221,14 @@ export default function UserDashboard() {
                                 </Button>
                             </div>
                         </form>
-                    </motion.div>
+                    </MotionDiv>
 
                     {Object.entries(serviceCards.reduce((acc, service) => {
                         if (!acc[service.category]) acc[service.category] = [];
                         acc[service.category].push(service);
                         return acc;
                     }, {} as Record<string, typeof serviceCards>)).map(([category, services]) => (
-                        <motion.div key={category} variants={itemVariants}>
+                        <MotionDiv key={category} variants={itemVariants}>
                             <h3 className="text-lg font-semibold mb-3">{category}</h3>
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                                 {services.map((service) => (
@@ -245,7 +245,7 @@ export default function UserDashboard() {
                                     </Link>
                                 ))}
                             </div>
-                        </motion.div>
+                        </MotionDiv>
                     ))}
                 </MotionDiv>
                 )}
