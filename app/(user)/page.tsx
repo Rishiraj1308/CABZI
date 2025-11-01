@@ -27,7 +27,8 @@ const serviceCards = [
         description: 'Fair fares for your daily commute.',
         icon: Car,
         href: '/user/book',
-        color: 'text-primary',
+        color: 'text-emerald-300',
+        iconBg: 'bg-[hsl(180,35%,18%)]',
         category: 'Mobility & Transport',
     },
      {
@@ -35,7 +36,8 @@ const serviceCards = [
         description: 'Get help for vehicle breakdowns.',
         icon: Wrench,
         href: '/user/resq',
-        color: 'text-amber-500',
+        color: 'text-amber-300',
+        iconBg: 'bg-[hsl(45,95%,20%)]',
         category: 'Mobility & Transport',
     },
     {
@@ -43,7 +45,8 @@ const serviceCards = [
         description: 'Dispatch the nearest ambulance.',
         icon: Ambulance,
         href: '/user/book?sos=true',
-        color: 'text-red-500',
+        color: 'text-red-300',
+        iconBg: 'bg-[hsl(0,84%,30%)]',
         category: 'Health & Safety',
     },
      {
@@ -51,7 +54,8 @@ const serviceCards = [
         description: 'Consult with doctors at partner hospitals.',
         icon: Calendar,
         href: '/user/appointments',
-        color: 'text-blue-500',
+        color: 'text-sky-300',
+        iconBg: 'bg-[hsl(200,80%,30%)]',
         category: 'Health & Safety',
     },
     {
@@ -59,7 +63,8 @@ const serviceCards = [
         description: 'Book tests from certified labs.',
         icon: FlaskConical,
         href: '/user/lab-tests',
-        color: 'text-purple-500',
+        color: 'text-fuchsia-300',
+        iconBg: 'bg-[hsl(290,80%,30%)]',
         category: 'Health & Safety',
     },
 ];
@@ -107,10 +112,14 @@ export default function UserDashboard() {
 
     // Effect to check for any active service on load and listen for updates
     useEffect(() => {
-        if (!db || !session) return;
+        if (!db || !session) {
+            return;
+        };
+
         let unsubscribe: (() => void) | null = null;
         
         const checkAndSubscribe = () => {
+            // Check for active ride
             const rideId = localStorage.getItem('activeRideId');
             if (rideId) {
                 const rideRef = doc(db, 'rides', rideId);
@@ -124,6 +133,7 @@ export default function UserDashboard() {
                 return;
             }
             
+            // Check for active emergency case
             const qCure = query(collection(db, "emergencyCases"), where("riderId", "==", session.userId), where("status", "in", ["pending", "accepted", "onTheWay", "arrived", "inTransit"]));
             unsubscribe = onSnapshot(qCure, (snapshot) => {
                 if (!snapshot.empty) {
@@ -134,6 +144,7 @@ export default function UserDashboard() {
                 }
             });
             
+             // Check for active ResQ request
             const qResq = query(collection(db, "garageRequests"), where("driverId", "==", session.userId), where("status", "not-in", ["completed", "cancelled_by_driver", "cancelled_by_mechanic"]));
              unsubscribe = onSnapshot(qResq, (snapshot) => {
                 if (!snapshot.empty) {
@@ -146,7 +157,10 @@ export default function UserDashboard() {
         }
         
         checkAndSubscribe();
-        return () => { if (unsubscribe) unsubscribe(); };
+        return () => {
+            if (unsubscribe) unsubscribe();
+        };
+
     }, [db, session, resetFlow, activeAmbulanceCase, activeGarageRequest]);
 
     const servicesByCat = serviceCards.reduce((acc, service) => {
@@ -168,7 +182,7 @@ export default function UserDashboard() {
     };
     
     if (isLoading) {
-        return null; // Or a skeleton loader
+        return null;
     }
     
     const activeService = activeRide || activeAmbulanceCase || activeGarageRequest;
@@ -222,8 +236,8 @@ export default function UserDashboard() {
                                                 }}>
                                                     <Card className="h-full transition-all text-center bg-background/80 backdrop-blur-sm hover:shadow-lg hover:border-primary/50">
                                                         <CardContent className="p-4 flex flex-col items-center justify-center gap-2">
-                                                            <div className="p-3 bg-muted rounded-full">
-                                                            <service.icon className={`w-6 h-6 ${service.color}`} />
+                                                            <div className={`p-3 rounded-full ${service.iconBg}`}>
+                                                                <service.icon className={`w-6 h-6 ${service.color}`} />
                                                             </div>
                                                             <p className="font-semibold text-sm">{service.title}</p>
                                                         </CardContent>
