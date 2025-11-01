@@ -130,7 +130,8 @@ export default function UserLayout({
   }
   
   return (
-    <div className="h-full antialiased bg-background text-foreground aurora-background" style={{fontFamily: "Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, 'Helvetica Neue', 'Noto Sans', 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'sans-serif'"}}>
+    <div className="h-full antialiased bg-background text-foreground" style={{fontFamily: "Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, 'Helvetica Neue', 'Noto Sans', 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'sans-serif'"}}>
+        <div className="aurora-background fixed inset-0 -z-10"></div>
       <header className="relative z-10">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <nav className="flex items-center justify-between py-4">
