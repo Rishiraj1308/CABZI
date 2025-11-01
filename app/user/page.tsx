@@ -1,7 +1,7 @@
 
 'use client'
 
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button, buttonVariants } from '@/components/ui/button'
 import {
@@ -22,7 +22,7 @@ const ServiceCard = ({
   onClick: () => void
 }) => (
   <button
-    className="serviceCard group flex items-center justify-between rounded-2xl border border-border bg-card p-5 sm:p-6 hover:bg-accent/10 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+    className="serviceCard group flex items-center justify-between rounded-2xl border border-border bg-card/50 p-5 sm:p-6 hover:bg-accent/10 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
     role="button"
     tabIndex={0}
     title={service.title}
@@ -59,6 +59,8 @@ export default function ServicePortalPage() {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isSosModalOpen, setIsSosModalOpen] = useState(false);
   const [services, setServices] = useState<any[]>([]);
+
+  const headingText = "How can we help you today?".split("");
 
   const serviceData = [
     { id: 'ride', href: '/user/book', icon: Car, title: 'Ride', description: 'On-demand transport to clinics', tag: '5–10m', tagIcon: Clock, iconBg: 'bg-emerald-400/15', iconRing: 'ring-emerald-400/30', iconColor: 'text-emerald-500', tagBg: 'bg-emerald-100 dark:bg-emerald-900/30', tagBorder: 'border-emerald-400/30', tagColor: 'text-emerald-600 dark:text-emerald-200', label: 'ride transport car taxi clinic mobility hospital cab' },
@@ -101,7 +103,19 @@ export default function ServicePortalPage() {
           <div className="rounded-3xl border border-border bg-gray-500/10 p-5 sm:p-8 md:p-10 shadow-xl backdrop-blur-sm">
             <div className="text-center">
               <h1 className="text-3xl sm:text-4xl md:text-5xl tracking-tight font-semibold">
-                How can we help you today?
+                {headingText.map((el, i) => (
+                  <motion.span
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{
+                      duration: 0.25,
+                      delay: i / 20,
+                    }}
+                    key={i}
+                  >
+                    {el}
+                  </motion.span>
+                ))}
               </h1>
               <p className="mt-2 text-base sm:text-lg text-muted-foreground font-normal">
                 Choose a service to get started.
