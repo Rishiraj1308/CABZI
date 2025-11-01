@@ -105,7 +105,7 @@ export default function AdminLayout({
 
   return (
     <div className="flex min-h-screen w-full flex-col bg-muted/40">
-      <header className="sticky top-0 z-50 flex h-16 items-center gap-4 border-b bg-background/95 px-4 backdrop-blur-sm md:px-6">
+      <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6">
        <div className="flex items-center gap-2">
          <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
              <SheetTrigger asChild>
@@ -127,14 +127,10 @@ export default function AdminLayout({
                  </div>
              </SheetContent>
          </Sheet>
-         <Link href="/admin" className="hidden items-center gap-2 md:flex">
-             <BrandLogo />
-         </Link>
-       </div>
-       
-        <div className="hidden md:flex items-center gap-4 mx-auto">
+         <div className="hidden md:block">
             <AdminNav />
-        </div>
+         </div>
+       </div>
 
        <div className="ml-auto flex items-center gap-4">
            <ThemeToggle />
