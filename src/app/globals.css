@@ -7,40 +7,7 @@
 
 @layer base {
   :root {
-    /* Dark Theme (Default) */
-    --background: 220 20% 10%;
-    --foreground: 210 40% 98%;
- 
-    --card: 220 20% 10%;
-    --card-foreground: 210 40% 98%;
- 
-    --popover: 220 20% 10%;
-    --popover-foreground: 210 40% 98%;
- 
-    --primary: 210 40% 98%;
-    --primary-foreground: 220 20% 10%;
- 
-    --secondary: 220 20% 15%;
-    --secondary-foreground: 210 40% 98%;
- 
-    --muted: 220 20% 15%;
-    --muted-foreground: 210 40% 60%;
- 
-    --accent: 45 95% 55%;
-    --accent-foreground: 45 80% 5%;
- 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%;
-
-    --border: 210 20% 25%;
-    --input: 220 20% 15%;
-    --ring: 210 40% 60%;
- 
-    --radius: 0.8rem;
-  }
- 
-  .light {
-     /* This is a placeholder for now, the app defaults to dark mode per the design. */
+    /* Polished Light Theme */
     --background: 210 40% 98%;
     --foreground: 220 20% 10%;
 
@@ -68,6 +35,39 @@
     --border: 210 20% 88%;
     --input: 210 20% 88%;
     --ring: 195 40% 50%;
+ 
+    --radius: 0.8rem;
+  }
+ 
+  .dark {
+    /* Exact dark teal theme from the user's design */
+    --background: 180 15% 5%;
+    --foreground: 180 10% 95%;
+ 
+    --card: 180 12% 10%;
+    --card-foreground: 180 10% 95%;
+ 
+    --popover: 180 15% 5%;
+    --popover-foreground: 180 10% 95%;
+ 
+    --primary: 180 10% 95%;
+    --primary-foreground: 180 15% 10%;
+ 
+    --secondary: 180 10% 15%;
+    --secondary-foreground: 180 10% 95%;
+ 
+    --muted: 180 10% 15%;
+    --muted-foreground: 180 10% 65%;
+ 
+    --accent: 45 95% 55%;
+    --accent-foreground: 45 80% 5%;
+ 
+    --destructive: 0 63% 31%;
+    --destructive-foreground: 0 0% 98%;
+ 
+    --border: 180 10% 15%;
+    --input: 180 10% 12%;
+    --ring: 180 40% 60%;
   }
 
   .pink {
@@ -103,8 +103,92 @@
   }
 }
 
+@layer utilities {
+    .btn-glow {
+      box-shadow: 0 0 10px hsl(var(--accent)), 0 0 20px hsl(var(--accent));
+      transition: box-shadow 0.3s ease-in-out;
+    }
+    .btn-glow:hover {
+       box-shadow: 0 0 15px hsl(var(--accent)), 0 0 30px hsl(var(--accent));
+    }
+    .aurora-background {
+      position: relative;
+      overflow: hidden;
+      background-color: hsl(var(--background)); /* Base color */
+    }
+
+    .dark .aurora-background::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: -1;
+        background-image: 
+            radial-gradient(ellipse at 50% 0%, hsla(160, 80%, 30%, 0.15), transparent 70%),
+            radial-gradient(ellipse at 80% 100%, hsla(190, 80%, 50%, 0.1), transparent 70%);
+        background-size: 150% 150%;
+        animation: aurora-glow 15s linear infinite alternate;
+        will-change: background-position;
+    }
+
+    .light .aurora-background::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: -1;
+        background-image: 
+            radial-gradient(ellipse at 50% 0%, hsla(180, 50%, 80%, 0.15), transparent 80%),
+            radial-gradient(ellipse at 100% 100%, hsla(200, 80%, 85%, 0.1), transparent 80%);
+        background-size: 150% 150%;
+        animation: aurora-glow 20s linear infinite alternate;
+        will-change: background-position;
+    }
+    
+    @keyframes aurora-glow {
+      0% { background-position: 0% 50%; }
+      100% { background-position: 100% 50%; }
+    }
+}
+
+
 .leaflet-container {
     height: 100%;
     width: 100%;
     z-index: 0;
 }
+
+.animate-text-gradient {
+  background: linear-gradient(45deg, hsl(var(--primary)), hsl(var(--accent)), hsl(var(--primary)));
+  background-size: 200% 200%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: text-gradient-animation 5s ease infinite;
+}
+
+@keyframes text-gradient-animation {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.font-headline {
+    font-family: var(--font-poppins), sans-serif;
+}
+
+@keyframes electric-flow {
+  to {
+    stroke-dashoffset: -20;
+  }
+}
+
+.route-electric-flow {
+  stroke-dasharray: 10 10;
+  animation: electric-flow 1s linear infinite;
+}
+
