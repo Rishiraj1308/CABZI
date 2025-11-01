@@ -104,36 +104,33 @@ export default function AdminLayout({
   if (!isMounted) return null;
 
   return (
-    <div className="flex min-h-screen w-full flex-col">
+    <div className="flex min-h-screen w-full flex-col bg-muted/40">
       <header className="sticky top-0 z-50 flex h-16 items-center gap-4 border-b bg-background/95 px-4 backdrop-blur-sm md:px-6">
-       <Link href="/" className="mr-6 flex items-center gap-2">
-           <BrandLogo />
-       </Link>
-
-       <div className="hidden md:flex md:flex-1">
-           <AdminNav />
+       <div className="flex items-center gap-2">
+         <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
+             <SheetTrigger asChild>
+                 <Button variant="outline" size="icon" className="shrink-0 md:hidden">
+                     <PanelLeft className="h-5 w-5" />
+                     <span className="sr-only">Toggle navigation menu</span>
+                 </Button>
+             </SheetTrigger>
+             <SheetContent side="left" className="p-0">
+                  <SheetHeader className="h-16 flex flex-row items-center border-b px-6">
+                      <SheetTitle className="sr-only">Main Menu</SheetTitle>
+                      <SheetDescription className="sr-only">Navigation links for the admin panel.</SheetDescription>
+                      <Link href="/" className="flex items-center gap-2 font-semibold">
+                         <BrandLogo />
+                      </Link>
+                  </SheetHeader>
+                  <div className="flex-1 overflow-auto py-2">
+                     <AdminMobileNav setOpen={setIsMobileMenuOpen} />
+                 </div>
+             </SheetContent>
+         </Sheet>
+         <Link href="/admin" className="hidden items-center gap-2 md:flex">
+             <BrandLogo />
+         </Link>
        </div>
-
-       <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
-           <SheetTrigger asChild>
-               <Button variant="outline" size="icon" className="shrink-0 md:hidden">
-                   <PanelLeft className="h-5 w-5" />
-                   <span className="sr-only">Toggle navigation menu</span>
-               </Button>
-           </SheetTrigger>
-           <SheetContent side="left" className="p-0">
-                <SheetHeader className="h-16 flex flex-row items-center border-b px-6">
-                    <SheetTitle className="sr-only">Main Menu</SheetTitle>
-                    <SheetDescription className="sr-only">Navigation links for the admin panel.</SheetDescription>
-                    <Link href="/" className="flex items-center gap-2 font-semibold">
-                       <BrandLogo />
-                    </Link>
-                </SheetHeader>
-                <div className="flex-1 overflow-auto py-2">
-                   <AdminMobileNav setOpen={setIsMobileMenuOpen} />
-               </div>
-           </SheetContent>
-       </Sheet>
        
        <div className="ml-auto flex items-center gap-4">
            <ThemeToggle />
@@ -177,7 +174,12 @@ export default function AdminLayout({
            </DropdownMenuContent>
          </DropdownMenu>
        </div>
-     </header>
+      </header>
+
+      <div className="hidden md:flex h-14 items-center border-b bg-background px-6">
+        <AdminNav />
+      </div>
+
       <main className="flex flex-1 flex-col p-4 md:p-8 gap-4 md:gap-8">
         <MotionDiv
            key={pathname}
