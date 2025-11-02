@@ -5,26 +5,29 @@ import { motion } from 'framer-motion'
 import { BrainCircuit } from 'lucide-react'
 
 export default function CuroMindReveal() {
-  const text = "The road ahead is thinking...";
+  const text = "The next turn is thinking...";
   const chars = Array.from(text);
 
   const container = {
     hidden: { opacity: 1 },
     visible: (i = 1) => ({
       opacity: 1,
-      transition: { staggerChildren: 0.05, delayChildren: 0.04 * i },
+      transition: { staggerChildren: 0.04, delayChildren: 0.04 * i },
     }),
   };
 
   const child = {
     visible: {
       opacity: 1,
+      y: 0,
       transition: {
-        duration: 0.1,
+        type: "tween",
+        duration: 0.5,
       },
     },
     hidden: {
       opacity: 0,
+      y: 20,
     },
   };
   
@@ -32,7 +35,7 @@ export default function CuroMindReveal() {
   const intelligentEndIndex = intelligentStartIndex + "thinking".length;
 
   return (
-    <section className="relative flex flex-col items-center justify-center text-center overflow-hidden">
+    <section className="relative flex flex-col items-center justify-center text-center overflow-hidden py-16">
       
       {/* === Glowing Background Core === */}
       <div className="absolute inset-0 bg-gradient-radial from-primary/10 via-transparent to-transparent blur-3xl animate-pulse"></div>
@@ -82,6 +85,7 @@ export default function CuroMindReveal() {
         variants={container}
         initial="hidden"
         whileInView="visible"
+        viewport={{ once: true }}
         className="text-4xl md:text-6xl font-bold tracking-tight z-10 leading-snug flex flex-wrap justify-center"
       >
         {chars.map((char, index) => (
@@ -109,11 +113,11 @@ export default function CuroMindReveal() {
         transition={{ delay: 2.5, duration: 1 }}
         className="mt-4 text-muted-foreground text-lg md:text-xl z-10"
       >
-        Coming soon: <span className="text-primary/90 cursor-help" title="It's learning from Curocity...">A smarter journey.</span>
+        Coming soon: The mind that cares.
       </motion.p>
 
       {/* === Bottom Glow === */}
-      <div className="absolute bottom-0 w-full h-40 bg-gradient-to-t from-primary/20 to-transparent blur-2xl"></div>
+      <div className="absolute bottom-0 w-full h-40 bg-gradient-to-t from-background via-background/50 to-transparent blur-2xl z-0"></div>
     </section>
   )
 }
