@@ -6,7 +6,7 @@ import Image from 'next/image'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
-import { Star, History, IndianRupee, Power, KeyRound, Clock, MapPin, Route, Navigation, CheckCircle, Sparkles, Eye, TrendingUp, Phone, MessageSquare } from 'lucide-react'
+import { Star, History, IndianRupee, Power, KeyRound, Clock, MapPin, Route, Navigation, CheckCircle, Sparkles, Eye } from 'lucide-react'
 import {
   AlertDialog,
   AlertDialogContent,
@@ -45,7 +45,7 @@ import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import RideStatus from '@/components/ride-status'
 
 
@@ -369,38 +369,11 @@ export default function DriverDashboardPage() {
     }
   };  
   
-   const startWaitingTimer = () => {
-        if (waitingTimerRef.current) clearInterval(waitingTimerRef.current);
-
-        setWaitingTime(60); // Reset timer
-        setWaitingCharges(0);
-
-        waitingTimerRef.current = setInterval(() => {
-            setWaitingTime(prev => {
-                if (prev <= 1) {
-                    // After 60 seconds, start adding charges
-                    setWaitingCharges(c => c + 2);
-                    return 0; // Keep timer at 0
-                }
-                return prev - 1;
-            });
-        }, 1000);
-    };
-
-  const handleUpdateRideStatus = async (status: 'arrived' | 'in-progress' | 'payment_pending') => {
+   const handleUpdateRideStatus = async (status: 'arrived' | 'in-progress' | 'payment_pending' | 'completed') => {
     if (!activeRide || !db) return;
     const rideRef = doc(db, 'rides', activeRide.id);
     try {
         await updateDoc(rideRef, { status });
-        
-        if (status === 'arrived') {
-            startWaitingTimer();
-        }
-
-        if (status === 'in-progress' && waitingTimerRef.current) {
-            clearInterval(waitingTimerRef.current);
-            await updateDoc(rideRef, { waitingCharges });
-        }
         
         // Optimistically update local state to reflect the change immediately
         setActiveRide(prev => prev ? ({ ...prev, status } as RideData) : null);
@@ -408,6 +381,10 @@ export default function DriverDashboardPage() {
             title: "Ride Status Updated",
             description: `Status is now: ${status.replace('_', ' ')}`,
         });
+
+        if (status === 'completed') {
+            resetAfterRide();
+        }
     } catch (error) {
         console.error("Error updating ride status:", error);
         toast({
@@ -498,6 +475,54 @@ export default function DriverDashboardPage() {
     ? { lat: partnerData.currentLocation.latitude, lon: partnerData.currentLocation.longitude }
     : undefined;
     
+    const renderActiveRide = () => {
+        if (!activeRide) return null;
+
+        const isNavigatingToRider = ['accepted', 'arrived'].includes(activeRide.status);
+        const destinationLocation = isNavigatingToRider ? activeRide.pickup.location : activeRide.destination.location;
+        const navigateUrl = destinationLocation ? `https://www.google.com/maps/dir/?api=1&destination=${destinationLocation.latitude},${destinationLocation.longitude}` : '#';
+
+        return (
+            <Card className="shadow-lg animate-fade-in w-full">
+                <CardHeader>
+                    <CardTitle className="capitalize">{activeRide.status.replace('_', ' ')}</CardTitle>
+                    <CardDescription>Rider: {activeRide.riderName}</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                     <div className="p-3 rounded-lg bg-muted flex items-center gap-3">
+                        <Avatar className="w-12 h-12"><AvatarImage src={'https://placehold.co/100x100.png'} alt={activeRide.riderName} /><AvatarFallback>{activeRide.riderName?.[0] || 'R'}</AvatarFallback></Avatar>
+                        <div className="flex-1">
+                            <p className="font-bold">{activeRide.riderName}</p>
+                            <p className="text-sm text-muted-foreground capitalize">{activeRide.riderGender}</p>
+                        </div>
+                     </div>
+                     {activeRide.status === 'arrived' && (
+                        <div className="space-y-2">
+                           <Label htmlFor="otp">Enter Rider's OTP</Label>
+                           <div className="flex gap-2">
+                              <Input id="otp" value={enteredOtp} onChange={(e) => setEnteredOtp(e.target.value)} placeholder="4-Digit OTP" maxLength={4}/>
+                              <Button onClick={handleVerifyOtp}><CheckCircle className="w-4 h-4 mr-2"/>Verify & Start</Button>
+                           </div>
+                        </div>
+                     )}
+                     <Button asChild size="lg" className="w-full bg-blue-600 hover:bg-blue-700 text-white">
+                         <a href={navigateUrl} target="_blank" rel="noopener noreferrer">
+                             <Navigation className="mr-2 h-5 w-5"/>
+                             Navigate to {isNavigatingToRider ? 'Pickup' : 'Destination'}
+                         </a>
+                     </Button>
+                </CardContent>
+                <CardFooter>
+                    {activeRide.status === 'accepted' && (
+                        <Button className="w-full" size="lg" onClick={() => handleUpdateRideStatus('arrived')}>Arrived at Pickup</Button>
+                    )}
+                    {activeRide.status === 'in-progress' && (
+                        <Button className="w-full bg-destructive hover:bg-destructive/80" size="lg" onClick={() => handleUpdateRideStatus('completed')}>End Trip</Button>
+                    )}
+                </CardFooter>
+            </Card>
+        );
+    }
     
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start h-full">
@@ -513,8 +538,6 @@ export default function DriverDashboardPage() {
                             }
                         }}
                         driverLocation={driverLocation}
-                        riderLocation={activeRide?.pickup?.location ? { lat: activeRide.pickup.location.latitude, lon: activeRide.pickup.location.longitude } : undefined}
-                        destinationLocation={activeRide?.destination?.location ? { lat: activeRide.destination.location.latitude, lon: activeRide.destination.location.longitude } : undefined}
                         isTripInProgress={activeRide?.status === 'in-progress'}
                      />
                 </CardContent>
@@ -523,11 +546,9 @@ export default function DriverDashboardPage() {
         
         <div className={cn("space-y-6 lg:col-span-3", activeRide && 'lg:col-span-3 lg:row-start-2')}>
             {activeRide ? (
-                <RideStatus 
-                    ride={activeRide}
-                    onCancel={resetAfterRide}
-                    onDone={resetAfterRide}
-                />
+                <div className="p-1">
+                    <RideStatus ride={activeRide} onCancel={resetAfterRide} onDone={resetAfterRide} />
+                </div>
             ) : (
                 <>
                      <Card>
@@ -684,6 +705,3 @@ export default function DriverDashboardPage() {
 }
 
     
-
-    
-
