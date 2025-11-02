@@ -85,7 +85,6 @@ export default function DriverDashboardPage() {
   const [enteredOtp, setEnteredOtp] = useState('');
   const [showDriverDetails, setShowDriverDetails] = useState(false)
   const prevStatusRef = React.useRef<string | null>(null)
-  const [isMapOpen, setIsMapOpen] = useState(true);
 
   const drivingSoundRef = useRef<HTMLAudioElement | null>(null)
   const hornSoundRef = useRef<HTMLAudioElement | null>(null)
@@ -384,7 +383,7 @@ export default function DriverDashboardPage() {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
         <div className="lg:col-span-2">
-            <Collapsible open={isMapOpen} onOpenChange={setIsMapOpen}>
+            <Collapsible defaultOpen={true}>
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between p-3">
                          <h3 className="font-semibold">Live Map</h3>
