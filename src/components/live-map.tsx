@@ -168,6 +168,9 @@ const LiveMap = forwardRef<any, LiveMapProps>((props, ref) => {
                     watch: true,
                     enableHighAccuracy: true,
                 },
+                // Removing the control from being added to the map by default
+                // to avoid duplicates. It will be started programmatically.
+                // addTo: map 
             }).addTo(map);
 
             map.on('locationfound', (e: any) => {
@@ -179,7 +182,10 @@ const LiveMap = forwardRef<any, LiveMapProps>((props, ref) => {
                 });
             });
             
-            locateControlRef.current?.start();
+            // This will start tracking the user's location without adding a duplicate button
+            if (locateControlRef.current) {
+                locateControlRef.current.start();
+            }
         }
 
     }, [getAddress, props, resolvedTheme, props.zoom]);
@@ -353,7 +359,4 @@ const LiveMap = forwardRef<any, LiveMapProps>((props, ref) => {
 
 LiveMap.displayName = 'LiveMap';
 export default LiveMap;
-
-
-
 
