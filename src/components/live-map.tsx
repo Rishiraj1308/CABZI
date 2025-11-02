@@ -85,6 +85,9 @@ const LiveMap = forwardRef<any, LiveMapProps>((props, ref) => {
         getAddress: getAddress,
         getCenter: () => {
             return mapInstanceRef.current?.getCenter();
+        },
+        invalidateSize: () => {
+             mapInstanceRef.current?.invalidateSize();
         }
     }));
     
@@ -350,6 +353,7 @@ const LiveMap = forwardRef<any, LiveMapProps>((props, ref) => {
 
 LiveMap.displayName = 'LiveMap';
 export default LiveMap;
+
 
 
 

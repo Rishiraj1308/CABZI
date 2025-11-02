@@ -83,6 +83,8 @@ export default function DriverDashboardPage() {
 
   const drivingSoundRef = useRef<HTMLAudioElement | null>(null)
   const hornSoundRef = useRef<HTMLAudioElement | null>(null)
+  const [isMapDialogOpen, setIsMapDialogOpen] = useState(false);
+  const mapRef = useRef<any>(null);
 
 
   useEffect(() => {
@@ -100,6 +102,17 @@ export default function DriverDashboardPage() {
       notificationSoundRef.current = new Audio('/sounds/notification.mp3')
     }
   }, []);
+
+    // Effect to invalidate map size when dialog opens
+    useEffect(() => {
+        if (isMapDialogOpen && mapRef.current) {
+            // Delay to ensure dialog is rendered
+            const timer = setTimeout(() => {
+                mapRef.current.invalidateSize();
+            }, 100);
+            return () => clearTimeout(timer);
+        }
+    }, [isMapDialogOpen]);
 
   const handleAvailabilityChange = async (checked: boolean) => {
     if (!partnerData || !db) return;
@@ -410,7 +423,7 @@ export default function DriverDashboardPage() {
                 <SearchingIndicator partnerType="path" className="w-32 h-32" />
                 <h3 className="text-3xl font-bold mt-4">Waiting for Rides...</h3>
                 <p className="text-muted-foreground mt-2 text-sm">Your location is being shared to get nearby requests.</p>
-                <Dialog>
+                <Dialog open={isMapDialogOpen} onOpenChange={setIsMapDialogOpen}>
                     <DialogTrigger asChild>
                         <Button variant="outline" size="sm" className="mt-4">
                             View Live Map
@@ -420,6 +433,7 @@ export default function DriverDashboardPage() {
                         <DialogHeader><DialogTitle>Live Map</DialogTitle></DialogHeader>
                         <div className="h-full w-full rounded-md overflow-hidden border">
                             <LiveMap 
+                                ref={mapRef}
                                 driverLocation={driverLocation}
                                 isTripInProgress={activeRide?.status === 'in-progress'}
                             />
@@ -536,4 +550,3 @@ export default function DriverDashboardPage() {
   );
 }
 
-    
