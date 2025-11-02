@@ -89,6 +89,7 @@ export default function DriverDashboardPage() {
   const drivingSoundRef = useRef<HTMLAudioElement | null>(null)
   const hornSoundRef = useRef<HTMLAudioElement | null>(null)
   const mapRef = useRef<any>(null);
+  const [isMapVisible, setIsMapVisible] = useState(true);
 
 
   useEffect(() => {
@@ -383,19 +384,24 @@ export default function DriverDashboardPage() {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
         <div className="lg:col-span-2">
-            <Collapsible defaultOpen={true}>
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between p-3">
-                         <h3 className="font-semibold">Live Map</h3>
-                        <CollapsibleTrigger asChild>
-                            <Button variant="ghost" size="sm">
-                                <ChevronsUpDown className="h-4 w-4" />
-                                <span className="sr-only">Toggle Map</span>
-                            </Button>
-                        </CollapsibleTrigger>
-                    </CardHeader>
-                    <CollapsibleContent>
-                        <CardContent className="p-0 h-[68vh]">
+            <Card>
+                <CardHeader className="flex flex-row items-center justify-between p-3">
+                     <h3 className="font-semibold">Live Map</h3>
+                    <Button variant="ghost" size="sm" onClick={() => setIsMapVisible(prev => !prev)}>
+                        <ChevronsUpDown className="h-4 w-4" />
+                        <span className="sr-only">Toggle Map</span>
+                    </Button>
+                </CardHeader>
+                <AnimatePresence>
+                {isMapVisible && (
+                    <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: '75vh', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.5, ease: 'easeInOut' }}
+                        className="overflow-hidden"
+                    >
+                        <CardContent className="p-0 h-full">
                             <LiveMap 
                                 ref={mapRef}
                                 onLocationFound={(address, coords) => {
@@ -409,9 +415,10 @@ export default function DriverDashboardPage() {
                                 isTripInProgress={activeRide?.status === 'in-progress'}
                             />
                         </CardContent>
-                    </CollapsibleContent>
-                </Card>
-            </Collapsible>
+                    </motion.div>
+                )}
+                </AnimatePresence>
+            </Card>
         </div>
         <div className="lg:col-span-1 space-y-6">
             {activeRide ? renderActiveRide() : (
@@ -447,10 +454,7 @@ export default function DriverDashboardPage() {
                         <CardTitle className="flex items-center gap-2"><Sparkles className="text-yellow-300" /> AI Earnings Coach</CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <div className="flex justify-between items-center">
-                                <p>Focus on these areas for higher earnings:</p>
-                                <TrendingUp className="w-6 h-6 text-yellow-300"/>
-                            </div>
+                            <p>Focus on these areas for higher earnings:</p>
                             <div className="mt-4 text-sm space-y-2 text-primary-foreground/90">
                                 <div className="flex items-center gap-1.5"><MapPin className="w-3 h-3"/> Cyber Hub (5 PM - 8 PM)</div>
                                 <div className="flex items-center gap-1.5"><MapPin className="w-3 h-3"/> IGI Airport T3 (10 PM - 2 AM)</div>
