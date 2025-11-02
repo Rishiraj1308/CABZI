@@ -493,87 +493,96 @@ export default function DriverDashboardPage() {
         </div>
 
         <AlertDialog open={!!jobRequest}>
-  <AlertDialogContent>
-    <AlertDialogHeader>
-      <AlertDialogTitle>New Ride Request!</AlertDialogTitle>
-      <AlertDialogDescription>
-        A new ride is available. Please review and respond quickly.
-      </AlertDialogDescription>
-    </AlertDialogHeader>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>New Ride Request!</AlertDialogTitle>
+              <AlertDialogDescription>
+                A new ride is available. Please review and respond quickly.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
 
-    {jobRequest && (
-      <>
-        <div className="absolute top-4 right-4 w-12 h-12 flex items-center justify-center rounded-full border-4 border-primary text-primary font-bold text-2xl">
-          {requestTimeout}
-        </div>
+            {jobRequest && (
+              <>
+                <div className="absolute top-4 right-4 w-12 h-12 flex items-center justify-center rounded-full border-4 border-primary text-primary font-bold text-2xl">
+                  {requestTimeout}
+                </div>
 
-        <div className="flex items-center gap-4">
-          <Avatar className="w-12 h-12">
-            <AvatarImage
-              src={'https://placehold.co/100x100.png'}
-              alt={jobRequest.riderName}
-              data-ai-hint="rider portrait"
-            />
-            <AvatarFallback>
-              {jobRequest?.riderName?.[0] || 'R'}
-            </AvatarFallback>
-          </Avatar>
-          <div>
-            <p className="font-bold">{jobRequest?.riderName}</p>
-            <p className="text-sm text-muted-foreground capitalize">
-              {jobRequest?.riderGender}
-            </p>
-          </div>
-          <Badge variant="outline">{jobRequest.rideType}</Badge>
-        </div>
+                <div className="flex items-center gap-4">
+                  <Avatar className="w-12 h-12">
+                    <AvatarImage
+                      src={'https://placehold.co/100x100.png'}
+                      alt={jobRequest.riderName}
+                      data-ai-hint="rider portrait"
+                    />
+                    <AvatarFallback>
+                      {jobRequest?.riderName?.[0] || 'R'}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <p className="font-bold">{jobRequest?.riderName}</p>
+                    <p className="text-sm text-muted-foreground capitalize">
+                      {jobRequest?.riderGender}
+                    </p>
+                  </div>
+                  <Badge variant="outline">{jobRequest.rideType}</Badge>
+                </div>
 
-        <div className="space-y-2 text-sm mt-3">
-          <div className="flex items-start gap-2">
-            <MapPin className="w-4 h-4 mt-1 text-green-500 flex-shrink-0" />
-            <p>
-              <span className="font-semibold">Pickup:</span>{' '}
-              {jobRequest.pickupAddress}
-            </p>
-          </div>
-          <div className="flex items-start gap-2">
-            <Route className="w-4 h-4 mt-1 text-red-500 flex-shrink-0" />
-            <p>
-              <span className="font-semibold">Drop:</span>{' '}
-              {jobRequest.destinationAddress}
-            </p>
-          </div>
-        </div>
-        <div className="grid grid-cols-3 gap-2 text-center mt-3">
-          <div className="p-2 bg-muted rounded-md">
-            <p className="text-xs text-muted-foreground">Est. Fare</p>
-            <p className="font-bold text-lg text-green-600">
-              ₹{jobRequest.fare || '—'}
-            </p>
-          </div>
-          <div className="p-2 bg-muted rounded-md">
-            <p className="text-xs text-muted-foreground">To Pickup</p>
-            <p className="font-bold text-lg">
-                {jobRequest.distance ? `${jobRequest.distance.toFixed(1)} km` : '~km'}
-            </p>
-          </div>
-          <div className="p-2 bg-muted rounded-md">
-            <p className="text-xs text-muted-foreground">Est. Arrival</p>
-            <p className="font-bold text-lg">
-                {jobRequest.eta ? `~${Math.ceil(jobRequest.eta)} min` : '~min'}
-            </p>
-          </div>
-        </div>
-      </>
-    )}
+                <div className="h-40 w-full rounded-md overflow-hidden border">
+                    <LiveMap
+                      driverLocation={driverLocation}
+                      riderLocation={jobRequest.pickup?.location ? { lat: jobRequest.pickup.location.latitude, lon: jobRequest.pickup.location.longitude } : undefined}
+                      isTripInProgress={false}
+                      zoom={13}
+                    />
+                </div>
+                
+                <div className="space-y-2 text-sm mt-3">
+                  <div className="flex items-start gap-2">
+                    <MapPin className="w-4 h-4 mt-1 text-green-500 flex-shrink-0" />
+                    <p>
+                      <span className="font-semibold">Pickup:</span>{' '}
+                      {jobRequest.pickupAddress}
+                    </p>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <Route className="w-4 h-4 mt-1 text-red-500 flex-shrink-0" />
+                    <p>
+                      <span className="font-semibold">Drop:</span>{' '}
+                      {jobRequest.destinationAddress}
+                    </p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-3 gap-2 text-center mt-3">
+                  <div className="p-2 bg-muted rounded-md">
+                    <p className="text-xs text-muted-foreground">Est. Fare</p>
+                    <p className="font-bold text-lg text-green-600">
+                      ₹{jobRequest.fare || '—'}
+                    </p>
+                  </div>
+                  <div className="p-2 bg-muted rounded-md">
+                    <p className="text-xs text-muted-foreground">To Pickup</p>
+                    <p className="font-bold text-lg">
+                        {jobRequest.distance ? `${jobRequest.distance.toFixed(1)} km` : '~km'}
+                    </p>
+                  </div>
+                  <div className="p-2 bg-muted rounded-md">
+                    <p className="text-xs text-muted-foreground">Est. Arrival</p>
+                    <p className="font-bold text-lg">
+                        {jobRequest.eta ? `~${Math.ceil(jobRequest.eta)} min` : '~min'}
+                    </p>
+                  </div>
+                </div>
+              </>
+            )}
 
-    <AlertDialogFooter className="grid grid-cols-2 gap-2 mt-4">
-      <Button variant="destructive" onClick={() => handleDeclineJob()}>
-        Decline
-      </Button>
-      <Button onClick={handleAcceptJob}>Accept Ride</Button>
-    </AlertDialogFooter>
-  </AlertDialogContent>
-</AlertDialog>
+            <AlertDialogFooter className="grid grid-cols-2 gap-2 mt-4">
+              <Button variant="destructive" onClick={() => handleDeclineJob()}>
+                Decline
+              </Button>
+              <Button onClick={handleAcceptJob}>Accept Ride</Button>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
 
 
       {/* PIN Dialog */}
@@ -595,5 +604,3 @@ export default function DriverDashboardPage() {
     </div>
   );
 }
-
-    
