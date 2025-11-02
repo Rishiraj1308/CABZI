@@ -431,13 +431,13 @@ export default function DriverDashboardPage() {
                  <CardContent className="space-y-4">
                      {activeRide.status === 'accepted' && (
                         <div className="p-4 rounded-lg bg-muted flex items-center gap-3">
-                            <Avatar className="w-12 h-12"><AvatarImage src="https://i.pravatar.cc/100?u=rider" alt={rideData.riderName} data-ai-hint="rider portrait" /><AvatarFallback>{rideData.riderName?.substring(0,2)}</AvatarFallback></Avatar>
+                            <Avatar className="w-12 h-12"><AvatarImage src="https://i.pravatar.cc/100?u=rider" alt={activeRide.riderName} data-ai-hint="rider portrait" /><AvatarFallback>{activeRide.riderName?.substring(0,2)}</AvatarFallback></Avatar>
                             <div className="flex-1">
-                                <p className="font-bold">{rideData.riderName}</p>
-                                <p className="font-bold text-lg text-primary">OTP: {rideData.otp}</p>
+                                <p className="font-bold">{activeRide.riderName}</p>
+                                <p className="font-bold text-lg text-primary">OTP: {activeRide.otp}</p>
                             </div>
                             <div className="flex flex-col gap-2">
-                                <Button size="icon" variant="outline" asChild><a href={`tel:${rideData.riderPhone}`}><Phone/></a></Button>
+                                <Button size="icon" variant="outline" asChild><a href={`tel:${activeRide.riderPhone}`}><Phone/></a></Button>
                                 <Button size="icon" variant="outline"><MessageSquare/></Button>
                             </div>
                         </div>
@@ -487,68 +487,67 @@ export default function DriverDashboardPage() {
     }
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start h-full">
-        <div className={cn("space-y-6", activeRide ? "lg:col-span-1" : "lg:col-span-2")}>
+        <div className={cn("space-y-6 lg:col-span-2")}>
              <AnimatePresence>
-                {!isMapVisible && !activeRide && (
+                {!activeRide && (
                     <motion.div
                         initial={{ opacity: 1, height: 'auto' }}
                         animate={{ opacity: 1, height: 'auto' }}
                         exit={{ opacity: 0, height: 0 }}
                         transition={{ duration: 0.5, ease: 'easeInOut' }}
+                        className="h-full"
                     >
-                         <Card>
-                            <CardContent className="p-4">
-                             {isOnline ? (
-                                <div className="text-center py-12">
-                                    <SearchingIndicator partnerType="path" className="w-32 h-32" />
-                                    <h3 className="text-3xl font-bold mt-4">Waiting for Rides...</h3>
-                                    <p className="text-muted-foreground">You are online and ready to accept jobs.</p>
-                                    <Button variant="outline" size="sm" className="mt-4" onClick={() => setIsMapVisible(true)}>Show Map View</Button>
-                                </div>
-                             ) : (
-                                <div className="text-center py-12">
-                                    <CardTitle>You are Offline</CardTitle>
-                                    <CardDescription>Go online to receive ride requests.</CardDescription>
-                                </div>
-                             )}
-                             </CardContent>
+                         <Card className="h-[75vh]">
+                            <CardContent className="p-0 h-full">
+                                <LiveMap 
+                                    driverLocation={driverLocation} 
+                                />
+                            </CardContent>
                          </Card>
                     </motion.div>
                 )}
-            </AnimatePresence>
-             <AnimatePresence>
-                {(isMapVisible || activeRide) && (
-                <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: 'auto' }}
-                    exit={{ opacity: 0, height: 0 }}
-                    transition={{ duration: 0.5, ease: 'easeInOut' }}
-                >
-                    <Card className="h-96">
-                         { !activeRide && (
-                             <CardHeader className="absolute top-2 left-2 z-10 p-0 bg-background/50 rounded-lg">
-                                <Button variant="ghost" size="sm" onClick={() => setIsMapVisible(false)}>
-                                    Hide Map
-                                </Button>
-                            </CardHeader>
-                         ) }
-                        <CardContent className="p-0 h-full">
-                            <LiveMap 
-                                driverLocation={driverLocation} 
-                                riderLocation={activeRide?.pickup.location ? { lat: activeRide.pickup.location.latitude, lon: activeRide.pickup.location.longitude } : undefined}
-                                destinationLocation={activeRide?.destination.location ? { lat: activeRide.destination.location.latitude, lon: activeRide.destination.location.longitude } : undefined}
-                                isTripInProgress={activeRide?.status === 'in-progress'}
-                            />
-                        </CardContent>
-                    </Card>
-                </motion.div>
+                 {activeRide && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ duration: 0.5, ease: 'easeInOut' }}
+                        className="h-full"
+                    >
+                        <Card className="h-[75vh]">
+                            <CardContent className="p-0 h-full">
+                                 <LiveMap 
+                                    driverLocation={driverLocation} 
+                                    riderLocation={activeRide.pickup.location ? { lat: activeRide.pickup.location.latitude, lon: activeRide.pickup.location.longitude } : undefined}
+                                    destinationLocation={activeRide.destination.location ? { lat: activeRide.destination.location.latitude, lon: activeRide.destination.location.longitude } : undefined}
+                                    isTripInProgress={activeRide.status === 'in-progress'}
+                                />
+                            </CardContent>
+                        </Card>
+                    </motion.div>
                 )}
             </AnimatePresence>
         </div>
 
-        <div className={cn("space-y-6", activeRide ? "lg:col-span-2" : "lg:col-span-1")}>
+        <div className={cn("space-y-6 lg:col-span-1")}>
             {activeRide ? renderActiveRide() : (
                 <>
+                     <Card>
+                        <CardContent className="p-4">
+                         {isOnline ? (
+                            <div className="text-center py-12">
+                                <SearchingIndicator partnerType="path" className="w-32 h-32" />
+                                <h3 className="text-3xl font-bold mt-4">Waiting for Rides...</h3>
+                                <p className="text-muted-foreground">You are online and ready to accept jobs.</p>
+                            </div>
+                         ) : (
+                            <div className="text-center py-12">
+                                <CardTitle>You are Offline</CardTitle>
+                                <CardDescription>Go online to receive ride requests.</CardDescription>
+                            </div>
+                         )}
+                         </CardContent>
+                     </Card>
+
                     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-2">
                         <StatCard title="Today's Earnings" value={isEarningsVisible ? `₹${(partnerData?.todaysEarnings || 0).toLocaleString()}` : '₹ ****'} icon={IndianRupee} isLoading={isDriverLoading} onValueClick={() => !isEarningsVisible && setIsPinDialogOpen(true)} />
                         <StatCard title="Today's Rides" value={partnerData?.jobsToday?.toString() || '0'} icon={History} isLoading={isDriverLoading} />
@@ -597,10 +596,14 @@ export default function DriverDashboardPage() {
                       <p><span className="font-semibold">TO:</span> {jobRequest.destinationAddress}</p>
                   </div>
               </div>
+              
               <div className="h-40 w-full rounded-md overflow-hidden border">
                 <LiveMap
                   driverLocation={driverLocation}
                   riderLocation={jobRequest.pickup?.location ? { lat: jobRequest.pickup.location.latitude, lon: jobRequest.pickup.location.longitude } : undefined}
+                  destinationLocation={jobRequest.destination?.location ? { lat: jobRequest.destination.location.latitude, lon: jobRequest.destination.location.longitude } : undefined}
+                  isTripInProgress={false}
+                  zoom={11}
                 />
               </div>
               <div className="grid grid-cols-3 gap-2 text-center mt-3">
@@ -608,26 +611,29 @@ export default function DriverDashboardPage() {
                     <p className="text-xs text-muted-foreground">Est. Fare</p>
                     <p className="font-bold text-lg text-green-600">₹{jobRequest.fare}</p>
                 </div>
-                <div className="p-2 bg-muted rounded-md">
-                    <p className="text-xs text-muted-foreground">To Pickup</p>
-                    <p className="font-bold text-lg">{jobRequest.distance ? `${jobRequest.distance.toFixed(1)} km` : '~km'}</p>
+                 <div className="p-2 bg-muted rounded-md">
+                  <p className="text-xs text-muted-foreground">To Pickup</p>
+                    <p className="font-bold text-lg">
+                        {jobRequest.distance ? `${jobRequest.distance.toFixed(1)} km` : '~km'}
+                    </p>
                 </div>
                 <div className="p-2 bg-muted rounded-md">
-                    <p className="text-xs text-muted-foreground">Est. Arrival</p>
-                    <p className="font-bold text-lg">{jobRequest.eta ? `~${Math.ceil(jobRequest.eta)} min` : '~min'}</p>
+                  <p className="text-xs text-muted-foreground">Est. Arrival</p>
+                   <p className="font-bold text-lg">
+                        {jobRequest.eta ? `~${Math.ceil(jobRequest.eta)} min` : '~min'}
+                    </p>
                 </div>
               </div>
-              <AlertDialogFooter className="grid grid-cols-2 gap-2">
-                <Button variant="destructive" onClick={() => handleDeclineJob()}>Decline</Button>
-                <Button onClick={handleAcceptJob}>Accept Ride</Button>
-              </AlertDialogFooter>
-             </>
+            </>
             ) : (
                 <div className="p-8 text-center">Loading request...</div>
             )}
-          </AlertDialogContent>
+          <AlertDialogFooter className="grid grid-cols-2 gap-2">
+            <Button variant="destructive" onClick={() => handleDeclineJob()}>Decline</Button>
+            <Button onClick={handleAcceptJob}>Accept Ride</Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
       </AlertDialog>
-
 
       {/* PIN Dialog */}
       <Dialog open={isPinDialogOpen} onOpenChange={setIsPinDialogOpen}>
