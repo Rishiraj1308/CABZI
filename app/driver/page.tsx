@@ -48,18 +48,18 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 const LiveMap = dynamic(() => import('@/components/live-map'), { ssr: false })
 
 const StatCard = ({ title, value, icon: Icon, isLoading, onValueClick, iconButtonAction }: { title: string, value: string | React.ReactNode, icon: React.ElementType, isLoading?: boolean, onValueClick?: () => void, iconButtonAction?: () => void }) => (
-    <Card className="bg-white/5 border border-white/10 backdrop-blur-sm flex-1">
+    <Card className="bg-background/80 backdrop-blur-sm flex-1">
       <div className="p-3">
         <div className="flex flex-row items-center justify-between mb-1">
-          <p className="text-sm font-medium text-white/80">{title}</p>
-          <Button variant="ghost" size="icon" className="w-8 h-8 text-white/70 hover:bg-white/10 hover:text-white" onClick={iconButtonAction}>
+          <p className="text-sm font-medium text-muted-foreground">{title}</p>
+          <Button variant="ghost" size="icon" className="w-8 h-8 text-muted-foreground hover:bg-accent hover:text-accent-foreground" onClick={iconButtonAction}>
               <Icon className="h-4 w-4" />
           </Button>
         </div>
         {isLoading ? (
-          <Skeleton className="h-8 w-20 bg-white/10" />
+          <Skeleton className="h-8 w-20" />
         ) : (
-          <div className="text-2xl font-bold cursor-pointer text-white" onClick={onValueClick}>
+          <div className="text-2xl font-bold cursor-pointer" onClick={onValueClick}>
             {value}
           </div>
         )}
@@ -399,15 +399,15 @@ export default function DriverDashboardPage() {
             <>
                 <div className="flex justify-between items-center">
                     <div>
-                        <h2 className="text-3xl font-bold tracking-tight text-white">Driver Dashboard</h2>
-                        <p className="text-white/70 text-sm">Welcome back. Stay online and drive safe.</p>
+                        <h2 className="text-3xl font-bold tracking-tight">Driver Dashboard</h2>
+                        <p className="text-muted-foreground text-sm">Welcome back. Stay online and drive safe.</p>
                     </div>
                     <div className="text-right">
-                        <Badge variant="outline" className={cn("border-green-500/50 text-green-400", !isOnline && "border-gray-500/50 text-gray-400")}>
-                           <span className={cn("w-2 h-2 rounded-full mr-2 bg-green-500", !isOnline && "bg-gray-500")}/>
+                        <Badge variant={isOnline ? "default" : "outline"} className={cn(isOnline && "bg-green-600 hover:bg-green-600 text-white")}>
+                           <span className={cn("w-2 h-2 rounded-full mr-2", isOnline ? 'bg-white' : 'bg-gray-500')}/>
                            {isOnline ? 'Online' : 'Offline'}
                         </Badge>
-                        <p className="text-xs text-white/50 mt-1">{currentTime.toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}</p>
+                        <p className="text-xs text-muted-foreground mt-1">{currentTime.toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}</p>
                     </div>
                 </div>
 
@@ -439,8 +439,8 @@ export default function DriverDashboardPage() {
                     </CardContent>
                    </Card>
                 )}
-
-                <div className="flex gap-2">
+                
+                 <div className="flex flex-col sm:flex-row gap-2">
                     <StatCard title="Today's Earnings" value={isEarningsVisible ? `₹${(partnerData?.todaysEarnings || 0).toLocaleString()}` : <span className="font-mono tracking-widest">₹ •••••</span>} icon={Eye} isLoading={isDriverLoading} iconButtonAction={() => setIsPinDialogOpen(true)} />
                     <StatCard title="Today's Rides" value={partnerData?.jobsToday?.toString() || '0'} icon={History} isLoading={isDriverLoading} />
                     <StatCard title="Acceptance Rate" value={`${partnerData?.acceptanceRate || '95'}%`} icon={Power} isLoading={isDriverLoading} />
@@ -559,3 +559,4 @@ export default function DriverDashboardPage() {
     </div>
   );
 }
+
