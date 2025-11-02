@@ -395,17 +395,16 @@ export default function DriverDashboardPage() {
     <div className="space-y-6">
         {activeRide ? renderActiveRide() : (
             <>
-                <div className="flex justify-between items-center">
+                <div className="flex justify-between items-start">
                     <div>
                         <h2 className="text-3xl font-bold tracking-tight text-foreground">Driver Dashboard</h2>
                         <p className="text-muted-foreground text-sm">Welcome back. Stay online and drive safe.</p>
                     </div>
-                    <div className="text-right">
-                        <Badge variant={isOnline ? "default" : "outline"} className={cn(isOnline && "bg-green-600 hover:bg-green-600 text-white")}>
-                           <span className={cn("w-2 h-2 rounded-full mr-2", isOnline ? 'bg-white' : 'bg-gray-500')}/>
-                           {isOnline ? 'Online' : 'Offline'}
-                        </Badge>
-                        <p className="text-xs text-muted-foreground mt-1">{currentTime.toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}</p>
+                     <div className="flex items-center space-x-2">
+                        <Label htmlFor="online-status" className={cn("font-semibold", isOnline ? "text-green-600" : "text-muted-foreground")}>
+                            {isOnline ? "ONLINE" : "OFFLINE"}
+                        </Label>
+                        <Switch id="online-status" checked={isOnline} onCheckedChange={handleAvailabilityChange} />
                     </div>
                 </div>
 
@@ -438,10 +437,10 @@ export default function DriverDashboardPage() {
                    </Card>
                 )}
                 
-                <div className="flex flex-col sm:flex-row gap-2">
+                <div className="flex gap-2">
                     <StatCard title="Today's Earnings" value={isEarningsVisible ? `₹${(partnerData?.todaysEarnings || 0).toLocaleString()}` : '₹ •••••'} icon={IndianRupee} isLoading={isDriverLoading} onValueClick={() => !isEarningsVisible && setIsPinDialogOpen(true)} />
                     <StatCard title="Today's Rides" value={partnerData?.jobsToday?.toString() || '0'} icon={History} isLoading={isDriverLoading} />
-                    <StatCard title="Acceptance Rate" value={`${partnerData?.acceptanceRate || '95'}%`} icon={Power} isLoading={isDriverLoading} />
+                    <StatCard title="Acceptance" value={`${partnerData?.acceptanceRate || '95'}%`} icon={Power} isLoading={isDriverLoading} />
                     <StatCard title="Rating" value={partnerData?.rating?.toString() || '4.9'} icon={Star} isLoading={isDriverLoading} />
                 </div>
                 
@@ -458,21 +457,6 @@ export default function DriverDashboardPage() {
                         </div>
                     </CardContent>
                 </Card>
-                
-                 <div className="grid grid-cols-3 gap-2 sticky bottom-4">
-                    <Button variant="secondary" className="h-14 flex-col" onClick={() => handleAvailabilityChange(!isOnline)}>
-                        <Send className="w-5 h-5 mb-1" />
-                        <span className="text-xs">{isOnline ? 'Go Offline' : 'Go Online'}</span>
-                    </Button>
-                    <Button variant="secondary" className="h-14 flex-col">
-                        <FilePieChart className="w-5 h-5 mb-1"/>
-                         <span className="text-xs">Payouts</span>
-                    </Button>
-                    <Button className="h-14 flex-col bg-accent text-accent-foreground hover:bg-accent/90">
-                       <Headset className="w-5 h-5 mb-1"/>
-                       <span className="text-xs">Support</span>
-                    </Button>
-                </div>
                 </>
         )}
 
@@ -557,3 +541,4 @@ export default function DriverDashboardPage() {
     </div>
   );
 }
+
