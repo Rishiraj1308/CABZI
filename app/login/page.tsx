@@ -535,7 +535,7 @@ export default function LoginPage() {
 
   return (
       <div className="flex min-h-screen items-center justify-center p-4 bg-muted/40">
-          <div id="recaptcha-container"></div>
+          <div id="recaptcha-container" ref={recaptchaContainerRef}></div>
           <div className="absolute top-4 right-4 flex items-center gap-2">
               <LanguageToggle />
               <ThemeToggle />
