@@ -6,7 +6,7 @@ import Image from 'next/image'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
-import { Star, History, IndianRupee, Power, KeyRound, Clock, MapPin, Route, Navigation, CheckCircle, Sparkles, Eye } from 'lucide-react'
+import { Star, History, IndianRupee, Power, KeyRound, Clock, MapPin, Route, Navigation, CheckCircle, Sparkles, Eye, Map, TrendingUp } from 'lucide-react'
 import {
   AlertDialog,
   AlertDialogContent,
@@ -88,7 +88,7 @@ export default function DriverDashboardPage() {
 
   const drivingSoundRef = useRef<HTMLAudioElement | null>(null)
   const hornSoundRef = useRef<HTMLAudioElement | null>(null)
-  const [isMapVisible, setIsMapVisible] = useState(true);
+  const [isMapVisible, setIsMapVisible] = useState(false);
 
 
   useEffect(() => {
@@ -244,6 +244,7 @@ export default function DriverDashboardPage() {
       setJobRequest(null);
       setActiveRide({ ...jobRequest, status: 'accepted' } as RideData);
       localStorage.setItem('activeRideId', jobRequest.id);
+      setIsMapVisible(true);
   
       toast({
         title: 'Ride Accepted!',
@@ -372,32 +373,67 @@ export default function DriverDashboardPage() {
         );
     }
   return (
-    <div className={cn("grid gap-6 items-start", activeRide ? "grid-cols-1 lg:grid-cols-3" : "grid-cols-1")}>
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
         {activeRide && (
             <div className="lg:col-span-2">
-                 <Card className="h-[75vh]">
-                    <CardContent className="p-0 h-full">
-                         <LiveMap 
-                             driverLocation={driverLocation} 
-                             riderLocation={activeRide.pickup.location ? { lat: activeRide.pickup.location.latitude, lon: activeRide.pickup.location.longitude } : undefined}
-                             destinationLocation={activeRide.destination.location ? { lat: activeRide.destination.location.latitude, lon: activeRide.destination.location.longitude } : undefined}
-                             isTripInProgress={activeRide.status === 'in-progress'}
-                          />
-                    </CardContent>
-                </Card>
+                 <AnimatePresence>
+                    {isMapVisible && (
+                        <motion.div
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: '75vh' }}
+                            exit={{ opacity: 0, height: 0 }}
+                            transition={{ duration: 0.5, ease: 'easeInOut' }}
+                        >
+                            <Card className="h-full">
+                                <CardContent className="p-0 h-full">
+                                    <LiveMap 
+                                        driverLocation={driverLocation} 
+                                        riderLocation={activeRide.pickup.location ? { lat: activeRide.pickup.location.latitude, lon: activeRide.pickup.location.longitude } : undefined}
+                                        destinationLocation={activeRide.destination.location ? { lat: activeRide.destination.location.latitude, lon: activeRide.destination.location.longitude } : undefined}
+                                        isTripInProgress={activeRide.status === 'in-progress'}
+                                    />
+                                </CardContent>
+                            </Card>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
             </div>
         )}
-        <div className={cn("space-y-6", activeRide ? "lg:col-span-1" : "lg:col-span-1 w-full max-w-md mx-auto")}>
+        <div className={cn("space-y-6", activeRide ? "lg:col-span-1" : "lg:col-span-3 w-full max-w-md mx-auto")}>
             {activeRide ? renderActiveRide() : (
                 <>
                     <Card className="shadow-lg">
                         <CardHeader>
                         <div className="flex justify-between items-center">
                             <CardTitle>Your Dashboard</CardTitle>
+                            <Button variant="ghost" size="sm" onClick={() => setIsMapVisible(prev => !prev)}>
+                                <Map className="mr-2 h-4 w-4"/>
+                                Toggle Map
+                            </Button>
                         </div>
                         </CardHeader>
                         {isOnline ? (
                         <CardContent className="text-center py-12">
+                            <AnimatePresence>
+                                {isMapVisible && (
+                                    <motion.div
+                                        initial={{ opacity: 0, height: 0 }}
+                                        animate={{ opacity: 1, height: 'auto' }}
+                                        exit={{ opacity: 0, height: 0 }}
+                                        transition={{ duration: 0.5, ease: 'easeInOut' }}
+                                        className="h-96"
+                                    >
+                                        <Card className="h-full">
+                                            <CardContent className="p-0 h-full">
+                                                <LiveMap 
+                                                    driverLocation={driverLocation} 
+                                                    isTripInProgress={activeRide?.status === 'in-progress'}
+                                                />
+                                            </CardContent>
+                                        </Card>
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
                             <SearchingIndicator partnerType="path" className="w-32 h-32" />
                             <h3 className="text-3xl font-bold mt-4">Waiting for Rides...</h3>
                             <p className="text-muted-foreground">Your location is being shared to get nearby requests.</p>
@@ -514,3 +550,5 @@ export default function DriverDashboardPage() {
     </div>
   );
 }
+
+    
