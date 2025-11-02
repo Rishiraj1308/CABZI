@@ -35,7 +35,7 @@ import dynamic from 'next/dynamic'
 import type { JobRequest, RideData } from '@/lib/types'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useDriver } from './layout'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger } from '@/components/ui/dialog'
+import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import SearchingIndicator from '@/components/ui/searching-indicator'
 import { Switch } from '@/components/ui/switch'
@@ -409,7 +409,7 @@ export default function DriverDashboardPage() {
                     </div>
                 </div>
 
-                 {isOnline && (
+                {isOnline && (
                    <Card>
                     <CardHeader>
                         <CardTitle>Waiting for Rides...</CardTitle>
@@ -438,20 +438,20 @@ export default function DriverDashboardPage() {
                    </Card>
                 )}
                 
-                 <div className="flex flex-col sm:flex-row gap-2">
-                    <StatCard title="Today's Earnings" value={isEarningsVisible ? `₹${(partnerData?.todaysEarnings || 0).toLocaleString()}` : '₹ •••••'} icon={Eye} isLoading={isDriverLoading} onValueClick={() => !isEarningsVisible && setIsPinDialogOpen(true)} />
+                <div className="flex flex-col sm:flex-row gap-2">
+                    <StatCard title="Today's Earnings" value={isEarningsVisible ? `₹${(partnerData?.todaysEarnings || 0).toLocaleString()}` : '₹ •••••'} icon={IndianRupee} isLoading={isDriverLoading} onValueClick={() => !isEarningsVisible && setIsPinDialogOpen(true)} />
                     <StatCard title="Today's Rides" value={partnerData?.jobsToday?.toString() || '0'} icon={History} isLoading={isDriverLoading} />
                     <StatCard title="Acceptance Rate" value={`${partnerData?.acceptanceRate || '95'}%`} icon={Power} isLoading={isDriverLoading} />
                     <StatCard title="Rating" value={partnerData?.rating?.toString() || '4.9'} icon={Star} isLoading={isDriverLoading} />
                 </div>
                 
-                <Card className="bg-teal-600 text-black">
+                 <Card className="bg-background/80 backdrop-blur-sm border border-border/50 shadow-lg">
                     <CardHeader>
-                        <CardTitle className="flex items-center gap-2 text-black/90"><Sparkles className="text-yellow-300" /> AI Earnings Coach</CardTitle>
+                        <CardTitle className="flex items-center gap-2 text-foreground"><Sparkles className="text-primary" /> AI Earnings Coach</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <p>Focus on the Cyber Hub area between 5 PM - 8 PM. High demand is expected, and you could earn up to 30% more.</p>
-                        <div className="flex flex-wrap gap-x-4 gap-y-2 text-xs mt-3 text-black/70">
+                        <p className="text-muted-foreground">Focus on the Cyber Hub area between 5 PM - 8 PM. High demand is expected, and you could earn up to 30% more.</p>
+                        <div className="flex flex-wrap gap-x-4 gap-y-2 text-xs mt-3 text-muted-foreground">
                             <span className="flex items-center gap-1.5"><MapPin className="w-3 h-3"/> Cyber Hub</span>
                             <span className="flex items-center gap-1.5"><Clock className="w-3 h-3"/> 5 PM - 8 PM</span>
                             <span className="flex items-center gap-1.5"><TrendingUp className="w-3 h-3"/> +30% potential</span>
