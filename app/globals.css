@@ -30,24 +30,25 @@
   }
  
   .dark {
-    --background: 170 20% 8%; /* Very dark teal */
-    --foreground: 170 10% 95%; /* Almost white with a hint of teal */
-    --card: 170 15% 12%; /* Slightly lighter dark teal for cards */
+    /* Lighter Dark Teal Theme */
+    --background: 170 20% 12%; /* Was 8%, now 12% */
+    --foreground: 170 10% 95%;
+    --card: 170 15% 16%; /* Was 12%, now 16% */
     --card-foreground: 170 10% 95%;
-    --popover: 170 20% 5%; /* Even darker for popovers */
+    --popover: 170 20% 8%; /* Was 5%, now 8% */
     --popover-foreground: 170 10% 95%;
-    --primary: 160 50% 60%; /* Brighter teal for primary actions */
+    --primary: 160 50% 60%;
     --primary-foreground: 170 20% 10%;
-    --secondary: 170 15% 18%; /* Darker secondary elements */
+    --secondary: 170 15% 22%; /* Was 18%, now 22% */
     --secondary-foreground: 170 10% 95%;
-    --muted: 170 15% 18%;
+    --muted: 170 15% 22%;
     --muted-foreground: 170 10% 65%;
-    --accent: 45 95% 55%; /* Accent remains yellow for contrast */
+    --accent: 45 95% 55%;
     --accent-foreground: 45 80% 5%;
     --destructive: 0 70% 50%;
     --destructive-foreground: 0 0% 98%;
-    --border: 170 15% 20%;
-    --input: 170 15% 15%;
+    --border: 170 15% 25%; /* Was 20%, now 25% */
+    --input: 170 15% 18%; /* Was 15%, now 18% */
     --ring: 160 50% 60%;
   }
 
