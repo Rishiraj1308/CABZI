@@ -5,15 +5,14 @@ import { BrainCircuit } from 'lucide-react'
 
 export default function CuroMindReveal() {
   const text = "Something intelligent is awakening...";
-  // We split the entire text into characters for the animation
   const chars = Array.from(text);
 
   const container = {
     hidden: { opacity: 0 },
-    visible: (i = 1) => ({
+    visible: {
       opacity: 1,
-      transition: { staggerChildren: 0.03, delayChildren: 0.04 * i },
-    }),
+      transition: { staggerChildren: 0.05, delayChildren: 0.5 },
+    },
   };
 
   const child = {

@@ -1,4 +1,3 @@
-
 'use client'
 
 import React, { useState, useEffect, useRef, useCallback } from 'react'
@@ -488,7 +487,7 @@ export default function HomePage() {
                         </Card>
                     </div>
                 </section>
-                <section>
+                <section className="bg-background">
                     <CuroMindReveal />
                 </section>
             </div>
