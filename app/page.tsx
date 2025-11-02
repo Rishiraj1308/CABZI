@@ -488,9 +488,27 @@ export default function HomePage() {
                     </div>
                 </div>
             </section>
+            
+            <section className="py-20 md:py-24 bg-muted/40">
+                <div className="container text-center">
+                    <motion.div 
+                        initial={{ opacity: 0, y: 20 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true, amount: 0.5 }}
+                        transition={{ duration: 0.5 }}
+                    >
+                        <h2 className="text-3xl font-bold tracking-tight sm:text-4xl font-headline flex items-center justify-center gap-3">
+                            <BrainCircuit className="w-8 h-8 text-primary" /> Something intelligent is awakening...
+                        </h2>
+                        <p className="mt-4 text-lg text-muted-foreground">
+                            Coming soon: The mind that cares.
+                        </p>
+                    </motion.div>
+                </div>
+            </section>
 
             {/* Your Journey Section */}
-             <section className="py-20 md:py-24 bg-muted/40">
+             <section className="py-20 md:py-24">
                 <div className="container">
                     <div className="mx-auto max-w-3xl text-center">
                         <h2 className="text-3xl font-bold tracking-tight sm:text-4xl font-headline">
@@ -535,7 +553,7 @@ export default function HomePage() {
             </section>
 
              {/* Partner CTA Section */}
-            <section className="py-20 md:py-24">
+            <section className="py-20 md:py-24 bg-muted/40">
                 <div className="container text-center">
                     <h2 className="text-3xl font-bold tracking-tight sm:text-4xl font-headline">Join Our Driver-First Revolution</h2>
                     <p className="mt-4 text-lg text-muted-foreground max-w-2xl mx-auto">
