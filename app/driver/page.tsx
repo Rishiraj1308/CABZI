@@ -7,7 +7,7 @@ import Image from 'next/image'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
-import { Star, History, IndianRupee, Power, KeyRound, Clock, MapPin, Route, Navigation, CheckCircle, Sparkles, Eye, TrendingUp } from 'lucide-react'
+import { Star, History, IndianRupee, Power, KeyRound, Clock, MapPin, Route, Navigation, CheckCircle, Sparkles, Eye } from 'lucide-react'
 import {
   AlertDialog,
   AlertDialogContent,
@@ -150,12 +150,8 @@ export default function DriverDashboardPage() {
       const potentialJobs = snapshot.docs.map((doc) => {
         const data = doc.data() as any;
         const pickupLoc = data?.pickup?.location;
-        const destLoc = data?.destination?.location;
-
         let pickupDistance = null;
         let pickupEta = null;
-        let dropDistance = null;
-        let dropEta = null;
 
         if (pickupLoc) {
           pickupDistance = calcDistance(
@@ -167,25 +163,11 @@ export default function DriverDashboardPage() {
           pickupEta = Math.max(2, Math.round((pickupDistance / 0.5) * 2)); // approx min
         }
 
-        if (destLoc && pickupLoc) {
-          dropDistance = calcDistance(
-            pickupLoc.latitude,
-            pickupLoc.longitude,
-            destLoc.latitude,
-            destLoc.longitude
-          );
-          dropEta = Math.max(3, Math.round((dropDistance / 0.5) * 3)); // approx
-        }
-
         return {
           id: doc.id,
           ...data,
-          pickupAddress: data?.pickup?.address || "Pickup not available",
-          destinationAddress: data?.destination?.address || "Drop not available",
-          pickupDistance,
-          pickupEta,
-          dropDistance,
-          dropEta,
+          distance: pickupDistance,
+          eta: pickupEta,
         } as JobRequest;
       });
 
@@ -279,7 +261,7 @@ export default function DriverDashboardPage() {
             phone: partnerData.phone || '',
           },
           acceptedAt: serverTimestamp(),
-          driverEta: jobRequest.pickupEta,
+          driverEta: jobRequest.eta,
         };
   
         Object.keys(updateData).forEach((key) => {
@@ -425,9 +407,9 @@ export default function DriverDashboardPage() {
     }
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-        <div className={cn("space-y-6", activeRide ? "hidden lg:block lg:col-span-2" : "lg:col-span-3")}>
+        <div className={cn("space-y-6", activeRide ? "hidden lg:block" : "lg:col-span-2")}>
              <AnimatePresence>
-                {!isMapVisible && (
+                {!isMapVisible && !activeRide && (
                     <motion.div
                         initial={{ opacity: 1, height: 'auto' }}
                         animate={{ opacity: 1, height: 'auto' }}
@@ -435,36 +417,27 @@ export default function DriverDashboardPage() {
                         transition={{ duration: 0.5, ease: 'easeInOut' }}
                     >
                          <Card>
-                             <CardHeader>
-                                <div className="flex justify-between items-center">
-                                    <CardTitle>Your Dashboard</CardTitle>
-                                    <div className="flex items-center space-x-2">
-                                        <Switch id="online-status" checked={isOnline} onCheckedChange={handleAvailabilityChange} />
-                                        <Label htmlFor="online-status" className={cn("font-semibold", isOnline ? "text-green-600" : "text-muted-foreground")}>
-                                            {isOnline ? "ONLINE" : "OFFLINE"}
-                                        </Label>
-                                    </div>
-                                </div>
-                                {isOnline && <CardDescription><LocationDisplay /></CardDescription>}
-                            </CardHeader>
+                            <CardContent className="p-4">
                              {isOnline ? (
-                                <CardContent className="text-center py-12">
+                                <div className="text-center py-12">
                                     <SearchingIndicator partnerType="path" className="w-32 h-32" />
                                     <h3 className="text-3xl font-bold mt-4">Waiting for Rides...</h3>
-                                    <p className="text-muted-foreground">Your location is being shared to get nearby requests.</p>
+                                    <p className="text-muted-foreground">You are online and ready to accept jobs.</p>
                                     <Button variant="outline" size="sm" className="mt-4" onClick={() => setIsMapVisible(true)}>Show Map View</Button>
-                                </CardContent>
+                                </div>
                              ) : (
-                                <CardContent className="text-center py-12">
-                                    <CardDescription>You are currently offline. Go online to receive ride requests.</CardDescription>
-                                </CardContent>
+                                <div className="text-center py-12">
+                                    <CardTitle>You are Offline</CardTitle>
+                                    <CardDescription>Go online to receive ride requests.</CardDescription>
+                                </div>
                              )}
+                             </CardContent>
                          </Card>
                     </motion.div>
                 )}
             </AnimatePresence>
              <AnimatePresence>
-                {isMapVisible && (
+                {(isMapVisible || activeRide) && (
                 <motion.div
                     initial={{ opacity: 0, height: 0 }}
                     animate={{ opacity: 1, height: 'auto' }}
@@ -472,14 +445,18 @@ export default function DriverDashboardPage() {
                     transition={{ duration: 0.5, ease: 'easeInOut' }}
                 >
                     <Card className="h-96">
-                        <CardHeader className="absolute top-2 left-2 z-10 p-0 bg-background/50 rounded-lg">
-                            <Button variant="ghost" size="sm" onClick={() => setIsMapVisible(false)}>
-                                Hide Map
-                            </Button>
-                        </CardHeader>
+                         { !activeRide && (
+                             <CardHeader className="absolute top-2 left-2 z-10 p-0 bg-background/50 rounded-lg">
+                                <Button variant="ghost" size="sm" onClick={() => setIsMapVisible(false)}>
+                                    Hide Map
+                                </Button>
+                            </CardHeader>
+                         ) }
                         <CardContent className="p-0 h-full">
                             <LiveMap 
                                 driverLocation={driverLocation} 
+                                riderLocation={activeRide?.pickup.location ? { lat: activeRide.pickup.location.latitude, lon: activeRide.pickup.location.longitude } : undefined}
+                                destinationLocation={activeRide?.destination.location ? { lat: activeRide.destination.location.latitude, lon: activeRide.destination.location.longitude } : undefined}
                                 isTripInProgress={activeRide?.status === 'in-progress'}
                             />
                         </CardContent>
@@ -489,49 +466,9 @@ export default function DriverDashboardPage() {
             </AnimatePresence>
         </div>
 
-        {activeRide && (
-            <div className="lg:col-span-2">
-                <Card className="h-full min-h-[75vh]">
-                    <CardContent className="p-0 h-full">
-                        <LiveMap 
-                            driverLocation={driverLocation} 
-                            riderLocation={activeRide.pickup.location ? { lat: activeRide.pickup.location.latitude, lon: activeRide.pickup.location.longitude } : undefined}
-                            destinationLocation={activeRide.destination.location ? { lat: activeRide.destination.location.latitude, lon: activeRide.destination.location.longitude } : undefined}
-                            isTripInProgress={activeRide.status === 'in-progress'}
-                        />
-                    </CardContent>
-                </Card>
-            </div>
-        )}
-        <div className={cn("space-y-6", activeRide ? "lg:col-span-1" : "lg:col-span-3")}>
+        <div className={cn("space-y-6", activeRide ? "lg:col-span-2" : "lg:col-span-1")}>
             {activeRide ? renderActiveRide() : (
                 <>
-                    <Card className="shadow-lg">
-                        <CardHeader className="border-b">
-                            <CardTitle>Your Dashboard</CardTitle>
-                             <div className="flex justify-between items-center">
-                                <LocationDisplay />
-                                <div className="flex items-center space-x-2">
-                                    <Switch id="online-status" checked={isOnline} onCheckedChange={handleAvailabilityChange} />
-                                    <Label htmlFor="online-status" className={cn("font-semibold", isOnline ? "text-green-600" : "text-muted-foreground")}>
-                                        {isOnline ? "ONLINE" : "OFFLINE"}
-                                    </Label>
-                                </div>
-                            </div>
-                        </CardHeader>
-                        {isOnline ? (
-                        <CardContent className="text-center py-12">
-                             <SearchingIndicator partnerType="path" className="w-32 h-32" />
-                            <h3 className="text-3xl font-bold mt-4">Waiting for Rides...</h3>
-                            <p className="text-muted-foreground">Your location is being shared to get nearby requests.</p>
-                        </CardContent>
-                        ) : (
-                        <CardContent className="text-center py-12">
-                            <CardDescription>You are currently offline. Go online to receive ride requests.</CardDescription>
-                        </CardContent>
-                        )}
-                    </Card>
-
                     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-2">
                         <StatCard title="Today's Earnings" value={isEarningsVisible ? `₹${(partnerData?.todaysEarnings || 0).toLocaleString()}` : '₹ ****'} icon={IndianRupee} isLoading={isDriverLoading} onValueClick={() => !isEarningsVisible && setIsPinDialogOpen(true)} />
                         <StatCard title="Today's Rides" value={partnerData?.jobsToday?.toString() || '0'} icon={History} isLoading={isDriverLoading} />
@@ -596,14 +533,14 @@ export default function DriverDashboardPage() {
             <MapPin className="w-4 h-4 mt-1 text-green-500 flex-shrink-0" />
             <p>
               <span className="font-semibold">Pickup:</span>{' '}
-              {jobRequest.pickupAddress}
+              {jobRequest.pickup.address}
             </p>
           </div>
           <div className="flex items-start gap-2">
             <Route className="w-4 h-4 mt-1 text-red-500 flex-shrink-0" />
             <p>
               <span className="font-semibold">Drop:</span>{' '}
-              {jobRequest.destinationAddress}
+              {jobRequest.destination.address}
             </p>
           </div>
         </div>
