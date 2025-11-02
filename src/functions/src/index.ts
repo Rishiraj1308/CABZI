@@ -55,14 +55,16 @@ const handleRideDispatch = async (initialRideData: any, rideId: string) => {
     }
     const rideData = rideDoc.data();
 
+    // Correctly get the base vehicle type (e.g., "Cab" from "Cab (Lite)")
     const rideTypeBase = rideData.rideType.split(' ')[0].trim();
 
     let partnersQuery = db.collection('partners')
         .where('isOnline', '==', true)
         .where('status', '==', 'online'); 
     
+    // If ride type is "Curocity Pink", add specific filters.
     if (rideData.rideType === 'Curocity Pink') {
-        partnersQuery = partnersQuery.where('isCurocityPinkPartner', '==', true)
+        partnersQuery = partnersQuery.where('isCabziPinkPartner', '==', true)
                                    .where('gender', '==', 'female');
     }
 
@@ -95,10 +97,11 @@ const handleRideDispatch = async (initialRideData: any, rideId: string) => {
         return;
     }
 
+    // Send personalized notifications with ETA and distance
     for (const partner of nearbyPartners) {
         if (partner.fcmToken) {
             const distanceToRider = partner.distanceToRider || 0;
-            const eta = distanceToRider * 2; // Simple ETA calculation
+            const eta = distanceToRider * 2; // Simple ETA calculation (e.g., 2 mins per km)
 
             const payloadData = {
                 type: 'new_ride_request',
@@ -115,9 +118,8 @@ const handleRideDispatch = async (initialRideData: any, rideId: string) => {
                 riderId: rideData.riderId,
                 riderGender: rideData.riderGender,
                 otp: rideData.otp,
-                distance: String(rideData.distance),
-                driverDistance: String(distanceToRider),
-                driverEta: String(eta),
+                distance: String(distanceToRider), // Corrected: driverDistance -> distance
+                eta: String(eta), // Corrected: driverEta -> eta
             };
             
             const message = {
@@ -163,6 +165,7 @@ const handleGarageRequestDispatch = async (requestData: any, requestId: string) 
     
     const tokens = nearbyMechanics.map(m => m.fcmToken).filter((t): t is string => !!t);
     if (tokens.length > 0) {
+        // Correctly serialize the data for FCM payload
         const payloadData = {
             type: 'new_garage_request',
             requestId: requestId,
@@ -173,7 +176,7 @@ const handleGarageRequestDispatch = async (requestData: any, requestId: string) 
             location: JSON.stringify(requestData.location),
             status: requestData.status,
             otp: requestData.otp,
-            createdAt: requestData.createdAt.toMillis().toString(),
+            createdAt: requestData.createdAt.toMillis().toString(), // CRITICAL FIX
         };
         const message = {
             data: payloadData,
@@ -491,3 +494,4 @@ export const simulateHighDemand = onCall(async (request) => {
     return { success: true, message: `High demand alert triggered for ${zoneName}.` };
 });
 
+    

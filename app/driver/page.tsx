@@ -36,7 +36,7 @@ import dynamic from 'next/dynamic'
 import type { JobRequest, RideData } from '@/lib/types'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useDriver } from './layout'
-import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import SearchingIndicator from '@/components/ui/searching-indicator'
 import { Switch } from '@/components/ui/switch'
@@ -122,6 +122,20 @@ export default function DriverDashboardPage() {
   }, [jobRequest, partnerData?.id, db, toast]);
   
   const isOnline = partnerData?.isOnline ?? false;
+
+  const handleAvailabilityChange = async (checked: boolean) => {
+    if (!partnerData || !db) return;
+    const partnerRef = doc(db, 'partners', partnerData.id);
+    try {
+      await updateDoc(partnerRef, { isOnline: checked, status: checked ? 'online' : 'offline' });
+      toast({
+        title: checked ? "You are now ONLINE" : "You are OFFLINE",
+        description: checked ? "You will start receiving ride requests." : "You won't receive new requests.",
+      });
+    } catch (error) {
+      toast({ variant: 'destructive', title: 'Error', description: 'Could not update your status.' });
+    }
+  };
 
   // This effect listens for ride requests.
   useEffect(() => {
@@ -430,17 +444,15 @@ export default function DriverDashboardPage() {
                         <CardHeader className="border-b">
                           <div className="flex justify-between items-center">
                               <CardTitle>Your Dashboard</CardTitle>
-                              {!isMapVisible && (
-                                <Button variant="ghost" size="sm" onClick={() => setIsMapVisible(true)}>
-                                    Show Map
-                                </Button>
-                              )}
-                          </div>
-                           <div className="flex items-center gap-2 pt-2">
+                              <div className="flex items-center space-x-2">
                                 <Switch id="online-status" checked={isOnline} onCheckedChange={handleAvailabilityChange} />
                                 <Label htmlFor="online-status" className={cn("font-semibold", isOnline ? "text-green-600" : "text-muted-foreground")}>
                                     {isOnline ? "ONLINE" : "OFFLINE"}
                                 </Label>
+                            </div>
+                          </div>
+                           <div className="flex items-center gap-2 pt-2">
+                                <Button variant="ghost" size="sm" onClick={() => setIsMapVisible(!isMapVisible)}>{isMapVisible ? 'Hide' : 'Show'} Map</Button>
                             </div>
                         </CardHeader>
                         {isOnline ? (
@@ -560,19 +572,19 @@ export default function DriverDashboardPage() {
           <div className="p-2 bg-muted rounded-md">
             <p className="text-xs text-muted-foreground">Est. Fare</p>
             <p className="font-bold text-lg text-green-600">
-              ₹{jobRequest.fare}
+              ₹{jobRequest.fare || '—'}
             </p>
           </div>
           <div className="p-2 bg-muted rounded-md">
             <p className="text-xs text-muted-foreground">To Pickup</p>
             <p className="font-bold text-lg">
-                {jobRequest.driverDistance ? `${jobRequest.driverDistance.toFixed(1)} km` : "~km"}
+              {jobRequest.distance ? `${jobRequest.distance.toFixed(1)} km` : '~km'}
             </p>
           </div>
           <div className="p-2 bg-muted rounded-md">
             <p className="text-xs text-muted-foreground">Est. Arrival</p>
             <p className="font-bold text-lg">
-               {jobRequest.driverEta ? `~${Math.ceil(jobRequest.driverEta)} min` : "~min"}
+              {jobRequest.eta ? `~${Math.ceil(jobRequest.eta)} min` : '~min'}
             </p>
           </div>
         </div>
@@ -608,4 +620,3 @@ export default function DriverDashboardPage() {
     </div>
   );
 }
-
