@@ -43,14 +43,23 @@ function getDistance(lat1: number, lon1: number, lat2: number, lon2: number) {
     return d;
 }
 
-const handleRideDispatch = async (rideData: any, rideId: string) => {
+const handleRideDispatch = async (initialRideData: any, rideId: string) => {
+    // CRITICAL FIX: Re-fetch the document to get the latest status
+    const rideRef = db.doc(`rides/${rideId}`);
+    const rideDoc = await rideRef.get();
+
+    if (!rideDoc.exists || rideDoc.data()?.status !== 'searching') {
+        console.log(`Ride ${rideId} is no longer valid for dispatch (status is not 'searching' or doc deleted). Halting dispatch.`);
+        return;
+    }
+    const rideData = rideDoc.data();
+
     // Correctly get the base vehicle type (e.g., "Cab" from "Cab (Lite)")
     const rideTypeBase = rideData.rideType.split(' ')[0].trim();
 
     let partnersQuery = db.collection('partners')
         .where('isOnline', '==', true)
-        .where('status', '==', 'online');
-        // We cannot use multiple inequality filters, so vehicleType will be filtered in the function
+        .where('status', '==', 'online'); 
     
     // If ride type is "Curocity Pink", add specific filters.
     if (rideData.rideType === 'Curocity Pink') {
@@ -67,10 +76,14 @@ const handleRideDispatch = async (rideData: any, rideId: string) => {
     }
 
     const rideLocation = rideData.pickup.location as GeoPoint;
+    const rejectedBy = rideData.rejectedBy || [];
+    
     const nearbyPartners = partnersSnapshot.docs
         .map(doc => ({ id: doc.id, ...doc.data() } as Partner))
         .filter(partner => {
-            if (!partner.currentLocation || !partner.vehicleType.startsWith(rideTypeBase)) return false;
+            if (!partner.currentLocation || !partner.vehicleType.startsWith(rideTypeBase) || rejectedBy.includes(partner.id)) {
+                 return false;
+            }
             
             const distance = getDistance(rideLocation.latitude, rideLocation.longitude, partner.currentLocation.latitude, partner.currentLocation.longitude);
             partner.distanceToRider = distance; // Temporarily attach distance
@@ -86,7 +99,7 @@ const handleRideDispatch = async (rideData: any, rideId: string) => {
     // Send personalized notifications with ETA and distance
     for (const partner of nearbyPartners) {
         if (partner.fcmToken) {
-            const distanceToRider = partner.distanceToRider;
+            const distanceToRider = partner.distanceToRider || 0;
             const eta = distanceToRider * 2; // Simple ETA calculation (e.g., 2 mins per km)
 
             const payloadData = {
@@ -480,3 +493,5 @@ export const simulateHighDemand = onCall(async (request) => {
 
     return { success: true, message: `High demand alert triggered for ${zoneName}.` };
 });
+
+    
