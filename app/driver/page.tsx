@@ -6,7 +6,7 @@ import Image from 'next/image'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
-import { Star, History, IndianRupee, Power, KeyRound, Clock, MapPin, Route, Navigation, CheckCircle, Sparkles, Eye, Map, TrendingUp } from 'lucide-react'
+import { Star, History, IndianRupee, Power, KeyRound, Clock, MapPin, Route, Navigation, CheckCircle, Sparkles, Eye, TrendingUp } from 'lucide-react'
 import {
   AlertDialog,
   AlertDialogContent,
@@ -42,26 +42,27 @@ import { Switch } from '@/components/ui/switch'
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 import { motion, AnimatePresence } from 'framer-motion'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 
 
 const LiveMap = dynamic(() => import('@/components/live-map'), { ssr: false })
 
 const StatCard = ({ title, value, icon: Icon, isLoading, onValueClick }: { title: string, value: string, icon: React.ElementType, isLoading?: boolean, onValueClick?: () => void }) => (
-    <Card className="p-3">
-        <div className="flex flex-row items-center justify-between mb-1">
-            <p className="text-sm font-medium text-muted-foreground">{title}</p>
-            <Button variant="ghost" size="icon" className="w-8 h-8 text-muted-foreground hover:bg-accent hover:text-accent-foreground">
-                <Icon className="h-4 w-4" />
-            </Button>
-        </div>
-        {isLoading ? (
-            <Skeleton className="h-8 w-20" />
-        ) : (
-            <div className="text-2xl font-bold cursor-pointer" onClick={onValueClick}>
-            {value}
-            </div>
-        )}
-    </Card>
+  <Card className="p-3">
+    <div className="flex flex-row items-center justify-between mb-1">
+      <p className="text-sm font-medium text-muted-foreground">{title}</p>
+      <Button variant="ghost" size="icon" className="w-8 h-8 text-muted-foreground hover:bg-accent hover:text-accent-foreground">
+        <Icon className="h-4 w-4" />
+      </Button>
+    </div>
+    {isLoading ? (
+      <Skeleton className="h-8 w-20" />
+    ) : (
+      <div className="text-2xl font-bold cursor-pointer" onClick={onValueClick}>
+        {value}
+      </div>
+    )}
+  </Card>
 )
 
 export default function DriverDashboardPage() {
@@ -389,46 +390,44 @@ export default function DriverDashboardPage() {
 
   return (
     <div className="space-y-6">
-       <Card className="shadow-lg">
-          <CardHeader>
-              <div className="flex justify-between items-center">
-                  <CardTitle className="text-foreground">Your Dashboard</CardTitle>
-                  <div className="flex items-center space-x-2">
-                      <Switch id="online-status" checked={isOnline} onCheckedChange={handleAvailabilityChange} />
-                      <Label htmlFor="online-status" className={cn("font-semibold", isOnline ? "text-green-600" : "text-muted-foreground")}>
-                          {isOnline ? "ONLINE" : "OFFLINE"}
-                      </Label>
-                  </div>
-              </div>
-               <CardDescription className="text-muted-foreground">
+        <Card className="shadow-lg">
+            <CardHeader className="flex flex-row items-center justify-between">
+                <CardTitle>Your Dashboard</CardTitle>
+                <div className="flex items-center space-x-2">
+                    <Switch id="online-status" checked={isOnline} onCheckedChange={handleAvailabilityChange} />
+                    <Label htmlFor="online-status" className={cn("font-semibold", isOnline ? "text-green-600" : "text-muted-foreground")}>
+                        {isOnline ? "ONLINE" : "OFFLINE"}
+                    </Label>
+                </div>
+            </CardHeader>
+             <CardDescription className="px-6 pb-4">
                 Welcome back. {isOnline ? 'You are online and ready for rides.' : 'Go online to start receiving requests.'}
-               </CardDescription>
-          </CardHeader>
-          {isOnline && !activeRide && (
-          <CardContent className="text-center py-12">
-              <SearchingIndicator partnerType="path" className="w-32 h-32" />
-                  <h3 className="text-3xl font-bold mt-4 text-foreground">Waiting for Rides...</h3>
-                  <p className="text-muted-foreground mt-2 text-sm">Your location is being shared to get nearby requests.</p>
-                  <Dialog>
-                      <DialogTrigger asChild>
-                          <Button variant="outline" size="sm" className="mt-4">
-                              <Map className="mr-2 h-4 w-4"/>
-                              View Live Map
-                          </Button>
-                      </DialogTrigger>
-                       <DialogContent className="max-w-[90vw] md:max-w-4xl h-[80vh]">
-                          <DialogHeader><DialogTitle>Live Map</DialogTitle></DialogHeader>
-                          <div className="h-full w-full rounded-md overflow-hidden border">
-                              <LiveMap 
-                                  driverLocation={driverLocation}
-                                  isTripInProgress={activeRide?.status === 'in-progress'}
-                              />
-                          </div>
-                      </DialogContent>
-                  </Dialog>
-          </CardContent>
-          )}
+             </CardDescription>
         </Card>
+       
+        {isOnline && !activeRide && (
+            <Card className="text-center py-12">
+                <SearchingIndicator partnerType="path" className="w-32 h-32" />
+                <h3 className="text-3xl font-bold mt-4">Waiting for Rides...</h3>
+                <p className="text-muted-foreground mt-2 text-sm">Your location is being shared to get nearby requests.</p>
+                <Dialog>
+                    <DialogTrigger asChild>
+                        <Button variant="outline" size="sm" className="mt-4">
+                            View Live Map
+                        </Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-[90vw] md:max-w-4xl h-[80vh]">
+                        <DialogHeader><DialogTitle>Live Map</DialogTitle></DialogHeader>
+                        <div className="h-full w-full rounded-md overflow-hidden border">
+                            <LiveMap 
+                                driverLocation={driverLocation}
+                                isTripInProgress={activeRide?.status === 'in-progress'}
+                            />
+                        </div>
+                    </DialogContent>
+                </Dialog>
+            </Card>
+        )}
 
         {activeRide ? renderActiveRide() : (
             <>
@@ -441,7 +440,7 @@ export default function DriverDashboardPage() {
                 
                  <Card className="bg-background/80 backdrop-blur-sm border-border/50 shadow-lg">
                     <CardHeader>
-                        <CardTitle className="flex items-center gap-2 text-foreground"><Sparkles className="text-primary" /> AI Earnings Coach</CardTitle>
+                        <CardTitle className="flex items-center gap-2"><Sparkles className="text-primary" /> AI Earnings Coach</CardTitle>
                     </CardHeader>
                     <CardContent>
                         <p className="text-muted-foreground">Focus on the Cyber Hub area between 5 PM - 8 PM. High demand is expected, and you could earn up to 30% more.</p>
@@ -536,3 +535,5 @@ export default function DriverDashboardPage() {
     </div>
   );
 }
+
+    
