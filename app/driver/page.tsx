@@ -49,13 +49,13 @@ const LiveMap = dynamic(() => import('@/components/live-map'), { ssr: false })
 
 const StatCard = ({ title, value, icon: Icon, isLoading, onValueClick, iconButtonAction }: { title: string, value: string | React.ReactNode, icon: React.ElementType, isLoading?: boolean, onValueClick?: () => void, iconButtonAction?: () => void }) => (
     <Card className="bg-white/5 border border-white/10 backdrop-blur-sm">
-      <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
-        <CardTitle className="text-sm font-medium text-white/80">{title}</CardTitle>
-        <Button variant="ghost" size="icon" className="w-8 h-8 text-white/70 hover:bg-white/10 hover:text-white" onClick={iconButtonAction}>
-            <Icon className="h-4 w-4" />
-        </Button>
-      </CardHeader>
-      <CardContent>
+      <div className="p-3">
+        <div className="flex flex-row items-center justify-between mb-1">
+          <p className="text-sm font-medium text-white/80">{title}</p>
+          <Button variant="ghost" size="icon" className="w-8 h-8 text-white/70 hover:bg-white/10 hover:text-white" onClick={iconButtonAction}>
+              <Icon className="h-4 w-4" />
+          </Button>
+        </div>
         {isLoading ? (
           <Skeleton className="h-8 w-20 bg-white/10" />
         ) : (
@@ -63,7 +63,7 @@ const StatCard = ({ title, value, icon: Icon, isLoading, onValueClick, iconButto
             {value}
           </div>
         )}
-      </CardContent>
+      </div>
     </Card>
 )
 
@@ -397,7 +397,7 @@ export default function DriverDashboardPage() {
     <div className="space-y-6">
         {activeRide ? renderActiveRide() : (
             <>
-                <div className="flex justify-between items-center">
+                 <div className="flex justify-between items-center">
                     <div>
                         <h2 className="text-3xl font-bold tracking-tight text-white">Driver Dashboard</h2>
                         <p className="text-white/70 text-sm">Welcome back. Stay online and drive safe.</p>
