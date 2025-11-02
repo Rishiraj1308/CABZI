@@ -6,7 +6,7 @@ import Image from 'next/image'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
-import { Star, History, IndianRupee, Power, KeyRound, Clock, MapPin, Route, Navigation, CheckCircle, Sparkles, Eye, Map, Send, FilePieChart, Headset, TrendingUp } from 'lucide-react'
+import { Star, History, IndianRupee, Power, KeyRound, Clock, MapPin, Route, Navigation, CheckCircle, Sparkles, Eye, Map } from 'lucide-react'
 import {
   AlertDialog,
   AlertDialogContent,
@@ -42,13 +42,12 @@ import { Switch } from '@/components/ui/switch'
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 
 
 const LiveMap = dynamic(() => import('@/components/live-map'), { ssr: false })
 
 const StatCard = ({ title, value, icon: Icon, isLoading, onValueClick }: { title: string, value: string, icon: React.ElementType, isLoading?: boolean, onValueClick?: () => void }) => (
-    <div className="bg-background/80 backdrop-blur-sm flex-1 p-3 rounded-lg border border-border/50 shadow-lg">
+    <Card className="p-3">
         <div className="flex flex-row items-center justify-between mb-1">
             <p className="text-sm font-medium text-muted-foreground">{title}</p>
             <Button variant="ghost" size="icon" className="w-8 h-8 text-muted-foreground hover:bg-accent hover:text-accent-foreground">
@@ -62,7 +61,7 @@ const StatCard = ({ title, value, icon: Icon, isLoading, onValueClick }: { title
             {value}
             </div>
         )}
-    </div>
+    </Card>
 )
 
 export default function DriverDashboardPage() {
@@ -80,7 +79,6 @@ export default function DriverDashboardPage() {
   const [enteredOtp, setEnteredOtp] = useState('');
   const [showDriverDetails, setShowDriverDetails] = useState(false)
   const prevStatusRef = React.useRef<string | null>(null)
-  const [currentTime, setCurrentTime] = useState(new Date());
 
   const drivingSoundRef = useRef<HTMLAudioElement | null>(null)
   const hornSoundRef = useRef<HTMLAudioElement | null>(null)
@@ -89,8 +87,6 @@ export default function DriverDashboardPage() {
   useEffect(() => {
     drivingSoundRef.current = new Audio('/sounds/car-driving.mp3')
     hornSoundRef.current = new Audio('/sounds/car-horn.mp3')
-    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
-    return () => clearInterval(timer);
   }, [])
   
   const playSound = (soundRef: React.RefObject<HTMLAudioElement>) => {
@@ -393,51 +389,51 @@ export default function DriverDashboardPage() {
 
   return (
     <div className="space-y-6">
+       <Card className="shadow-lg">
+          <CardHeader>
+              <div className="flex justify-between items-center">
+                  <CardTitle>Your Dashboard</CardTitle>
+                  <div className="flex items-center space-x-2">
+                      <Switch id="online-status" checked={isOnline} onCheckedChange={handleAvailabilityChange} />
+                      <Label htmlFor="online-status" className={cn("font-semibold", isOnline ? "text-green-600" : "text-muted-foreground")}>
+                          {isOnline ? "ONLINE" : "OFFLINE"}
+                      </Label>
+                  </div>
+              </div>
+          </CardHeader>
+          {isOnline ? (
+          <CardContent className="text-center py-12">
+              <SearchingIndicator partnerType="path" className="w-32 h-32" />
+                  <h3 className="text-3xl font-bold mt-4">Waiting for Rides...</h3>
+                  <p className="text-muted-foreground mt-2 text-sm">Your location is being shared to get nearby requests.</p>
+                  <Dialog>
+                      <DialogTrigger asChild>
+                          <Button variant="outline" size="sm" className="mt-4">
+                              <Map className="mr-2 h-4 w-4"/>
+                              View Live Map
+                          </Button>
+                      </DialogTrigger>
+                       <DialogContent className="max-w-[90vw] md:max-w-4xl h-[80vh]">
+                          <DialogHeader><DialogTitle>Live Map</DialogTitle></DialogHeader>
+                          <div className="h-full w-full rounded-md overflow-hidden border">
+                              <LiveMap 
+                                  driverLocation={driverLocation}
+                                  isTripInProgress={activeRide?.status === 'in-progress'}
+                              />
+                          </div>
+                      </DialogContent>
+                  </Dialog>
+          </CardContent>
+          ) : (
+          <CardContent className="text-center py-12">
+              <CardDescription>You are currently offline. Go online to receive ride requests.</CardDescription>
+          </CardContent>
+          )}
+        </Card>
+
         {activeRide ? renderActiveRide() : (
             <>
-                <div className="flex justify-between items-start">
-                    <div>
-                        <h2 className="text-3xl font-bold tracking-tight text-foreground">Driver Dashboard</h2>
-                        <p className="text-muted-foreground text-sm">Welcome back. Stay online and drive safe.</p>
-                    </div>
-                     <div className="flex items-center space-x-2">
-                        <Label htmlFor="online-status" className={cn("font-semibold", isOnline ? "text-green-600" : "text-muted-foreground")}>
-                            {isOnline ? "ONLINE" : "OFFLINE"}
-                        </Label>
-                        <Switch id="online-status" checked={isOnline} onCheckedChange={handleAvailabilityChange} />
-                    </div>
-                </div>
-
-                {isOnline && (
-                   <Card>
-                    <CardHeader>
-                        <CardTitle>Waiting for Rides...</CardTitle>
-                    </CardHeader>
-                    <CardContent className="text-center py-6">
-                        <SearchingIndicator partnerType="path" className="w-32 h-32" />
-                         <p className="text-muted-foreground mt-2 text-sm">Your location is being shared to get nearby requests.</p>
-                         <Dialog>
-                            <DialogTrigger asChild>
-                                <Button variant="outline" size="sm" className="mt-4">
-                                    <Map className="mr-2 h-4 w-4"/>
-                                    View Live Map
-                                </Button>
-                            </DialogTrigger>
-                            <DialogContent className="max-w-[90vw] md:max-w-4xl h-[80vh]">
-                                <DialogHeader><DialogTitle>Live Map</DialogTitle></DialogHeader>
-                                <div className="h-full w-full rounded-md overflow-hidden border">
-                                    <LiveMap 
-                                        driverLocation={driverLocation}
-                                        isTripInProgress={activeRide?.status === 'in-progress'}
-                                    />
-                                </div>
-                            </DialogContent>
-                        </Dialog>
-                    </CardContent>
-                   </Card>
-                )}
-                
-                <div className="flex gap-2">
+                <div className="flex flex-col md:flex-row gap-2">
                     <StatCard title="Today's Earnings" value={isEarningsVisible ? `₹${(partnerData?.todaysEarnings || 0).toLocaleString()}` : '₹ •••••'} icon={IndianRupee} isLoading={isDriverLoading} onValueClick={() => !isEarningsVisible && setIsPinDialogOpen(true)} />
                     <StatCard title="Today's Rides" value={partnerData?.jobsToday?.toString() || '0'} icon={History} isLoading={isDriverLoading} />
                     <StatCard title="Acceptance" value={`${partnerData?.acceptanceRate || '95'}%`} icon={Power} isLoading={isDriverLoading} />
@@ -542,3 +538,5 @@ export default function DriverDashboardPage() {
   );
 }
 
+
+    
