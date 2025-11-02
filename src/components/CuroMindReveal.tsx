@@ -16,12 +16,11 @@ export default function CuroMindReveal() {
     }),
   };
 
-  // Corrected animation variant to remove the "dancing" effect
   const child = {
     visible: {
       opacity: 1,
       transition: {
-        duration: 0.1, // Quick fade-in for each letter
+        duration: 0.1,
       },
     },
     hidden: {
@@ -33,7 +32,7 @@ export default function CuroMindReveal() {
   const intelligentEndIndex = intelligentStartIndex + "intelligent".length;
 
   return (
-    <section className="relative flex flex-col items-center justify-center text-center py-40 overflow-hidden">
+    <section className="relative flex flex-col items-center justify-center text-center overflow-hidden">
       
       {/* === Glowing Background Core === */}
       <div className="absolute inset-0 bg-gradient-radial from-primary/10 via-transparent to-transparent blur-3xl animate-pulse"></div>
