@@ -6,7 +6,7 @@ import Image from 'next/image'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
-import { Star, History, IndianRupee, Power, KeyRound, Clock, MapPin, Route, Navigation, CheckCircle, Sparkles, Eye, TrendingUp, Map, ChevronsUpDown } from 'lucide-react'
+import { Star, History, IndianRupee, Power, KeyRound, Clock, MapPin, Route, Navigation, CheckCircle, Sparkles, Eye } from 'lucide-react'
 import {
   AlertDialog,
   AlertDialogContent,
@@ -46,7 +46,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 
 
-const LiveMap = dynamic(() => import('@/components/live-map'), { 
+const LiveMap = dynamic(() => import('@/components/live-map'), {
     ssr: false,
     loading: () => <div className="w-full h-full bg-muted flex items-center justify-center"><p>Loading Map...</p></div>
 });
@@ -344,14 +344,6 @@ export default function DriverDashboardPage() {
                     <CardDescription>Rider: {activeRide.riderName}</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                     <div className="h-48 w-full rounded-md overflow-hidden border">
-                         <LiveMap 
-                             driverLocation={driverLocation} 
-                             riderLocation={activeRide.pickup.location ? { lat: activeRide.pickup.location.latitude, lon: activeRide.pickup.location.longitude } : undefined}
-                             destinationLocation={activeRide.destination.location ? { lat: activeRide.destination.location.latitude, lon: activeRide.destination.location.longitude } : undefined}
-                             isTripInProgress={activeRide.status === 'in-progress'}
-                          />
-                     </div>
                      {activeRide.status === 'arrived' && (
                         <div className="space-y-2">
                            <Label htmlFor="otp">Enter Rider's OTP</Label>
@@ -379,46 +371,23 @@ export default function DriverDashboardPage() {
             </Card>
         );
     }
-
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-        <div className="lg:col-span-2">
-             <Card>
-                <CardHeader className="flex flex-row items-center justify-between p-3">
-                     <h3 className="font-semibold">Live Map</h3>
-                    <Button variant="ghost" size="sm" onClick={() => setIsMapVisible(prev => !prev)}>
-                        <ChevronsUpDown className="h-4 w-4" />
-                        <span className="sr-only">Toggle Map</span>
-                    </Button>
-                </CardHeader>
-                <AnimatePresence>
-                {isMapVisible && (
-                    <motion.div
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: 'auto', opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        transition={{ duration: 0.5, ease: 'easeInOut' }}
-                        className="overflow-hidden"
-                    >
-                        <CardContent className="p-0 h-96">
-                           <LiveMap 
-                                onLocationFound={(address, coords) => {
-                                    if (db && partnerData) {
-                                        updateDoc(doc(db, 'partners', partnerData.id), {
-                                            currentLocation: new GeoPoint(coords.lat, coords.lon)
-                                        });
-                                    }
-                                }}
-                                driverLocation={driverLocation}
-                                isTripInProgress={activeRide?.status === 'in-progress'}
-                            />
-                        </CardContent>
-                    </motion.div>
-                )}
-                </AnimatePresence>
-            </Card>
-        </div>
-        <div className="lg:col-span-1 space-y-6">
+    <div className={cn("grid gap-6 items-start", activeRide ? "grid-cols-1 lg:grid-cols-3" : "grid-cols-1")}>
+        {activeRide && (
+            <div className="lg:col-span-2">
+                 <Card className="h-[75vh]">
+                    <CardContent className="p-0 h-full">
+                         <LiveMap 
+                             driverLocation={driverLocation} 
+                             riderLocation={activeRide.pickup.location ? { lat: activeRide.pickup.location.latitude, lon: activeRide.pickup.location.longitude } : undefined}
+                             destinationLocation={activeRide.destination.location ? { lat: activeRide.destination.location.latitude, lon: activeRide.destination.location.longitude } : undefined}
+                             isTripInProgress={activeRide.status === 'in-progress'}
+                          />
+                    </CardContent>
+                </Card>
+            </div>
+        )}
+        <div className={cn("space-y-6", activeRide ? "lg:col-span-1" : "lg:col-span-1 w-full max-w-md mx-auto")}>
             {activeRide ? renderActiveRide() : (
                 <>
                     <Card className="shadow-lg">
