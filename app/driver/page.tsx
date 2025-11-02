@@ -395,26 +395,27 @@ export default function DriverDashboardPage() {
                 <AnimatePresence>
                 {isMapVisible && (
                     <motion.div
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: '75vh', opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        transition={{ duration: 0.5, ease: 'easeInOut' }}
-                        className="overflow-hidden"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.5 }}
                     >
-                        <CardContent className="p-0 h-full">
-                            <LiveMap 
-                                ref={mapRef}
-                                onLocationFound={(address, coords) => {
-                                    if (db && partnerData) {
-                                        updateDoc(doc(db, 'partners', partnerData.id), {
-                                            currentLocation: new GeoPoint(coords.lat, coords.lon)
-                                        });
-                                    }
-                                }}
-                                driverLocation={driverLocation}
-                                isTripInProgress={activeRide?.status === 'in-progress'}
-                            />
-                        </CardContent>
+                        <div className="h-[75vh]">
+                            <CardContent className="p-0 h-full">
+                                <LiveMap 
+                                    ref={mapRef}
+                                    onLocationFound={(address, coords) => {
+                                        if (db && partnerData) {
+                                            updateDoc(doc(db, 'partners', partnerData.id), {
+                                                currentLocation: new GeoPoint(coords.lat, coords.lon)
+                                            });
+                                        }
+                                    }}
+                                    driverLocation={driverLocation}
+                                    isTripInProgress={activeRide?.status === 'in-progress'}
+                                />
+                            </CardContent>
+                        </div>
                     </motion.div>
                 )}
                 </AnimatePresence>
@@ -454,13 +455,14 @@ export default function DriverDashboardPage() {
                         <CardTitle className="flex items-center gap-2"><Sparkles className="text-yellow-300" /> AI Earnings Coach</CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <p>Focus on these areas for higher earnings:</p>
-                            <div className="mt-4 text-sm space-y-2 text-primary-foreground/90">
-                                <div className="flex items-center gap-1.5"><MapPin className="w-3 h-3"/> Cyber Hub (5 PM - 8 PM)</div>
-                                <div className="flex items-center gap-1.5"><MapPin className="w-3 h-3"/> IGI Airport T3 (10 PM - 2 AM)</div>
-                            </div>
-                        </CardContent>
-                    </Card>
+                        <p>Focus on these areas for higher earnings:</p>
+                        <div className="mt-4 text-sm space-y-2 text-primary-foreground/90">
+                            <span className="flex items-center gap-1.5"><MapPin className="w-3 h-3"/> Cyber Hub</span>
+                            <span className="flex items-center gap-1.5"><Clock className="w-3 h-3"/> 5 PM - 8 PM</span>
+                            <span className="flex items-center gap-1.5"><TrendingUp className="w-3 h-3"/> +30% potential</span>
+                        </div>
+                    </CardContent>
+                </Card>
                     </>
             )}
         </div>
@@ -546,3 +548,4 @@ export default function DriverDashboardPage() {
     </div>
   );
 }
+
