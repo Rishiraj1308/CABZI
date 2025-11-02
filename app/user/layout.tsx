@@ -4,7 +4,7 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { Toaster } from "@/components/ui/toaster";
 import { Button } from '@/components/ui/button';
-import { Home, History, Menu, LogOut, Heart, Gift, PanelLeft, Landmark, Sun, Moon, Settings, User, Calendar, Car, MapPin, LifeBuoy, Search, MessageSquare, Shield, Phone, Siren, Languages } from 'lucide-react';
+import { Home, History, Menu, LogOut, Heart, Gift, PanelLeft, Landmark, Sun, Moon, Settings, User, Calendar, Car, MapPin, LifeBuoy, Search, MessageSquare, Shield, Phone, Siren, Languages, Wallet } from 'lucide-react';
 import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
@@ -151,10 +151,40 @@ export default function UserLayout({
                 <div className="ml-auto flex items-center gap-2">
                     <ThemeToggle />
                     <LanguageToggle />
-                    <Button className="hidden sm:inline-flex items-center gap-2 rounded-full border border-border bg-card/50 px-3 py-2 text-sm font-medium backdrop-blur hover:bg-accent/80 focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-white/30" title="Manage account">
-                      <User className="h-4 w-4" />
-                      <span className="tracking-tight">Account</span>
-                    </Button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                         <Button variant="ghost" size="icon" className="rounded-full w-10 h-10 border border-border bg-card/50 backdrop-blur hover:bg-accent/80">
+                           <Avatar className="h-8 w-8">
+                              <AvatarImage src={user?.photoURL || undefined} alt={user?.displayName || 'User'} />
+                              <AvatarFallback>{getInitials(user?.displayName)}</AvatarFallback>
+                           </Avatar>
+                         </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                          <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                          <DropdownMenuSeparator/>
+                          <DropdownMenuItem onClick={() => router.push('/user/profile')}><User className="w-4 h-4 mr-2"/> Profile</DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => router.push('/user/wallet')}><Wallet className="w-4 h-4 mr-2"/> Wallet</DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => router.push('/user/offers')}><Gift className="w-4 h-4 mr-2"/> Offers</DropdownMenuItem>
+                          <DropdownMenuSeparator/>
+                           <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                  <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:text-destructive">
+                                      <LogOut className="w-4 h-4 mr-2"/> Logout
+                                  </DropdownMenuItem>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                      <AlertDialogTitle>Are you sure you want to log out?</AlertDialogTitle>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                      <AlertDialogAction onClick={handleLogout} className="bg-destructive hover:bg-destructive/90">Logout</AlertDialogAction>
+                                  </AlertDialogFooter>
+                              </AlertDialogContent>
+                           </AlertDialog>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                 </div>
             </nav>
         </div>
