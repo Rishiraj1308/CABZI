@@ -1,9 +1,44 @@
+
 'use client'
 
 import { motion } from 'framer-motion'
 import { BrainCircuit } from 'lucide-react'
 
 export default function CuroMindReveal() {
+  const title = "Something intelligent is awakening...".split("");
+
+  const container = {
+    hidden: { opacity: 0 },
+    visible: (i = 1) => ({
+      opacity: 1,
+      transition: { staggerChildren: 0.04, delayChildren: 0.04 * i },
+    }),
+  };
+
+  const child = {
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: {
+        type: "spring",
+        damping: 12,
+        stiffness: 100,
+      },
+    },
+    hidden: {
+      opacity: 0,
+      y: 20,
+      transition: {
+        type: "spring",
+        damping: 12,
+        stiffness: 100,
+      },
+    },
+  };
+  
+  const text = "Something intelligent is awakening...";
+  const words = text.split(" ");
+
   return (
     <section className="relative flex flex-col items-center justify-center text-center py-40 overflow-hidden">
       
@@ -52,19 +87,44 @@ export default function CuroMindReveal() {
 
       {/* === Title === */}
       <motion.h2
-        initial={{ opacity: 0, y: 60 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        transition={{ duration: 1.2 }}
-        className="text-4xl md:text-6xl font-bold tracking-tight z-10 leading-snug"
+        initial="hidden"
+        whileInView="visible"
+        variants={container}
+        className="text-4xl md:text-6xl font-bold tracking-tight z-10 leading-snug flex flex-wrap justify-center"
       >
-        Something <span className="text-primary">intelligent</span> is awakening...
+        {words.map((word, index) => (
+          <motion.span
+            key={index}
+            className="mr-[0.25em]"
+          >
+            {word === "intelligent" ? (
+              <span className="text-primary">
+                {word.split("").map((char, i) => (
+                  <motion.span key={i} variants={child}>{char}</motion.span>
+                ))}
+              </span>
+            ) : word.includes("...") ? (
+               <span>
+                {word.replace("...", "").split("").map((char, i) => (
+                    <motion.span key={i} variants={child}>{char}</motion.span>
+                ))}
+                <motion.span variants={child} animate={{opacity: [0.5, 1, 0.5]}} transition={{repeat: Infinity, duration: 1.2}}>...</motion.span>
+              </span>
+            ) : (
+              word.split("").map((char, i) => (
+                <motion.span key={i} variants={child}>{char}</motion.span>
+              ))
+            )}
+          </motion.span>
+        ))}
       </motion.h2>
+
 
       {/* === Subtitle === */}
       <motion.p
         initial={{ opacity: 0, y: 30 }}
         whileInView={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.7, duration: 1 }}
+        transition={{ delay: 2.5, duration: 1 }}
         className="mt-4 text-muted-foreground text-lg md:text-xl z-10"
       >
         Coming soon: <span className="text-primary/90 cursor-help" title="It's learning from Curocity...">The mind that cares.</span>
