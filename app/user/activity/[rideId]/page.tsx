@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button';
 import dynamic from 'next/dynamic';
 import { RideData } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
 
 const LiveMap = dynamic(() => import('@/components/live-map'), {
     ssr: false,
