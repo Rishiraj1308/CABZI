@@ -22,7 +22,7 @@ const ServiceCard = ({
   onClick: () => void
 }) => (
   <button
-    className="serviceCard group flex items-center justify-between rounded-2xl border border-white/10 bg-white/5 p-5 sm:p-6 hover:bg-white/10 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-white/20 focus-visible:ring-offset-0"
+    className="serviceCard group flex items-center justify-between rounded-2xl border bg-card p-5 sm:p-6 hover:bg-accent/10 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
     role="button"
     tabIndex={0}
     title={service.title}
@@ -34,8 +34,8 @@ const ServiceCard = ({
         <service.icon className="h-5 w-5" />
       </span>
       <div>
-        <p className="text-[15px] sm:text-base font-semibold tracking-tight">{service.title}</p>
-        <p className="text-xs text-white/60 mt-0.5">{service.description}</p>
+        <p className="text-[15px] sm:text-base font-semibold tracking-tight text-card-foreground">{service.title}</p>
+        <p className="text-xs text-muted-foreground mt-0.5">{service.description}</p>
       </div>
     </div>
     <div className="flex items-center gap-2">
@@ -45,7 +45,7 @@ const ServiceCard = ({
           {service.tag}
         </span>
       )}
-      <ArrowUpRight className="h-5 w-5 text-white/40 group-hover:text-white/70" />
+      <ArrowUpRight className="h-5 w-5 text-muted-foreground group-hover:text-foreground" />
     </div>
   </button>
 )
@@ -56,18 +56,17 @@ export default function ServicePortalPage() {
   const { toast } = useToast()
   
   const [searchQuery, setSearchQuery] = useState('');
-  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isSosModalOpen, setIsSosModalOpen] = useState(false);
   const [services, setServices] = useState<any[]>([]);
 
   const headingText = "How can we help you today?".split("");
 
   const serviceData = [
-    { id: 'ride', href: '/user/book', icon: Car, title: 'Ride', description: 'On-demand transport to clinics', tag: '5–10m', tagIcon: Clock, iconBg: 'bg-emerald-400/15', iconRing: 'ring-emerald-400/30', iconColor: 'text-emerald-300', tagBg: 'bg-emerald-400/10', tagBorder: 'border-emerald-400/30', tagColor: 'text-emerald-200', label: 'ride transport car taxi clinic mobility hospital cab' },
-    { id: 'resq', href: '/user/resq', icon: Wrench, title: 'ResQ', description: 'On-site assistance for minor issues', tag: 'On-Demand', tagIcon: Wrench, iconBg: 'bg-amber-400/15', iconRing: 'ring-amber-400/30', iconColor: 'text-amber-300', tagBg: 'bg-amber-400/10', tagBorder: 'border-amber-400/30', tagColor: 'text-amber-200', label: 'resq on-site assistance home help nurse minor issues support' },
-    { id: 'sos', onClick: () => setIsSosModalOpen(true), icon: Ambulance, title: 'Emergency SOS', description: 'Connect to 24/7 emergency line', tag: '24/7', tagIcon: AlertTriangle, iconBg: 'bg-red-500/20', iconRing: 'ring-red-500/40', iconColor: 'text-red-300', tagBg: 'bg-red-400/10', tagBorder: 'border-red-400/40', tagColor: 'text-red-200', label: 'sos emergency ambulance urgent help police fire medical' },
-    { id: 'appointment', href: '/user/appointments', icon: Calendar, title: 'Book Appointment', description: 'Clinics, specialists, telehealth', tag: 'Next: 1–2d', tagIcon: Clock, iconBg: 'bg-sky-400/15', iconRing: 'ring-sky-400/30', iconColor: 'text-sky-300', tagBg: 'bg-sky-400/10', tagBorder: 'border-sky-400/30', tagColor: 'text-sky-200', label: 'book appointment doctor specialist telehealth clinic schedule calendar' },
-    { id: 'lab_tests', href: '/user/lab-tests', icon: TestTube, title: 'Lab Tests', description: 'Home sample pickup available', tag: 'Home pickup', tagIcon: Home, iconBg: 'bg-fuchsia-400/15', iconRing: 'ring-fuchsia-400/30', iconColor: 'text-fuchsia-300', tagBg: 'bg-fuchsia-400/10', tagBorder: 'border-fuchsia-400/30', tagColor: 'text-fuchsia-200', label: 'lab tests diagnostics blood test home pickup reports' }
+    { id: 'ride', href: '/user/book', icon: Car, title: 'Ride', description: 'On-demand transport to clinics', tag: '5–10m', tagIcon: Clock, iconBg: 'bg-emerald-400/15', iconRing: 'ring-emerald-400/30', iconColor: 'text-emerald-500', tagBg: 'bg-emerald-400/10', tagBorder: 'border-emerald-400/30', tagColor: 'text-emerald-600', label: 'ride transport car taxi clinic mobility hospital cab' },
+    { id: 'resq', href: '/user/resq', icon: Wrench, title: 'ResQ', description: 'On-site assistance for minor issues', tag: 'On-Demand', tagIcon: Wrench, iconBg: 'bg-amber-400/15', iconRing: 'ring-amber-400/30', iconColor: 'text-amber-500', tagBg: 'bg-amber-400/10', tagBorder: 'border-amber-400/30', tagColor: 'text-amber-600', label: 'resq on-site assistance home help nurse minor issues support' },
+    { id: 'sos', onClick: () => setIsSosModalOpen(true), icon: Ambulance, title: 'Emergency SOS', description: 'Connect to 24/7 emergency line', tag: '24/7', tagIcon: AlertTriangle, iconBg: 'bg-red-500/20', iconRing: 'ring-red-500/40', iconColor: 'text-red-500', tagBg: 'bg-red-400/10', tagBorder: 'border-red-400/40', tagColor: 'text-red-600', label: 'sos emergency ambulance urgent help police fire medical' },
+    { id: 'appointment', href: '/user/appointments', icon: Calendar, title: 'Book Appointment', description: 'Clinics, specialists, telehealth', tag: 'Next: 1–2d', tagIcon: Clock, iconBg: 'bg-sky-400/15', iconRing: 'ring-sky-400/30', iconColor: 'text-sky-500', tagBg: 'bg-sky-400/10', tagBorder: 'border-sky-400/30', tagColor: 'text-sky-600', label: 'book appointment doctor specialist telehealth clinic schedule calendar' },
+    { id: 'lab_tests', href: '/user/lab-tests', icon: TestTube, title: 'Lab Tests', description: 'Home sample pickup available', tag: 'Home pickup', tagIcon: Home, iconBg: 'bg-fuchsia-400/15', iconRing: 'ring-fuchsia-400/30', iconColor: 'text-fuchsia-500', tagBg: 'bg-fuchsia-400/10', tagBorder: 'border-fuchsia-400/30', tagColor: 'text-fuchsia-600', label: 'lab tests diagnostics blood test home pickup reports' }
   ];
   
   useEffect(() => {
@@ -100,9 +99,9 @@ export default function ServicePortalPage() {
     <>
       <main id="main" className="relative z-10 p-4">
         <section className="mx-auto max-w-7xl">
-          <div className="rounded-3xl border border-white/10 bg-white/5 p-5 sm:p-8 md:p-10 shadow-xl backdrop-blur">
+          <div className="rounded-3xl border border-border bg-card/50 p-5 sm:p-8 md:p-10 shadow-xl backdrop-blur-sm">
             <div className="text-center">
-              <h1 className="text-3xl sm:text-4xl md:text-5xl tracking-tight font-semibold">
+              <h1 className="text-3xl sm:text-4xl md:text-5xl tracking-tight font-semibold text-foreground">
                 {headingText.map((el, i) => (
                   <motion.span
                     initial={{ opacity: 0 }}
@@ -117,20 +116,20 @@ export default function ServicePortalPage() {
                   </motion.span>
                 ))}
               </h1>
-              <p className="mt-2 text-base sm:text-lg text-white/70 font-normal">
+              <p className="mt-2 text-base sm:text-lg text-muted-foreground font-normal">
                 Choose a service to get started.
               </p>
 
               <div className="mt-6 relative max-w-xl mx-auto">
                 <label htmlFor="serviceSearch" className="sr-only">Search services</label>
                 <div className="pointer-events-none absolute inset-y-0 left-0 pl-3 flex items-center">
-                  <Search className="h-4 w-4 text-white/40" />
+                  <Search className="h-4 w-4 text-muted-foreground" />
                 </div>
                 <Input
                   id="serviceSearch"
                   type="text"
                   autoComplete="off"
-                  className="w-full rounded-xl border border-white/10 bg-white/5 pl-9 pr-24 py-2.5 text-sm outline-none focus:ring-2 focus:ring-white/15"
+                  className="w-full rounded-xl border-border bg-background pl-9 pr-24 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary"
                   placeholder="Search services (e.g., ride, lab, appointment)"
                   value={searchQuery}
                   onChange={handleSearch}
@@ -164,11 +163,11 @@ export default function ServicePortalPage() {
             </div>
 
             {services.length === 0 && searchQuery && (
-                 <div className="mt-4 rounded-xl border border-white/10 bg-white/5 p-5 text-center">
-                    <div className="mx-auto inline-flex h-10 w-10 items-center justify-center rounded-full bg-white/5 border border-white/10">
-                        <Search className="h-4 w-4 text-white/60"/>
+                 <div className="mt-4 rounded-xl border border-border bg-muted/50 p-5 text-center">
+                    <div className="mx-auto inline-flex h-10 w-10 items-center justify-center rounded-full bg-background border">
+                        <Search className="h-4 w-4 text-muted-foreground"/>
                     </div>
-                    <p className="mt-2 text-sm text-white/70">No services match your search.</p>
+                    <p className="mt-2 text-sm text-muted-foreground">No services match your search.</p>
                 </div>
             )}
 
