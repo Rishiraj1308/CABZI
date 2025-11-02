@@ -92,22 +92,11 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [isMounted, setIsMounted] = useState(false);
   
-  const recaptchaVerifierRef = useRef<RecaptchaVerifier | null>(null);
+  const recaptchaContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setIsMounted(true);
-    if (auth && !recaptchaVerifierRef.current) {
-        recaptchaVerifierRef.current = new RecaptchaVerifier(auth, 'recaptcha-container', {
-            'size': 'invisible',
-        });
-    }
-
-    return () => {
-        if (recaptchaVerifierRef.current) {
-            recaptchaVerifierRef.current.clear();
-        }
-    };
-  }, [auth]);
+  }, []);
 
 
   useEffect(() => {
@@ -267,17 +256,19 @@ export default function LoginPage() {
   }
 
   const handlePhoneSubmit = async () => {
-    if (!auth || !identifier || !recaptchaVerifierRef.current) return;
+    if (!auth || !identifier || !recaptchaContainerRef.current) return;
     
     try {
         const fullPhoneNumber = `+91${identifier}`;
-        const verifier = recaptchaVerifierRef.current;
+        // Use a new verifier each time, ensuring the container is ready.
+        const verifier = new RecaptchaVerifier(auth, recaptchaContainerRef.current, { size: 'invisible' });
         const confirmation = await signInWithPhoneNumber(auth, fullPhoneNumber, verifier);
         setConfirmationResult(confirmation);
         setStep('otp');
         toast({ title: 'OTP Sent!', description: `An OTP has been sent to ${fullPhoneNumber}.` });
     } catch (error: any) {
         toast({ variant: 'destructive', title: 'Failed to Send OTP', description: error.message });
+        console.error("Phone Auth Error:", error);
     }
   }
   
@@ -535,7 +526,7 @@ export default function LoginPage() {
 
   return (
       <div className="flex min-h-screen items-center justify-center p-4 bg-muted/40">
-          <div id="recaptcha-container" ref={recaptchaContainerRef}></div>
+          <div id="recaptcha-container" ref={recaptchaContainerRef} />
           <div className="absolute top-4 right-4 flex items-center gap-2">
               <LanguageToggle />
               <ThemeToggle />
@@ -567,12 +558,12 @@ export default function LoginPage() {
               </AnimatePresence>
                 
                 <div className="mt-4 text-center text-sm text-muted-foreground space-y-2">
-                    {roleFromQuery === 'user' ? (
+                    {roleFromQuery === 'user' && (
                         <p>Want to partner with us? <Link href="/partner-hub" className="underline text-primary">Become a Partner</Link></p>
-                    ) : isPartnerFlow ? (
-                         <p>Looking for a ride? <Link href="/login?role=user" className="underline text-primary" onClick={() => {setStep('login'); setInputType('none'); setIdentifier('');}}>Login as a User</Link></p>
-                    ): null}
-                    
+                    )}
+                    {isPartnerFlow && (
+                        <p>Looking for a ride? <Link href="/login?role=user" className="underline text-primary" onClick={() => {setStep('login'); setInputType('none'); setIdentifier('');}}>Login as a User</Link></p>
+                    )}
                     {roleFromQuery !== 'admin' && (
                          <p>
                             <Link href="/login?role=admin" className="text-xs underline" onClick={() => setStep('login')}>
