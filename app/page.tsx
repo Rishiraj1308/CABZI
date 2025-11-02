@@ -442,7 +442,7 @@ export default function HomePage() {
                 </div>
             </section>
             
-            <section className="py-20 md:py-24">
+             <section className="py-20 md:py-24">
                 <div className="container text-center">
                     <h2 className="text-3xl font-bold tracking-tight sm:text-4xl font-headline">The Curocity Advantage</h2>
                     <p className="mt-4 text-lg text-muted-foreground max-w-3xl mx-auto">
@@ -534,10 +534,10 @@ export default function HomePage() {
                     </div>
                 </div>
             </section>
-
-             <section className="py-20 md:py-24 bg-background dark:bg-[#090d12] text-foreground dark:text-white">
-                 <CuroMindReveal />
-            </section>
+            
+             <div className="py-20 md:py-24">
+                <CuroMindReveal />
+            </div>
 
              {/* Partner CTA Section */}
             <section className="py-20 md:py-24">
@@ -579,5 +579,3 @@ export default function HomePage() {
       </div>
   );
 }
-
-    
