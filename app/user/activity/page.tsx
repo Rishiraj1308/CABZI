@@ -67,13 +67,13 @@ export default function MyActivityPage() {
     }
 
     const activityTypes = [
-      { name: 'rides', type: 'Ride' as const, icon: Car, color: 'text-primary', href: '/user/book' },
-      { name: 'appointments', type: 'Appointment' as const, icon: Calendar, color: 'text-blue-500', href: '/user/appointments' },
-      { name: 'emergencyCases', type: 'Emergency' as const, icon: Ambulance, color: 'text-red-500', href: '/user' },
-      { name: 'garageRequests', type: 'ResQ' as const, icon: Wrench, color: 'text-amber-500', href: '/user/resq' },
+      { name: 'rides', type: 'Ride' as const, icon: Car, color: 'text-primary' },
+      { name: 'appointments', type: 'Appointment' as const, icon: Calendar, color: 'text-blue-500' },
+      { name: 'emergencyCases', type: 'Emergency' as const, icon: Ambulance, color: 'text-red-500' },
+      { name: 'garageRequests', type: 'ResQ' as const, icon: Wrench, color: 'text-amber-500' },
     ];
 
-    const unsubscribes = activityTypes.map(({ name, type, icon, color, href }) => {
+    const unsubscribes = activityTypes.map(({ name, type, icon, color }) => {
       const collectionName = name;
       const idField = name === 'rides' || name === 'emergencyCases' ? 'riderId' : name === 'appointments' ? 'patientId' : 'driverId';
 
@@ -86,6 +86,7 @@ export default function MyActivityPage() {
           let description = '';
           let date = (data.createdAt as Timestamp)?.toDate() || new Date();
           let cancellable = false;
+          let href = `/user/activity/${doc.id}`; // Default href to a details page
 
           switch (type) {
             case 'Ride':
@@ -98,16 +99,19 @@ export default function MyActivityPage() {
               description = data.hospitalName;
               date = (data.appointmentDate as Timestamp)?.toDate();
               cancellable = data.status === 'Pending';
+              href = `/user/appointments`; // Or a specific appointment detail page if it exists
               break;
             case 'Emergency':
               title = `SOS Case: ${data.caseId}`;
               description = `Assigned to: ${data.assignedPartner?.name || 'Searching...'}`;
               cancellable = data.status === 'pending';
+              href = '/user'; // SOS cases are managed on the main dashboard
               break;
             case 'ResQ':
               title = `ResQ Request: ${data.issue}`;
               description = `Mechanic: ${data.mechanicName || 'Searching...'}`;
               cancellable = data.status === 'pending';
+              href = '/user/resq';
               break;
           }
           
@@ -183,7 +187,7 @@ export default function MyActivityPage() {
                                 {item.cancellable ? (
                                     <AlertDialog>
                                     <AlertDialogTrigger asChild>
-                                        <Button variant="ghost" size="sm" className="text-destructive h-auto p-1 mt-1 text-xs" onClick={(e) => e.stopPropagation()}>
+                                        <Button variant="ghost" size="sm" className="text-destructive h-auto p-1 mt-1 text-xs" onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}>
                                             <X className="w-3 h-3 mr-1" />
                                             Cancel
                                         </Button>
@@ -205,7 +209,7 @@ export default function MyActivityPage() {
                                 </AlertDialog>
                                 ) : (
                                      <Link href={item.href} passHref legacyBehavior>
-                                        <a className="mt-1">
+                                        <a className="mt-1" onClick={(e) => e.stopPropagation()}>
                                             <Button variant="outline" size="sm" className="h-auto p-1 px-2 text-xs">
                                                 View Details <ArrowRight className="w-3 h-3 ml-1" />
                                             </Button>
