@@ -1,3 +1,4 @@
+
 'use client'
 
 import React, { useState, useEffect, useRef, useCallback } from 'react'
@@ -285,7 +286,7 @@ export default function HomePage() {
   ];
 
   return (
-      <div className="flex flex-col min-h-screen bg-background">
+      <div className={cn("flex flex-col min-h-screen bg-background aurora-background")}>
           <header className="sticky top-0 z-50 w-full border-b bg-background/80 backdrop-blur-sm">
             <div className="container flex h-14 items-center">
                 <Link href="/" className="mr-6 flex items-center gap-2">
@@ -487,7 +488,7 @@ export default function HomePage() {
                         </Card>
                     </div>
                 </section>
-                <section className="bg-background">
+                <section>
                     <CuroMindReveal />
                 </section>
             </div>
