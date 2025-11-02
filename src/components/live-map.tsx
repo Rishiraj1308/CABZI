@@ -99,7 +99,7 @@ const LiveMap = forwardRef<any, LiveMapProps>((props, ref) => {
         
         switch (type) {
             case 'driver':
-                 iconHtml = `<div style="width: 32px; height: 32px; transform: rotate(90deg);"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512" fill="hsl(var(--primary))" style="filter: drop-shadow(0px 2px 2px rgba(0,0,0,0.4));"><path d="M384 192c0-87.4-117-144-144-144c-30.9 0-58.5 40.2-76.8 64H128c-17.7 0-32 14.3-32 32s14.3 32 32 32h64c17.7 0 32-14.3 32-32c0-12.8-13-24-24-24H208V32c0-17.7-14.3-32-32-32H32C14.3 0 0 14.3 0 32v224c0 77.3 103.5 128 192 128s192-50.7 192-128V224c0-17.7-14.3-32-32-32s-32 14.3-32 32v32c0 23.6-26.3 48-96 48s-96-24.4-96-48V128c0-17.7 14.3-32 32-32h4.8c18.5-23.8 45.9-64 76.8-64c27 0 144 56.6 144 144v64c0 53-64 96-128 96S64 429 64 376v-32c0-17.7-14.3-32-32-32s-32 14.3-32 32v32c0 88.4 100.3 160 224 160s224-71.6 224-160V192z"/></svg></div>`;
+                 iconHtml = `<div style="width: 32px; height: 32px; filter: drop-shadow(0px 3px 3px rgba(0,0,0,0.5));"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="hsl(var(--primary))"><path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8a1 1 0 0 0 1 1h1a1 1 0 0 0 1-1v-1h12v1a1 1 0 0 0 1 1h1a1 1 0 0 0 1-1v-8l-2.08-5.99zM6.5 16a1.5 1.5 0 1 1 0-3a1.5 1.5 0 0 1 0 3zm11 0a1.5 1.5 0 1 1 0-3a1.5 1.5 0 0 1 0 3zM5 11l1.5-4.5h11L19 11H5z"/></svg></div>`;
                 iconSize = [32, 32];
                 iconAnchor = [16, 16];
                 break;
@@ -343,4 +343,5 @@ const LiveMap = forwardRef<any, LiveMapProps>((props, ref) => {
 
 LiveMap.displayName = 'LiveMap';
 export default LiveMap;
+
 
