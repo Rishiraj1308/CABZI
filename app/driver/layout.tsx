@@ -10,7 +10,6 @@ import { Button } from '@/components/ui/button'
 import { Toaster } from '@/components/ui/toaster'
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -31,6 +30,8 @@ import { Badge } from '@/components/ui/badge'
 import { MotionDiv } from '@/components/ui/motion-div'
 import { NotificationsProvider } from '@/context/NotificationContext';
 import { Skeleton } from '@/components/ui/skeleton'
+import { Switch } from '@/components/ui/switch'
+import { Label } from '@/components/ui/label'
 
 interface PartnerData {
     id: string;
@@ -331,7 +332,7 @@ function DriverLayoutContent({ children }: { children: React.ReactNode }) {
   }
 
   const LogoArea = ({ isPinkPartner }: { isPinkPartner: boolean }) => (
-    <Link href="/" className="flex items-center gap-2 font-semibold">
+    <Link href="/driver" className="flex items-center gap-2 font-semibold">
       <BrandLogo />
       {isPinkPartner && <Badge className="bg-pink-600/20 text-pink-700 dark:bg-pink-500/20 dark:text-pink-400 border-pink-600/30">Pink Partner</Badge>}
     </Link>
@@ -339,23 +340,23 @@ function DriverLayoutContent({ children }: { children: React.ReactNode }) {
 
   return (
     <div className={cn("flex min-h-screen w-full flex-col", partnerData?.isCabziPinkPartner ? 'pink-theme' : 'default-theme')}>
-      <header className="sticky top-0 z-40 flex h-16 items-center gap-4 border-b bg-background px-4 md:px-6">
+      <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-background/95 px-4 backdrop-blur-sm sm:px-6">
         <Sheet>
-          <SheetTrigger asChild>
-            <Button variant="outline" size="icon" className="shrink-0 md:hidden">
-              <PanelLeft className="h-5 w-5" />
-              <span className="sr-only">Toggle navigation menu</span>
-            </Button>
-          </SheetTrigger>
-          <SheetContent side="left" className="p-0">
-            <SheetHeader className="p-6">
-              <SheetTitle><LogoArea isPinkPartner={partnerData?.isCabziPinkPartner || false} /></SheetTitle>
-              <SheetDescription className="sr-only">Main menu for driver</SheetDescription>
-            </SheetHeader>
-            <div className="flex-1 overflow-auto py-2">
-              <DriverNav isPinkPartner={partnerData?.isCabziPinkPartner || false} />
-            </div>
-          </SheetContent>
+            <SheetTrigger asChild>
+                <Button variant="outline" size="icon" className="shrink-0 md:hidden">
+                    <PanelLeft className="h-5 w-5" />
+                    <span className="sr-only">Toggle navigation menu</span>
+                </Button>
+            </SheetTrigger>
+            <SheetContent side="left" className="p-0">
+                <SheetHeader className="p-6">
+                    <SheetTitle><LogoArea isPinkPartner={partnerData?.isCabziPinkPartner || false} /></SheetTitle>
+                    <SheetDescription className="sr-only">Main menu for driver</SheetDescription>
+                </SheetHeader>
+                <div className="flex-1 overflow-auto py-2">
+                    <DriverNav isPinkPartner={partnerData?.isCabziPinkPartner || false} />
+                </div>
+            </SheetContent>
         </Sheet>
         
         <div className="hidden md:flex">
@@ -405,24 +406,17 @@ function DriverLayoutContent({ children }: { children: React.ReactNode }) {
         </div>
       </header>
 
-      <div className="flex flex-1">
-        <aside className="hidden w-64 flex-col border-r bg-background md:flex">
-          <div className="flex-1 overflow-auto py-2">
-            <DriverNav isPinkPartner={partnerData?.isCabziPinkPartner || false} />
-          </div>
-        </aside>
         <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
-          <MotionDiv 
+            <MotionDiv 
             key={pathname}
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, ease: 'easeInOut' }}
             className="h-full relative"
-          >
+            >
             {children}
-          </MotionDiv>
+            </MotionDiv>
         </main>
-      </div>
     </div>
   );
 }

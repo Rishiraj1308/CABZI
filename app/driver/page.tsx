@@ -6,7 +6,7 @@ import Image from 'next/image'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
-import { Star, History, IndianRupee, Power, KeyRound, Clock, MapPin, Route, Navigation, CheckCircle, Sparkles, Eye, TrendingUp } from 'lucide-react'
+import { Star, History, IndianRupee, Power, KeyRound, Clock, MapPin, Route, Navigation, CheckCircle, Sparkles, Eye } from 'lucide-react'
 import {
   AlertDialog,
   AlertDialogContent,
@@ -52,20 +52,20 @@ const LiveMap = dynamic(() => import('@/components/live-map'), {
 
 
 const StatCard = ({ title, value, icon: Icon, isLoading, onValueClick }: { title: string, value: string, icon: React.ElementType, isLoading?: boolean, onValueClick?: () => void }) => (
-    <Card className="p-3">
-        <div className="flex flex-row items-center justify-between mb-1">
-        <p className="text-sm font-medium text-muted-foreground">{title}</p>
-         <Button variant="ghost" size="icon" className="w-8 h-8 text-muted-foreground hover:bg-accent hover:text-accent-foreground">
-            <Icon className="h-4 w-4" />
-        </Button>
-        </div>
+    <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">{title}</CardTitle>
+            <Icon className="h-4 w-4 text-muted-foreground" />
+        </CardHeader>
+        <CardContent>
         {isLoading ? (
-        <Skeleton className="h-8 w-20" />
+            <Skeleton className="h-8 w-20" />
         ) : (
-        <div className="text-2xl font-bold cursor-pointer" onClick={onValueClick}>
-            {value}
-        </div>
+            <div className="text-2xl font-bold cursor-pointer" onClick={onValueClick}>
+                {value}
+            </div>
         )}
+        </CardContent>
     </Card>
 );
 
@@ -118,20 +118,6 @@ export default function DriverDashboardPage() {
         }
     }, [isMapDialogOpen]);
 
-  const handleAvailabilityChange = async (checked: boolean) => {
-    if (!partnerData || !db) return;
-    const partnerRef = doc(db, 'partners', partnerData.id);
-    try {
-      await updateDoc(partnerRef, { isOnline: checked, status: checked ? 'online' : 'offline' });
-      toast({
-        title: checked ? "You are now ONLINE" : "You are OFFLINE",
-        description: checked ? "You will start receiving ride requests." : "You won't receive new requests.",
-      });
-    } catch (error) {
-      toast({ variant: 'destructive', title: 'Error', description: 'Could not update your status.' });
-    }
-  };
-  
   const handleDeclineJob = useCallback(async (isTimeout = false) => {
     if (!jobRequest || !partnerData?.id || !db) return
     if (requestTimerRef.current) clearInterval(requestTimerRef.current)
@@ -407,50 +393,26 @@ export default function DriverDashboardPage() {
 
   return (
     <div className="space-y-6">
-        <Card className="shadow-lg md:hidden">
-            <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle>Your Dashboard</CardTitle>
-                <div className="flex items-center space-x-2">
-                    <Switch id="online-status-mobile" checked={isOnline} onCheckedChange={handleAvailabilityChange} />
-                    <Label htmlFor="online-status-mobile" className={cn("font-semibold", isOnline ? "text-green-600" : "text-muted-foreground")}>
-                        {isOnline ? "ONLINE" : "OFFLINE"}
-                    </Label>
-                </div>
-            </CardHeader>
-             <CardDescription className="px-6 pb-4">
-                Welcome back. {isOnline ? 'You are online and ready for rides.' : 'Go online to start receiving requests.'}
-             </CardDescription>
-        </Card>
-       
+      <AnimatePresence>
         {isOnline && !activeRide && (
-            <Card className="text-center py-12">
-                <SearchingIndicator partnerType="path" className="w-32 h-32" />
-                <h3 className="text-3xl font-bold mt-4">Waiting for Rides...</h3>
-                <p className="text-muted-foreground mt-2 text-sm">Your location is being shared to get nearby requests.</p>
-                <Dialog open={isMapDialogOpen} onOpenChange={setIsMapDialogOpen}>
-                    <DialogTrigger asChild>
-                        <Button variant="outline" size="sm" className="mt-4">
-                            View Live Map
-                        </Button>
-                    </DialogTrigger>
-                    <DialogContent className="max-w-[90vw] md:max-w-4xl h-[80vh]">
-                        <DialogHeader><DialogTitle>Live Map</DialogTitle></DialogHeader>
-                        <div className="h-full w-full rounded-md overflow-hidden border">
-                            <LiveMap 
-                                ref={mapRef}
-                                driverLocation={driverLocation}
-                                isTripInProgress={activeRide?.status === 'in-progress'}
-                            />
-                        </div>
-                    </DialogContent>
-                </Dialog>
-            </Card>
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+            >
+              <Card className="text-center py-12 mb-6">
+                  <SearchingIndicator partnerType="path" className="w-32 h-32" />
+                  <h3 className="text-3xl font-bold mt-4">Waiting for Rides...</h3>
+                  <p className="text-muted-foreground mt-2 text-sm">Your location is being shared to get nearby requests.</p>
+              </Card>
+            </motion.div>
         )}
+      </AnimatePresence>
 
         {activeRide ? renderActiveRide() : (
             <>
-                 <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                    <StatCard title="Today's Earnings" value={isEarningsVisible ? `₹${(partnerData?.todaysEarnings || 0).toLocaleString()}` : '₹ •••••'} icon={IndianRupee} isLoading={isDriverLoading} onValueClick={() => !isEarningsVisible && setIsPinDialogOpen(true)} />
+                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <StatCard title="Today's Earnings" value={isEarningsVisible ? `₹${(partnerData?.todaysEarnings || 0).toLocaleString()}` : '₹ ****'} icon={IndianRupee} isLoading={isDriverLoading} onValueClick={() => !isEarningsVisible && setIsPinDialogOpen(true)} />
                     <StatCard title="Today's Rides" value={partnerData?.jobsToday?.toString() || '0'} icon={History} isLoading={isDriverLoading} />
                     <StatCard title="Acceptance" value={`${partnerData?.acceptanceRate || '95'}%`} icon={Power} isLoading={isDriverLoading} />
                     <StatCard title="Rating" value={partnerData?.rating?.toString() || '4.9'} icon={Star} isLoading={isDriverLoading} />
