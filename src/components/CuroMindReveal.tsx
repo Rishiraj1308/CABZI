@@ -1,3 +1,4 @@
+
 'use client'
 
 import { motion } from 'framer-motion'
@@ -8,11 +9,11 @@ export default function CuroMindReveal() {
   const chars = Array.from(text);
 
   const container = {
-    hidden: { opacity: 0 },
-    visible: {
+    hidden: { opacity: 1 },
+    visible: (i = 1) => ({
       opacity: 1,
-      transition: { staggerChildren: 0.05, delayChildren: 0.5 },
-    },
+      transition: { staggerChildren: 0.04, delayChildren: 0.04 * i },
+    }),
   };
 
   const child = {
@@ -40,7 +41,7 @@ export default function CuroMindReveal() {
   const intelligentEndIndex = intelligentStartIndex + "intelligent".length;
 
   return (
-    <section className="relative flex flex-col items-center justify-center text-center overflow-hidden">
+    <section className="relative flex flex-col items-center justify-center text-center py-40 overflow-hidden">
       
       {/* === Glowing Background Core === */}
       <div className="absolute inset-0 bg-gradient-radial from-primary/10 via-transparent to-transparent blur-3xl animate-pulse"></div>
