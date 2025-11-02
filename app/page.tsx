@@ -490,7 +490,7 @@ export default function HomePage() {
                 </div>
             </section>
             
-            <section className="py-20 md:py-24 bg-background dark:bg-[#090d12] text-foreground dark:text-white">
+            <section className="py-20 md:py-24 bg-background text-foreground">
                 <div className="container">
                     <CuroMindReveal />
                 </div>
