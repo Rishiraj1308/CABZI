@@ -41,18 +41,10 @@ interface ActivityItem {
 }
 
 export default function MyActivityPage() {
-  const [rides, setRides] = useState<ActivityItem[]>([]);
-  const [appointments, setAppointments] = useState<ActivityItem[]>([]);
-  const [emergencies, setEmergencies] = useState<ActivityItem[]>([]);
-  const [resqRequests, setResqRequests] = useState<ActivityItem[]>([]);
-  
+  const [activities, setActivities] = useState<ActivityItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { db, user } = useFirebase();
   const { toast } = useToast();
-
-  const activities = useMemo(() => {
-    return [...rides, ...appointments, ...emergencies, ...resqRequests].sort((a,b) => b.date.getTime() - a.date.getTime());
-  }, [rides, appointments, emergencies, resqRequests]);
 
   const handleCancel = async (e: React.MouseEvent, item: ActivityItem) => {
     e.stopPropagation(); // Prevent the link from firing
@@ -68,113 +60,88 @@ export default function MyActivityPage() {
     }
   }
 
-
-  // Fetch Rides
   useEffect(() => {
-    if (!db || !user) { setIsLoading(false); return; }
-    const q = query(collection(db, 'rides'), where('riderId', '==', user.uid), orderBy('createdAt', 'desc'));
-    const unsub = onSnapshot(q, (snapshot) => {
-        const ridesData = snapshot.docs.map(doc => {
-            const data = doc.data();
-            return {
-                id: doc.id,
-                type: 'Ride' as const,
-                title: `Ride to ${data.destination?.address || 'destination'}`,
-                description: `From: ${data.pickup?.address || 'start'}`,
-                date: (data.createdAt as Timestamp).toDate(),
-                status: data.status.charAt(0).toUpperCase() + data.status.slice(1).replace(/_/g, ' '),
-                fare: data.fare,
-                icon: Car,
-                color: 'text-primary',
-                href: '/user/book',
-                cancellable: ['searching', 'accepted'].includes(data.status),
-                collectionName: 'rides',
-            }
+    if (!db || !user) {
+      setIsLoading(false);
+      return;
+    }
+
+    const activityTypes = [
+      { name: 'rides', type: 'Ride' as const, icon: Car, color: 'text-primary', href: '/user/book' },
+      { name: 'appointments', type: 'Appointment' as const, icon: Calendar, color: 'text-blue-500', href: '/user/appointments' },
+      { name: 'emergencyCases', type: 'Emergency' as const, icon: Ambulance, color: 'text-red-500', href: '/user' },
+      { name: 'garageRequests', type: 'ResQ' as const, icon: Wrench, color: 'text-amber-500', href: '/user/resq' },
+    ];
+
+    const unsubscribes = activityTypes.map(({ name, type, icon, color, href }) => {
+      const collectionName = name;
+      const idField = name === 'rides' || name === 'emergencyCases' ? 'riderId' : name === 'appointments' ? 'patientId' : 'driverId';
+
+      const q = query(collection(db, collectionName), where(idField, '==', user.uid), orderBy('createdAt', 'desc'));
+      
+      return onSnapshot(q, (snapshot) => {
+        const newItems = snapshot.docs.map(doc => {
+          const data = doc.data();
+          let title = '';
+          let description = '';
+          let date = (data.createdAt as Timestamp)?.toDate() || new Date();
+          let cancellable = false;
+
+          switch (type) {
+            case 'Ride':
+              title = `Ride to ${data.destination?.address || 'destination'}`;
+              description = `From: ${data.pickup?.address || 'start'}`;
+              cancellable = ['searching', 'accepted'].includes(data.status);
+              break;
+            case 'Appointment':
+              title = `Appointment with ${data.doctorName}`;
+              description = data.hospitalName;
+              date = (data.appointmentDate as Timestamp)?.toDate();
+              cancellable = data.status === 'Pending';
+              break;
+            case 'Emergency':
+              title = `SOS Case: ${data.caseId}`;
+              description = `Assigned to: ${data.assignedPartner?.name || 'Searching...'}`;
+              cancellable = data.status === 'pending';
+              break;
+            case 'ResQ':
+              title = `ResQ Request: ${data.issue}`;
+              description = `Mechanic: ${data.mechanicName || 'Searching...'}`;
+              cancellable = data.status === 'pending';
+              break;
+          }
+          
+          return {
+            id: doc.id,
+            type,
+            title,
+            description,
+            date,
+            status: data.status ? String(data.status).charAt(0).toUpperCase() + String(data.status).slice(1).replace(/_/g, ' ') : 'Unknown',
+            fare: data.fare || data.totalAmount,
+            icon,
+            color,
+            href,
+            cancellable,
+            collectionName,
+          };
         });
-        setRides(ridesData);
-        setIsLoading(false);
-    }, (error) => {
-        console.error("Error fetching rides:", error);
-        setIsLoading(false);
-    });
-    return () => unsub();
-  }, [db, user]);
-  
-  // Fetch Appointments
-  useEffect(() => {
-    if (!db || !user) { return; }
-    const q = query(collection(db, 'appointments'), where('patientId', '==', user.uid), orderBy('createdAt', 'desc'));
-    const unsub = onSnapshot(q, (snapshot) => {
-        const apptsData = snapshot.docs.map(doc => ({
-            id: doc.id,
-            type: 'Appointment' as const,
-            title: `Appointment with ${doc.data().doctorName}`,
-            description: doc.data().hospitalName,
-            date: (doc.data().appointmentDate as Timestamp).toDate(),
-            status: doc.data().status,
-            icon: Calendar,
-            color: 'text-blue-500',
-            href: '/user/book-appointment',
-            cancellable: doc.data().status === 'Pending',
-            collectionName: 'appointments',
-        }));
-        setAppointments(apptsData);
-    }, (error) => {
-        console.error("Error fetching appointments:", error);
-    });
-    return () => unsub();
-  }, [db, user]);
 
-  // Fetch Emergencies
-  useEffect(() => {
-    if (!db || !user) { return; }
-    const q = query(collection(db, 'emergencyCases'), where('riderId', '==', user.uid), orderBy('createdAt', 'desc'));
-    const unsub = onSnapshot(q, (snapshot) => {
-        const casesData = snapshot.docs.map(doc => ({
-            id: doc.id,
-            type: 'Emergency' as const,
-            title: `SOS Case: ${doc.data().caseId}`,
-            description: `Assigned to: ${doc.data().assignedPartner?.name || 'Searching...'}`,
-            date: (doc.data().createdAt as Timestamp).toDate(),
-            status: doc.data().status.charAt(0).toUpperCase() + doc.data().status.slice(1).replace(/_/g, ' '),
-            icon: Ambulance,
-            color: 'text-red-500',
-            href: '/user/book',
-            cancellable: doc.data().status === 'pending',
-            collectionName: 'emergencyCases',
-        }));
-        setEmergencies(casesData);
-    }, (error) => {
-        console.error("Error fetching emergencies:", error);
+        setActivities(prev => {
+          const otherItems = prev.filter(item => item.type !== type);
+          return [...otherItems, ...newItems].sort((a, b) => b.date.getTime() - a.date.getTime());
+        });
+        setIsLoading(false);
+      }, (error) => {
+        console.error(`Error fetching ${name}:`, error);
+        toast({ variant: 'destructive', title: "Error", description: `Could not load ${type} history.` });
+        setIsLoading(false);
+      });
     });
-    return () => unsub();
-  }, [db, user]);
-  
-  // Fetch ResQ Requests
-  useEffect(() => {
-    if (!db || !user) { return; }
-    const q = query(collection(db, 'garageRequests'), where('driverId', '==', user.uid), orderBy('createdAt', 'desc'));
-    const unsub = onSnapshot(q, (snapshot) => {
-        const resqData = snapshot.docs.map(doc => ({
-            id: doc.id,
-            type: 'ResQ' as const,
-            title: `ResQ Request: ${doc.data().issue}`,
-            description: `Mechanic: ${doc.data().mechanicName || 'Searching...'}`,
-            date: (doc.data().createdAt as Timestamp).toDate(),
-            status: doc.data().status.charAt(0).toUpperCase() + doc.data().status.slice(1).replace(/_/g, ' '),
-            fare: doc.data().totalAmount,
-            icon: Wrench,
-            color: 'text-amber-500',
-            href: '/user/resq',
-            cancellable: doc.data().status === 'pending',
-            collectionName: 'garageRequests',
-        }));
-        setResqRequests(resqData);
-    }, (error) => {
-        console.error("Error fetching ResQ requests:", error);
-    });
-    return () => unsub();
-  }, [db, user]);
+
+    return () => unsubscribes.forEach(unsub => unsub());
+
+  }, [db, user, toast]);
 
   const getStatusBadge = (status: ActivityStatus) => {
     const lowerStatus = status.toLowerCase();
