@@ -1,4 +1,5 @@
 
+
 'use client'
 
 import React, { useState, useEffect, useRef, useCallback } from 'react'
@@ -429,10 +430,12 @@ export default function DriverDashboardPage() {
     const destinationLocation = isNavigatingToRider ? activeRide.pickup.location : activeRide.destination.location;
     const navigateUrl = destinationLocation ? `https://www.google.com/maps/dir/?api=1&destination=${destinationLocation.latitude},${destinationLocation.longitude}` : '#';
 
+    const statusText = activeRide.status.includes('cancelled') ? 'Ride Cancelled' : activeRide.status.replace(/_/g, ' ');
+
     return (
         <Card className="shadow-lg animate-fade-in w-full">
             <CardHeader>
-                <CardTitle className="capitalize">{activeRide.status.replace('_', ' ')}</CardTitle>
+                <CardTitle className="capitalize">{statusText}</CardTitle>
                 <CardDescription>Rider: {activeRide.riderName}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
