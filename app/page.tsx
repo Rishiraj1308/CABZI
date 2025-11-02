@@ -313,7 +313,7 @@ export default function HomePage() {
           </header>
           <main className="flex-1">
             {/* Hero Section */}
-            <section className="relative py-24 md:py-32 lg:py-32 overflow-hidden">
+            <section className="relative py-20 md:py-28 lg:py-32 overflow-hidden">
                 <div className="absolute inset-0 -z-10 animate-text-gradient bg-gradient-to-br from-primary/10 via-red-500/10 to-amber-500/10"></div>
                 <div className="container grid lg:grid-cols-2 gap-10 items-center">
                     <motion.div 
@@ -324,19 +324,19 @@ export default function HomePage() {
                     >
                         <motion.h1 
                             variants={itemVariants}
-                            className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold tracking-tighter bg-clip-text text-transparent bg-gradient-to-b from-foreground to-foreground/70 font-headline"
+                            className="text-3xl sm:text-5xl md:text-6xl font-extrabold tracking-tighter bg-clip-text text-transparent bg-gradient-to-b from-foreground to-foreground/70 font-headline"
                         >
                            Your Partner On The Road. Fair for Everyone.
                         </motion.h1>
                         <motion.p 
                            variants={itemVariants}
-                           className="mt-4 text-lg font-semibold text-destructive"
+                           className="mt-4 text-base sm:text-lg font-semibold text-destructive"
                         >
                            Psst... other apps take 30% of your earnings. Just saying.
                         </motion.p>
                          <motion.p 
                             variants={itemVariants}
-                            className="mx-auto lg:mx-0 mt-6 max-w-xl text-lg text-muted-foreground"
+                            className="mx-auto lg:mx-0 mt-6 max-w-xl text-base sm:text-lg text-muted-foreground"
                         >
                             Curocity is more than a ride. It's a promise of fair fares for riders, 0% commission for partners, and an integrated safety network that looks out for you on every trip.
                         </motion.p>
@@ -577,5 +577,3 @@ export default function HomePage() {
       </div>
   );
 }
-
-    
