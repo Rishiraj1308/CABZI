@@ -7,7 +7,7 @@ import Image from 'next/image'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
-import { Star, History, IndianRupee, Power, KeyRound, Clock, MapPin, Route, Navigation, CheckCircle, Sparkles, Eye, Map, TrendingUp } from 'lucide-react'
+import { Star, History, IndianRupee, Power, KeyRound, Clock, MapPin, Route, Navigation, CheckCircle, Sparkles, Eye, TrendingUp } from 'lucide-react'
 import {
   AlertDialog,
   AlertDialogContent,
@@ -382,7 +382,7 @@ export default function DriverDashboardPage() {
     }
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-        <div className={cn("space-y-6", activeRide ? "hidden" : "lg:col-span-3")}>
+        <div className={cn("space-y-6", activeRide ? "hidden lg:block lg:col-span-3" : "lg:col-span-3")}>
              <AnimatePresence>
                 {isMapVisible && (
                 <motion.div
@@ -392,7 +392,7 @@ export default function DriverDashboardPage() {
                     transition={{ duration: 0.5, ease: 'easeInOut' }}
                 >
                     <Card className="h-96">
-                        <CardHeader className="absolute top-2 left-2 z-10 p-0">
+                        <CardHeader className="absolute top-2 left-2 z-10 p-0 bg-background/50 rounded-lg">
                             <Button variant="ghost" size="sm" onClick={() => setIsMapVisible(false)}>
                                 Hide Map
                             </Button>
@@ -427,7 +427,7 @@ export default function DriverDashboardPage() {
             {activeRide ? renderActiveRide() : (
                 <>
                     <Card className="shadow-lg">
-                        <CardHeader>
+                        <CardHeader className="border-b">
                           <div className="flex justify-between items-center">
                               <CardTitle>Your Dashboard</CardTitle>
                               {!isMapVisible && (
@@ -436,8 +436,14 @@ export default function DriverDashboardPage() {
                                 </Button>
                               )}
                           </div>
+                           <div className="flex items-center gap-2 pt-2">
+                                <Switch id="online-status" checked={isOnline} onCheckedChange={handleAvailabilityChange} />
+                                <Label htmlFor="online-status" className={cn("font-semibold", isOnline ? "text-green-600" : "text-muted-foreground")}>
+                                    {isOnline ? "ONLINE" : "OFFLINE"}
+                                </Label>
+                            </div>
                         </CardHeader>
-                        {partnerData?.isOnline ? (
+                        {isOnline ? (
                         <CardContent className="text-center py-12">
                              <SearchingIndicator partnerType="path" className="w-32 h-32" />
                             <h3 className="text-3xl font-bold mt-4">Waiting for Rides...</h3>
@@ -494,6 +500,7 @@ export default function DriverDashboardPage() {
             <AvatarImage
               src={'https://placehold.co/100x100.png'}
               alt={jobRequest.riderName}
+              data-ai-hint="rider portrait"
             />
             <AvatarFallback>
               {jobRequest?.riderName?.[0] || 'R'}
@@ -508,21 +515,19 @@ export default function DriverDashboardPage() {
           <Badge variant="outline">{jobRequest.rideType}</Badge>
         </div>
 
-        {/* ✅ Fixed Pickup & Drop section */}
         <div className="space-y-2 text-sm mt-3">
           <div className="flex items-start gap-2">
             <MapPin className="w-4 h-4 mt-1 text-green-500 flex-shrink-0" />
             <p>
               <span className="font-semibold">Pickup:</span>{' '}
-              {jobRequest?.pickupAddress || jobRequest?.pickup?.address || 'Pickup not available'}
-...
+              {jobRequest.pickupAddress}
             </p>
           </div>
           <div className="flex items-start gap-2">
             <Route className="w-4 h-4 mt-1 text-red-500 flex-shrink-0" />
             <p>
               <span className="font-semibold">Drop:</span>{' '}
-              {jobRequest?.destinationAddress || jobRequest?.destination?.address || 'Drop not available'}
+              {jobRequest.destinationAddress}
             </p>
           </div>
         </div>
@@ -561,13 +566,13 @@ export default function DriverDashboardPage() {
           <div className="p-2 bg-muted rounded-md">
             <p className="text-xs text-muted-foreground">To Pickup</p>
             <p className="font-bold text-lg">
-              ~{jobRequest.driverDistance?.toFixed(1)} km
+                {jobRequest.driverDistance ? `${jobRequest.driverDistance.toFixed(1)} km` : "~km"}
             </p>
           </div>
           <div className="p-2 bg-muted rounded-md">
             <p className="text-xs text-muted-foreground">Est. Arrival</p>
             <p className="font-bold text-lg">
-              ~{Math.ceil(jobRequest.driverEta || 0)} min
+               {jobRequest.driverEta ? `~${Math.ceil(jobRequest.driverEta)} min` : "~min"}
             </p>
           </div>
         </div>
