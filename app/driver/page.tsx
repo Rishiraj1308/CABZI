@@ -1,5 +1,4 @@
 
-
 'use client'
 
 import React, { useState, useEffect, useRef, useCallback } from 'react'
@@ -221,6 +220,14 @@ export default function DriverDashboardPage() {
     return () => unsubscribe();
   }, [db, partnerData, jobRequest, activeRide, isOnline]);
   
+  const resetAfterRide = useCallback(() => {
+    setActiveRide(null);
+    localStorage.removeItem('activeRideId');
+    if (partnerData?.id && db) {
+        updateDoc(doc(db, 'partners', partnerData.id), { status: 'online' });
+    }
+  }, [partnerData, db]);
+  
     useEffect(() => {
         if (!db || !activeRide?.id) return;
         const unsub = onSnapshot(doc(db, 'rides', activeRide.id), (docSnap) => {
@@ -231,7 +238,7 @@ export default function DriverDashboardPage() {
                         variant: data.status === 'completed' ? 'default' : 'destructive',
                         title: data.status === 'completed' ? 'Ride Completed' : 'Ride Cancelled',
                     });
-                    resetAfterRide();
+                    resetAfterRide(); // This will now reset the state
                 } else {
                     setActiveRide({ id: docSnap.id, ...data } as RideData);
                 }
@@ -240,7 +247,7 @@ export default function DriverDashboardPage() {
             }
         });
         return () => unsub();
-    }, [db, activeRide?.id, toast]);
+    }, [db, activeRide?.id, toast, resetAfterRide]);
 
 
   useEffect(() => {
@@ -261,14 +268,6 @@ export default function DriverDashboardPage() {
       if (requestTimerRef.current) clearInterval(requestTimerRef.current)
     }
   }, [jobRequest, handleDeclineJob])
-
-  const resetAfterRide = () => {
-    setActiveRide(null)
-    localStorage.removeItem('activeRideId')
-    if (partnerData?.id && db) {
-        updateDoc(doc(db, 'partners', partnerData.id), { status: 'online' });
-    }
-  }
 
   const handleAcceptJob = async () => {
     if (!jobRequest || !partnerData || !db) return;
@@ -373,7 +372,7 @@ export default function DriverDashboardPage() {
                 description: `Status is now: ${status.replace('_', ' ')}`,
             });
             if (status === 'completed') {
-                if (onEndRide) onEndRide();
+                resetAfterRide();
             }
         } catch (error) {
             console.error("Error updating ride status:", error);
@@ -415,13 +414,6 @@ export default function DriverDashboardPage() {
     ? { lat: partnerData.currentLocation.latitude, lon: partnerData.currentLocation.longitude }
     : undefined;
     
-  const onEndRide = () => {
-    setActiveRide(null);
-    localStorage.removeItem('activeRideId');
-    if (partnerData?.id && db) {
-        updateDoc(doc(db, 'partners', partnerData.id), { status: 'online' });
-    }
-  }
 
   const renderActiveRide = () => {
     if (!activeRide) return null;
@@ -430,7 +422,7 @@ export default function DriverDashboardPage() {
     const destinationLocation = isNavigatingToRider ? activeRide.pickup.location : activeRide.destination.location;
     const navigateUrl = destinationLocation ? `https://www.google.com/maps/dir/?api=1&destination=${destinationLocation.latitude},${destinationLocation.longitude}` : '#';
 
-    const statusText = activeRide.status.includes('cancelled') ? 'Ride Cancelled' : activeRide.status.replace(/_/g, ' ');
+    const statusText = activeRide.status.replace(/_/g, ' ');
 
     return (
         <Card className="shadow-lg animate-fade-in w-full">
@@ -440,7 +432,7 @@ export default function DriverDashboardPage() {
             </CardHeader>
             <CardContent className="space-y-4">
                  <div className="p-3 rounded-lg bg-muted flex items-center gap-3">
-                    <Avatar className="w-12 h-12"><AvatarImage src={'https://placehold.co/100x100.png'} alt={activeRide.riderName} /><AvatarFallback>{activeRide.riderName?.[0] || 'R'}</AvatarFallback></Avatar>
+                    <Avatar className="w-12 h-12"><AvatarImage src={'https://placehold.co/100x100.png'} alt={activeRide.riderName} data-ai-hint="rider portrait"/><AvatarFallback>{activeRide.riderName?.[0] || 'R'}</AvatarFallback></Avatar>
                     <div className="flex-1">
                         <p className="font-bold">{activeRide.riderName}</p>
                         <p className="text-sm text-muted-foreground capitalize">{activeRide.riderGender}</p>
@@ -468,7 +460,7 @@ export default function DriverDashboardPage() {
                     <Button className="w-full" size="lg" onClick={() => handleUpdateRideStatus('arrived')}>Arrived at Pickup</Button>
                 )}
                 {activeRide.status === 'in-progress' && (
-                    <Button className="w-full bg-destructive hover:bg-destructive/80" size="lg" onClick={() => handleUpdateRideStatus('completed')}>End Trip</Button>
+                    <Button className="w-full bg-destructive hover:bg-destructive/80" size="lg" onClick={() => handleUpdateRideStatus('payment_pending')}>End Trip</Button>
                 )}
             </CardFooter>
         </Card>
@@ -648,5 +640,7 @@ export default function DriverDashboardPage() {
     </div>
   );
 }
+
+    
 
     
