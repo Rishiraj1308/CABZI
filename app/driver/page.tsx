@@ -35,7 +35,7 @@ import dynamic from 'next/dynamic'
 import type { JobRequest, RideData } from '@/lib/types'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useDriver } from './layout'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import SearchingIndicator from '@/components/ui/searching-indicator'
 import { Switch } from '@/components/ui/switch'
@@ -559,4 +559,3 @@ export default function DriverDashboardPage() {
   );
 }
 
-    
