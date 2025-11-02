@@ -17,7 +17,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Home, Briefcase, Settings, FileText, User, LogOut, Camera, Shield, Wallet, CreditCard, PlusCircle, Activity, ArrowRight, Loader2, HeartPulse, Droplets, Car, IndianRupee } from 'lucide-react'
+import { Home, Briefcase, Settings, FileText, User, LogOut, Camera, Shield, Wallet, CreditCard, PlusCircle, Activity, ArrowRight, Loader2, HeartPulse, Droplets, Car, IndianRupee, Smartphone } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useToast } from '@/hooks/use-toast'
 import {
@@ -332,7 +332,12 @@ export default function UserProfilePage() {
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2"><Settings className="w-5 h-5"/> Account Actions</CardTitle>
                         </CardHeader>
-                        <CardContent>
+                        <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                             <Button variant="outline" className="w-full" asChild>
+                                <Link href="/user/mobile-preview">
+                                    <Smartphone className="mr-2 h-4 w-4" /> Mobile Preview
+                                </Link>
+                            </Button>
                             <AlertDialog>
                                 <AlertDialogTrigger asChild>
                                     <Button variant="destructive" className="w-full">
