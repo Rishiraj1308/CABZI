@@ -118,8 +118,8 @@ const handleRideDispatch = async (initialRideData: any, rideId: string) => {
                 riderId: rideData.riderId,
                 riderGender: rideData.riderGender,
                 otp: rideData.otp,
-                distance: String(distanceToRider), // Corrected: driverDistance -> distance
-                eta: String(eta), // Corrected: driverEta -> eta
+                distance: String(distanceToRider), // Corrected: This is the distance TO THE PICKUP
+                eta: String(eta), // Corrected: This is the ETA TO THE PICKUP
             };
             
             const message = {
