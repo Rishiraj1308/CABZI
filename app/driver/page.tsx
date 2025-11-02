@@ -507,8 +507,8 @@ export default function DriverDashboardPage() {
                                     <p className="font-bold text-lg text-primary">OTP: {activeRide.otp}</p>
                                 </div>
                                 <div className="flex flex-col gap-2">
-                                    <Button size="icon" variant="outline" asChild><a href={`tel:${activeRide.riderPhone}`}><Phone/></a></Button>
-                                    <Button size="icon" variant="outline"><MessageSquare/></Button>
+                                     <Button size="icon" variant="outline" asChild><a href={`tel:${activeRide.riderPhone}`}><Phone/></a></Button>
+                                     <Button size="icon" variant="outline" asChild><a href={`sms:${activeRide.riderPhone}`}><MessageSquare/></a></Button>
                                 </div>
                             </div>
                         )}
@@ -559,7 +559,7 @@ export default function DriverDashboardPage() {
   
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start h-full">
-        <div className="lg:col-span-3 h-96 lg:h-auto lg:row-start-1 lg:col-span-2">
+        <div className="lg:col-span-3 h-96 lg:h-[calc(100vh-210px)] rounded-lg overflow-hidden">
            <Card className="h-full">
                 <CardContent className="p-0 h-full">
                      <LiveMap 
@@ -571,13 +571,15 @@ export default function DriverDashboardPage() {
                             }
                         }}
                         driverLocation={driverLocation}
+                        riderLocation={activeRide?.pickup?.location ? { lat: activeRide.pickup.location.latitude, lon: activeRide.pickup.location.longitude } : undefined}
+                        destinationLocation={activeRide?.destination?.location ? { lat: activeRide.destination.location.latitude, lon: activeRide.destination.longitude } : undefined}
                         isTripInProgress={activeRide?.status === 'in-progress'}
                      />
                 </CardContent>
             </Card>
         </div>
         
-        <div className={cn("space-y-6 lg:col-span-1", activeRide && 'lg:col-span-3 lg:row-start-2')}>
+        <div className={cn("space-y-6 lg:col-span-3", activeRide && 'lg:col-span-3 lg:row-start-2')}>
             {activeRide ? renderActiveRide() : (
                 <>
                      <Card>
@@ -597,7 +599,7 @@ export default function DriverDashboardPage() {
                          </CardContent>
                      </Card>
 
-                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-2">
+                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                         <StatCard title="Today's Earnings" value={isEarningsVisible ? `₹${(partnerData?.todaysEarnings || 0).toLocaleString()}` : '₹ ****'} icon={IndianRupee} isLoading={isDriverLoading} onValueClick={() => !isEarningsVisible && setIsPinDialogOpen(true)} />
                         <StatCard title="Today's Rides" value={partnerData?.jobsToday?.toString() || '0'} icon={History} isLoading={isDriverLoading} />
                         <StatCard title="Acceptance Rate" value={`${partnerData?.acceptanceRate || '95'}%`} icon={Power} isLoading={isDriverLoading} />
@@ -689,7 +691,7 @@ export default function DriverDashboardPage() {
                  <div className="p-2 bg-muted rounded-md">
                      <p className="text-xs text-muted-foreground">To Pickup</p>
                      <p className="font-bold text-lg">
-                       {jobRequest.distance ? `${jobRequest.distance.toFixed(1)} km` : '~km'}
+                       {jobRequest.distance ? `~${jobRequest.distance.toFixed(1)} km` : '~km'}
                      </p>
                  </div>
                  <div className="p-2 bg-muted rounded-md">
@@ -729,3 +731,5 @@ export default function DriverDashboardPage() {
     </div>
   );
 }
+
+    
