@@ -63,7 +63,7 @@ const handleRideDispatch = async (initialRideData: any, rideId: string) => {
     
     // If ride type is "Curocity Pink", add specific filters.
     if (rideData.rideType === 'Curocity Pink') {
-        partnersQuery = partnersQuery.where('isCurocityPinkPartner', '==', true)
+        partnersQuery = partnersQuery.where('isCabziPinkPartner', '==', true)
                                    .where('gender', '==', 'female');
     }
 
@@ -117,9 +117,8 @@ const handleRideDispatch = async (initialRideData: any, rideId: string) => {
                 riderId: rideData.riderId,
                 riderGender: rideData.riderGender,
                 otp: rideData.otp,
-                distance: String(rideData.distance),
-                driverDistance: String(distanceToRider), // Specific distance for this driver
-                driverEta: String(eta), // Specific ETA for this driver
+                distance: String(distanceToRider), // Specific distance for this driver
+                eta: String(eta), // Specific ETA for this driver
             };
             
             const message = {
