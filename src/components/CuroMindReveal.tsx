@@ -1,17 +1,18 @@
-
 'use client'
 
 import { motion } from 'framer-motion'
 import { BrainCircuit } from 'lucide-react'
 
 export default function CuroMindReveal() {
-  const title = "Something intelligent is awakening...".split("");
+  const text = "Something intelligent is awakening...";
+  // We split the entire text into characters for the animation
+  const chars = Array.from(text);
 
   const container = {
     hidden: { opacity: 0 },
     visible: (i = 1) => ({
       opacity: 1,
-      transition: { staggerChildren: 0.04, delayChildren: 0.04 * i },
+      transition: { staggerChildren: 0.03, delayChildren: 0.04 * i },
     }),
   };
 
@@ -36,11 +37,11 @@ export default function CuroMindReveal() {
     },
   };
   
-  const text = "Something intelligent is awakening...";
-  const words = text.split(" ");
+  const intelligentStartIndex = text.indexOf("intelligent");
+  const intelligentEndIndex = intelligentStartIndex + "intelligent".length;
 
   return (
-    <section className="relative flex flex-col items-center justify-center text-center py-40 overflow-hidden">
+    <section className="relative flex flex-col items-center justify-center text-center overflow-hidden">
       
       {/* === Glowing Background Core === */}
       <div className="absolute inset-0 bg-gradient-radial from-primary/10 via-transparent to-transparent blur-3xl animate-pulse"></div>
@@ -85,36 +86,26 @@ export default function CuroMindReveal() {
         <BrainCircuit className="w-12 h-12 text-primary/50" />
       </motion.div>
 
-      {/* === Title === */}
+      {/* === Title with Typewriter effect === */}
       <motion.h2
+        variants={container}
         initial="hidden"
         whileInView="visible"
-        variants={container}
         className="text-4xl md:text-6xl font-bold tracking-tight z-10 leading-snug flex flex-wrap justify-center"
       >
-        {words.map((word, index) => (
+        {chars.map((char, index) => (
           <motion.span
             key={index}
-            className="mr-[0.25em]"
+            variants={child}
+            className={
+              index >= intelligentStartIndex && index < intelligentEndIndex
+                ? "text-primary"
+                : (char === '.' && index > intelligentEndIndex) 
+                ? "animate-pulse"
+                : ""
+            }
           >
-            {word === "intelligent" ? (
-              <span className="text-primary">
-                {word.split("").map((char, i) => (
-                  <motion.span key={i} variants={child}>{char}</motion.span>
-                ))}
-              </span>
-            ) : word.includes("...") ? (
-               <span>
-                {word.replace("...", "").split("").map((char, i) => (
-                    <motion.span key={i} variants={child}>{char}</motion.span>
-                ))}
-                <motion.span variants={child} animate={{opacity: [0.5, 1, 0.5]}} transition={{repeat: Infinity, duration: 1.2}}>...</motion.span>
-              </span>
-            ) : (
-              word.split("").map((char, i) => (
-                <motion.span key={i} variants={child}>{char}</motion.span>
-              ))
-            )}
+            {char === " " ? "\u00A0" : char}
           </motion.span>
         ))}
       </motion.h2>
