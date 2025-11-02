@@ -3,7 +3,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { MapPin, History, Car, Ambulance, Calendar, Wrench, X } from 'lucide-react'
+import { MapPin, History, Car, Ambulance, Calendar, Wrench, X, ArrowRight } from 'lucide-react'
 import { useFirebase } from '@/firebase/client-provider'
 import { collection, query, where, orderBy, onSnapshot, Timestamp, doc, updateDoc } from 'firebase/firestore'
 import { useToast } from '@/hooks/use-toast'
@@ -167,50 +167,54 @@ export default function MyActivityPage() {
                 Array.from({length: 3}).map((_, i) => <Skeleton key={i} className="h-24 w-full" />)
             ) : activities.length > 0 ? (
                 activities.map(item => (
-                <Link href={item.href} key={item.id} passHref legacyBehavior>
-                  <a className="block">
-                    <Card className="hover:bg-muted/50 cursor-pointer">
-                        <CardContent className="p-4 flex items-center gap-4">
-                            <div className="p-3 bg-muted rounded-lg">
-                                <item.icon className={`w-6 h-6 ${item.color}`}/>
-                            </div>
-                            <div className="flex-1">
-                                <p className="font-semibold text-sm line-clamp-1">{item.title}</p>
-                                <p className="text-xs text-muted-foreground line-clamp-1">{item.description}</p>
-                                <p className="text-xs text-muted-foreground">{item.date.toLocaleDateString()}</p>
-                            </div>
-                            <div className="flex flex-col items-end gap-1">
-                                 {getStatusBadge(item.status)}
-                                 {item.fare != null && <p className="font-bold text-lg">~₹{item.fare?.toFixed(0)}</p>}
-                                 {item.cancellable && (
-                                     <AlertDialog>
-                                        <AlertDialogTrigger asChild>
-                                            <Button variant="ghost" size="sm" className="text-destructive h-auto p-1 mt-1 text-xs" onClick={(e) => e.stopPropagation()}>
-                                                <X className="w-3 h-3 mr-1" />
-                                                Cancel
+                <Card key={item.id} className="hover:bg-muted/50">
+                    <CardContent className="p-4 flex items-center gap-4">
+                        <div className="p-3 bg-muted rounded-lg">
+                            <item.icon className={`w-6 h-6 ${item.color}`}/>
+                        </div>
+                        <div className="flex-1">
+                            <p className="font-semibold text-sm line-clamp-1">{item.title}</p>
+                            <p className="text-xs text-muted-foreground line-clamp-1">{item.description}</p>
+                            <p className="text-xs text-muted-foreground">{item.date.toLocaleDateString()}</p>
+                        </div>
+                        <div className="flex flex-col items-end gap-1">
+                                {getStatusBadge(item.status)}
+                                {item.fare != null && <p className="font-bold text-lg">~₹{item.fare?.toFixed(0)}</p>}
+                                {item.cancellable ? (
+                                    <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                        <Button variant="ghost" size="sm" className="text-destructive h-auto p-1 mt-1 text-xs" onClick={(e) => e.stopPropagation()}>
+                                            <X className="w-3 h-3 mr-1" />
+                                            Cancel
+                                        </Button>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                        <AlertDialogHeader>
+                                            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                            <AlertDialogDescription>
+                                                This will cancel your {item.type} request. This action cannot be undone.
+                                            </AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                            <AlertDialogCancel>Go Back</AlertDialogCancel>
+                                            <AlertDialogAction onClick={(e) => handleCancel(e, item)} className="bg-destructive hover:bg-destructive/90">
+                                                Yes, Cancel Request
+                                            </AlertDialogAction>
+                                        </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                </AlertDialog>
+                                ) : (
+                                     <Link href={item.href} passHref legacyBehavior>
+                                        <a className="mt-1">
+                                            <Button variant="outline" size="sm" className="h-auto p-1 px-2 text-xs">
+                                                View Details <ArrowRight className="w-3 h-3 ml-1" />
                                             </Button>
-                                        </AlertDialogTrigger>
-                                        <AlertDialogContent>
-                                            <AlertDialogHeader>
-                                                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                                                <AlertDialogDescription>
-                                                    This will cancel your {item.type} request. This action cannot be undone.
-                                                </AlertDialogDescription>
-                                            </AlertDialogHeader>
-                                            <AlertDialogFooter>
-                                                <AlertDialogCancel>Go Back</AlertDialogCancel>
-                                                <AlertDialogAction onClick={(e) => handleCancel(e, item)} className="bg-destructive hover:bg-destructive/90">
-                                                    Yes, Cancel Request
-                                                </AlertDialogAction>
-                                            </AlertDialogFooter>
-                                        </AlertDialogContent>
-                                    </AlertDialog>
-                                 )}
-                            </div>
-                        </CardContent>
-                    </Card>
-                  </a>
-                </Link>
+                                        </a>
+                                    </Link>
+                                )}
+                        </div>
+                    </CardContent>
+                </Card>
                 ))
             ) : (
                 <Card className="h-48 flex items-center justify-center">
