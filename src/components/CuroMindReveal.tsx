@@ -5,7 +5,7 @@ import { BrainCircuit } from 'lucide-react'
 
 export default function CuroMindReveal() {
   return (
-    <div className="relative flex flex-col items-center justify-center text-center py-40 overflow-hidden rounded-2xl">
+    <section className="relative flex flex-col items-center justify-center text-center py-40 overflow-hidden">
       
       {/* === Glowing Background Core === */}
       <div className="absolute inset-0 bg-gradient-radial from-primary/10 via-transparent to-transparent blur-3xl animate-pulse"></div>
@@ -72,6 +72,6 @@ export default function CuroMindReveal() {
 
       {/* === Bottom Glow === */}
       <div className="absolute bottom-0 w-full h-40 bg-gradient-to-t from-primary/20 to-transparent blur-2xl"></div>
-    </div>
+    </section>
   )
 }
