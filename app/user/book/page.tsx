@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { ArrowLeft, Map, MapPin } from 'lucide-react';
+import { ArrowLeft, Map, MapPin, Calendar } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
@@ -39,44 +39,9 @@ const recentTrips = [
 
 export default function BookRidePage() {
     const router = useRouter();
-    const [pickupAddress, setPickupAddress] = useState('Locating...');
     const [destination, setDestination] = useState('');
     const [searchResults, setSearchResults] = useState<any[]>([]);
     const [isSearching, setIsSearching] = useState(false);
-
-    // This hook fetches the user's real address but we will display static text.
-    // The real address is used on the next page.
-    const getAddressFromCoords = useCallback(async (lat: number, lon: number) => {
-        try {
-            const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`);
-            const data = await response.json();
-            return data.display_name || 'Unknown Location';
-        } catch (error) {
-            console.error("Error fetching address:", error);
-            return 'Could not fetch address';
-        }
-    }, []);
-
-    useEffect(() => {
-        if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(
-                async (position) => {
-                    // We fetch the address to ensure it's ready for the next step,
-                    // but we keep the UI text as "Current Location".
-                    const { latitude, longitude } = position.coords;
-                    const address = await getAddressFromCoords(latitude, longitude);
-                    // The state `pickupAddress` is now just for display. The actual location
-                    // is handled on the map page.
-                    setPickupAddress('Current Location');
-                },
-                () => {
-                    setPickupAddress('Location access denied');
-                }
-            );
-        } else {
-            setPickupAddress('Geolocation not supported');
-        }
-    }, [getAddressFromCoords]);
 
     const containerVariants = {
         hidden: { opacity: 0 },
@@ -121,16 +86,24 @@ export default function BookRidePage() {
             animate="visible"
             variants={containerVariants}
         >
-            <header className="p-4 relative bg-background dark:bg-gradient-to-br dark:from-primary dark:via-primary/90 dark:to-black text-foreground dark:text-primary-foreground">
+            <header className="bg-[#F0FDF4] dark:bg-green-900/20 p-4 relative text-green-900 dark:text-green-200">
                 <div className="container mx-auto">
-                    <motion.div variants={itemVariants}>
+                    <motion.div variants={itemVariants} className="flex justify-between items-center">
                         <Button variant="ghost" size="icon" className="hover:bg-black/10 dark:hover:bg-white/10" onClick={() => router.push('/user')}>
                             <ArrowLeft className="w-5 h-5"/>
                         </Button>
+                         <Button variant="outline" className="bg-white/50 dark:bg-black/20 border-green-900/20 dark:border-green-200/20">
+                            <Map className="w-4 h-4 mr-2"/> Map
+                         </Button>
                     </motion.div>
-                    <motion.div variants={itemVariants} className="pt-8 pb-20 text-left">
-                        <h1 className="text-4xl font-bold">Fair Fares, Safer Roads.</h1>
-                        <p className="opacity-80 mt-1 max-w-md">Book a ride that empowers drivers and protects you on every trip.</p>
+                    <motion.div variants={itemVariants} className="pt-8 pb-20 flex justify-between items-end">
+                        <div>
+                             <h1 className="text-4xl font-bold">Transport</h1>
+                             <p className="opacity-80 mt-1 max-w-md">Wherever you're going, let's get you there!</p>
+                        </div>
+                        <div className="relative w-40 h-20 hidden sm:block">
+                            <Image src="/car.svg" alt="Car illustration" layout="fill" objectFit="contain" data-ai-hint="happy car journey" />
+                        </div>
                     </motion.div>
                 </div>
             </header>
@@ -143,29 +116,20 @@ export default function BookRidePage() {
                     className="space-y-6"
                 >
                     <Card className="shadow-lg overflow-hidden">
-                        <CardContent className="p-3 relative">
-                            <div className="flex items-center gap-4 py-2 px-2 rounded-lg">
-                                <div className="w-2.5 h-2.5 rounded-full bg-green-500 ring-2 ring-green-500/30"/>
-                                {pickupAddress === 'Locating...' ? (
-                                    <Skeleton className="h-5 w-48" />
-                                ) : (
-                                    <p className="font-semibold text-base text-muted-foreground truncate">Current Location</p>
-                                )}
-                            </div>
-                            <div className="border-l-2 border-dotted border-border h-4 ml-[13px] my-1"></div>
-                            <div className="flex items-center gap-4 py-2 px-2 rounded-lg">
-                                <div className="w-2.5 h-2.5 rounded-full bg-red-500 ring-2 ring-red-500/30"/>
+                        <CardContent className="p-3 flex items-center gap-2">
+                             <div className="relative flex-1">
+                                <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-red-500" />
                                 <Input
                                     placeholder="Where to?"
-                                    className="border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 text-base font-semibold p-0 h-auto"
+                                    className="border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 text-base font-semibold p-0 h-12 pl-10"
                                     value={destination}
                                     onChange={(e) => setDestination(e.target.value)}
                                     onKeyDown={(e) => e.key === 'Enter' && searchResults.length > 0 && handleSelectDestination(searchResults[0])}
                                 />
                             </div>
-                             <div className="absolute -right-4 -bottom-4 w-40 h-24 z-0">
-                                <Image src="/car.svg" alt="Car illustration" layout="fill" objectFit="contain" className="opacity-60" data-ai-hint="car illustration"/>
-                            </div>
+                            <Button variant="outline">
+                                <Calendar className="w-4 h-4 mr-2"/> Later
+                            </Button>
                         </CardContent>
                     </Card>
 
@@ -181,9 +145,14 @@ export default function BookRidePage() {
                                     ))
                                 ) : (
                                     searchResults.map(place => (
-                                        <div key={place.place_id} onClick={() => handleSelectDestination(place)} className="p-2 rounded-md hover:bg-muted cursor-pointer">
-                                            <p className="font-semibold text-sm">{place.display_name.split(',')[0]}</p>
-                                            <p className="text-xs text-muted-foreground">{place.display_name.split(',').slice(1).join(',')}</p>
+                                        <div key={place.place_id} onClick={() => handleSelectDestination(place)} className="flex items-center gap-4 p-3 rounded-lg hover:bg-muted cursor-pointer transition-colors">
+                                            <div className="p-2 bg-muted rounded-full border">
+                                                <MapPin className="w-4 h-4 text-muted-foreground" />
+                                            </div>
+                                            <div className="flex-1">
+                                                 <p className="font-semibold text-sm">{place.display_name.split(',')[0]}</p>
+                                                 <p className="text-xs text-muted-foreground" dangerouslySetInnerHTML={{ __html: place.display_name.split(',').slice(1).join(', ') }} />
+                                            </div>
                                         </div>
                                     ))
                                 )}
@@ -208,10 +177,6 @@ export default function BookRidePage() {
                                     <div className="flex-1">
                                         <p className="font-semibold">{trip.title}</p>
                                         <p className="text-sm text-muted-foreground">{trip.description}</p>
-                                    </div>
-                                    <div className="text-right">
-                                        <p className="text-sm font-semibold">{trip.distance}</p>
-                                        <p className="text-xs text-muted-foreground">{trip.time}</p>
                                     </div>
                                 </div>
                             </motion.div>
