@@ -210,12 +210,14 @@ function LocationDisplay() {
                 const primaryLocation = address.suburb || address.neighbourhood || address.city || address.town || address.village;
                 const secondaryLocation = address.city || address.state;
 
-                if (primaryLocation && secondaryLocation && primaryLocation !== secondaryLocation) {
-                    setLocationAddress(`${primaryLocation}, ${secondaryLocation}`);
-                } else if (primaryLocation) {
-                    setLocationAddress(primaryLocation);
-                } else {
-                    setLocationAddress(data.display_name.split(',').slice(0, 2).join(', '));
+                if (isMounted) {
+                    if (primaryLocation && secondaryLocation && primaryLocation !== secondaryLocation) {
+                        setLocationAddress(`${primaryLocation}, ${secondaryLocation}`);
+                    } else if (primaryLocation) {
+                        setLocationAddress(primaryLocation);
+                    } else {
+                        setLocationAddress(data.display_name.split(',').slice(0, 2).join(', '));
+                    }
                 }
             } catch (error) {
                 if (isMounted) setLocationAddress('Location details unavailable');
@@ -224,16 +226,8 @@ function LocationDisplay() {
 
         if (partnerData?.currentLocation) {
             getAddress(partnerData.currentLocation.latitude, partnerData.currentLocation.longitude);
-        } else if (navigator.geolocation) {
-             navigator.geolocation.getCurrentPosition(
-                (position) => {
-                    if (isMounted) {
-                       getAddress(position.coords.latitude, position.coords.longitude);
-                    }
-                },
-                () => { if (isMounted) setLocationAddress('Location Unavailable'); },
-                { timeout: 10000 }
-            );
+        } else {
+            setLocationAddress('Location Unknown');
         }
 
         return () => { isMounted = false; };
@@ -262,7 +256,7 @@ function DriverLayoutContent({ children }: { children: React.ReactNode }) {
         try {
             const sessionData = JSON.parse(sessionString);
             if (sessionData.partnerId) {
-                setDoc(doc(db, 'partners', sessionData.partnerId), { isOnline: false, lastSeen: serverTimestamp() }, { merge: true }).catch(error => {
+                updateDoc(doc(db, 'partners', sessionData.partnerId), { isOnline: false, lastSeen: serverTimestamp() }).catch(error => {
                     console.warn("Failed to update status on logout (non-critical):", error);
                 });
             }
