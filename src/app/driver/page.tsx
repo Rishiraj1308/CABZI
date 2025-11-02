@@ -1,4 +1,5 @@
 
+
 'use client'
 
 import React, { useState, useEffect, useRef, useCallback } from 'react'
@@ -28,7 +29,9 @@ import {
   serverTimestamp,
   getDoc,
   runTransaction,
-  arrayUnion
+  arrayUnion,
+  orderBy,
+  limit
 } from 'firebase/firestore'
 import { useFirebase } from '@/firebase/client-provider'
 import dynamic from 'next/dynamic'
@@ -42,7 +45,10 @@ import { Switch } from '@/components/ui/switch'
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 import { motion, AnimatePresence } from 'framer-motion'
-
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Phone } from 'lucide-react'
+import { format } from 'date-fns'
 
 const LiveMap = dynamic(() => import('@/components/live-map'), { ssr: false })
 
@@ -76,29 +82,45 @@ export default function DriverDashboardPage() {
   const { partnerData, isLoading: isDriverLoading } = useDriver()
   const { db } = useFirebase()
   const { toast } = useToast()
-  const [enteredOtp, setEnteredOtp] = useState('');
-  const [showDriverDetails, setShowDriverDetails] = useState(false)
-  const prevStatusRef = React.useRef<string | null>(null)
-
-  const drivingSoundRef = useRef<HTMLAudioElement | null>(null)
-  const hornSoundRef = useRef<HTMLAudioElement | null>(null)
-
-
-  useEffect(() => {
-    drivingSoundRef.current = new Audio('/sounds/car-driving.mp3')
-    hornSoundRef.current = new Audio('/sounds/car-horn.mp3')
-  }, [])
   
-  const playSound = (soundRef: React.RefObject<HTMLAudioElement>) => {
-    soundRef.current?.play().catch(e => console.warn("Sound play failed:", e))
-  }
+  const [recentRides, setRecentRides] = useState<RideData[]>([]);
+  const [isHistoryLoading, setIsHistoryLoading] = useState(true);
+  
+  const [enteredOtp, setEnteredOtp] = useState('');
+  
+  // State for the clock
+  const [currentTime, setCurrentTime] = useState(new Date());
 
-  // 🔔 Setup sound
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      notificationSoundRef.current = new Audio('/sounds/notification.mp3')
-    }
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000);
+    return () => clearInterval(timer);
   }, []);
+  
+  const handleDeclineJob = useCallback(async (isTimeout = false) => {
+    if (!jobRequest || !partnerData?.id || !db) return
+    if (requestTimerRef.current) clearInterval(requestTimerRef.current)
+    
+    const jobRef = doc(db, 'rides', jobRequest.id);
+    await updateDoc(jobRef, {
+        rejectedBy: arrayUnion(partnerData.id)
+    });
+
+    setJobRequest(null);
+    if (!isTimeout) toast({ title: "Job Declined" })
+    else toast({ variant: 'destructive', title: "Request Timed Out" })
+  }, [jobRequest, partnerData?.id, db, toast]);
+  
+  const isOnline = partnerData?.isOnline ?? false;
+  
+  const resetAfterRide = useCallback(() => {
+    setActiveRide(null);
+    localStorage.removeItem('activeRideId');
+    if (partnerData?.id && db) {
+        updateDoc(doc(db, 'partners', partnerData.id), { status: 'online' });
+    }
+  }, [partnerData, db]);
 
   const handleAvailabilityChange = async (checked: boolean) => {
     if (!partnerData || !db) return;
@@ -114,95 +136,48 @@ export default function DriverDashboardPage() {
     }
   };
   
-    const handleDeclineJob = useCallback(async (isTimeout = false) => {
-    if (!jobRequest || !partnerData?.id || !db) return
-    if (requestTimerRef.current) clearInterval(requestTimerRef.current)
-    
-    const jobRef = doc(db, 'rides', jobRequest.id);
-    await updateDoc(jobRef, {
-        rejectedBy: arrayUnion(partnerData.id)
-    });
-
-    setJobRequest(null);
-    if (!isTimeout) toast({ title: "Job Declined" })
-    else toast({ variant: 'destructive', title: "Request Timed Out" })
-  }, [jobRequest, partnerData?.id, db, toast]);
-
-  // This effect listens for ride requests.
-   useEffect(() => {
-    if (!db || !isOnline || activeRide || jobRequest || !partnerData?.id) {
-        return;
-    }
-
-    const q = query(
-        collection(db, "rides"),
-        where("status", "==", "searching"),
-    );
-
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-        if (jobRequest || activeRide) return; // Don't process new requests if one is already active
-
-        const potentialJobs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as JobRequest));
-        const newJob = potentialJobs.find(job => 
-            !job.rejectedBy?.includes(partnerData.id)
-        );
-
-        if (newJob) {
-            notificationSoundRef.current?.play().catch(e => console.warn("Sound blocked until user interaction:", e));
-            setJobRequest(newJob);
-        }
-    });
-
-    return () => unsubscribe();
-  }, [db, isOnline, activeRide, jobRequest, partnerData?.id]);
-
-
-  // Listen for updates on an active ride
+  // This effect listens for updates on the active ride.
   useEffect(() => {
     if (!db || !activeRide?.id) return;
+
     const unsub = onSnapshot(doc(db, 'rides', activeRide.id), (docSnap) => {
-      if (docSnap.exists()) {
-        const data = docSnap.data();
-        if (data.status === 'cancelled_by_rider') {
-          toast({ variant: 'destructive', title: 'Ride Cancelled by User' });
-          resetAfterRide();
+        if (docSnap.exists()) {
+            const data = docSnap.data();
+            if (['completed', 'cancelled_by_rider', 'cancelled_by_driver'].includes(data.status)) {
+                toast({
+                    variant: data.status === 'completed' ? 'default' : 'destructive',
+                    title: data.status === 'completed' ? 'Ride Completed' : 'Ride Cancelled',
+                });
+                resetAfterRide(); // This will now reset the state
+            } else {
+                setActiveRide({ id: docSnap.id, ...data } as RideData);
+            }
         } else {
-          setActiveRide({ id: docSnap.id, ...data } as RideData);
+            resetAfterRide();
         }
-      }
     });
-    return () => unsub();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [db, activeRide?.id]);
 
-  // Timer for request
-  useEffect(() => {
-    if (jobRequest) {
-      setRequestTimeout(15)
-      requestTimerRef.current = setInterval(() => {
-        setRequestTimeout((prev) => {
-          if (prev <= 1) {
-            if (requestTimerRef.current) clearInterval(requestTimerRef.current)
-            handleDeclineJob(true)
-            return 0
-          }
-          return prev - 1
-        })
-      }, 1000)
+    return () => unsub(); // Cleanup on component unmount or when activeRide.id changes
+  }, [db, activeRide?.id, toast, resetAfterRide]);
+
+  const handlePinSubmit = () => {
+    const storedPin = localStorage.getItem('curocity-user-pin');
+    if (!storedPin) {
+        toast({ variant: 'destructive', title: 'PIN Not Set', description: 'Please set a UPI PIN from your wallet first.' });
+        setIsPinDialogOpen(false);
+        return;
+    }
+    if (pin === storedPin) {
+        setIsEarningsVisible(true);
+        setIsPinDialogOpen(false);
+        setPin('');
+        toast({ title: 'Earnings Revealed', description: 'Your earnings for today are now visible.' });
+        setTimeout(() => setIsEarningsVisible(false), 10000); // Hide after 10 seconds
     } else {
-      setRequestTimeout(15)
-      if (requestTimerRef.current) clearInterval(requestTimerRef.current)
+        toast({ variant: 'destructive', title: 'Invalid PIN', description: 'Please enter the correct 4-digit PIN.' });
+        setPin('');
     }
-  }, [jobRequest, handleDeclineJob])
-
-  const resetAfterRide = () => {
-    setActiveRide(null)
-    localStorage.removeItem('activeRideId')
-    // Set driver status back to online after a ride
-    if (partnerData?.id && db) {
-        updateDoc(doc(db, 'partners', partnerData.id), { status: 'online' });
-    }
-  }
+  };
 
   const handleAcceptJob = async () => {
     if (!jobRequest || !partnerData || !db) return;
@@ -225,6 +200,7 @@ export default function DriverDashboardPage() {
           status: 'accepted',
           driverId: partnerData.id,
           driverName: partnerData.name,
+          vehicleNumber: partnerData.vehicleNumber || 'N/A', // Added vehicle number
           driverDetails: {
             name: partnerData.name,
             vehicle: `${partnerData.vehicleBrand || ''} ${partnerData.vehicleName || ''}`.trim(),
@@ -233,7 +209,8 @@ export default function DriverDashboardPage() {
             phone: partnerData.phone || '',
           },
           acceptedAt: serverTimestamp(),
-          driverEta: jobRequest.driverEta,
+          driverEta: jobRequest.eta, // Use eta from jobRequest
+          driverDistance: jobRequest.distance, // Use distance from jobRequest
         };
   
         Object.keys(updateData).forEach((key) => {
@@ -265,77 +242,7 @@ export default function DriverDashboardPage() {
     }
   };  
 
-  const handleUpdateRideStatus = async (status: 'arrived' | 'in-progress' | 'payment_pending') => {
-    if (!activeRide || !db) return;
-    const rideRef = doc(db, 'rides', activeRide.id);
-    try {
-        await updateDoc(rideRef, { status });
-        // Optimistically update local state to reflect the change immediately
-        setActiveRide(prev => prev ? ({ ...prev, status } as RideData) : null);
-        toast({
-            title: "Ride Status Updated",
-            description: `Status is now: ${status.replace('_', ' ')}`,
-        });
-    } catch (error) {
-        console.error("Error updating ride status:", error);
-        toast({
-            variant: 'destructive',
-            title: 'Update Failed',
-            description: 'Could not update the ride status.',
-        });
-    }
-  };
-  
-  const handleVerifyOtp = () => {
-      if (enteredOtp === activeRide?.otp) {
-          handleUpdateRideStatus('in-progress');
-          toast({title: 'OTP Verified!', description: 'Trip has started.', className: 'bg-green-600 text-white'});
-      } else {
-          toast({variant: 'destructive', title: 'Invalid OTP'});
-      }
-  }
-
-  const handlePinSubmit = () => {
-    const storedPin = localStorage.getItem('curocity-user-pin')
-    if (!storedPin) {
-      toast({ variant: 'destructive', title: 'PIN Not Set', description: 'Please set a UPI PIN from your wallet first.' })
-      return
-    }
-    if (pin === storedPin) {
-      setIsEarningsVisible(true)
-      setIsPinDialogOpen(false)
-      setPin('')
-      toast({ title: 'Earnings Revealed', description: 'Your earnings for today are now visible.' })
-      setTimeout(() => setIsEarningsVisible(false), 10000)
-    } else {
-      toast({ variant: 'destructive', title: 'Invalid PIN', description: 'Please enter the correct 4-digit PIN.' })
-    }
-  }
-
-    useEffect(() => {
-    if (prevStatusRef.current === 'searching' && activeRide?.status === 'accepted') {
-      playSound(drivingSoundRef);
-      setShowDriverDetails(false); 
-      const timer = setTimeout(() => {
-        setShowDriverDetails(true);
-      }, 2000);
-      return () => clearTimeout(timer);
-    } else if (activeRide?.status === 'accepted') {
-      setShowDriverDetails(true);
-    }
-    
-    if (prevStatusRef.current === 'accepted' && activeRide?.status === 'arrived') {
-        playSound(hornSoundRef);
-    }
-    
-    prevStatusRef.current = activeRide?.status || null;
-  }, [activeRide?.status]);
-  
-  const driverLocation = partnerData?.currentLocation
-    ? { lat: partnerData.currentLocation.latitude, lon: partnerData.currentLocation.longitude }
-    : undefined;
-
-    const renderActiveRide = () => {
+  const renderActiveRide = () => {
         if (!activeRide) return null;
         
         const isNavigatingToRider = ['accepted', 'arrived'].includes(activeRide.status);
@@ -351,7 +258,7 @@ export default function DriverDashboardPage() {
                 <CardContent className="space-y-4">
                      <div className="h-48 w-full rounded-md overflow-hidden border">
                          <LiveMap 
-                             driverLocation={driverLocation} 
+                             driverLocation={partnerData?.currentLocation ? { lat: partnerData.currentLocation.latitude, lon: partnerData.currentLocation.longitude } : undefined}
                              riderLocation={activeRide.pickup.location ? { lat: activeRide.pickup.location.latitude, lon: activeRide.pickup.location.longitude } : undefined}
                              destinationLocation={activeRide.destination.location ? { lat: activeRide.destination.location.latitude, lon: activeRide.destination.location.longitude } : undefined}
                              isTripInProgress={activeRide.status === 'in-progress'}
@@ -362,7 +269,7 @@ export default function DriverDashboardPage() {
                            <Label htmlFor="otp">Enter Rider's OTP</Label>
                            <div className="flex gap-2">
                               <Input id="otp" value={enteredOtp} onChange={(e) => setEnteredOtp(e.target.value)} placeholder="4-Digit OTP" maxLength={4}/>
-                              <Button onClick={handleVerifyOtp}><CheckCircle className="w-4 h-4 mr-2"/>Verify & Start</Button>
+                              <Button><CheckCircle className="w-4 h-4 mr-2"/>Verify & Start</Button>
                            </div>
                         </div>
                      )}
@@ -375,135 +282,137 @@ export default function DriverDashboardPage() {
                 </CardContent>
                 <CardFooter>
                     {activeRide.status === 'accepted' && (
-                        <Button className="w-full" size="lg" onClick={() => handleUpdateRideStatus('arrived')}>Arrived at Pickup</Button>
+                        <Button className="w-full" size="lg">Arrived at Pickup</Button>
                     )}
                     {activeRide.status === 'in-progress' && (
-                        <Button className="w-full bg-destructive hover:bg-destructive/80" size="lg" onClick={() => handleUpdateRideStatus('payment_pending')}>End Trip</Button>
+                        <Button className="w-full bg-destructive hover:bg-destructive/80" size="lg">End Trip</Button>
                     )}
                 </CardFooter>
             </Card>
         );
     }
-  const isOnline = partnerData?.isOnline ?? false;
+
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-        <div className="lg:col-span-2">
-           <Card className="h-[75vh]">
-                <CardContent className="p-0 h-full">
-                     <LiveMap 
-                        onLocationFound={(address, coords) => {
-                            if (db && partnerData) {
-                                updateDoc(doc(db, 'partners', partnerData.id), {
-                                    currentLocation: new GeoPoint(coords.lat, coords.lon)
-                                });
-                            }
-                        }}
-                        driverLocation={driverLocation}
-                        isTripInProgress={activeRide?.status === 'in-progress'}
-                     />
-                </CardContent>
-            </Card>
-        </div>
-        <div className="lg:col-span-1 space-y-6">
-            {activeRide ? renderActiveRide() : (
-                <>
-                    <Card className="shadow-lg">
-                        <CardHeader>
+    <div className="space-y-6">
+        {activeRide ? renderActiveRide() : (
+            <>
+                <Card className="shadow-lg">
+                    <CardHeader>
                         <div className="flex justify-between items-center">
-                            <CardTitle>Your Dashboard</CardTitle>
-                            <div className="flex items-center space-x-2">
-                                <Switch id="online-status" checked={isOnline} onCheckedChange={handleAvailabilityChange} />
-                                <Label htmlFor="online-status" className={cn("font-semibold", isOnline ? "text-green-600" : "text-muted-foreground")}>
-                                    {isOnline ? "ONLINE" : "OFFLINE"}
-                                </Label>
+                            <div>
+                                <CardTitle>Your Dashboard</CardTitle>
+                                <CardDescription className="text-xs">{format(currentTime, 'EEEE, d MMMM yyyy')}</CardDescription>
+                            </div>
+                            <div className="text-right">
+                                <p className="font-bold text-2xl font-mono">{format(currentTime, 'h:mm:ss a')}</p>
+                                 <div className="flex items-center space-x-2 justify-end">
+                                    <Switch id="online-status" checked={isOnline} onCheckedChange={handleAvailabilityChange} />
+                                    <Label htmlFor="online-status" className={cn("font-semibold", isOnline ? "text-green-600" : "text-muted-foreground")}>
+                                        {isOnline ? "ONLINE" : "OFFLINE"}
+                                    </Label>
+                                </div>
                             </div>
                         </div>
-                        </CardHeader>
-                        {isOnline ? (
+                    </CardHeader>
+                    {isOnline ? (
                         <CardContent className="text-center py-12">
                             <SearchingIndicator partnerType="path" className="w-32 h-32" />
                             <h3 className="text-3xl font-bold mt-4">Waiting for Rides...</h3>
-                            <p className="text-muted-foreground">Your location is being shared to get nearby requests.</p>
+                            <p className="text-muted-foreground">You are online and ready to accept jobs.</p>
                         </CardContent>
-                        ) : (
+                    ) : (
                         <CardContent className="text-center py-12">
-                            <CardDescription>You are currently offline. Go online to receive ride requests.</CardDescription>
+                            <CardTitle>You are Offline</CardTitle>
+                            <CardDescription>Go online to receive ride requests.</CardDescription>
                         </CardContent>
+                    )}
+                </Card>
+                <Tabs defaultValue="stats" className="w-full">
+                    <TabsList className="grid w-full grid-cols-2">
+                        <TabsTrigger value="stats">Today's Stats</TabsTrigger>
+                        <TabsTrigger value="history">Recent Activity</TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="stats" className="mt-4">
+                        <div className="grid gap-4 grid-cols-2 lg:grid-cols-2">
+                            <StatCard title="Today's Earnings" value={isEarningsVisible ? `₹${(partnerData?.todaysEarnings || 0).toLocaleString()}` : '₹ ****'} icon={IndianRupee} isLoading={isDriverLoading} onValueClick={() => !isEarningsVisible && setIsPinDialogOpen(true)} />
+                            <StatCard title="Today's Rides" value={partnerData?.jobsToday?.toString() || '0'} icon={History} isLoading={isDriverLoading} />
+                            <StatCard title="Acceptance Rate" value={`${partnerData?.acceptanceRate || '95'}%`} icon={Power} isLoading={isDriverLoading} />
+                            <StatCard title="Rating" value={partnerData?.rating?.toString() || '4.9'} icon={Star} isLoading={isDriverLoading} />
+                        </div>
+                    </TabsContent>
+                    <TabsContent value="history" className="mt-4 flex-1 space-y-2 max-h-48 overflow-y-auto">
+                        {isHistoryLoading ? (
+                            Array.from({length: 2}).map((_, i) => <Skeleton key={i} className="h-16 w-full" />)
+                        ) : recentRides.length > 0 ? (
+                            recentRides.map(ride => (
+                                <Card key={ride.id}>
+                                    <CardContent className="p-2 flex items-center justify-between">
+                                        <div className="text-sm">
+                                            <p className="font-semibold line-clamp-1">{ride.destination?.address || 'N/A'}</p>
+                                            <p className="text-xs text-muted-foreground">{ride.createdAt ? new Date(ride.createdAt.seconds * 1000).toLocaleString() : 'N/A'}</p>
+                                        </div>
+                                        <p className="font-bold text-lg">₹{ride.fare}</p>
+                                    </CardContent>
+                                </Card>
+                            ))
+                        ) : (
+                            <div className="text-center py-10 text-muted-foreground">No recent rides found.</div>
                         )}
-                    </Card>
-
-                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-2">
-                        <StatCard title="Today's Earnings" value={isEarningsVisible ? `₹${(partnerData?.todaysEarnings || 0).toLocaleString()}` : '₹ ****'} icon={IndianRupee} isLoading={isDriverLoading} onValueClick={() => !isEarningsVisible && setIsPinDialogOpen(true)} />
-                        <StatCard title="Today's Rides" value={partnerData?.jobsToday?.toString() || '0'} icon={History} isLoading={isDriverLoading} />
-                        <StatCard title="Acceptance Rate" value={`${partnerData?.acceptanceRate || '95'}%`} icon={Power} isLoading={isDriverLoading} />
-                        <StatCard title="Rating" value={partnerData?.rating?.toString() || '4.9'} icon={Star} isLoading={isDriverLoading} />
-                    </div>
-
-                    <Card className="bg-gradient-to-r from-primary to-primary/90 text-primary-foreground border-none">
-                        <CardHeader>
-                        <CardTitle className="flex items-center gap-2"><Sparkles className="text-yellow-300" /> AI Earnings Coach</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                        <p>Focus on the Cyber Hub area between 5 PM - 8 PM. High demand is expected, and you could earn up to 30% more.</p>
-                        </CardContent>
-                    </Card>
-                    </>
-            )}
-        </div>
+                    </TabsContent>
+                </Tabs>
+            </>
+        )}
 
       <AlertDialog open={!!jobRequest}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>New Ride Request!</AlertDialogTitle>
-            <AlertDialogDescription>A new ride is available. Please review and respond quickly.</AlertDialogDescription>
+              <AlertDialogTitle>New Ride Request!</AlertDialogTitle>
+              <AlertDialogDescription>A new ride is available. Please review and respond quickly.</AlertDialogDescription>
           </AlertDialogHeader>
           {jobRequest && (
             <>
               <div className="absolute top-4 right-4 w-12 h-12 flex items-center justify-center rounded-full border-4 border-primary text-primary font-bold text-2xl">
                 {requestTimeout}
               </div>
-              <div className="flex items-center gap-4">
-                 <Avatar className="w-12 h-12"><AvatarImage src={'https://placehold.co/100x100.png'} alt={jobRequest.riderName} data-ai-hint="rider portrait" /><AvatarFallback>{jobRequest?.riderName?.[0] || 'R'}</AvatarFallback></Avatar>
-                <div>
-                  <p className="font-bold">{jobRequest?.riderName}</p>
-                  <p className="text-sm text-muted-foreground capitalize">{jobRequest?.riderGender}</p>
-                </div>
-                <Badge variant="outline">{jobRequest.rideType}</Badge>
-              </div>
-               <div className="space-y-2 text-sm">
-                  <div className="flex items-start gap-2">
-                      <MapPin className="w-4 h-4 mt-1 text-green-500 flex-shrink-0" />
-                      <p><span className="font-semibold">FROM:</span> {jobRequest.pickupAddress}</p>
-                  </div>
-                  <div className="flex items-start gap-2">
-                      <Route className="w-4 h-4 mt-1 text-red-500 flex-shrink-0" />
-                      <p><span className="font-semibold">TO:</span> {jobRequest.destinationAddress}</p>
-                  </div>
-              </div>
-              
-              <div className="h-40 w-full rounded-md overflow-hidden border">
-                <LiveMap
-                  driverLocation={driverLocation}
-                  riderLocation={jobRequest.pickup?.location ? { lat: jobRequest.pickup.location.latitude, lon: jobRequest.pickup.location.longitude } : undefined}
-                  destinationLocation={jobRequest.destination?.location ? { lat: jobRequest.destination.location.latitude, lon: job.destination.location.longitude } : undefined}
-                  isTripInProgress={false}
-                  zoom={11}
-                />
-              </div>
-              <div className="grid grid-cols-3 gap-2 text-center">
-                <div className="p-2 bg-muted rounded-md">
-                  <p className="text-xs text-muted-foreground">Est. Fare</p>
-                  <p className="font-bold text-lg text-green-600">₹{jobRequest.fare}</p>
-                </div>
+               <div className="flex items-center gap-4">
+                  <Avatar className="w-12 h-12"><AvatarImage src={'https://placehold.co/100x100.png'} alt={jobRequest.riderName} data-ai-hint="rider portrait" /><AvatarFallback>{jobRequest?.riderName?.[0] || 'R'}</AvatarFallback></Avatar>
+                 <div>
+                   <p className="font-bold">{jobRequest?.riderName}</p>
+                   <p className="text-sm text-muted-foreground capitalize">{jobRequest?.riderGender}</p>
+                 </div>
+                 <Badge variant="outline">{jobRequest.rideType}</Badge>
+               </div>
+                <div className="space-y-2 text-sm">
+                   <div className="flex items-start gap-2">
+                       <MapPin className="w-4 h-4 mt-1 text-green-500 flex-shrink-0" />
+                       <p><span className="font-semibold">FROM:</span> {jobRequest.pickupAddress}</p>
+                   </div>
+                   <div className="flex items-start gap-2">
+                       <Route className="w-4 h-4 mt-1 text-red-500 flex-shrink-0" />
+                       <p><span className="font-semibold">TO:</span> {jobRequest.destinationAddress}</p>
+                   </div>
+               </div>
+               
+               <div className="grid grid-cols-3 gap-2 text-center mt-3">
                  <div className="p-2 bg-muted rounded-md">
-                  <p className="text-xs text-muted-foreground">To Pickup</p>
-                  <p className="font-bold text-lg">~{jobRequest.driverDistance?.toFixed(1)} km</p>
-                </div>
-                <div className="p-2 bg-muted rounded-md">
-                  <p className="text-xs text-muted-foreground">Est. Arrival</p>
-                  <p className="font-bold text-lg">~{Math.ceil(jobRequest.driverEta || 0)} min</p>
-                </div>
-              </div>
+                     <p className="text-xs text-muted-foreground">Est. Fare</p>
+                     <p className="font-bold text-lg text-green-600">
+                       ₹{jobRequest.fare}
+                     </p>
+                 </div>
+                 <div className="p-2 bg-muted rounded-md">
+                     <p className="text-xs text-muted-foreground">To Pickup</p>
+                     <p className="font-bold text-lg">
+                       {jobRequest.distance ? `~${jobRequest.distance.toFixed(1)} km` : '~km'}
+                     </p>
+                 </div>
+                 <div className="p-2 bg-muted rounded-md">
+                     <p className="text-xs text-muted-foreground">Est. Arrival</p>
+                     <p className="font-bold text-lg">
+                       {jobRequest.eta ? `~${Math.ceil(jobRequest.eta)} min` : '~min'}
+                     </p>
+                 </div>
+               </div>
             </>
           )}
           <AlertDialogFooter className="grid grid-cols-2 gap-2">
@@ -513,7 +422,6 @@ export default function DriverDashboardPage() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* PIN Dialog */}
       <Dialog open={isPinDialogOpen} onOpenChange={setIsPinDialogOpen}>
         <DialogContent className="max-w-xs">
           <DialogHeader>

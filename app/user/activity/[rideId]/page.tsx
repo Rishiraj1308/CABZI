@@ -1,4 +1,5 @@
 
+
 'use client'
 
 import { useState, useEffect, Suspense } from 'react';
@@ -8,7 +9,7 @@ import { doc, getDoc, Timestamp } from 'firebase/firestore';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { ArrowLeft, Car, IndianRupee, Star, Calendar, Clock, MapPin } from 'lucide-react';
+import { ArrowLeft, Car, IndianRupee, Star, Calendar, Clock, MapPin, Phone } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import dynamic from 'next/dynamic';
 import { RideData } from '@/lib/types';
@@ -160,10 +161,16 @@ function RideDetailsContent() {
                                 </Avatar>
                                 <div className="flex-1">
                                     <p className="font-semibold">{ride.driverDetails.name}</p>
+                                    <p className="text-sm text-muted-foreground">{ride.driverDetails.vehicle} &bull; {ride.vehicleNumber || 'N/A'}</p>
                                     <p className="text-sm text-muted-foreground flex items-center gap-1">
                                         {ride.driverDetails.rating} <Star className="w-3 h-3 text-yellow-400 fill-yellow-400"/>
                                     </p>
                                 </div>
+                                 <Button asChild variant="outline" size="icon">
+                                    <a href={`tel:${ride.driverDetails.phone}`}>
+                                        <Phone className="w-4 h-4"/>
+                                    </a>
+                                </Button>
                             </div>
                         </>
                      )}

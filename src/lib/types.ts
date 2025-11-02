@@ -37,6 +37,7 @@ export interface RideData {
     status: "searching" | "accepted" | "arrived" | "in-progress" | "completed" | "cancelled_by_driver" | "cancelled_by_rider" | "payment_pending";
     otp?: string;
     driverDetails?: { name: string; vehicle: string; rating: number; photoUrl: string; phone: string; location?: GeoPoint };
+    vehicleNumber?: string;
     driverEta?: number | null;
     driverDistance?: number | null;
     fare?: number;
@@ -90,5 +91,3 @@ export interface JobRequest extends Omit<RideData, 'pickup' | 'destination'> {
     dropDistance?: number;
     dropEta?: number;
 }
-
-
