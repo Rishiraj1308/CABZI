@@ -91,11 +91,24 @@ export default function LoginPage() {
   const [adminPassword, setAdminPassword] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [isMounted, setIsMounted] = useState(false);
-  const recaptchaContainerRef = useRef<HTMLDivElement>(null);
   
+  const recaptchaVerifierRef = useRef<RecaptchaVerifier | null>(null);
+
   useEffect(() => {
     setIsMounted(true);
-  }, []);
+    if (auth && !recaptchaVerifierRef.current) {
+        recaptchaVerifierRef.current = new RecaptchaVerifier(auth, 'recaptcha-container', {
+            'size': 'invisible',
+        });
+    }
+
+    return () => {
+        if (recaptchaVerifierRef.current) {
+            recaptchaVerifierRef.current.clear();
+        }
+    };
+  }, [auth]);
+
 
   useEffect(() => {
     if (identifier.includes('@')) {
@@ -254,11 +267,11 @@ export default function LoginPage() {
   }
 
   const handlePhoneSubmit = async () => {
-    if (!auth || !identifier || !recaptchaContainerRef.current) return;
+    if (!auth || !identifier || !recaptchaVerifierRef.current) return;
     
     try {
         const fullPhoneNumber = `+91${identifier}`;
-        const verifier = new RecaptchaVerifier(auth, recaptchaContainerRef.current, { size: 'invisible' });
+        const verifier = recaptchaVerifierRef.current;
         const confirmation = await signInWithPhoneNumber(auth, fullPhoneNumber, verifier);
         setConfirmationResult(confirmation);
         setStep('otp');
@@ -522,7 +535,7 @@ export default function LoginPage() {
 
   return (
       <div className="flex min-h-screen items-center justify-center p-4 bg-muted/40">
-          <div id="recaptcha-container" ref={recaptchaContainerRef}></div>
+          <div id="recaptcha-container"></div>
           <div className="absolute top-4 right-4 flex items-center gap-2">
               <LanguageToggle />
               <ThemeToggle />
@@ -555,17 +568,17 @@ export default function LoginPage() {
                 
                 <div className="mt-4 text-center text-sm text-muted-foreground space-y-2">
                     {roleFromQuery === 'user' ? (
-                        <div>Want to partner with us? <Link href="/partner-hub" className="underline text-primary">Become a Partner</Link></div>
+                        <p>Want to partner with us? <Link href="/partner-hub" className="underline text-primary">Become a Partner</Link></p>
                     ) : isPartnerFlow ? (
-                         <div>Looking for a ride? <Link href="/login?role=user" className="underline text-primary" onClick={() => {setStep('login'); setInputType('none'); setIdentifier('');}}>Login as a User</Link></div>
+                         <p>Looking for a ride? <Link href="/login?role=user" className="underline text-primary" onClick={() => {setStep('login'); setInputType('none'); setIdentifier('');}}>Login as a User</Link></p>
                     ): null}
                     
                     {roleFromQuery !== 'admin' && (
-                         <div>
+                         <p>
                             <Link href="/login?role=admin" className="text-xs underline" onClick={() => setStep('login')}>
                                 Admin Login
                             </Link>
-                        </div>
+                        </p>
                     )}
                 </div>
             </CardContent>

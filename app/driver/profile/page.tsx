@@ -21,7 +21,6 @@ import {
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
-  AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
@@ -54,6 +53,9 @@ export default function ProfilePage() {
     const [confirmPin, setConfirmPin] = useState('');
     const [otp, setOtp] = useState('');
     const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
+    
+    const recaptchaVerifierRef = useRef<RecaptchaVerifier | null>(null);
+    const recaptchaContainerRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         const storedPin = localStorage.getItem('curocity-user-pin');
@@ -61,6 +63,17 @@ export default function ProfilePage() {
             setIsPinSet(true);
         }
     }, []);
+
+    useEffect(() => {
+        if (auth && recaptchaContainerRef.current && !recaptchaVerifierRef.current) {
+            recaptchaVerifierRef.current = new RecaptchaVerifier(auth, recaptchaContainerRef.current, { size: 'invisible' });
+        }
+        return () => {
+             if (recaptchaVerifierRef.current) {
+                recaptchaVerifierRef.current.clear();
+            }
+        }
+    }, [auth]);
 
     useEffect(() => {
         let unsubscribe: (() => void) | undefined;
@@ -192,7 +205,7 @@ export default function ProfilePage() {
             return;
         }
         
-        if (pinStep === 1) { // Move to confirmation step
+        if (pinStep === 1) {
             setPinStep(2);
             return;
         }
@@ -209,17 +222,13 @@ export default function ProfilePage() {
     }
     
     const handleForgotPin = async () => {
-        if (!partnerData?.phone || !auth) {
+        if (!partnerData?.phone || !auth || !recaptchaVerifierRef.current) {
             toast({ variant: 'destructive', title: 'Error', description: 'Could not get your phone number to send OTP.' });
             return;
         }
         
         try {
-            // @ts-ignore
-            window.recaptchaVerifier = window.recaptchaVerifier || new RecaptchaVerifier(auth, 'recaptcha-container-profile', { size: 'invisible' });
-            // @ts-ignore
-            const verifier = window.recaptchaVerifier;
-
+            const verifier = recaptchaVerifierRef.current;
             const fullPhoneNumber = `+91${partnerData.phone}`;
             const result = await signInWithPhoneNumber(auth, fullPhoneNumber, verifier);
             
@@ -248,7 +257,7 @@ export default function ProfilePage() {
 
   return (
       <div className="grid gap-6">
-          <div id="recaptcha-container-profile"></div>
+          <div id="recaptcha-container" ref={recaptchaContainerRef}></div>
           <div className="flex flex-col md:flex-row gap-6 md:items-center md:justify-between">
             <h2 className="text-3xl font-bold tracking-tight">My Profile</h2>
           </div>
@@ -449,5 +458,3 @@ export default function ProfilePage() {
 
     
 }
-
-    
