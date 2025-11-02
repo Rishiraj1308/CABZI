@@ -43,7 +43,6 @@ import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 
 
 const LiveMap = dynamic(() => import('@/components/live-map'), {
@@ -373,67 +372,55 @@ export default function DriverDashboardPage() {
         );
     }
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start h-full">
+      <AnimatePresence>
+        {isMapVisible && !activeRide && (
+          <motion.div
+            className="lg:col-span-3"
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.5, ease: 'easeInOut' }}
+          >
+            <Card className="h-96">
+                <CardContent className="p-0 h-full">
+                    <LiveMap 
+                        driverLocation={driverLocation} 
+                        isTripInProgress={activeRide?.status === 'in-progress'}
+                    />
+                </CardContent>
+            </Card>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
         {activeRide && (
             <div className="lg:col-span-2">
-                 <AnimatePresence>
-                    {isMapVisible && (
-                        <motion.div
-                            initial={{ opacity: 0, height: 0 }}
-                            animate={{ opacity: 1, height: '75vh' }}
-                            exit={{ opacity: 0, height: 0 }}
-                            transition={{ duration: 0.5, ease: 'easeInOut' }}
-                        >
-                            <Card className="h-full">
-                                <CardContent className="p-0 h-full">
-                                    <LiveMap 
-                                        driverLocation={driverLocation} 
-                                        riderLocation={activeRide.pickup.location ? { lat: activeRide.pickup.location.latitude, lon: activeRide.pickup.location.longitude } : undefined}
-                                        destinationLocation={activeRide.destination.location ? { lat: activeRide.destination.location.latitude, lon: activeRide.destination.location.longitude } : undefined}
-                                        isTripInProgress={activeRide.status === 'in-progress'}
-                                    />
-                                </CardContent>
-                            </Card>
-                        </motion.div>
-                    )}
-                </AnimatePresence>
+                <Card className="h-full">
+                    <CardContent className="p-0 h-full min-h-[75vh]">
+                        <LiveMap 
+                            driverLocation={driverLocation} 
+                            riderLocation={activeRide.pickup.location ? { lat: activeRide.pickup.location.latitude, lon: activeRide.pickup.location.longitude } : undefined}
+                            destinationLocation={activeRide.destination.location ? { lat: activeRide.destination.location.latitude, lon: activeRide.destination.location.longitude } : undefined}
+                            isTripInProgress={activeRide.status === 'in-progress'}
+                        />
+                    </CardContent>
+                </Card>
             </div>
         )}
-        <div className={cn("space-y-6", activeRide ? "lg:col-span-1" : "lg:col-span-3 w-full max-w-md mx-auto")}>
+        <div className={cn("space-y-6", activeRide ? "lg:col-span-1" : "lg:col-span-3")}>
             {activeRide ? renderActiveRide() : (
                 <>
                     <Card className="shadow-lg">
-                        <CardHeader>
-                        <div className="flex justify-between items-center">
+                        <CardHeader className="flex flex-row justify-between items-center pb-2">
                             <CardTitle>Your Dashboard</CardTitle>
                             <Button variant="ghost" size="sm" onClick={() => setIsMapVisible(prev => !prev)}>
                                 <Map className="mr-2 h-4 w-4"/>
                                 Toggle Map
                             </Button>
-                        </div>
                         </CardHeader>
                         {isOnline ? (
                         <CardContent className="text-center py-12">
-                            <AnimatePresence>
-                                {isMapVisible && (
-                                    <motion.div
-                                        initial={{ opacity: 0, height: 0 }}
-                                        animate={{ opacity: 1, height: 'auto' }}
-                                        exit={{ opacity: 0, height: 0 }}
-                                        transition={{ duration: 0.5, ease: 'easeInOut' }}
-                                        className="h-96"
-                                    >
-                                        <Card className="h-full">
-                                            <CardContent className="p-0 h-full">
-                                                <LiveMap 
-                                                    driverLocation={driverLocation} 
-                                                    isTripInProgress={activeRide?.status === 'in-progress'}
-                                                />
-                                            </CardContent>
-                                        </Card>
-                                    </motion.div>
-                                )}
-                            </AnimatePresence>
                             <SearchingIndicator partnerType="path" className="w-32 h-32" />
                             <h3 className="text-3xl font-bold mt-4">Waiting for Rides...</h3>
                             <p className="text-muted-foreground">Your location is being shared to get nearby requests.</p>
@@ -551,4 +538,3 @@ export default function DriverDashboardPage() {
   );
 }
 
-    
