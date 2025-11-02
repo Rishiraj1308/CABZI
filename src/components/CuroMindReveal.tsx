@@ -5,7 +5,7 @@ import { motion } from 'framer-motion'
 import { BrainCircuit } from 'lucide-react'
 
 export default function CuroMindReveal() {
-  const text = "Something intelligent is awakening...";
+  const text = "The road ahead is thinking...";
   const chars = Array.from(text);
 
   const container = {
@@ -28,8 +28,8 @@ export default function CuroMindReveal() {
     },
   };
   
-  const intelligentStartIndex = text.indexOf("intelligent");
-  const intelligentEndIndex = intelligentStartIndex + "intelligent".length;
+  const intelligentStartIndex = text.indexOf("thinking");
+  const intelligentEndIndex = intelligentStartIndex + "thinking".length;
 
   return (
     <section className="relative flex flex-col items-center justify-center text-center overflow-hidden">
@@ -109,7 +109,7 @@ export default function CuroMindReveal() {
         transition={{ delay: 2.5, duration: 1 }}
         className="mt-4 text-muted-foreground text-lg md:text-xl z-10"
       >
-        Coming soon: <span className="text-primary/90 cursor-help" title="It's learning from Curocity...">The mind that cares.</span>
+        Coming soon: <span className="text-primary/90 cursor-help" title="It's learning from Curocity...">A smarter journey.</span>
       </motion.p>
 
       {/* === Bottom Glow === */}
