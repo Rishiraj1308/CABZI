@@ -7,35 +7,25 @@
 
 @layer base {
   :root {
-    /* Polished Light Theme */
     --background: 210 40% 98%;
     --foreground: 220 20% 10%;
-
     --card: 210 20% 100%;
     --card-foreground: 210 10% 23%;
- 
     --popover: 210 20% 98%;
     --popover-foreground: 210 10% 23%;
- 
     --primary: 180 35% 35%;
     --primary-foreground: 210 20% 98%;
- 
     --secondary: 210 20% 94%;
     --secondary-foreground: 180 35% 35%;
- 
     --muted: 210 20% 94%;
     --muted-foreground: 210 10% 45%;
- 
     --accent: 45 95% 55%;
     --accent-foreground: 45 80% 5%;
- 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
-
     --border: 210 20% 88%;
     --input: 210 20% 88%;
     --ring: 180 40% 50%;
- 
     --radius: 0.8rem;
   }
  
