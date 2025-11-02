@@ -28,7 +28,8 @@ import {
   serverTimestamp,
   getDoc,
   runTransaction,
-  arrayUnion
+  arrayUnion,
+  orderBy
 } from 'firebase/firestore'
 import { useFirebase } from '@/firebase/client-provider'
 import dynamic from 'next/dynamic'
@@ -43,6 +44,7 @@ import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 
 const LiveMap = dynamic(() => import('@/components/live-map'), {
@@ -87,12 +89,42 @@ export default function DriverDashboardPage() {
 
   const drivingSoundRef = useRef<HTMLAudioElement | null>(null)
   const hornSoundRef = useRef<HTMLAudioElement | null>(null)
-  const [isMapVisible, setIsMapVisible] = useState(false);
+  
+  // New state for recent rides
+  const [recentRides, setRecentRides] = useState<RideData[]>([]);
+  const [isHistoryLoading, setIsHistoryLoading] = useState(true);
+
   
   // New state for waiting timer
   const [waitingTime, setWaitingTime] = useState(60);
   const [waitingCharges, setWaitingCharges] = useState(0);
   const waitingTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    if (!db || !partnerData?.id) {
+        setIsHistoryLoading(false);
+        return;
+    };
+    
+    setIsHistoryLoading(true);
+    const ridesQuery = query(
+        collection(db, 'rides'), 
+        where('driverId', '==', partnerData.id), 
+        orderBy('createdAt', 'desc'),
+        limit(10)
+    );
+
+    const unsubscribe = onSnapshot(ridesQuery, (snapshot) => {
+        const rides = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as RideData));
+        setRecentRides(rides);
+        setIsHistoryLoading(false);
+    }, (error) => {
+        console.error("Error fetching recent rides:", error);
+        setIsHistoryLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, [db, partnerData?.id]);
 
 
   useEffect(() => {
@@ -300,7 +332,6 @@ export default function DriverDashboardPage() {
       setJobRequest(null);
       setActiveRide({ ...jobRequest, status: 'accepted' } as RideData);
       localStorage.setItem('activeRideId', jobRequest.id);
-      setIsMapVisible(true);
   
       toast({
         title: 'Ride Accepted!',
@@ -487,44 +518,19 @@ export default function DriverDashboardPage() {
     }
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start h-full">
-        <div className={cn("space-y-6 lg:col-span-2")}>
+        <div className={cn("lg:col-span-2 space-y-6 h-full flex flex-col")}>
              <AnimatePresence>
-                {!activeRide && (
-                    <motion.div
-                        initial={{ opacity: 1, height: 'auto' }}
-                        animate={{ opacity: 1, height: 'auto' }}
-                        exit={{ opacity: 0, height: 0 }}
-                        transition={{ duration: 0.5, ease: 'easeInOut' }}
-                        className="h-full"
-                    >
-                         <Card className="h-[75vh]">
-                            <CardContent className="p-0 h-full">
-                                <LiveMap 
-                                    driverLocation={driverLocation} 
-                                />
-                            </CardContent>
-                         </Card>
-                    </motion.div>
-                )}
-                 {activeRide && (
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ duration: 0.5, ease: 'easeInOut' }}
-                        className="h-full"
-                    >
-                        <Card className="h-[75vh]">
-                            <CardContent className="p-0 h-full">
-                                 <LiveMap 
-                                    driverLocation={driverLocation} 
-                                    riderLocation={activeRide.pickup.location ? { lat: activeRide.pickup.location.latitude, lon: activeRide.pickup.location.longitude } : undefined}
-                                    destinationLocation={activeRide.destination.location ? { lat: activeRide.destination.location.latitude, lon: activeRide.destination.location.longitude } : undefined}
-                                    isTripInProgress={activeRide.status === 'in-progress'}
-                                />
-                            </CardContent>
-                        </Card>
-                    </motion.div>
-                )}
+                <div className="h-full">
+                    <Card className="h-full">
+                        <CardContent className="p-0 h-full">
+                            <LiveMap
+                                riderLocation={activeRide?.pickup.location ? { lat: activeRide.pickup.location.latitude, lon: activeRide.pickup.location.longitude } : undefined}
+                                driverLocation={driverLocation} 
+                                isTripInProgress={activeRide?.status === 'in-progress'}
+                            />
+                        </CardContent>
+                    </Card>
+                </div>
             </AnimatePresence>
         </div>
 
@@ -555,21 +561,45 @@ export default function DriverDashboardPage() {
                         <StatCard title="Rating" value={partnerData?.rating?.toString() || '4.9'} icon={Star} isLoading={isDriverLoading} />
                     </div>
 
-                    <Card className="bg-gradient-to-r from-primary to-primary/90 text-primary-foreground border-none">
-                        <CardHeader>
-                        <CardTitle className="flex items-center gap-2"><Sparkles className="text-yellow-300" /> AI Earnings Coach</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                        <p>Focus on the Cyber Hub area between 5 PM - 8 PM. High demand is expected, and you could earn up to 30% more.</p>
-                        </CardContent>
-                    </Card>
-                    </>
+                    <Tabs defaultValue="coach" className="flex-1 flex flex-col">
+                        <TabsList className="grid w-full grid-cols-2">
+                            <TabsTrigger value="coach">AI Coach</TabsTrigger>
+                            <TabsTrigger value="activity">Recent Activity</TabsTrigger>
+                        </TabsList>
+                        <TabsContent value="coach" className="mt-4 flex-1">
+                            <Card className="bg-gradient-to-r from-primary to-primary/90 text-primary-foreground border-none h-full flex items-center">
+                                <CardContent className="p-4"><div className="flex gap-3 items-center"><Sparkles className="w-8 h-8 text-yellow-300 flex-shrink-0" />
+                                    <div><p className="font-bold">AI Earnings Coach</p><p className="text-sm text-primary-foreground/90">Focus on the Cyber Hub area between 5 PM - 8 PM. High demand is expected, and you could earn up to 30% more.</p></div>
+                                </div></CardContent>
+                            </Card>
+                        </TabsContent>
+                         <TabsContent value="activity" className="mt-4 flex-1 space-y-2">
+                           {isHistoryLoading ? (
+                                Array.from({length: 2}).map((_, i) => <Skeleton key={i} className="h-16 w-full" />)
+                           ) : recentRides.length > 0 ? (
+                                recentRides.map(ride => (
+                                    <Card key={ride.id}>
+                                        <CardContent className="p-2 flex items-center justify-between">
+                                            <div className="text-sm">
+                                                <p className="font-semibold line-clamp-1">{ride.destination?.address || 'N/A'}</p>
+                                                <p className="text-xs text-muted-foreground">{new Date(ride.createdAt.seconds * 1000).toLocaleString()}</p>
+                                            </div>
+                                            <p className="font-bold text-lg">₹{ride.fare}</p>
+                                        </CardContent>
+                                    </Card>
+                                ))
+                           ) : (
+                                <div className="text-center py-10 text-muted-foreground">No recent rides found.</div>
+                           )}
+                        </TabsContent>
+                    </Tabs>
+                </>
             )}
         </div>
 
         <AlertDialog open={!!jobRequest}>
           <AlertDialogContent>
-             {jobRequest ? (
+            {jobRequest ? (
              <>
               <AlertDialogHeader>
                   <AlertDialogTitle>New Ride Request!</AlertDialogTitle>
@@ -654,4 +684,3 @@ export default function DriverDashboardPage() {
     </div>
   );
 }
-
