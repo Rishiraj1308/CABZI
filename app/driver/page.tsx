@@ -395,12 +395,12 @@ export default function DriverDashboardPage() {
                 {isMapVisible && (
                     <motion.div
                         initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: '75vh', opacity: 1 }}
+                        animate={{ height: 'auto', opacity: 1 }}
                         exit={{ height: 0, opacity: 0 }}
                         transition={{ duration: 0.5, ease: 'easeInOut' }}
                         className="overflow-hidden"
                     >
-                        <CardContent className="p-0 h-full">
+                        <CardContent className="p-0 h-96">
                            <LiveMap 
                                 onLocationFound={(address, coords) => {
                                     if (db && partnerData) {
@@ -545,6 +545,3 @@ export default function DriverDashboardPage() {
     </div>
   );
 }
-
-
-    
