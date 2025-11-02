@@ -48,7 +48,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 const LiveMap = dynamic(() => import('@/components/live-map'), { ssr: false })
 
 const StatCard = ({ title, value, icon: Icon, isLoading, onValueClick, iconButtonAction }: { title: string, value: string | React.ReactNode, icon: React.ElementType, isLoading?: boolean, onValueClick?: () => void, iconButtonAction?: () => void }) => (
-    <Card className="bg-white/5 border border-white/10 backdrop-blur-sm">
+    <Card className="bg-white/5 border border-white/10 backdrop-blur-sm flex-1">
       <div className="p-3">
         <div className="flex flex-row items-center justify-between mb-1">
           <p className="text-sm font-medium text-white/80">{title}</p>
@@ -397,7 +397,7 @@ export default function DriverDashboardPage() {
     <div className="space-y-6">
         {activeRide ? renderActiveRide() : (
             <>
-                 <div className="flex justify-between items-center">
+                <div className="flex justify-between items-center">
                     <div>
                         <h2 className="text-3xl font-bold tracking-tight text-white">Driver Dashboard</h2>
                         <p className="text-white/70 text-sm">Welcome back. Stay online and drive safe.</p>
@@ -440,7 +440,7 @@ export default function DriverDashboardPage() {
                    </Card>
                 )}
 
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                <div className="flex gap-2">
                     <StatCard title="Today's Earnings" value={isEarningsVisible ? `₹${(partnerData?.todaysEarnings || 0).toLocaleString()}` : <span className="font-mono tracking-widest">₹ •••••</span>} icon={Eye} isLoading={isDriverLoading} iconButtonAction={() => setIsPinDialogOpen(true)} />
                     <StatCard title="Today's Rides" value={partnerData?.jobsToday?.toString() || '0'} icon={History} isLoading={isDriverLoading} />
                     <StatCard title="Acceptance Rate" value={`${partnerData?.acceptanceRate || '95'}%`} icon={Power} isLoading={isDriverLoading} />
