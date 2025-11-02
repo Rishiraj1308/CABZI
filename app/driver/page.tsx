@@ -47,30 +47,27 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Phone } from 'lucide-react'
+import { format } from 'date-fns'
 
-const LiveMap = dynamic(() => import('@/components/live-map'), {
-    ssr: false,
-    loading: () => <div className="w-full h-full bg-muted flex items-center justify-center"><p>Loading Map...</p></div>
-});
-
+const LiveMap = dynamic(() => import('@/components/live-map'), { ssr: false })
 
 const StatCard = ({ title, value, icon: Icon, isLoading, onValueClick }: { title: string, value: string, icon: React.ElementType, isLoading?: boolean, onValueClick?: () => void }) => (
-    <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">{title}</CardTitle>
-            <Icon className="h-4 w-4 text-muted-foreground" />
-        </CardHeader>
-        <CardContent>
-        {isLoading ? (
-            <Skeleton className="h-8 w-20" />
-        ) : (
-            <div className="text-2xl font-bold cursor-pointer" onClick={onValueClick}>
-                {value}
-            </div>
-        )}
-        </CardContent>
-    </Card>
-);
+  <Card>
+    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+      <CardTitle className="text-sm font-medium">{title}</CardTitle>
+      <Icon className="h-4 w-4 text-muted-foreground" />
+    </CardHeader>
+    <CardContent>
+      {isLoading ? (
+        <Skeleton className="h-8 w-20" />
+      ) : (
+        <div className="text-2xl font-bold cursor-pointer" onClick={onValueClick}>
+          {value}
+        </div>
+      )}
+    </CardContent>
+  </Card>
+)
 
 export default function DriverDashboardPage() {
   const [jobRequest, setJobRequest] = useState<JobRequest | null>(null);
@@ -89,6 +86,16 @@ export default function DriverDashboardPage() {
   const [isHistoryLoading, setIsHistoryLoading] = useState(true);
   
   const [enteredOtp, setEnteredOtp] = useState('');
+  
+  // State for the clock
+  const [currentTime, setCurrentTime] = useState(new Date());
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
   
   const handleDeclineJob = useCallback(async (isTimeout = false) => {
     if (!jobRequest || !partnerData?.id || !db) return
@@ -290,12 +297,18 @@ export default function DriverDashboardPage() {
                 <Card className="shadow-lg">
                     <CardHeader>
                         <div className="flex justify-between items-center">
-                            <CardTitle>Your Dashboard</CardTitle>
-                            <div className="flex items-center space-x-2">
-                                <Switch id="online-status" checked={isOnline} onCheckedChange={handleAvailabilityChange} />
-                                <Label htmlFor="online-status" className={cn("font-semibold", isOnline ? "text-green-600" : "text-muted-foreground")}>
-                                    {isOnline ? "ONLINE" : "OFFLINE"}
-                                </Label>
+                            <div>
+                                <CardTitle>Your Dashboard</CardTitle>
+                                <CardDescription className="text-xs">{format(currentTime, 'EEEE, d MMMM yyyy')}</CardDescription>
+                            </div>
+                            <div className="text-right">
+                                <p className="font-bold text-2xl font-mono">{format(currentTime, 'h:mm:ss a')}</p>
+                                 <div className="flex items-center space-x-2 justify-end">
+                                    <Switch id="online-status" checked={isOnline} onCheckedChange={handleAvailabilityChange} />
+                                    <Label htmlFor="online-status" className={cn("font-semibold", isOnline ? "text-green-600" : "text-muted-foreground")}>
+                                        {isOnline ? "ONLINE" : "OFFLINE"}
+                                    </Label>
+                                </div>
                             </div>
                         </div>
                     </CardHeader>
@@ -378,15 +391,6 @@ export default function DriverDashboardPage() {
                    </div>
                </div>
                
-               <div className="h-40 w-full rounded-md overflow-hidden border">
-                 <LiveMap
-                   driverLocation={driverLocation}
-                   riderLocation={jobRequest.pickup?.location ? { lat: jobRequest.pickup.location.latitude, lon: jobRequest.pickup.location.longitude } : undefined}
-                   destinationLocation={jobRequest.destination?.location ? { lat: jobRequest.destination.location.latitude, lon: jobRequest.destination.location.longitude } : undefined}
-                   isTripInProgress={false}
-                   zoom={11}
-                 />
-               </div>
                <div className="grid grid-cols-3 gap-2 text-center mt-3">
                  <div className="p-2 bg-muted rounded-md">
                      <p className="text-xs text-muted-foreground">Est. Fare</p>
