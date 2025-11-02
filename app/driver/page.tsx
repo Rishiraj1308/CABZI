@@ -120,7 +120,7 @@ export default function DriverDashboardPage() {
     }
   };
   
-    const handleDeclineJob = useCallback(async (isTimeout = false) => {
+  const handleDeclineJob = useCallback(async (isTimeout = false) => {
     if (!jobRequest || !partnerData?.id || !db) return
     if (requestTimerRef.current) clearInterval(requestTimerRef.current)
     
@@ -137,32 +137,32 @@ export default function DriverDashboardPage() {
   const isOnline = partnerData?.isOnline ?? false;
 
   // This effect listens for ride requests.
-   useEffect(() => {
-    if (!db || !isOnline || activeRide || jobRequest || !partnerData?.id) {
-        return;
+  useEffect(() => {
+    if (!db || !partnerData?.id || !isOnline || activeRide || jobRequest) {
+      return;
     }
-
+  
     const q = query(
-        collection(db, "rides"),
-        where("status", "==", "searching"),
+      collection(db, "rides"),
+      where("status", "==", "searching"),
     );
-
+  
     const unsubscribe = onSnapshot(q, (snapshot) => {
-        if (jobRequest || activeRide) return; // Don't process new requests if one is already active
-
-        const potentialJobs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as JobRequest));
-        const newJob = potentialJobs.find(job => 
-            !job.rejectedBy?.includes(partnerData.id!)
-        );
-
-        if (newJob) {
-            notificationSoundRef.current?.play().catch(e => console.warn("Sound blocked until user interaction:", e));
-            setJobRequest(newJob);
-        }
+      if (jobRequest || activeRide) return; // Don't process if already busy
+  
+      const potentialJobs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as JobRequest));
+      const newJob = potentialJobs.find(job => 
+        !job.rejectedBy?.includes(partnerData.id)
+      );
+  
+      if (newJob) {
+        notificationSoundRef.current?.play().catch(e => console.warn("Sound blocked until user interaction:", e));
+        setJobRequest(newJob);
+      }
     });
-
+  
     return () => unsubscribe();
-  }, [db, isOnline, activeRide, jobRequest, partnerData?.id]);
+  }, [db, partnerData?.id, jobRequest, activeRide, isOnline]);
 
 
   // Listen for updates on an active ride
@@ -397,7 +397,7 @@ export default function DriverDashboardPage() {
     <div className="space-y-6">
         {activeRide ? renderActiveRide() : (
             <>
-                 <div className="flex justify-between items-center">
+                <div className="flex justify-between items-center">
                     <div>
                         <h2 className="text-3xl font-bold tracking-tight text-white">Driver Dashboard</h2>
                         <p className="text-white/70 text-sm">Welcome back. Stay online and drive safe.</p>
@@ -411,14 +411,7 @@ export default function DriverDashboardPage() {
                     </div>
                 </div>
 
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                    <StatCard title="Today's Earnings" value={isEarningsVisible ? `₹${(partnerData?.todaysEarnings || 0).toLocaleString()}` : <span className="font-mono tracking-widest">₹ •••••</span>} icon={Eye} isLoading={isDriverLoading} iconButtonAction={() => setIsPinDialogOpen(true)} />
-                    <StatCard title="Today's Rides" value={partnerData?.jobsToday?.toString() || '0'} icon={History} isLoading={isDriverLoading} />
-                    <StatCard title="Acceptance Rate" value={`${partnerData?.acceptanceRate || '95'}%`} icon={Power} isLoading={isDriverLoading} />
-                    <StatCard title="Rating" value={partnerData?.rating?.toString() || '4.9'} icon={Star} isLoading={isDriverLoading} />
-                </div>
-                
-                 {isOnline && (
+                {isOnline && (
                    <Card>
                     <CardHeader>
                         <CardTitle>Waiting for Rides...</CardTitle>
@@ -447,6 +440,13 @@ export default function DriverDashboardPage() {
                    </Card>
                 )}
 
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                    <StatCard title="Today's Earnings" value={isEarningsVisible ? `₹${(partnerData?.todaysEarnings || 0).toLocaleString()}` : <span className="font-mono tracking-widest">₹ •••••</span>} icon={Eye} isLoading={isDriverLoading} iconButtonAction={() => setIsPinDialogOpen(true)} />
+                    <StatCard title="Today's Rides" value={partnerData?.jobsToday?.toString() || '0'} icon={History} isLoading={isDriverLoading} />
+                    <StatCard title="Acceptance Rate" value={`${partnerData?.acceptanceRate || '95'}%`} icon={Power} isLoading={isDriverLoading} />
+                    <StatCard title="Rating" value={partnerData?.rating?.toString() || '4.9'} icon={Star} isLoading={isDriverLoading} />
+                </div>
+                
                 <Card className="bg-gradient-to-r from-primary/80 to-primary/70 text-primary-foreground border-none">
                     <CardHeader>
                     <CardTitle className="flex items-center gap-2"><Sparkles className="text-yellow-300" /> AI Earnings Coach</CardTitle>
