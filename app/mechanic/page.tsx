@@ -28,7 +28,7 @@ import {
 } from "@/components/ui/tooltip"
 import BrandLogo from '@/components/brand-logo'
 import SearchingIndicator from '@/components/ui/searching-indicator'
-import { useMessaging, useFirebase } from '@/firebase/client-provider'
+import { useFirebase } from '@/firebase/client-provider'
 import { onMessage } from 'firebase/messaging'
 
 
@@ -98,8 +98,7 @@ export default function ResQDashboard() {
   const requestTimerRef = useRef<NodeJS.Timeout | null>(null);
   
   const { toast } = useToast();
-  const messaging = useMessaging();
-  const { db } = useFirebase();
+  const { messaging, db } = useFirebase();
   
   // PIN lock state
   const [isEarningsVisible, setIsEarningsVisible] = useState(false);
