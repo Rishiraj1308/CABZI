@@ -6,7 +6,7 @@ import Image from 'next/image'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
-import { Star, History, IndianRupee, Power, KeyRound, Clock, MapPin, Route, Navigation, CheckCircle, Sparkles, Eye } from 'lucide-react'
+import { Star, History, IndianRupee, Power, KeyRound, Clock, MapPin, Route, Navigation, CheckCircle, Sparkles, Eye, Phone } from 'lucide-react'
 import {
   AlertDialog,
   AlertDialogContent,
@@ -45,8 +45,7 @@ import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import RideStatus from '@/components/ride-status'
-
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 
 const LiveMap = dynamic(() => import('@/components/live-map'), {
     ssr: false,
@@ -85,10 +84,10 @@ export default function DriverDashboardPage() {
   const { db } = useFirebase()
   const { toast } = useToast()
   
-  // New state for recent rides
   const [recentRides, setRecentRides] = useState<RideData[]>([]);
   const [isHistoryLoading, setIsHistoryLoading] = useState(true);
-
+  
+  const [enteredOtp, setEnteredOtp] = useState('');
   
   useEffect(() => {
     if (!db || !partnerData?.id) {
@@ -157,14 +156,12 @@ export default function DriverDashboardPage() {
     }
   };
 
-  // This effect listens for ride requests.
   useEffect(() => {
     if (!db || !partnerData?.id || !isOnline || activeRide) return;
 
     const q = query(collection(db, "rides"), where("status", "==", "searching"));
 
     const unsubscribe = onSnapshot(q, async (snapshot) => {
-      // Re-check conditions inside the listener to avoid race conditions
       if (jobRequest || activeRide) return;
 
       const driverLoc = partnerData?.currentLocation;
@@ -196,7 +193,7 @@ export default function DriverDashboardPage() {
             pickupLoc.latitude,
             pickupLoc.longitude
           );
-          eta = Math.max(2, Math.round((distance / 0.4))); // approx 25 km/h
+          eta = Math.max(2, Math.round((distance / 0.4)));
         }
         
         return {
@@ -223,7 +220,6 @@ export default function DriverDashboardPage() {
     return () => unsubscribe();
   }, [db, partnerData, jobRequest, activeRide, isOnline]);
   
-    // Listen for updates on an active ride
     useEffect(() => {
         if (!db || !activeRide?.id) return;
         const unsub = onSnapshot(doc(db, 'rides', activeRide.id), (docSnap) => {
@@ -239,7 +235,6 @@ export default function DriverDashboardPage() {
                     setActiveRide({ id: docSnap.id, ...data } as RideData);
                 }
             } else {
-                // If the document is deleted or doesn't exist, reset the state.
                 resetAfterRide();
             }
         });
@@ -247,7 +242,6 @@ export default function DriverDashboardPage() {
     }, [db, activeRide?.id, toast]);
 
 
-  // Timer for request
   useEffect(() => {
     if (jobRequest) {
       setRequestTimeout(15)
@@ -270,7 +264,6 @@ export default function DriverDashboardPage() {
   const resetAfterRide = () => {
     setActiveRide(null)
     localStorage.removeItem('activeRideId')
-    // Set driver status back to online after a ride
     if (partnerData?.id && db) {
         updateDoc(doc(db, 'partners', partnerData.id), { status: 'online' });
     }
@@ -338,9 +331,8 @@ export default function DriverDashboardPage() {
     }
   };  
 
-  // New effect to check for an active ride on initial load
   useEffect(() => {
-      if (!db || !partnerData?.id) return; // Wait for db and partnerData
+      if (!db || !partnerData?.id) return; 
       
       const activeRideId = localStorage.getItem('activeRideId');
       
@@ -354,10 +346,10 @@ export default function DriverDashboardPage() {
                       if (!['completed', 'cancelled_by_driver', 'cancelled_by_rider'].includes(rideData.status)) {
                           setActiveRide({ id: docSnap.id, ...rideData });
                       } else {
-                          localStorage.removeItem('activeRideId'); // Clean up finished ride
+                          localStorage.removeItem('activeRideId');
                       }
                   } else {
-                      localStorage.removeItem('activeRideId'); // Clean up non-existent ride
+                      localStorage.removeItem('activeRideId');
                   }
               } catch (error) {
                   console.error("Error fetching active ride:", error);
@@ -367,16 +359,123 @@ export default function DriverDashboardPage() {
 
       checkActiveRide();
   }, [db, partnerData]);
-
+  
+    const handleUpdateRideStatus = async (status: 'arrived' | 'in-progress' | 'payment_pending' | 'completed') => {
+        if (!activeRide || !db) return;
+        const rideRef = doc(db, 'rides', activeRide.id);
+        try {
+            await updateDoc(rideRef, { status });
+            // Optimistically update local state
+            setActiveRide(prev => prev ? ({ ...prev, status } as RideData) : null);
+            toast({
+                title: "Ride Status Updated",
+                description: `Status is now: ${status.replace('_', ' ')}`,
+            });
+            if (status === 'completed') {
+                if (onEndRide) onEndRide();
+            }
+        } catch (error) {
+            console.error("Error updating ride status:", error);
+            toast({
+                variant: 'destructive',
+                title: 'Update Failed',
+                description: 'Could not update the ride status.',
+            });
+        }
+    };
+    
+    const handleVerifyOtp = () => {
+        if (enteredOtp === activeRide?.otp) {
+            handleUpdateRideStatus('in-progress');
+            toast({title: 'OTP Verified!', description: 'Trip has started.', className: 'bg-green-600 text-white'});
+        } else {
+            toast({variant: 'destructive', title: 'Invalid OTP'});
+        }
+    }
+  
+  const handlePinSubmit = () => {
+      const storedPin = localStorage.getItem('curocity-user-pin');
+      if (!storedPin) {
+          toast({ variant: 'destructive', title: 'PIN Not Set', description: 'Please set a UPI PIN from your wallet first.' });
+          return;
+      }
+      if (pin === storedPin) {
+          setIsEarningsVisible(true);
+          setIsPinDialogOpen(false);
+          setPin('');
+          toast({ title: 'Earnings Revealed' });
+          setTimeout(() => setIsEarningsVisible(false), 10000);
+      } else {
+          toast({ variant: 'destructive', title: 'Invalid PIN' });
+      }
+  }
   
   const driverLocation = partnerData?.currentLocation
     ? { lat: partnerData.currentLocation.latitude, lon: partnerData.currentLocation.longitude }
     : undefined;
     
+  const onEndRide = () => {
+    setActiveRide(null);
+    localStorage.removeItem('activeRideId');
+    if (partnerData?.id && db) {
+        updateDoc(doc(db, 'partners', partnerData.id), { status: 'online' });
+    }
+  }
+
+  const renderActiveRide = () => {
+    if (!activeRide) return null;
+    
+    const isNavigatingToRider = ['accepted', 'arrived'].includes(activeRide.status);
+    const destinationLocation = isNavigatingToRider ? activeRide.pickup.location : activeRide.destination.location;
+    const navigateUrl = destinationLocation ? `https://www.google.com/maps/dir/?api=1&destination=${destinationLocation.latitude},${destinationLocation.longitude}` : '#';
+
+    return (
+        <Card className="shadow-lg animate-fade-in w-full">
+            <CardHeader>
+                <CardTitle className="capitalize">{activeRide.status.replace('_', ' ')}</CardTitle>
+                <CardDescription>Rider: {activeRide.riderName}</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+                 <div className="p-3 rounded-lg bg-muted flex items-center gap-3">
+                    <Avatar className="w-12 h-12"><AvatarImage src={'https://placehold.co/100x100.png'} alt={activeRide.riderName} /><AvatarFallback>{activeRide.riderName?.[0] || 'R'}</AvatarFallback></Avatar>
+                    <div className="flex-1">
+                        <p className="font-bold">{activeRide.riderName}</p>
+                        <p className="text-sm text-muted-foreground capitalize">{activeRide.riderGender}</p>
+                    </div>
+                    <Button asChild variant="outline" size="icon"><a href={`tel:${activeRide.riderPhone}`}><Phone/></a></Button>
+                 </div>
+                 {activeRide.status === 'arrived' && (
+                    <div className="space-y-2">
+                       <Label htmlFor="otp">Enter Rider's OTP</Label>
+                       <div className="flex gap-2">
+                          <Input id="otp" value={enteredOtp} onChange={(e) => setEnteredOtp(e.target.value)} placeholder="4-Digit OTP" maxLength={4}/>
+                          <Button onClick={handleVerifyOtp}><CheckCircle className="w-4 h-4 mr-2"/>Verify & Start</Button>
+                       </div>
+                    </div>
+                 )}
+                 <Button asChild size="lg" className="w-full bg-blue-600 hover:bg-blue-700 text-white">
+                     <a href={navigateUrl} target="_blank" rel="noopener noreferrer">
+                         <Navigation className="mr-2 h-5 w-5"/>
+                         Navigate to {isNavigatingToRider ? 'Pickup' : 'Destination'}
+                     </a>
+                 </Button>
+            </CardContent>
+            <CardFooter>
+                {activeRide.status === 'accepted' && (
+                    <Button className="w-full" size="lg" onClick={() => handleUpdateRideStatus('arrived')}>Arrived at Pickup</Button>
+                )}
+                {activeRide.status === 'in-progress' && (
+                    <Button className="w-full bg-destructive hover:bg-destructive/80" size="lg" onClick={() => handleUpdateRideStatus('completed')}>End Trip</Button>
+                )}
+            </CardFooter>
+        </Card>
+    );
+  }
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start h-full">
-        <div className="lg:col-span-3 h-96 lg:h-[calc(100vh-210px)] rounded-lg overflow-hidden">
-           <Card className="h-full">
+        <div className="lg:col-span-2">
+           <Card className="h-[75vh]">
                 <CardContent className="p-0 h-full">
                      <LiveMap 
                         onLocationFound={(address, coords) => {
@@ -393,14 +492,10 @@ export default function DriverDashboardPage() {
             </Card>
         </div>
         
-        <div className={cn("space-y-6 lg:col-span-3", activeRide && 'lg:col-span-3 lg:row-start-2')}>
-            {activeRide ? (
-                <div className="p-1">
-                    <RideStatus ride={activeRide} onCancel={resetAfterRide} onDone={resetAfterRide} />
-                </div>
-            ) : (
+        <div className="lg:col-span-1 space-y-6">
+            {activeRide ? renderActiveRide() : (
                 <>
-                     <Card>
+                     <Card className="shadow-lg">
                         <CardHeader>
                         <div className="flex justify-between items-center">
                             <CardTitle>Your Dashboard</CardTitle>
@@ -432,14 +527,14 @@ export default function DriverDashboardPage() {
                             <TabsTrigger value="history">Recent Activity</TabsTrigger>
                         </TabsList>
                         <TabsContent value="stats" className="mt-4">
-                            <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
+                            <div className="grid gap-4 grid-cols-2 lg:grid-cols-2">
                                 <StatCard title="Today's Earnings" value={isEarningsVisible ? `₹${(partnerData?.todaysEarnings || 0).toLocaleString()}` : '₹ ****'} icon={IndianRupee} isLoading={isDriverLoading} onValueClick={() => !isEarningsVisible && setIsPinDialogOpen(true)} />
                                 <StatCard title="Today's Rides" value={partnerData?.jobsToday?.toString() || '0'} icon={History} isLoading={isDriverLoading} />
                                 <StatCard title="Acceptance Rate" value={`${partnerData?.acceptanceRate || '95'}%`} icon={Power} isLoading={isDriverLoading} />
                                 <StatCard title="Rating" value={partnerData?.rating?.toString() || '4.9'} icon={Star} isLoading={isDriverLoading} />
                             </div>
                         </TabsContent>
-                         <TabsContent value="history" className="mt-4 flex-1 space-y-2">
+                         <TabsContent value="history" className="mt-4 flex-1 space-y-2 max-h-48 overflow-y-auto">
                            {isHistoryLoading ? (
                                 Array.from({length: 2}).map((_, i) => <Skeleton key={i} className="h-16 w-full" />)
                            ) : recentRides.length > 0 ? (
@@ -448,7 +543,7 @@ export default function DriverDashboardPage() {
                                         <CardContent className="p-2 flex items-center justify-between">
                                             <div className="text-sm">
                                                 <p className="font-semibold line-clamp-1">{ride.destination?.address || 'N/A'}</p>
-                                                <p className="text-xs text-muted-foreground">{new Date(ride.createdAt.seconds * 1000).toLocaleString()}</p>
+                                                <p className="text-xs text-muted-foreground">{ride.createdAt ? new Date(ride.createdAt.seconds * 1000).toLocaleString() : 'N/A'}</p>
                                             </div>
                                             <p className="font-bold text-lg">₹{ride.fare}</p>
                                         </CardContent>
@@ -492,7 +587,6 @@ export default function DriverDashboardPage() {
                        <p><span className="font-semibold">TO:</span> {jobRequest.destinationAddress}</p>
                    </div>
                </div>
-               
                <div className="h-40 w-full rounded-md overflow-hidden border">
                  <LiveMap
                    driverLocation={driverLocation}
@@ -552,3 +646,4 @@ export default function DriverDashboardPage() {
   );
 }
 
+    
