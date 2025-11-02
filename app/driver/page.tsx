@@ -1,5 +1,4 @@
 
-
 'use client'
 
 import React, { useState, useEffect, useRef, useCallback } from 'react'
@@ -7,7 +6,7 @@ import Image from 'next/image'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
-import { Star, History, IndianRupee, Power, KeyRound, Clock, MapPin, Route, Navigation, CheckCircle, Sparkles, Eye } from 'lucide-react'
+import { Star, History, IndianRupee, Power, KeyRound, Clock, MapPin, Route, Navigation, CheckCircle, Sparkles, Eye, TrendingUp } from 'lucide-react'
 import {
   AlertDialog,
   AlertDialogContent,
@@ -533,14 +532,14 @@ export default function DriverDashboardPage() {
             <MapPin className="w-4 h-4 mt-1 text-green-500 flex-shrink-0" />
             <p>
               <span className="font-semibold">Pickup:</span>{' '}
-              {jobRequest.pickup.address}
+              {jobRequest.pickupAddress}
             </p>
           </div>
           <div className="flex items-start gap-2">
             <Route className="w-4 h-4 mt-1 text-red-500 flex-shrink-0" />
             <p>
               <span className="font-semibold">Drop:</span>{' '}
-              {jobRequest.destination.address}
+              {jobRequest.destinationAddress}
             </p>
           </div>
         </div>
@@ -554,7 +553,7 @@ export default function DriverDashboardPage() {
           <div className="p-2 bg-muted rounded-md">
             <p className="text-xs text-muted-foreground">To Pickup</p>
             <p className="font-bold text-lg">
-                {jobRequest.distance ? `${jobRequest.distance.toFixed(1)} km` : "~km"}
+                {jobRequest.distance ? `${jobRequest.distance.toFixed(1)} km` : '~km'}
             </p>
           </div>
           <div className="p-2 bg-muted rounded-md">
@@ -597,3 +596,4 @@ export default function DriverDashboardPage() {
   );
 }
 
+    
