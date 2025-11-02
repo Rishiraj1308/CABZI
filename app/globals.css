@@ -30,25 +30,25 @@
   }
  
   .dark {
-    --background: 180 15% 5%;
-    --foreground: 180 10% 95%;
-    --card: 180 12% 10%;
-    --card-foreground: 180 10% 95%;
-    --popover: 180 15% 5%;
-    --popover-foreground: 180 10% 95%;
-    --primary: 180 10% 95%;
-    --primary-foreground: 180 15% 10%;
-    --secondary: 180 10% 15%;
-    --secondary-foreground: 180 10% 95%;
-    --muted: 180 10% 15%;
-    --muted-foreground: 180 10% 65%;
-    --accent: 45 95% 55%;
+    --background: 170 20% 8%; /* Very dark teal */
+    --foreground: 170 10% 95%; /* Almost white with a hint of teal */
+    --card: 170 15% 12%; /* Slightly lighter dark teal for cards */
+    --card-foreground: 170 10% 95%;
+    --popover: 170 20% 5%; /* Even darker for popovers */
+    --popover-foreground: 170 10% 95%;
+    --primary: 160 50% 60%; /* Brighter teal for primary actions */
+    --primary-foreground: 170 20% 10%;
+    --secondary: 170 15% 18%; /* Darker secondary elements */
+    --secondary-foreground: 170 10% 95%;
+    --muted: 170 15% 18%;
+    --muted-foreground: 170 10% 65%;
+    --accent: 45 95% 55%; /* Accent remains yellow for contrast */
     --accent-foreground: 45 80% 5%;
-    --destructive: 0 63% 31%;
+    --destructive: 0 70% 50%;
     --destructive-foreground: 0 0% 98%;
-    --border: 180 10% 15%;
-    --input: 180 10% 12%;
-    --ring: 180 40% 60%;
+    --border: 170 15% 20%;
+    --input: 170 15% 15%;
+    --ring: 160 50% 60%;
   }
 
   .pink {
@@ -123,8 +123,8 @@
         bottom: 0;
         z-index: -1;
         background-image: 
-            radial-gradient(ellipse at 50% 0%, hsla(180, 50%, 80%, 0.15), transparent 80%),
-            radial-gradient(ellipse at 100% 100%, hsla(200, 80%, 85%, 0.1), transparent 80%);
+            radial-gradient(at 20% 20%, hsla(180, 50%, 80%, 0.2), transparent 50%),
+            radial-gradient(at 80% 80%, hsla(200, 80%, 85%, 0.2), transparent 50%);
         background-size: 150% 150%;
         animation: aurora-glow 20s linear infinite alternate;
         will-change: background-position;
