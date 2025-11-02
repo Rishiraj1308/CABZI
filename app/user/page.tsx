@@ -219,9 +219,6 @@ export default function ServicePortalPage() {
             )}
 
             <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
-              <Button variant="outline" className="backdrop-blur">
-                <MessageCircle className="h-4 w-4 mr-2" /> Start a conversation
-              </Button>
               <Button className="bg-emerald-500 text-black hover:bg-emerald-400">
                 <Phone className="h-4 w-4 mr-2" /> Request a callback
               </Button>
