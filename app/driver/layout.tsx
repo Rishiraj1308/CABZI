@@ -26,7 +26,7 @@ import { useToast } from '@/hooks/use-toast'
 import BrandLogo from '@/components/brand-logo'
 import { useTheme } from 'next-themes'
 import { useFirebase } from '@/firebase/client-provider'
-import { doc, setDoc, serverTimestamp, type DocumentReference, onSnapshot, GeoPoint } from 'firebase/firestore'
+import { doc, setDoc, serverTimestamp, type DocumentReference, onSnapshot, GeoPoint, updateDoc } from 'firebase/firestore'
 import { Badge } from '@/components/ui/badge'
 import { MotionDiv } from '@/components/ui/motion-div'
 import { NotificationsProvider } from '@/context/NotificationContext';
@@ -352,7 +352,7 @@ function DriverLayoutContent({ children }: { children: React.ReactNode }) {
 
   return (
        <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
-         <div className="hidden border-r bg-muted/40 md:block">
+         <div className="hidden border-r bg-background/95 md:block">
              <div className="flex h-full max-h-screen flex-col gap-2">
                  <div className="flex h-16 items-center border-b px-6">
                      <LogoArea isPinkPartner={partnerData?.isCabziPinkPartner || false} />
