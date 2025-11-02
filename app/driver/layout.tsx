@@ -26,7 +26,7 @@ import { useToast } from '@/hooks/use-toast'
 import BrandLogo from '@/components/brand-logo'
 import { useTheme } from 'next-themes'
 import { useFirebase } from '@/firebase/client-provider'
-import { doc, setDoc, serverTimestamp, type DocumentReference, onSnapshot } from 'firebase/firestore'
+import { doc, setDoc, serverTimestamp, type DocumentReference, onSnapshot, GeoPoint } from 'firebase/firestore'
 import { Badge } from '@/components/ui/badge'
 import { MotionDiv } from '@/components/ui/motion-div'
 import { NotificationsProvider } from '@/context/NotificationContext';
@@ -196,43 +196,55 @@ function ThemeToggle() {
 
 function LocationDisplay() {
   const [location, setLocation] = useState('Locating...');
+  const { partnerData } = useDriver();
+  const { db } = useFirebase();
+  const watchIdRef = useRef<number | null>(null);
 
   useEffect(() => {
-    if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-            async (position) => {
-                const { latitude, longitude } = position.coords;
-                try {
-                    const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=14`);
-                    if (!response.ok) {
-                        setLocation('Location not found');
-                        return;
-                    }
-                    const data = await response.json();
-                    const address = data.address;
-                    const primaryLocation = address.suburb || address.neighbourhood || address.city || address.town || address.village;
-                    const secondaryLocation = address.city || address.state;
-
-                    if (primaryLocation && secondaryLocation && primaryLocation !== secondaryLocation) {
-                        setLocation(`${primaryLocation}, ${secondaryLocation}`);
-                    } else if (primaryLocation) {
-                        setLocation(primaryLocation);
-                    } else {
-                        setLocation(data.display_name.split(',').slice(0, 2).join(', '));
-                    }
-                } catch (error) {
-                    setLocation('Location not found');
-                }
-            }, 
-            () => {
-                setLocation('Location Unavailable');
-            },
-            { timeout: 10000 }
-        );
-    } else {
+    if (!navigator.geolocation || !db || !partnerData?.id) {
         setLocation('Geolocation not supported');
+        return;
     }
-  }, []);
+
+    const getAddress = async (lat: number, lon: number) => {
+        try {
+            const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=14`);
+            if (!response.ok) return 'Location not found';
+            const data = await response.json();
+            const address = data.address;
+            const primaryLocation = address.suburb || address.neighbourhood || address.city || address.town || address.village;
+            const secondaryLocation = address.city || address.state;
+            return primaryLocation && secondaryLocation && primaryLocation !== secondaryLocation ? `${primaryLocation}, ${secondaryLocation}` : primaryLocation || 'Location details unavailable';
+        } catch (error) {
+            return 'Location details unavailable';
+        }
+    };
+    
+    watchIdRef.current = navigator.geolocation.watchPosition(
+        async (position) => {
+            const { latitude, longitude } = position.coords;
+            const address = await getAddress(latitude, longitude);
+            setLocation(address);
+            if (partnerData.isOnline) {
+                const partnerRef = doc(db, 'partners', partnerData.id);
+                await updateDoc(partnerRef, {
+                    currentLocation: new GeoPoint(latitude, longitude),
+                    lastSeen: serverTimestamp()
+                });
+            }
+        },
+        () => {
+            setLocation('Location Unavailable');
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    );
+
+    return () => {
+        if (watchIdRef.current) {
+            navigator.geolocation.clearWatch(watchIdRef.current);
+        }
+    };
+  }, [db, partnerData?.id, partnerData?.isOnline]);
   
   return (
     <div className="flex items-center gap-2">
