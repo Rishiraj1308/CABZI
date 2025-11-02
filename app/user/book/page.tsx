@@ -6,13 +6,20 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { ArrowLeft, Map, MapPin, Calendar } from 'lucide-react';
+import { ArrowLeft, Map, MapPin, Calendar as CalendarIcon } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { searchPlace } from '@/lib/routing';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { Label } from '@/components/ui/label';
+import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
+
 
 const recentTrips = [
     {
@@ -32,12 +39,23 @@ const recentTrips = [
     },
 ]
 
+const timeSlots = [
+  '09:00 AM', '10:00 AM', '11:00 AM', '12:00 PM', '02:00 PM', '03:00 PM', '04:00 PM'
+]
+
+
 export default function BookRidePage() {
     const router = useRouter();
     const { toast } = useToast();
     const [destination, setDestination] = useState('');
     const [searchResults, setSearchResults] = useState<any[]>([]);
     const [isSearching, setIsSearching] = useState(false);
+    
+    // State for scheduling
+    const [isScheduleDialogOpen, setIsScheduleDialogOpen] = useState(false);
+    const [scheduledDate, setScheduledDate] = useState<Date | undefined>(new Date());
+    const [scheduledTime, setScheduledTime] = useState('');
+
 
     const containerVariants = {
         hidden: { opacity: 0 },
@@ -73,6 +91,23 @@ export default function BookRidePage() {
         setDestination(destinationName);
         setSearchResults([]);
         router.push(`/user/book/map?search=${encodeURIComponent(place.display_name)}`);
+    }
+    
+    const handleConfirmSchedule = () => {
+        if (!scheduledDate || !scheduledTime) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Please select a date and time.' });
+            return;
+        }
+        
+        toast({
+            title: 'Ride Scheduled!',
+            description: `Your ride has been scheduled for ${format(scheduledDate, 'PPP')} at ${scheduledTime}.`,
+            className: 'bg-green-600 text-white border-green-600'
+        });
+        
+        setIsScheduleDialogOpen(false);
+        setScheduledDate(new Date());
+        setScheduledTime('');
     }
 
     return (
@@ -120,9 +155,64 @@ export default function BookRidePage() {
                                     onKeyDown={(e) => e.key === 'Enter' && searchResults.length > 0 && handleSelectDestination(searchResults[0])}
                                 />
                             </div>
-                            <Button variant="outline" onClick={() => toast({ title: 'Coming Soon!', description: 'The ability to schedule rides for a later time is under development.' })}>
-                                <Calendar className="w-4 h-4 mr-2"/> Later
-                            </Button>
+                            <Dialog open={isScheduleDialogOpen} onOpenChange={setIsScheduleDialogOpen}>
+                                <DialogTrigger asChild>
+                                    <Button variant="outline">
+                                        <CalendarIcon className="w-4 h-4 mr-2"/> Later
+                                    </Button>
+                                </DialogTrigger>
+                                <DialogContent>
+                                    <DialogHeader>
+                                        <DialogTitle>Schedule a Ride</DialogTitle>
+                                        <DialogDescription>Choose a future date and time for your pickup.</DialogDescription>
+                                    </DialogHeader>
+                                    <div className="space-y-6 py-4">
+                                        <div className="space-y-2">
+                                            <Label>Select Date</Label>
+                                            <Popover>
+                                                <PopoverTrigger asChild>
+                                                <Button
+                                                    variant={"outline"}
+                                                    className={cn(
+                                                        "w-full justify-start text-left font-normal",
+                                                        !scheduledDate && "text-muted-foreground"
+                                                    )}
+                                                >
+                                                    <CalendarIcon className="mr-2 h-4 w-4" />
+                                                    {scheduledDate ? format(scheduledDate, "PPP") : <span>Pick a date</span>}
+                                                </Button>
+                                                </PopoverTrigger>
+                                                <PopoverContent className="w-auto p-0">
+                                                <Calendar
+                                                    mode="single"
+                                                    selected={scheduledDate}
+                                                    onSelect={setScheduledDate}
+                                                    initialFocus
+                                                    disabled={(d) => d < new Date(new Date().setDate(new Date().getDate()))}
+                                                />
+                                                </PopoverContent>
+                                            </Popover>
+                                        </div>
+                                         <div className="space-y-2">
+                                            <Label>Select Time Slot</Label>
+                                            <div className="grid grid-cols-3 gap-2">
+                                                {timeSlots.map(slot => (
+                                                    <Button 
+                                                        key={slot} 
+                                                        variant={scheduledTime === slot ? 'default' : 'outline'}
+                                                        onClick={() => setScheduledTime(slot)}
+                                                    >
+                                                        {slot}
+                                                    </Button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <DialogFooter>
+                                        <Button onClick={handleConfirmSchedule} disabled={!scheduledDate || !scheduledTime}>Schedule Ride</Button>
+                                    </DialogFooter>
+                                </DialogContent>
+                            </Dialog>
                         </CardContent>
                     </Card>
 
