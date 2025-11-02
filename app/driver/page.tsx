@@ -6,7 +6,7 @@ import Image from 'next/image'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
-import { Star, History, IndianRupee, Power, KeyRound, Clock, MapPin, Route, Navigation, CheckCircle, Sparkles, Eye, Phone } from 'lucide-react'
+import { Star, History, IndianRupee, Power, KeyRound, Clock, MapPin, Route, Navigation, CheckCircle, Sparkles, Eye } from 'lucide-react'
 import {
   AlertDialog,
   AlertDialogContent,
@@ -14,6 +14,9 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
+  AlertDialogTrigger,
+  AlertDialogCancel,
+  AlertDialogAction,
 } from "@/components/ui/alert-dialog"
 import { useToast } from '@/hooks/use-toast'
 import {
@@ -46,6 +49,7 @@ import { Badge } from '@/components/ui/badge'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Phone } from 'lucide-react'
 
 const LiveMap = dynamic(() => import('@/components/live-map'), {
     ssr: false,
@@ -409,6 +413,19 @@ export default function DriverDashboardPage() {
           toast({ variant: 'destructive', title: 'Invalid PIN' });
       }
   }
+
+  const handleCancelRideByDriver = async () => {
+      if (!activeRide || !db) return;
+      const rideRef = doc(db, 'rides', activeRide.id);
+      try {
+          await updateDoc(rideRef, { status: 'cancelled_by_driver' });
+          toast({ variant: 'destructive', title: 'Ride Cancelled' });
+          resetAfterRide();
+      } catch (error) {
+          console.error("Error cancelling ride:", error);
+          toast({ variant: 'destructive', title: 'Cancellation failed' });
+      }
+  }
   
   const driverLocation = partnerData?.currentLocation
     ? { lat: partnerData.currentLocation.latitude, lon: partnerData.currentLocation.longitude }
@@ -455,13 +472,28 @@ export default function DriverDashboardPage() {
                      </a>
                  </Button>
             </CardContent>
-            <CardFooter>
+            <CardFooter className="flex-col gap-2">
                 {activeRide.status === 'accepted' && (
                     <Button className="w-full" size="lg" onClick={() => handleUpdateRideStatus('arrived')}>Arrived at Pickup</Button>
                 )}
                 {activeRide.status === 'in-progress' && (
                     <Button className="w-full bg-destructive hover:bg-destructive/80" size="lg" onClick={() => handleUpdateRideStatus('payment_pending')}>End Trip</Button>
                 )}
+                <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                        <Button variant="link" size="sm" className="w-full text-muted-foreground">Cancel Ride</Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                            <AlertDialogDescription>This will cancel the current ride. This should only be done in an emergency.</AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                            <AlertDialogCancel>Go Back</AlertDialogCancel>
+                            <AlertDialogAction onClick={handleCancelRideByDriver} className="bg-destructive hover:bg-destructive/90">Yes, Cancel</AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
             </CardFooter>
         </Card>
     );
@@ -582,6 +614,7 @@ export default function DriverDashboardPage() {
                        <p><span className="font-semibold">TO:</span> {jobRequest.destinationAddress}</p>
                    </div>
                </div>
+               
                <div className="h-40 w-full rounded-md overflow-hidden border">
                  <LiveMap
                    driverLocation={driverLocation}
@@ -644,3 +677,51 @@ export default function DriverDashboardPage() {
     
 
     
+
+```
+- src/hooks/use-firebase.ts:
+```ts
+
+    
+```
+
+The following Python libraries are available:
+
+`default_api`:
+```python
+def RequestFirebaseProjectWithConfig(
+) -> dict:
+  """
+    Creates a new Firebase Project or retrieves the current project and provides a Firebase app
+    config object.
+
+    Call this function whenever the user requests Firebase or services that Firebase offers.
+    Includes adding, enabling, connecting with, or integrating with Firebase and Firebase services.
+    When this function is called, you must always begin by giving the user a detailed outline of
+    your plan and what you are going to do on their behalf.
+
+    For example, call this function for user requests such as "Create a Firebase Project", "Get
+    a Firebase config object", "Create a Firebase App Config", "Show me my Firebase config object",
+    "Can you show me my Firebase configuration?, "What value do I use in the initializeApp()
+    function?", "Add Firebase Auth", "Add Firebase Remote Config", or "Add analytics".
+
+    Calling this function does not add, connect to, or integrate services, nor deploy Firebase
+    resources on the user's behalf. As such, you must not tell users that they are connected to a
+    service, that an automated deployment will occur, or that the integration is set up or complete.
+    You must tell users that as a next step, they will need to go to the Firebase console to
+    continue setting up, adding, or enabling any services they requested.
+
+    This function does not generate code for additional services, intergrations, or features that
+    the user did not ask for.
+
+    Important! The Firebase App Configuration object is a public configuration, meaning
+    it is safe and secure to provide the user with this object as the security and access is
+    enforced by the Security Rules or Firebase App Check. Once written, do not modify the
+    firebaseConfig object because it is fetched from the server and does not require modifications
+    under any circumstances.
+    
+
+  Args:
+  """
+
+```
