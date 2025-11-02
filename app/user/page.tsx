@@ -1,7 +1,7 @@
 
 'use client'
 
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button, buttonVariants } from '@/components/ui/button'
 import {
@@ -58,6 +58,8 @@ export default function ServicePortalPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [isSosModalOpen, setIsSosModalOpen] = useState(false);
   const [services, setServices] = useState<any[]>([]);
+  const [isListening, setIsListening] = useState(false);
+  const recognitionRef = useRef<SpeechRecognition | null>(null);
 
   const headingText = "How can we help you today?".split("");
 
@@ -65,8 +67,8 @@ export default function ServicePortalPage() {
     { id: 'ride', href: '/user/book', icon: Car, title: 'Ride', description: 'On-demand transport to clinics', tag: '5–10m', tagIcon: Clock, iconBg: 'bg-emerald-400/15', iconRing: 'ring-emerald-400/30', iconColor: 'text-emerald-500', tagBg: 'bg-emerald-400/10', tagBorder: 'border-emerald-400/30', tagColor: 'text-emerald-600', label: 'ride transport car taxi clinic mobility hospital cab' },
     { id: 'resq', href: '/user/resq', icon: Wrench, title: 'ResQ', description: 'On-site assistance for minor issues', tag: 'On-Demand', tagIcon: Wrench, iconBg: 'bg-amber-400/15', iconRing: 'ring-amber-400/30', iconColor: 'text-amber-500', tagBg: 'bg-amber-400/10', tagBorder: 'border-amber-400/30', tagColor: 'text-amber-600', label: 'resq on-site assistance home help nurse minor issues support' },
     { id: 'sos', onClick: () => setIsSosModalOpen(true), icon: Ambulance, title: 'Emergency SOS', description: 'Connect to 24/7 emergency line', tag: '24/7', tagIcon: AlertTriangle, iconBg: 'bg-red-500/20', iconRing: 'ring-red-500/40', iconColor: 'text-red-500', tagBg: 'bg-red-400/10', tagBorder: 'border-red-400/40', tagColor: 'text-red-600', label: 'sos emergency ambulance urgent help police fire medical' },
-    { id: 'appointment', href: '/user/appointments', icon: Calendar, title: 'Book Appointment', description: 'Clinics, specialists, telehealth', tag: 'Next: 1–2d', tagIcon: Clock, iconBg: 'bg-sky-400/15', iconRing: 'ring-sky-400/30', iconColor: 'text-sky-500', tagBg: 'bg-sky-400/10', tagBorder: 'border-sky-400/30', tagColor: 'text-sky-600', label: 'book appointment doctor specialist telehealth clinic schedule calendar' },
-    { id: 'lab_tests', href: '/user/lab-tests', icon: TestTube, title: 'Lab Tests', description: 'Home sample pickup available', tag: 'Home pickup', tagIcon: Home, iconBg: 'bg-fuchsia-400/15', iconRing: 'ring-fuchsia-400/30', iconColor: 'text-fuchsia-500', tagBg: 'bg-fuchsia-400/10', tagBorder: 'border-fuchsia-400/30', tagColor: 'text-fuchsia-600', label: 'lab tests diagnostics blood test home pickup reports' }
+    { id: 'appointment', href: '/user/appointments', icon: Calendar, title: 'Book Appointment', description: 'Clinics, specialists, telehealth', tag: 'Next: 1–2d', tagIcon: Clock, iconBg: 'bg-sky-400/15', iconRing: 'ring-sky-400/30', iconColor: 'text-sky-500', tagBg: 'bg-sky-400/10', tagBorder: 'border-sky-400/30', tagColor: 'text-sky-200', label: 'book appointment doctor specialist telehealth clinic schedule calendar' },
+    { id: 'lab_tests', href: '/user/lab-tests', icon: TestTube, title: 'Lab Tests', description: 'Home sample pickup available', tag: 'Home pickup', tagIcon: Home, iconBg: 'bg-fuchsia-400/15', iconRing: 'ring-fuchsia-400/30', iconColor: 'text-fuchsia-500', tagBg: 'bg-fuchsia-400/10', tagBorder: 'border-fuchsia-400/30', tagColor: 'text-fuchsia-200', label: 'lab tests diagnostics blood test home pickup reports' }
   ];
   
   useEffect(() => {
@@ -76,16 +78,19 @@ export default function ServicePortalPage() {
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     const query = e.target.value.toLowerCase();
     setSearchQuery(query);
-    if (!query) {
+  };
+  
+  useEffect(() => {
+    if (!searchQuery) {
       setServices(serviceData);
       return;
     }
     const filtered = serviceData.filter(service => 
-      service.label.toLowerCase().includes(query) ||
-      service.title.toLowerCase().includes(query)
+      service.label.toLowerCase().includes(searchQuery) ||
+      service.title.toLowerCase().includes(searchQuery)
     );
     setServices(filtered);
-  };
+  }, [searchQuery]);
   
   const handleServiceClick = (service: any) => {
     if (service.onClick) {
@@ -93,6 +98,44 @@ export default function ServicePortalPage() {
     } else if (service.href) {
       router.push(service.href);
     }
+  };
+
+  const handleVoiceSearch = () => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      toast({
+        variant: 'destructive',
+        title: 'Browser Not Supported',
+        description: 'Voice search is not available on this browser.',
+      });
+      return;
+    }
+
+    if (recognitionRef.current && isListening) {
+      recognitionRef.current.stop();
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognitionRef.current = recognition;
+
+    recognition.onstart = () => setIsListening(true);
+    recognition.onend = () => setIsListening(false);
+    recognition.onerror = (event) => {
+      toast({
+        variant: 'destructive',
+        title: 'Voice Search Error',
+        description: event.error === 'not-allowed' ? 'Microphone permission denied.' : 'An error occurred.',
+      });
+      setIsListening(false);
+    };
+
+    recognition.onresult = (event) => {
+      const transcript = event.results[0][0].transcript;
+      setSearchQuery(transcript);
+    };
+
+    recognition.start();
   };
 
   return (
@@ -135,11 +178,11 @@ export default function ServicePortalPage() {
                   onChange={handleSearch}
                 />
                 <div className="absolute inset-y-0 right-0 mr-1.5 my-1.5 flex items-center gap-1.5">
-                  <Button variant="ghost" size="icon" className="h-8 w-8" title="Voice search" onClick={() => toast({ title: 'Coming Soon!', description: 'Voice search will be available in a future update.' })}>
+                  <Button variant="ghost" size="icon" className={cn("h-8 w-8", isListening && "bg-destructive/20 text-destructive animate-pulse")} title="Voice search" onClick={handleVoiceSearch}>
                     <Mic className="h-4 w-4" />
                   </Button>
                   {searchQuery && (
-                    <Button variant="ghost" size="icon" className="h-8 w-8" title="Clear search" onClick={() => { setSearchQuery(''); setServices(serviceData);}}>
+                    <Button variant="ghost" size="icon" className="h-8 w-8" title="Clear search" onClick={() => { setSearchQuery('');}}>
                       <X className="h-4 w-4" />
                     </Button>
                   )}
