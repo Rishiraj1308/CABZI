@@ -11,6 +11,14 @@ import { Toaster } from '@/components/ui/toaster'
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -249,6 +257,29 @@ function DriverLayoutContent({ children }: { children: React.ReactNode }) {
   const { theme, setTheme } = useTheme();
   const { auth, db } = useFirebase();
   const { partnerData, isLoading } = useDriver();
+  
+  const [isOnline, setIsOnline] = useState(partnerData?.isOnline || false);
+
+  useEffect(() => {
+    setIsOnline(partnerData?.isOnline || false);
+  }, [partnerData?.isOnline]);
+
+  const handleAvailabilityChange = async (checked: boolean) => {
+    if (!partnerData || !db) return;
+    setIsOnline(checked);
+    const partnerRef = doc(db, 'partners', partnerData.id);
+    try {
+      await updateDoc(partnerRef, { isOnline: checked, status: checked ? 'online' : 'offline' });
+      toast({
+        title: checked ? "You are now ONLINE" : "You are OFFLINE",
+        description: checked ? "You will start receiving ride requests." : "You won't receive new requests.",
+      });
+    } catch (error) {
+      toast({ variant: 'destructive', title: 'Error', description: 'Could not update your status.' });
+      setIsOnline(!checked); // Revert on failure
+    }
+  };
+
 
   const handleLogout = useCallback(() => {
     if (auth) auth.signOut();
@@ -339,84 +370,100 @@ function DriverLayoutContent({ children }: { children: React.ReactNode }) {
   );
 
   return (
-    <div className={cn("flex min-h-screen w-full flex-col", partnerData?.isCabziPinkPartner ? 'pink-theme' : 'default-theme')}>
-      <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-background/95 px-4 backdrop-blur-sm sm:px-6">
-        <Sheet>
-            <SheetTrigger asChild>
-                <Button variant="outline" size="icon" className="shrink-0 md:hidden">
-                    <PanelLeft className="h-5 w-5" />
-                    <span className="sr-only">Toggle navigation menu</span>
-                </Button>
-            </SheetTrigger>
-            <SheetContent side="left" className="p-0">
-                <SheetHeader className="p-6">
-                    <SheetTitle><LogoArea isPinkPartner={partnerData?.isCabziPinkPartner || false} /></SheetTitle>
-                    <SheetDescription className="sr-only">Main menu for driver</SheetDescription>
-                </SheetHeader>
-                <div className="flex-1 overflow-auto py-2">
-                    <DriverNav isPinkPartner={partnerData?.isCabziPinkPartner || false} />
-                </div>
-            </SheetContent>
-        </Sheet>
-        
-        <div className="hidden md:flex">
-          <LogoArea isPinkPartner={partnerData?.isCabziPinkPartner || false} />
-        </div>
-
-        <div className="flex w-full items-center justify-end gap-4">
-          <div className="hidden md:flex flex-1 pl-8">
-            <LocationDisplay />
+    <div className={cn("flex min-h-screen w-full", partnerData?.isCabziPinkPartner ? 'pink-theme' : 'default-theme')}>
+      <aside className="hidden w-64 flex-col border-r bg-background/95 md:flex">
+         <div className="flex h-16 items-center border-b px-6">
+             <LogoArea isPinkPartner={partnerData?.isCabziPinkPartner || false} />
+         </div>
+         <div className="flex-1 overflow-auto py-2">
+             <DriverNav isPinkPartner={partnerData?.isCabziPinkPartner || false} />
           </div>
-          <ThemeToggle />
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="secondary" size="icon" className="rounded-full">
-                <Avatar className="h-8 w-8">
-                  <AvatarImage src="https://i.pravatar.cc/40?u=driver" alt={partnerData?.name} data-ai-hint="driver portrait" />
-                  <AvatarFallback>{getInitials(partnerData?.name || '').toUpperCase()}</AvatarFallback>
-                </Avatar>
-                <span className="sr-only">Toggle user menu</span>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuLabel>My Account</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onSelect={() => router.push('/driver/profile')}>Profile</DropdownMenuItem>
-              <DropdownMenuItem onSelect={() => router.push('/driver/support')}>Support</DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:text-destructive">
-                    Logout
-                  </DropdownMenuItem>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Are you sure you want to log out?</AlertDialogTitle>
-                    <AlertDialogDescription>You will need to sign in again to access your dashboard.</AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction onClick={handleLogout} className="bg-destructive hover:bg-destructive/90">Logout</AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      </header>
+      </aside>
+      <div className="flex flex-col flex-1">
+         <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-background/95 px-4 backdrop-blur-sm sm:px-6">
+            <Sheet>
+                <SheetTrigger asChild>
+                    <Button variant="outline" size="icon" className="shrink-0 md:hidden">
+                        <PanelLeft className="h-5 w-5" />
+                        <span className="sr-only">Toggle navigation menu</span>
+                    </Button>
+                </SheetTrigger>
+                <SheetContent side="left" className="p-0">
+                    <SheetHeader className="p-6">
+                        <SheetTitle><LogoArea isPinkPartner={partnerData?.isCabziPinkPartner || false} /></SheetTitle>
+                        <SheetDescription className="sr-only">Main menu for driver</SheetDescription>
+                    </SheetHeader>
+                    <div className="flex-1 overflow-auto py-2">
+                        <DriverNav isPinkPartner={partnerData?.isCabziPinkPartner || false} />
+                    </div>
+                </SheetContent>
+            </Sheet>
+            
+            <div className="hidden md:flex">
+                <LocationDisplay />
+            </div>
 
-        <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
-            <MotionDiv 
-            key={pathname}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, ease: 'easeInOut' }}
-            className="h-full relative"
-            >
-            {children}
-            </MotionDiv>
-        </main>
+            <div className="ml-auto flex items-center gap-4">
+                <div className="flex items-center space-x-2">
+                      <Switch id="online-status" checked={isOnline} onCheckedChange={handleAvailabilityChange} />
+                      <Label htmlFor="online-status" className={cn("font-semibold", isOnline ? "text-green-600" : "text-muted-foreground")}>
+                          {isOnline ? "ONLINE" : "OFFLINE"}
+                      </Label>
+                  </div>
+                <ThemeToggle />
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                    <Button variant="secondary" size="icon" className="rounded-full">
+                        <Avatar className="h-8 w-8">
+                        <AvatarImage src={partnerData?.photoUrl || `https://i.pravatar.cc/40?u=${partnerData?.id}`} alt={partnerData?.name} data-ai-hint="driver portrait" />
+                        <AvatarFallback>{getInitials(partnerData?.name || '').toUpperCase()}</AvatarFallback>
+                        </Avatar>
+                        <span className="sr-only">Toggle user menu</span>
+                    </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                    <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onSelect={() => router.push('/driver/profile')}>Profile</DropdownMenuItem>
+                    <DropdownMenuItem onSelect={() => router.push('/driver/support')}>Support</DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                            <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:text-destructive">
+                                Logout
+                            </DropdownMenuItem>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                            <AlertDialogHeader>
+                                <AlertDialogTitle>Are you sure you want to log out?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                You will need to sign in again to access your dashboard.
+                                </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={handleLogout} className="bg-destructive hover:bg-destructive/90">
+                                Logout
+                                </AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
+                    </DropdownMenuContent>
+                </DropdownMenu>
+            </div>
+          </header>
+          <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6 overflow-auto">
+              <MotionDiv 
+                key={pathname}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, ease: 'easeInOut' }}
+                className="h-full relative"
+              >
+                {children}
+              </MotionDiv>
+          </main>
+      </div>
     </div>
   );
 }
