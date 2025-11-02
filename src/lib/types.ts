@@ -31,6 +31,7 @@ export interface PartnerData {
 export interface RideData {
     id: string;
     riderName?: string;
+    riderPhone?: string;
     pickup: { address: string; location: { latitude: number; longitude: number; } };
     destination: { address: string; location: { latitude: number; longitude: number; } };
     status: "searching" | "accepted" | "arrived" | "in-progress" | "completed" | "cancelled_by_driver" | "cancelled_by_rider" | "payment_pending";
@@ -41,6 +42,7 @@ export interface RideData {
     fare?: number;
     distance?: number;
     routeGeometry?: any;
+    waitingCharges?: number;
 }
 
 export interface AmbulanceCase {
@@ -88,4 +90,5 @@ export interface JobRequest extends Omit<RideData, 'pickup' | 'destination'> {
     dropDistance?: number;
     dropEta?: number;
 }
+
 

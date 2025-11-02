@@ -2,13 +2,11 @@
 'use client'
 
 import React, { useState, useEffect, useRef, useCallback } from 'react'
-import { MapContainer, TileLayer, Marker } from "react-leaflet";
-import "leaflet/dist/leaflet.css";
 import Image from 'next/image'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
-import { Star, History, IndianRupee, Power, KeyRound, Clock, MapPin, Route, Navigation, CheckCircle, Sparkles, Eye, TrendingUp } from 'lucide-react'
+import { Star, History, IndianRupee, Power, KeyRound, Clock, MapPin, Route, Navigation, CheckCircle, Sparkles, Eye, TrendingUp, Phone, MessageSquare } from 'lucide-react'
 import {
   AlertDialog,
   AlertDialogContent,
@@ -90,6 +88,11 @@ export default function DriverDashboardPage() {
   const drivingSoundRef = useRef<HTMLAudioElement | null>(null)
   const hornSoundRef = useRef<HTMLAudioElement | null>(null)
   const [isMapVisible, setIsMapVisible] = useState(false);
+  
+  // New state for waiting timer
+  const [waitingTime, setWaitingTime] = useState(60);
+  const [waitingCharges, setWaitingCharges] = useState(0);
+  const waitingTimerRef = useRef<NodeJS.Timeout | null>(null);
 
 
   useEffect(() => {
@@ -153,19 +156,19 @@ export default function DriverDashboardPage() {
         const data = doc.data() as any;
         const pickupLoc = data?.pickup?.location;
         const dropLoc = data?.destination?.location;
-        let pickupDistance = null;
-        let pickupEta = null;
+        let distance = null;
+        let eta = null;
         let dropDistance = null;
         let dropEta = null;
       
         if (pickupLoc) {
-          pickupDistance = calcDistance(
+          distance = calcDistance(
             driverLoc.latitude,
             driverLoc.longitude,
             pickupLoc.latitude,
             pickupLoc.longitude
           );
-          pickupEta = Math.max(2, Math.round((pickupDistance / 0.4))); // approx 25 km/h
+          eta = Math.max(2, Math.round((distance / 0.4))); // approx 25 km/h
         }
       
         if (pickupLoc && dropLoc) {
@@ -183,8 +186,8 @@ export default function DriverDashboardPage() {
           ...data,
           pickupAddress: data?.pickup?.address || "Not available",
           destinationAddress: data?.destination?.address || "Not available",
-          pickupDistance,
-          pickupEta,
+          distance,
+          eta,
           dropDistance,
           dropEta,
         } as JobRequest;
@@ -280,8 +283,8 @@ export default function DriverDashboardPage() {
             phone: partnerData.phone || '',
           },
           acceptedAt: serverTimestamp(),
-          driverEta: jobRequest.pickupEta,
-          driverDistance: jobRequest.pickupDistance,
+          driverEta: jobRequest.eta,
+          driverDistance: jobRequest.distance,
         };
   
         Object.keys(updateData).forEach((key) => {
@@ -313,12 +316,40 @@ export default function DriverDashboardPage() {
       setJobRequest(null);
     }
   };  
+  
+   const startWaitingTimer = () => {
+        if (waitingTimerRef.current) clearInterval(waitingTimerRef.current);
+
+        setWaitingTime(60); // Reset timer
+        setWaitingCharges(0);
+
+        waitingTimerRef.current = setInterval(() => {
+            setWaitingTime(prev => {
+                if (prev <= 1) {
+                    // After 60 seconds, start adding charges
+                    setWaitingCharges(c => c + 2);
+                    return 0; // Keep timer at 0
+                }
+                return prev - 1;
+            });
+        }, 1000);
+    };
 
   const handleUpdateRideStatus = async (status: 'arrived' | 'in-progress' | 'payment_pending') => {
     if (!activeRide || !db) return;
     const rideRef = doc(db, 'rides', activeRide.id);
     try {
         await updateDoc(rideRef, { status });
+        
+        if (status === 'arrived') {
+            startWaitingTimer();
+        }
+
+        if (status === 'in-progress' && waitingTimerRef.current) {
+            clearInterval(waitingTimerRef.current);
+            await updateDoc(rideRef, { waitingCharges });
+        }
+        
         // Optimistically update local state to reflect the change immediately
         setActiveRide(prev => prev ? ({ ...prev, status } as RideData) : null);
         toast({
@@ -397,9 +428,37 @@ export default function DriverDashboardPage() {
                     <CardTitle className="capitalize">{activeRide.status.replace('_', ' ')}</CardTitle>
                     <CardDescription>Rider: {activeRide.riderName}</CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-4">
+                 <CardContent className="space-y-4">
+                     {activeRide.status === 'accepted' && (
+                        <div className="p-4 rounded-lg bg-muted flex items-center gap-3">
+                            <Avatar className="w-12 h-12"><AvatarImage src="https://i.pravatar.cc/100?u=rider" alt={rideData.riderName} data-ai-hint="rider portrait" /><AvatarFallback>{rideData.riderName?.substring(0,2)}</AvatarFallback></Avatar>
+                            <div className="flex-1">
+                                <p className="font-bold">{rideData.riderName}</p>
+                                <p className="font-bold text-lg text-primary">OTP: {rideData.otp}</p>
+                            </div>
+                            <div className="flex flex-col gap-2">
+                                <Button size="icon" variant="outline" asChild><a href={`tel:${rideData.riderPhone}`}><Phone/></a></Button>
+                                <Button size="icon" variant="outline"><MessageSquare/></Button>
+                            </div>
+                        </div>
+                     )}
+
                      {activeRide.status === 'arrived' && (
-                        <div className="space-y-2">
+                        <div className="space-y-4">
+                             {waitingTime > 0 ? (
+                                <div className="text-center p-3 border-2 border-dashed border-primary rounded-lg">
+                                    <p className="font-bold text-primary animate-pulse">Waiting for Rider...</p>
+                                    <p className="text-4xl font-mono font-bold">{waitingTime}</p>
+                                    <p className="text-xs text-muted-foreground">Free waiting time remaining</p>
+                                </div>
+                            ) : (
+                                <div className="text-center p-3 border-2 border-dashed border-destructive rounded-lg">
+                                     <p className="font-bold text-destructive">Waiting Charges Apply</p>
+                                     <p className="text-4xl font-mono font-bold">₹{waitingCharges}</p>
+                                     <p className="text-xs text-muted-foreground">₹2/min will be added to the bill</p>
+                                </div>
+                            )}
+
                            <Label htmlFor="otp">Enter Rider's OTP</Label>
                            <div className="flex gap-2">
                               <Input id="otp" value={enteredOtp} onChange={(e) => setEnteredOtp(e.target.value)} placeholder="4-Digit OTP" maxLength={4}/>
@@ -407,6 +466,7 @@ export default function DriverDashboardPage() {
                            </div>
                         </div>
                      )}
+
                      <Button asChild size="lg" className="w-full bg-blue-600 hover:bg-blue-700 text-white">
                          <a href={navigateUrl} target="_blank" rel="noopener noreferrer">
                              <Navigation className="mr-2 h-5 w-5"/>
@@ -426,8 +486,8 @@ export default function DriverDashboardPage() {
         );
     }
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-        <div className={cn("space-y-6", activeRide ? "hidden lg:block" : "lg:col-span-2")}>
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start h-full">
+        <div className={cn("space-y-6", activeRide ? "lg:col-span-1" : "lg:col-span-2")}>
              <AnimatePresence>
                 {!isMapVisible && !activeRide && (
                     <motion.div
@@ -501,52 +561,70 @@ export default function DriverDashboardPage() {
                         <CardTitle className="flex items-center gap-2"><Sparkles className="text-yellow-300" /> AI Earnings Coach</CardTitle>
                         </CardHeader>
                         <CardContent>
-                        <p>Focus on these areas for higher earnings:</p>
-                        <div className="mt-4 text-sm space-y-2 text-primary-foreground/90">
-                            <span className="flex items-center gap-1.5"><MapPin className="w-3 h-3"/> Cyber Hub</span>
-                            <span className="flex items-center gap-1.5"><Clock className="w-3 h-3"/> 5 PM - 8 PM</span>
-                            <span className="flex items-center gap-1.5"><TrendingUp className="w-3 h-3"/> +30% potential</span>
-                        </div>
-                    </CardContent>
-                </Card>
+                        <p>Focus on the Cyber Hub area between 5 PM - 8 PM. High demand is expected, and you could earn up to 30% more.</p>
+                        </CardContent>
+                    </Card>
                     </>
             )}
         </div>
 
         <AlertDialog open={!!jobRequest}>
           <AlertDialogContent>
-              {jobRequest ? (
-                  <>
-                      <AlertDialogHeader>
-                          <AlertDialogTitle>New Ride Request!</AlertDialogTitle>
-                          <AlertDialogDescription>A new ride is available. Please review and respond quickly.</AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <div className="absolute top-4 right-4 w-12 h-12 flex items-center justify-center rounded-full border-4 border-primary text-primary font-bold text-2xl">
-                          {requestTimeout}
-                      </div>
-                      <div className="space-y-4">
-                          <p>FROM: {jobRequest.pickupAddress}</p>
-                          <p>TO: {jobRequest.destinationAddress}</p>
-                          <div className="grid grid-cols-2 gap-4">
-                            <p>Distance: {jobRequest.distance?.toFixed(1)} km</p>
-                            <p>ETA: {Math.ceil(jobRequest.eta || 0)} min</p>
-                            <p>Fare: ₹{jobRequest.fare}</p>
-                          </div>
-                          <div className="h-40 w-full rounded-md overflow-hidden border">
-                              <LiveMap
-                                  driverLocation={driverLocation}
-                                  riderLocation={jobRequest.pickup?.location ? { lat: jobRequest.pickup.location.latitude, lon: jobRequest.pickup.location.longitude } : undefined}
-                              />
-                          </div>
-                      </div>
-                      <AlertDialogFooter>
-                          <Button variant="destructive" onClick={() => handleDeclineJob()}>Decline</Button>
-                          <Button onClick={handleAcceptJob}>Accept Ride</Button>
-                      </AlertDialogFooter>
-                  </>
-              ) : (
-                  <div className="p-8 text-center">Loading request...</div>
-              )}
+             {jobRequest ? (
+             <>
+              <AlertDialogHeader>
+                  <AlertDialogTitle>New Ride Request!</AlertDialogTitle>
+                  <AlertDialogDescription>A new ride is available. Please review and respond quickly.</AlertDialogDescription>
+              </AlertDialogHeader>
+              <div className="absolute top-4 right-4 w-12 h-12 flex items-center justify-center rounded-full border-4 border-primary text-primary font-bold text-2xl">
+                {requestTimeout}
+              </div>
+              <div className="flex items-center gap-4">
+                 <Avatar className="w-12 h-12"><AvatarImage src={'https://placehold.co/100x100.png'} alt={jobRequest.riderName} data-ai-hint="rider portrait" /><AvatarFallback>{jobRequest?.riderName?.[0] || 'R'}</AvatarFallback></Avatar>
+                <div>
+                  <p className="font-bold">{jobRequest?.riderName}</p>
+                  <p className="text-sm text-muted-foreground capitalize">{jobRequest?.riderGender}</p>
+                </div>
+                <Badge variant="outline">{jobRequest.rideType}</Badge>
+              </div>
+               <div className="space-y-2 text-sm">
+                  <div className="flex items-start gap-2">
+                      <MapPin className="w-4 h-4 mt-1 text-green-500 flex-shrink-0" />
+                      <p><span className="font-semibold">FROM:</span> {jobRequest.pickupAddress}</p>
+                  </div>
+                  <div className="flex items-start gap-2">
+                      <Route className="w-4 h-4 mt-1 text-red-500 flex-shrink-0" />
+                      <p><span className="font-semibold">TO:</span> {jobRequest.destinationAddress}</p>
+                  </div>
+              </div>
+              <div className="h-40 w-full rounded-md overflow-hidden border">
+                <LiveMap
+                  driverLocation={driverLocation}
+                  riderLocation={jobRequest.pickup?.location ? { lat: jobRequest.pickup.location.latitude, lon: jobRequest.pickup.location.longitude } : undefined}
+                />
+              </div>
+              <div className="grid grid-cols-3 gap-2 text-center mt-3">
+                <div className="p-2 bg-muted rounded-md">
+                    <p className="text-xs text-muted-foreground">Est. Fare</p>
+                    <p className="font-bold text-lg text-green-600">₹{jobRequest.fare}</p>
+                </div>
+                <div className="p-2 bg-muted rounded-md">
+                    <p className="text-xs text-muted-foreground">To Pickup</p>
+                    <p className="font-bold text-lg">{jobRequest.distance ? `${jobRequest.distance.toFixed(1)} km` : '~km'}</p>
+                </div>
+                <div className="p-2 bg-muted rounded-md">
+                    <p className="text-xs text-muted-foreground">Est. Arrival</p>
+                    <p className="font-bold text-lg">{jobRequest.eta ? `~${Math.ceil(jobRequest.eta)} min` : '~min'}</p>
+                </div>
+              </div>
+              <AlertDialogFooter className="grid grid-cols-2 gap-2">
+                <Button variant="destructive" onClick={() => handleDeclineJob()}>Decline</Button>
+                <Button onClick={handleAcceptJob}>Accept Ride</Button>
+              </AlertDialogFooter>
+             </>
+            ) : (
+                <div className="p-8 text-center">Loading request...</div>
+            )}
           </AlertDialogContent>
       </AlertDialog>
 
