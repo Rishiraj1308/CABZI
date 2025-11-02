@@ -204,6 +204,52 @@ function ThemeToggle() {
     )
 }
 
+function LocationDisplay() {
+    const { partnerData } = useDriver();
+    const [locationAddress, setLocationAddress] = useState('Locating...');
+
+    useEffect(() => {
+        let isMounted = true;
+        const getAddress = async (lat: number, lon: number) => {
+            try {
+                const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=14`);
+                if (!response.ok || !isMounted) return;
+                const data = await response.json();
+                const address = data.address;
+                const primaryLocation = address.suburb || address.neighbourhood || address.city || address.town || address.village;
+                const secondaryLocation = address.city || address.state;
+
+                if (isMounted) {
+                    if (primaryLocation && secondaryLocation && primaryLocation !== secondaryLocation) {
+                        setLocationAddress(`${primaryLocation}, ${secondaryLocation}`);
+                    } else if (primaryLocation) {
+                        setLocationAddress(primaryLocation);
+                    } else {
+                        setLocationAddress(data.display_name.split(',').slice(0, 2).join(', '));
+                    }
+                }
+            } catch (error) {
+                if (isMounted) setLocationAddress('Location details unavailable');
+            }
+        };
+
+        if (partnerData?.currentLocation) {
+            getAddress(partnerData.currentLocation.latitude, partnerData.currentLocation.longitude);
+        } else {
+            setLocationAddress('Location Unknown');
+        }
+
+        return () => { isMounted = false; };
+    }, [partnerData?.currentLocation]);
+
+    return (
+        <div className="flex items-center gap-2">
+            <MapPin className="w-4 h-4 text-muted-foreground"/>
+            <span className="text-sm font-medium text-muted-foreground truncate">{locationAddress}</span>
+        </div>
+    );
+}
+
 function DriverLayoutContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -212,29 +258,6 @@ function DriverLayoutContent({ children }: { children: React.ReactNode }) {
   const { auth, db } = useFirebase();
   const { partnerData, isLoading } = useDriver();
   
-  const [isOnline, setIsOnline] = useState(partnerData?.isOnline || false);
-
-  useEffect(() => {
-    setIsOnline(partnerData?.isOnline || false);
-  }, [partnerData?.isOnline]);
-
-  const handleAvailabilityChange = async (checked: boolean) => {
-    if (!partnerData || !db) return;
-    setIsOnline(checked);
-    const partnerRef = doc(db, 'partners', partnerData.id);
-    try {
-      await updateDoc(partnerRef, { isOnline: checked, status: checked ? 'online' : 'offline' });
-      toast({
-        title: checked ? "You are now ONLINE" : "You are OFFLINE",
-        description: checked ? "You will start receiving ride requests." : "You won't receive new requests.",
-      });
-    } catch (error) {
-      toast({ variant: 'destructive', title: 'Error', description: 'Could not update your status.' });
-      setIsOnline(!checked); // Revert on failure
-    }
-  };
-
-
   const handleLogout = useCallback(() => {
     if (auth) auth.signOut();
     const sessionString = localStorage.getItem('curocity-session');
@@ -352,14 +375,8 @@ function DriverLayoutContent({ children }: { children: React.ReactNode }) {
                     </div>
                 </SheetContent>
             </Sheet>
-
+            <LocationDisplay />
             <div className="ml-auto flex items-center gap-4">
-                <div className="flex items-center space-x-2">
-                      <Switch id="online-status" checked={isOnline} onCheckedChange={handleAvailabilityChange} />
-                      <Label htmlFor="online-status" className={cn("font-semibold", isOnline ? "text-green-600" : "text-muted-foreground")}>
-                          {isOnline ? "ONLINE" : "OFFLINE"}
-                      </Label>
-                  </div>
                 <ThemeToggle />
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>

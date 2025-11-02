@@ -69,52 +69,6 @@ const StatCard = ({ title, value, icon: Icon, isLoading, onValueClick }: { title
     </Card>
 );
 
-function LocationDisplay() {
-    const { partnerData } = useDriver();
-    const [locationAddress, setLocationAddress] = useState('Locating...');
-
-    useEffect(() => {
-        let isMounted = true;
-        const getAddress = async (lat: number, lon: number) => {
-            try {
-                const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=14`);
-                if (!response.ok || !isMounted) return;
-                const data = await response.json();
-                const address = data.address;
-                const primaryLocation = address.suburb || address.neighbourhood || address.city || address.town || address.village;
-                const secondaryLocation = address.city || address.state;
-
-                if (isMounted) {
-                    if (primaryLocation && secondaryLocation && primaryLocation !== secondaryLocation) {
-                        setLocationAddress(`${primaryLocation}, ${secondaryLocation}`);
-                    } else if (primaryLocation) {
-                        setLocationAddress(primaryLocation);
-                    } else {
-                        setLocationAddress(data.display_name.split(',').slice(0, 2).join(', '));
-                    }
-                }
-            } catch (error) {
-                if (isMounted) setLocationAddress('Location details unavailable');
-            }
-        };
-
-        if (partnerData?.currentLocation) {
-            getAddress(partnerData.currentLocation.latitude, partnerData.currentLocation.longitude);
-        } else {
-            setLocationAddress('Location Unknown');
-        }
-
-        return () => { isMounted = false; };
-    }, [partnerData?.currentLocation]);
-
-    return (
-        <div className="flex items-center gap-2 text-muted-foreground mt-1">
-            <MapPin className="w-4 h-4"/>
-            <span className="text-sm font-medium truncate">{locationAddress}</span>
-        </div>
-    );
-}
-
 export default function DriverDashboardPage() {
   const [jobRequest, setJobRequest] = useState<JobRequest | null>(null);
   const [activeRide, setActiveRide] = useState<RideData | null>(null)
@@ -133,7 +87,7 @@ export default function DriverDashboardPage() {
 
   const drivingSoundRef = useRef<HTMLAudioElement | null>(null)
   const hornSoundRef = useRef<HTMLAudioElement | null>(null)
-  const [isMapVisible, setIsMapVisible] = useState(false);
+  const [isMapVisible, setIsMapVisible] = useState(true);
 
 
   useEffect(() => {
@@ -375,6 +329,20 @@ export default function DriverDashboardPage() {
   const driverLocation = partnerData?.currentLocation
     ? { lat: partnerData.currentLocation.latitude, lon: partnerData.currentLocation.longitude }
     : undefined;
+    
+    const handleAvailabilityChange = async (checked: boolean) => {
+        if (!partnerData || !db) return;
+        const partnerRef = doc(db, 'partners', partnerData.id);
+        try {
+          await updateDoc(partnerRef, { isOnline: checked, status: checked ? 'online' : 'offline' });
+          toast({
+            title: checked ? "You are now ONLINE" : "You are OFFLINE",
+            description: checked ? "You will start receiving ride requests." : "You won't receive new requests.",
+          });
+        } catch (error) {
+          toast({ variant: 'destructive', title: 'Error', description: 'Could not update your status.' });
+        }
+      };
 
     const renderActiveRide = () => {
         if (!activeRide) return null;
@@ -458,27 +426,38 @@ export default function DriverDashboardPage() {
             {activeRide ? renderActiveRide() : (
                 <>
                     <Card className="shadow-lg">
-                        <CardHeader className="flex flex-row justify-between items-start pb-2">
-                             <div>
-                                <CardTitle>Your Dashboard</CardTitle>
-                                <LocationDisplay />
-                            </div>
-                            <Button variant="ghost" size="sm" onClick={() => setIsMapVisible(prev => !prev)}>
-                                <Map className="mr-2 h-4 w-4"/>
-                                Toggle Map
-                            </Button>
+                        <CardHeader>
+                            <CardTitle>Your Dashboard</CardTitle>
                         </CardHeader>
-                        {isOnline ? (
+                        {partnerData?.isOnline ? (
                         <CardContent className="text-center py-12">
+                             <div className="flex items-center justify-center space-x-2 mb-6">
+                                <Switch id="online-status" checked={partnerData?.isOnline} onCheckedChange={handleAvailabilityChange} />
+                                <Label htmlFor="online-status" className={cn("font-semibold text-lg", partnerData?.isOnline ? "text-green-600" : "text-muted-foreground")}>
+                                    {partnerData?.isOnline ? "YOU ARE ONLINE" : "YOU ARE OFFLINE"}
+                                </Label>
+                            </div>
                             <SearchingIndicator partnerType="path" className="w-32 h-32" />
                             <h3 className="text-3xl font-bold mt-4">Waiting for Rides...</h3>
                             <p className="text-muted-foreground">Your location is being shared to get nearby requests.</p>
                         </CardContent>
                         ) : (
                         <CardContent className="text-center py-12">
-                            <CardDescription>You are currently offline. Go online to receive ride requests.</CardDescription>
+                            <div className="flex items-center justify-center space-x-2 mb-4">
+                                <Switch id="online-status-off" checked={partnerData?.isOnline} onCheckedChange={handleAvailabilityChange} />
+                                <Label htmlFor="online-status-off" className="font-semibold text-lg text-muted-foreground">
+                                    YOU ARE OFFLINE
+                                </Label>
+                            </div>
+                            <CardDescription>Go online to receive ride requests.</CardDescription>
                         </CardContent>
                         )}
+                         <CardFooter className="border-t pt-4">
+                            <Button variant="ghost" size="sm" onClick={() => setIsMapVisible(prev => !prev)}>
+                                <Map className="mr-2 h-4 w-4"/>
+                                Toggle Map
+                            </Button>
+                        </CardFooter>
                     </Card>
 
                     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-2">
