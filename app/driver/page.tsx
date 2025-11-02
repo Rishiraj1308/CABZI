@@ -137,7 +137,15 @@ export default function DriverDashboardPage() {
     const unsubscribe = onSnapshot(q, (snapshot) => {
       if (jobRequest || activeRide) return; // Don't process if already busy
   
-      const potentialJobs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as JobRequest));
+      const potentialJobs = snapshot.docs.map(doc => {
+        const data = doc.data() as any;
+        return {
+          id: doc.id,
+          ...data,
+          pickupAddress: data.pickupAddress || data?.pickup?.address || 'Pickup not available',
+          destinationAddress: data.destinationAddress || data?.destination?.address || 'Drop not available',
+        } as JobRequest;
+      });      
       const newJob = potentialJobs.find(job => 
         !job.rejectedBy?.includes(partnerData.id)
       );
@@ -506,18 +514,15 @@ export default function DriverDashboardPage() {
             <MapPin className="w-4 h-4 mt-1 text-green-500 flex-shrink-0" />
             <p>
               <span className="font-semibold">Pickup:</span>{' '}
-              {jobRequest?.pickup?.address ||
-                jobRequest?.pickupAddress ||
-                'Fetching...'}
+              {jobRequest?.pickupAddress || jobRequest?.pickup?.address || 'Pickup not available'}
+...
             </p>
           </div>
           <div className="flex items-start gap-2">
             <Route className="w-4 h-4 mt-1 text-red-500 flex-shrink-0" />
             <p>
               <span className="font-semibold">Drop:</span>{' '}
-              {jobRequest?.destination?.address ||
-                jobRequest?.destinationAddress ||
-                'Fetching...'}
+              {jobRequest?.destinationAddress || jobRequest?.destination?.address || 'Drop not available'}
             </p>
           </div>
         </div>
