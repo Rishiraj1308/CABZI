@@ -1,4 +1,3 @@
-
 'use client'
 
 import { motion } from 'framer-motion'
@@ -6,7 +5,7 @@ import { BrainCircuit } from 'lucide-react'
 
 export default function CuroMindReveal() {
   return (
-    <section className="relative flex flex-col items-center justify-center text-center py-40 overflow-hidden bg-[#090d12] text-white">
+    <div className="relative flex flex-col items-center justify-center text-center py-40 overflow-hidden rounded-2xl">
       
       {/* === Glowing Background Core === */}
       <div className="absolute inset-0 bg-gradient-radial from-cyan-500/10 via-transparent to-transparent blur-3xl animate-pulse"></div>
@@ -73,6 +72,6 @@ export default function CuroMindReveal() {
 
       {/* === Bottom Glow === */}
       <div className="absolute bottom-0 w-full h-40 bg-gradient-to-t from-cyan-500/20 to-transparent blur-2xl"></div>
-    </section>
+    </div>
   )
 }

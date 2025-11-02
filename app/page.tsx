@@ -490,10 +490,14 @@ export default function HomePage() {
                 </div>
             </section>
             
-            <CuroMindReveal />
+            <section className="py-20 md:py-24 bg-background dark:bg-[#090d12] text-foreground dark:text-white">
+                <div className="container">
+                    <CuroMindReveal />
+                </div>
+            </section>
 
             {/* Your Journey Section */}
-             <section className="py-20 md:py-24">
+             <section className="py-20 md:py-24 bg-muted/40">
                 <div className="container">
                     <div className="mx-auto max-w-3xl text-center">
                         <h2 className="text-3xl font-bold tracking-tight sm:text-4xl font-headline">
@@ -538,7 +542,7 @@ export default function HomePage() {
             </section>
 
              {/* Partner CTA Section */}
-            <section className="py-20 md:py-24 bg-muted/40">
+            <section className="py-20 md:py-24">
                 <div className="container text-center">
                     <h2 className="text-3xl font-bold tracking-tight sm:text-4xl font-headline">Join Our Driver-First Revolution</h2>
                     <p className="mt-4 text-lg text-muted-foreground max-w-2xl mx-auto">
@@ -577,5 +581,3 @@ export default function HomePage() {
       </div>
   );
 }
-
-    
