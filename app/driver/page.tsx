@@ -48,23 +48,21 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 const LiveMap = dynamic(() => import('@/components/live-map'), { ssr: false })
 
 const StatCard = ({ title, value, icon: Icon, isLoading, onValueClick, iconButtonAction }: { title: string, value: string | React.ReactNode, icon: React.ElementType, isLoading?: boolean, onValueClick?: () => void, iconButtonAction?: () => void }) => (
-    <Card className="bg-background/80 backdrop-blur-sm flex-1">
-      <div className="p-3">
+    <div className="bg-background/80 backdrop-blur-sm flex-1 p-3 rounded-lg border border-border/50 shadow-lg">
         <div className="flex flex-row items-center justify-between mb-1">
-          <p className="text-sm font-medium text-muted-foreground">{title}</p>
-          <Button variant="ghost" size="icon" className="w-8 h-8 text-muted-foreground hover:bg-accent hover:text-accent-foreground" onClick={iconButtonAction}>
-              <Icon className="h-4 w-4" />
-          </Button>
+            <p className="text-sm font-medium text-muted-foreground">{title}</p>
+            <Button variant="ghost" size="icon" className="w-8 h-8 text-muted-foreground hover:bg-accent hover:text-accent-foreground" onClick={iconButtonAction}>
+                <Icon className="h-4 w-4" />
+            </Button>
         </div>
         {isLoading ? (
-          <Skeleton className="h-8 w-20" />
+            <Skeleton className="h-8 w-20" />
         ) : (
-          <div className="text-2xl font-bold cursor-pointer" onClick={onValueClick}>
+            <div className="text-2xl font-bold cursor-pointer" onClick={onValueClick}>
             {value}
-          </div>
+            </div>
         )}
-      </div>
-    </Card>
+    </div>
 )
 
 export default function DriverDashboardPage() {
@@ -399,7 +397,7 @@ export default function DriverDashboardPage() {
             <>
                 <div className="flex justify-between items-center">
                     <div>
-                        <h2 className="text-3xl font-bold tracking-tight">Driver Dashboard</h2>
+                        <h2 className="text-3xl font-bold tracking-tight text-foreground">Driver Dashboard</h2>
                         <p className="text-muted-foreground text-sm">Welcome back. Stay online and drive safe.</p>
                     </div>
                     <div className="text-right">
@@ -410,7 +408,7 @@ export default function DriverDashboardPage() {
                         <p className="text-xs text-muted-foreground mt-1">{currentTime.toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}</p>
                     </div>
                 </div>
-
+                
                 {isOnline && (
                    <Card>
                     <CardHeader>
@@ -447,13 +445,13 @@ export default function DriverDashboardPage() {
                     <StatCard title="Rating" value={partnerData?.rating?.toString() || '4.9'} icon={Star} isLoading={isDriverLoading} />
                 </div>
                 
-                <Card className="bg-gradient-to-r from-primary/80 to-primary/70 text-primary-foreground border-none">
+                <Card className="bg-accent/20 border-accent/30 text-accent-foreground">
                     <CardHeader>
-                    <CardTitle className="flex items-center gap-2"><Sparkles className="text-yellow-300" /> AI Earnings Coach</CardTitle>
+                        <CardTitle className="flex items-center gap-2 text-accent-foreground/90"><Sparkles className="text-yellow-300" /> AI Earnings Coach</CardTitle>
                     </CardHeader>
                     <CardContent>
-                    <p>Focus on the Cyber Hub area between 5 PM - 8 PM. High demand is expected, and you could earn up to 30% more.</p>
-                     <div className="flex flex-wrap gap-x-4 gap-y-2 text-xs mt-3 text-primary-foreground/80">
+                        <p>Focus on the Cyber Hub area between 5 PM - 8 PM. High demand is expected, and you could earn up to 30% more.</p>
+                        <div className="flex flex-wrap gap-x-4 gap-y-2 text-xs mt-3 text-muted-foreground">
                             <span className="flex items-center gap-1.5"><MapPin className="w-3 h-3"/> Cyber Hub</span>
                             <span className="flex items-center gap-1.5"><Clock className="w-3 h-3"/> 5 PM - 8 PM</span>
                             <span className="flex items-center gap-1.5"><TrendingUp className="w-3 h-3"/> +30% potential</span>
@@ -559,4 +557,3 @@ export default function DriverDashboardPage() {
     </div>
   );
 }
-
