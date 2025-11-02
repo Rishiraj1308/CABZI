@@ -219,9 +219,7 @@ export default function ServicePortalPage() {
             )}
 
             <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
-              <Button className="bg-emerald-500 text-black hover:bg-emerald-400">
-                <Phone className="h-4 w-4 mr-2" /> Request a callback
-              </Button>
+              {/* Buttons removed as per user requests */}
             </div>
           </div>
         </section>
