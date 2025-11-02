@@ -442,8 +442,8 @@ export default function HomePage() {
                 </div>
             </section>
             
-             <section className="py-20 md:py-24">
-                <div className="container text-center">
+            <div className="bg-background">
+                <section className="container py-20 md:py-24 text-center">
                     <h2 className="text-3xl font-bold tracking-tight sm:text-4xl font-headline">The Curocity Advantage</h2>
                     <p className="mt-4 text-lg text-muted-foreground max-w-3xl mx-auto">
                         We've rebuilt the system from the ground up to create a win-win ecosystem for everyone involved.
@@ -487,12 +487,12 @@ export default function HomePage() {
                             </CardContent>
                         </Card>
                     </div>
-                </div>
-            </section>
+                </section>
+                <section>
+                    <CuroMindReveal />
+                </section>
+            </div>
             
-            <section className="bg-background text-foreground">
-                <CuroMindReveal />
-            </section>
 
             {/* Your Journey Section */}
              <section className="py-20 md:py-24 bg-muted/40">
