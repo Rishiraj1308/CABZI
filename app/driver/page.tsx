@@ -449,7 +449,7 @@ export default function DriverDashboardPage() {
 
         {activeRide ? renderActiveRide() : (
             <>
-                 <div className="flex space-x-2">
+                 <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                     <StatCard title="Today's Earnings" value={isEarningsVisible ? `₹${(partnerData?.todaysEarnings || 0).toLocaleString()}` : '₹ •••••'} icon={IndianRupee} isLoading={isDriverLoading} onValueClick={() => !isEarningsVisible && setIsPinDialogOpen(true)} />
                     <StatCard title="Today's Rides" value={partnerData?.jobsToday?.toString() || '0'} icon={History} isLoading={isDriverLoading} />
                     <StatCard title="Acceptance" value={`${partnerData?.acceptanceRate || '95'}%`} icon={Power} isLoading={isDriverLoading} />
@@ -553,4 +553,3 @@ export default function DriverDashboardPage() {
     </div>
   );
 }
-
