@@ -79,5 +79,8 @@ export interface JobRequest extends Omit<RideData, 'pickup' | 'destination'> {
     driverEta?: number;
     pickup: { address: string; location: GeoPoint; };
     destination: { address: string; location: GeoPoint; };
+    pickupAddress: string;
+    destinationAddress: string;
     createdAt: any;
+    rejectedBy?: string[];
 }
