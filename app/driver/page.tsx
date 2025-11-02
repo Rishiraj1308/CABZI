@@ -6,7 +6,7 @@ import Image from 'next/image'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
-import { Star, History, IndianRupee, Power, KeyRound, Clock, MapPin, Route, Navigation, CheckCircle, Sparkles, Eye, TrendingUp, Map } from 'lucide-react'
+import { Star, History, IndianRupee, Power, KeyRound, Clock, MapPin, Route, Navigation, CheckCircle, Sparkles, Eye, TrendingUp, Map, ChevronsUpDown } from 'lucide-react'
 import {
   AlertDialog,
   AlertDialogContent,
@@ -43,6 +43,7 @@ import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 
 
 const LiveMap = dynamic(() => import('@/components/live-map'), { 
@@ -84,10 +85,10 @@ export default function DriverDashboardPage() {
   const [enteredOtp, setEnteredOtp] = useState('');
   const [showDriverDetails, setShowDriverDetails] = useState(false)
   const prevStatusRef = React.useRef<string | null>(null)
+  const [isMapOpen, setIsMapOpen] = useState(true);
 
   const drivingSoundRef = useRef<HTMLAudioElement | null>(null)
   const hornSoundRef = useRef<HTMLAudioElement | null>(null)
-  const [isMapDialogOpen, setIsMapDialogOpen] = useState(false);
   const mapRef = useRef<any>(null);
 
 
@@ -106,17 +107,6 @@ export default function DriverDashboardPage() {
       notificationSoundRef.current = new Audio('/sounds/notification.mp3')
     }
   }, []);
-
-    // Effect to invalidate map size when dialog opens
-    useEffect(() => {
-        if (isMapDialogOpen && mapRef.current) {
-            // Delay to ensure dialog is rendered
-            const timer = setTimeout(() => {
-                mapRef.current.invalidateSize();
-            }, 100);
-            return () => clearTimeout(timer);
-        }
-    }, [isMapDialogOpen]);
 
   const handleDeclineJob = useCallback(async (isTimeout = false) => {
     if (!jobRequest || !partnerData?.id || !db) return
@@ -394,39 +384,35 @@ export default function DriverDashboardPage() {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
         <div className="lg:col-span-2">
-            <Card className="h-[75vh]">
-                <CardHeader className="absolute top-2 left-2 z-10">
-                    <Dialog open={isMapDialogOpen} onOpenChange={setIsMapDialogOpen}>
-                        <DialogTrigger asChild>
-                            <Button>
-                                <Map className="mr-2 h-4 w-4"/> View Live Map
+            <Collapsible open={isMapOpen} onOpenChange={setIsMapOpen}>
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between p-3">
+                         <h3 className="font-semibold">Live Map</h3>
+                        <CollapsibleTrigger asChild>
+                            <Button variant="ghost" size="sm">
+                                <ChevronsUpDown className="h-4 w-4" />
+                                <span className="sr-only">Toggle Map</span>
                             </Button>
-                        </DialogTrigger>
-                        <DialogContent className="max-w-[90vw] h-[90vh]">
-                            <LiveMap ref={mapRef} onLocationFound={(address, coords) => {
-                                if (db && partnerData) {
-                                    updateDoc(doc(db, 'partners', partnerData.id), {
-                                        currentLocation: new GeoPoint(coords.lat, coords.lon)
-                                    });
-                                }
-                            }} driverLocation={driverLocation} isTripInProgress={activeRide?.status === 'in-progress'} />
-                        </DialogContent>
-                    </Dialog>
-                </CardHeader>
-                <CardContent className="p-0 h-full">
-                     <LiveMap 
-                        onLocationFound={(address, coords) => {
-                            if (db && partnerData) {
-                                updateDoc(doc(db, 'partners', partnerData.id), {
-                                    currentLocation: new GeoPoint(coords.lat, coords.lon)
-                                });
-                            }
-                        }}
-                        driverLocation={driverLocation}
-                        isTripInProgress={activeRide?.status === 'in-progress'}
-                     />
-                </CardContent>
-            </Card>
+                        </CollapsibleTrigger>
+                    </CardHeader>
+                    <CollapsibleContent>
+                        <CardContent className="p-0 h-[68vh]">
+                            <LiveMap 
+                                ref={mapRef}
+                                onLocationFound={(address, coords) => {
+                                    if (db && partnerData) {
+                                        updateDoc(doc(db, 'partners', partnerData.id), {
+                                            currentLocation: new GeoPoint(coords.lat, coords.lon)
+                                        });
+                                    }
+                                }}
+                                driverLocation={driverLocation}
+                                isTripInProgress={activeRide?.status === 'in-progress'}
+                            />
+                        </CardContent>
+                    </CollapsibleContent>
+                </Card>
+            </Collapsible>
         </div>
         <div className="lg:col-span-1 space-y-6">
             {activeRide ? renderActiveRide() : (
@@ -462,7 +448,14 @@ export default function DriverDashboardPage() {
                         <CardTitle className="flex items-center gap-2"><Sparkles className="text-yellow-300" /> AI Earnings Coach</CardTitle>
                         </CardHeader>
                         <CardContent>
-                        <p>Focus on the Cyber Hub area between 5 PM - 8 PM. High demand is expected, and you could earn up to 30% more.</p>
+                            <div className="flex justify-between items-center">
+                                <p>Focus on these areas for higher earnings:</p>
+                                <TrendingUp className="w-6 h-6 text-yellow-300"/>
+                            </div>
+                            <div className="mt-4 text-sm space-y-2 text-primary-foreground/90">
+                                <div className="flex items-center gap-1.5"><MapPin className="w-3 h-3"/> Cyber Hub (5 PM - 8 PM)</div>
+                                <div className="flex items-center gap-1.5"><MapPin className="w-3 h-3"/> IGI Airport T3 (10 PM - 2 AM)</div>
+                            </div>
                         </CardContent>
                     </Card>
                     </>
@@ -503,7 +496,7 @@ export default function DriverDashboardPage() {
                 <LiveMap
                   driverLocation={driverLocation}
                   riderLocation={jobRequest.pickup?.location ? { lat: jobRequest.pickup.location.latitude, lon: jobRequest.pickup.location.longitude } : undefined}
-                  destinationLocation={jobRequest.destination?.location ? { lat: jobRequest.destination.latitude, lon: jobRequest.destination.longitude } : undefined}
+                  destinationLocation={jobRequest.destination?.location ? { lat: jobRequest.destination.location.latitude, lon: jobRequest.destination.location.longitude } : undefined}
                   isTripInProgress={false}
                   zoom={11}
                 />
@@ -550,5 +543,3 @@ export default function DriverDashboardPage() {
     </div>
   );
 }
-
-    
