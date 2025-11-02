@@ -216,6 +216,13 @@ const LiveMap = forwardRef<any, LiveMapProps>((props, ref) => {
         }
     }, [props.routeGeometry]);
 
+    useEffect(() => {
+        const map = mapInstanceRef.current;
+        if (map && props.driverLocation) {
+            map.flyTo([props.driverLocation.lat, props.driverLocation.lon], 16);
+        }
+    }, [props.driverLocation]);
+
     const updateMarker = (id: string, latLng: L.LatLng, type: string) => {
         const map = mapInstanceRef.current;
         if (!map) return;
@@ -343,5 +350,6 @@ const LiveMap = forwardRef<any, LiveMapProps>((props, ref) => {
 
 LiveMap.displayName = 'LiveMap';
 export default LiveMap;
+
 
 
