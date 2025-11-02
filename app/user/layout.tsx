@@ -1,4 +1,5 @@
 
+
 'use client'
 
 import React, { useState, useEffect, useCallback } from 'react'
@@ -68,7 +69,7 @@ export default function UserLayout({
   children: React.ReactNode;
 }) {
   const [isMounted, setIsMounted] = useState(false);
-  const [open, setOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
   const { toast } = useToast();
@@ -137,58 +138,83 @@ export default function UserLayout({
   
   return (
     <OuterContainer>
-      <header className="relative z-10">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <nav className="flex items-center justify-between py-4">
-                <Button id="openDrawer" onClick={() => setOpen(true)} className="inline-flex md:hidden items-center justify-center h-10 w-10 rounded-full border border-border bg-card/50 backdrop-blur hover:bg-accent/80 focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-white/30" aria-label="Open menu" aria-controls="drawer" aria-expanded="false" title="Open menu">
-                    <Menu className="h-5 w-5"></Menu>
-                </Button>
+        <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
+            <header className="relative z-10">
+                <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                    <nav className="flex items-center justify-between py-4">
+                        <SheetTrigger asChild>
+                            <Button id="openDrawer" className="inline-flex md:hidden items-center justify-center h-10 w-10 rounded-full border border-border bg-card/50 backdrop-blur hover:bg-accent/80 focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-white/30" aria-label="Open menu" aria-controls="drawer" aria-expanded={isMobileMenuOpen} title="Open menu">
+                                <Menu className="h-5 w-5"></Menu>
+                            </Button>
+                        </SheetTrigger>
 
-                 <Link href="/user" className="hidden md:inline-flex items-center gap-2 rounded-full border border-border bg-card/50 px-3 py-2 backdrop-blur hover:bg-accent/80 focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-white/30" aria-label="Home">
-                    <BrandLogo iconClassName='w-8 h-8' />
-                </Link>
+                        <Link href="/user" className="hidden md:inline-flex items-center gap-2 rounded-full border border-border bg-card/50 px-3 py-2 backdrop-blur hover:bg-accent/80 focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-white/30" aria-label="Home">
+                            <BrandLogo iconClassName='w-8 h-8' />
+                        </Link>
 
-                <div className="ml-auto flex items-center gap-2">
-                    <ThemeToggle />
-                    <LanguageToggle />
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                         <Button variant="ghost" size="icon" className="rounded-full w-10 h-10 border border-border bg-card/50 backdrop-blur hover:bg-accent/80">
-                           <Avatar className="h-8 w-8">
-                              <AvatarImage src={user?.photoURL || undefined} alt={user?.displayName || 'User'} />
-                              <AvatarFallback>{getInitials(user?.displayName)}</AvatarFallback>
-                           </Avatar>
-                         </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                          <DropdownMenuLabel>My Account</DropdownMenuLabel>
-                          <DropdownMenuSeparator/>
-                          <DropdownMenuItem onClick={() => router.push('/user/profile')}><User className="w-4 h-4 mr-2"/> Profile</DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => router.push('/user/wallet')}><Wallet className="w-4 h-4 mr-2"/> Wallet</DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => router.push('/user/offers')}><Gift className="w-4 h-4 mr-2"/> Offers</DropdownMenuItem>
-                          <DropdownMenuSeparator/>
-                           <AlertDialog>
-                              <AlertDialogTrigger asChild>
-                                  <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:text-destructive">
-                                      <LogOut className="w-4 h-4 mr-2"/> Logout
-                                  </DropdownMenuItem>
-                              </AlertDialogTrigger>
-                              <AlertDialogContent>
-                                  <AlertDialogHeader>
-                                      <AlertDialogTitle>Are you sure you want to log out?</AlertDialogTitle>
-                                  </AlertDialogHeader>
-                                  <AlertDialogFooter>
-                                      <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                      <AlertDialogAction onClick={handleLogout} className="bg-destructive hover:bg-destructive/90">Logout</AlertDialogAction>
-                                  </AlertDialogFooter>
-                              </AlertDialogContent>
-                           </AlertDialog>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                        <div className="ml-auto flex items-center gap-2">
+                            <ThemeToggle />
+                            <LanguageToggle />
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                 <Button variant="ghost" size="icon" className="rounded-full w-10 h-10 border border-border bg-card/50 backdrop-blur hover:bg-accent/80">
+                                   <Avatar className="h-8 w-8">
+                                      <AvatarImage src={user?.photoURL || undefined} alt={user?.displayName || 'User'} />
+                                      <AvatarFallback>{getInitials(user?.displayName)}</AvatarFallback>
+                                   </Avatar>
+                                 </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                  <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                                  <DropdownMenuSeparator/>
+                                  <DropdownMenuItem onClick={() => {router.push('/user/profile'); setIsMobileMenuOpen(false);}}><User className="w-4 h-4 mr-2"/> Profile</DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => {router.push('/user/wallet'); setIsMobileMenuOpen(false);}}><Wallet className="w-4 h-4 mr-2"/> Wallet</DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => {router.push('/user/offers'); setIsMobileMenuOpen(false);}}><Gift className="w-4 h-4 mr-2"/> Offers</DropdownMenuItem>
+                                  <DropdownMenuSeparator/>
+                                   <AlertDialog>
+                                      <AlertDialogTrigger asChild>
+                                          <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:text-destructive">
+                                              <LogOut className="w-4 h-4 mr-2"/> Logout
+                                          </DropdownMenuItem>
+                                      </AlertDialogTrigger>
+                                      <AlertDialogContent>
+                                          <AlertDialogHeader>
+                                              <AlertDialogTitle>Are you sure you want to log out?</AlertDialogTitle>
+                                          </AlertDialogHeader>
+                                          <AlertDialogFooter>
+                                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                              <AlertDialogAction onClick={handleLogout} className="bg-destructive hover:bg-destructive/90">Logout</AlertDialogAction>
+                                          </AlertDialogFooter>
+                                      </AlertDialogContent>
+                                   </AlertDialog>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                        </div>
+                    </nav>
                 </div>
-            </nav>
-        </div>
-      </header>
+            </header>
+            <SheetContent side="left" className="w-64 p-0">
+                <SheetHeader className="border-b p-4">
+                    <SheetTitle><BrandLogo/></SheetTitle>
+                </SheetHeader>
+                <div className="p-4 space-y-2">
+                    {navItems.map((item) => (
+                        <Button
+                            key={item.href}
+                            variant={pathname === item.href ? 'secondary' : 'ghost'}
+                            className="w-full justify-start"
+                            onClick={() => {
+                                router.push(item.href);
+                                setIsMobileMenuOpen(false);
+                            }}
+                        >
+                            <item.icon className="mr-2 h-4 w-4" />
+                            {item.label}
+                        </Button>
+                    ))}
+                </div>
+            </SheetContent>
+        </Sheet>
         <AnimatePresence mode="wait">
             <motion.main 
                 key={pathname}
