@@ -46,6 +46,7 @@ import { Badge } from '@/components/ui/badge'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import RideStatus from '@/components/ride-status'
 
 
 const LiveMap = dynamic(() => import('@/components/live-map'), {
@@ -159,6 +160,20 @@ export default function DriverDashboardPage() {
   }, [jobRequest, partnerData?.id, db, toast]);
   
   const isOnline = partnerData?.isOnline ?? false;
+
+  const handleAvailabilityChange = async (checked: boolean) => {
+    if (!partnerData || !db) return;
+    const partnerRef = doc(db, 'partners', partnerData.id);
+    try {
+      await updateDoc(partnerRef, { isOnline: checked, status: checked ? 'online' : 'offline' });
+      toast({
+        title: checked ? "You are now ONLINE" : "You are OFFLINE",
+        description: checked ? "You will start receiving ride requests." : "You won't receive new requests.",
+      });
+    } catch (error) {
+      toast({ variant: 'destructive', title: 'Error', description: 'Could not update your status.' });
+    }
+  };
 
   // This effect listens for ride requests.
   useEffect(() => {
@@ -484,79 +499,7 @@ export default function DriverDashboardPage() {
     ? { lat: partnerData.currentLocation.latitude, lon: partnerData.currentLocation.longitude }
     : undefined;
     
-    const renderActiveRide = () => {
-        if (!activeRide) return null;
-        
-        const isNavigatingToRider = ['accepted', 'arrived'].includes(activeRide.status);
-        const destinationLocation = isNavigatingToRider ? activeRide.pickup.location : activeRide.destination.location;
-        const navigateUrl = destinationLocation ? `https://www.google.com/maps/dir/?api=1&destination=${destinationLocation.latitude},${destinationLocation.longitude}` : '#';
-
-        return (
-            <div className="space-y-4">
-                <Card className="shadow-lg">
-                    <CardHeader>
-                        <CardTitle className="capitalize">{activeRide.status.replace('_', ' ')}</CardTitle>
-                        <CardDescription>Rider: {activeRide.riderName}</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                        {activeRide.status === 'accepted' && (
-                            <div className="p-4 rounded-lg bg-muted flex items-center gap-3">
-                                <Avatar className="w-12 h-12"><AvatarImage src="https://i.pravatar.cc/100?u=rider" alt={activeRide.riderName} data-ai-hint="rider portrait" /><AvatarFallback>{activeRide.riderName?.substring(0,2)}</AvatarFallback></Avatar>
-                                <div className="flex-1">
-                                    <p className="font-bold">{activeRide.riderName}</p>
-                                    <p className="font-bold text-lg text-primary">OTP: {activeRide.otp}</p>
-                                </div>
-                                <div className="flex flex-col gap-2">
-                                     <Button size="icon" variant="outline" asChild><a href={`tel:${activeRide.riderPhone}`}><Phone/></a></Button>
-                                     <Button size="icon" variant="outline" asChild><a href={`sms:${activeRide.riderPhone}`}><MessageSquare/></a></Button>
-                                </div>
-                            </div>
-                        )}
-
-                        {activeRide.status === 'arrived' && (
-                            <div className="space-y-4">
-                                {waitingTime > 0 ? (
-                                    <div className="text-center p-3 border-2 border-dashed border-primary rounded-lg">
-                                        <p className="font-bold text-primary animate-pulse">Waiting for Rider...</p>
-                                        <p className="text-4xl font-mono font-bold">{waitingTime}</p>
-                                        <p className="text-xs text-muted-foreground">Free waiting time remaining</p>
-                                    </div>
-                                ) : (
-                                    <div className="text-center p-3 border-2 border-dashed border-destructive rounded-lg">
-                                        <p className="font-bold text-destructive">Waiting Charges Apply</p>
-                                        <p className="text-4xl font-mono font-bold">₹{waitingCharges}</p>
-                                        <p className="text-xs text-muted-foreground">₹2/min will be added to the bill</p>
-                                    </div>
-                                )}
-
-                            <Label htmlFor="otp">Enter Rider's OTP</Label>
-                            <div className="flex gap-2">
-                                <Input id="otp" value={enteredOtp} onChange={(e) => setEnteredOtp(e.target.value)} placeholder="4-Digit OTP" maxLength={4}/>
-                                <Button onClick={handleVerifyOtp}><CheckCircle className="w-4 h-4 mr-2"/>Verify & Start</Button>
-                            </div>
-                            </div>
-                        )}
-
-                        <Button asChild size="lg" className="w-full bg-blue-600 hover:bg-blue-700 text-white">
-                            <a href={navigateUrl} target="_blank" rel="noopener noreferrer">
-                                <Navigation className="mr-2 h-5 w-5"/>
-                                Navigate to {isNavigatingToRider ? 'Pickup' : 'Destination'}
-                            </a>
-                        </Button>
-                    </CardContent>
-                    <CardFooter>
-                        {activeRide.status === 'accepted' && (
-                            <Button className="w-full" size="lg" onClick={() => handleUpdateRideStatus('arrived')}>Arrived at Pickup</Button>
-                        )}
-                        {activeRide.status === 'in-progress' && (
-                            <Button className="w-full bg-destructive hover:bg-destructive/80" size="lg" onClick={() => handleUpdateRideStatus('payment_pending')}>End Trip</Button>
-                        )}
-                    </CardFooter>
-                </Card>
-            </div>
-        );
-    }
-  
+    
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start h-full">
         <div className="lg:col-span-3 h-96 lg:h-[calc(100vh-210px)] rounded-lg overflow-hidden">
@@ -572,7 +515,7 @@ export default function DriverDashboardPage() {
                         }}
                         driverLocation={driverLocation}
                         riderLocation={activeRide?.pickup?.location ? { lat: activeRide.pickup.location.latitude, lon: activeRide.pickup.location.longitude } : undefined}
-                        destinationLocation={activeRide?.destination?.location ? { lat: activeRide.destination.location.latitude, lon: activeRide.destination.longitude } : undefined}
+                        destinationLocation={activeRide?.destination?.location ? { lat: activeRide.destination.location.latitude, lon: activeRide.destination.location.longitude } : undefined}
                         isTripInProgress={activeRide?.status === 'in-progress'}
                      />
                 </CardContent>
@@ -580,45 +523,54 @@ export default function DriverDashboardPage() {
         </div>
         
         <div className={cn("space-y-6 lg:col-span-3", activeRide && 'lg:col-span-3 lg:row-start-2')}>
-            {activeRide ? renderActiveRide() : (
+            {activeRide ? (
+                <RideStatus 
+                    ride={activeRide}
+                    onCancel={resetAfterRide}
+                    onDone={resetAfterRide}
+                />
+            ) : (
                 <>
                      <Card>
-                        <CardContent className="p-4">
-                         {isOnline ? (
-                            <div className="text-center py-12">
-                                <SearchingIndicator partnerType="path" className="w-32 h-32" />
-                                <h3 className="text-3xl font-bold mt-4">Waiting for Rides...</h3>
-                                <p className="text-muted-foreground">You are online and ready to accept jobs.</p>
+                        <CardHeader>
+                        <div className="flex justify-between items-center">
+                            <CardTitle>Your Dashboard</CardTitle>
+                            <div className="flex items-center space-x-2">
+                                <Switch id="online-status" checked={isOnline} onCheckedChange={handleAvailabilityChange} />
+                                <Label htmlFor="online-status" className={cn("font-semibold", isOnline ? "text-green-600" : "text-muted-foreground")}>
+                                    {isOnline ? "ONLINE" : "OFFLINE"}
+                                </Label>
                             </div>
-                         ) : (
-                            <div className="text-center py-12">
-                                <CardTitle>You are Offline</CardTitle>
-                                <CardDescription>Go online to receive ride requests.</CardDescription>
-                            </div>
-                         )}
-                         </CardContent>
+                        </div>
+                        </CardHeader>
+                        {isOnline ? (
+                        <CardContent className="text-center py-12">
+                            <SearchingIndicator partnerType="path" className="w-32 h-32" />
+                            <h3 className="text-3xl font-bold mt-4">Waiting for Rides...</h3>
+                            <p className="text-muted-foreground">You are online and ready to accept jobs.</p>
+                        </CardContent>
+                        ) : (
+                        <CardContent className="text-center py-12">
+                            <CardTitle>You are Offline</CardTitle>
+                            <CardDescription>Go online to receive ride requests.</CardDescription>
+                        </CardContent>
+                        )}
                      </Card>
 
-                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                        <StatCard title="Today's Earnings" value={isEarningsVisible ? `₹${(partnerData?.todaysEarnings || 0).toLocaleString()}` : '₹ ****'} icon={IndianRupee} isLoading={isDriverLoading} onValueClick={() => !isEarningsVisible && setIsPinDialogOpen(true)} />
-                        <StatCard title="Today's Rides" value={partnerData?.jobsToday?.toString() || '0'} icon={History} isLoading={isDriverLoading} />
-                        <StatCard title="Acceptance Rate" value={`${partnerData?.acceptanceRate || '95'}%`} icon={Power} isLoading={isDriverLoading} />
-                        <StatCard title="Rating" value={partnerData?.rating?.toString() || '4.9'} icon={Star} isLoading={isDriverLoading} />
-                    </div>
-
-                    <Tabs defaultValue="coach" className="flex-1 flex flex-col">
+                    <Tabs defaultValue="stats" className="w-full">
                         <TabsList className="grid w-full grid-cols-2">
-                            <TabsTrigger value="coach">AI Coach</TabsTrigger>
-                            <TabsTrigger value="activity">Recent Activity</TabsTrigger>
+                            <TabsTrigger value="stats">Today's Stats</TabsTrigger>
+                            <TabsTrigger value="history">Recent Activity</TabsTrigger>
                         </TabsList>
-                        <TabsContent value="coach" className="mt-4 flex-1">
-                            <Card className="bg-gradient-to-r from-primary to-primary/90 text-primary-foreground border-none h-full flex items-center">
-                                <CardContent className="p-4"><div className="flex gap-3 items-center"><Sparkles className="w-8 h-8 text-yellow-300 flex-shrink-0" />
-                                    <div><p className="font-bold">AI Earnings Coach</p><p className="text-sm text-primary-foreground/90">Focus on the Cyber Hub area between 5 PM - 8 PM. High demand is expected, and you could earn up to 30% more.</p></div>
-                                </div></CardContent>
-                            </Card>
+                        <TabsContent value="stats" className="mt-4">
+                            <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
+                                <StatCard title="Today's Earnings" value={isEarningsVisible ? `₹${(partnerData?.todaysEarnings || 0).toLocaleString()}` : '₹ ****'} icon={IndianRupee} isLoading={isDriverLoading} onValueClick={() => !isEarningsVisible && setIsPinDialogOpen(true)} />
+                                <StatCard title="Today's Rides" value={partnerData?.jobsToday?.toString() || '0'} icon={History} isLoading={isDriverLoading} />
+                                <StatCard title="Acceptance Rate" value={`${partnerData?.acceptanceRate || '95'}%`} icon={Power} isLoading={isDriverLoading} />
+                                <StatCard title="Rating" value={partnerData?.rating?.toString() || '4.9'} icon={Star} isLoading={isDriverLoading} />
+                            </div>
                         </TabsContent>
-                         <TabsContent value="activity" className="mt-4 flex-1 space-y-2">
+                         <TabsContent value="history" className="mt-4 flex-1 space-y-2">
                            {isHistoryLoading ? (
                                 Array.from({length: 2}).map((_, i) => <Skeleton key={i} className="h-16 w-full" />)
                            ) : recentRides.length > 0 ? (
@@ -731,5 +683,7 @@ export default function DriverDashboardPage() {
     </div>
   );
 }
+
+    
 
     
