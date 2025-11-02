@@ -45,25 +45,29 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 
 
-const LiveMap = dynamic(() => import('@/components/live-map'), { ssr: false })
+const LiveMap = dynamic(() => import('@/components/live-map'), { 
+    ssr: false,
+    loading: () => <div className="w-full h-full bg-muted flex items-center justify-center"><p>Loading Map...</p></div>
+});
+
 
 const StatCard = ({ title, value, icon: Icon, isLoading, onValueClick }: { title: string, value: string, icon: React.ElementType, isLoading?: boolean, onValueClick?: () => void }) => (
-  <Card className="p-3">
-    <div className="flex flex-row items-center justify-between mb-1">
-      <p className="text-sm font-medium text-muted-foreground">{title}</p>
-      <Button variant="ghost" size="icon" className="w-8 h-8 text-muted-foreground hover:bg-accent hover:text-accent-foreground">
-        <Icon className="h-4 w-4" />
-      </Button>
-    </div>
-    {isLoading ? (
-      <Skeleton className="h-8 w-20" />
-    ) : (
-      <div className="text-2xl font-bold cursor-pointer" onClick={onValueClick}>
-        {value}
-      </div>
-    )}
-  </Card>
-)
+    <Card className="p-3">
+        <div className="flex flex-row items-center justify-between mb-1">
+        <p className="text-sm font-medium text-muted-foreground">{title}</p>
+         <Button variant="ghost" size="icon" className="w-8 h-8 text-muted-foreground hover:bg-accent hover:text-accent-foreground">
+            <Icon className="h-4 w-4" />
+        </Button>
+        </div>
+        {isLoading ? (
+        <Skeleton className="h-8 w-20" />
+        ) : (
+        <div className="text-2xl font-bold cursor-pointer" onClick={onValueClick}>
+            {value}
+        </div>
+        )}
+    </Card>
+);
 
 export default function DriverDashboardPage() {
   const [jobRequest, setJobRequest] = useState<JobRequest | null>(null);
@@ -403,12 +407,12 @@ export default function DriverDashboardPage() {
 
   return (
     <div className="space-y-6">
-        <Card className="shadow-lg">
+        <Card className="shadow-lg md:hidden">
             <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle>Your Dashboard</CardTitle>
                 <div className="flex items-center space-x-2">
-                    <Switch id="online-status" checked={isOnline} onCheckedChange={handleAvailabilityChange} />
-                    <Label htmlFor="online-status" className={cn("font-semibold", isOnline ? "text-green-600" : "text-muted-foreground")}>
+                    <Switch id="online-status-mobile" checked={isOnline} onCheckedChange={handleAvailabilityChange} />
+                    <Label htmlFor="online-status-mobile" className={cn("font-semibold", isOnline ? "text-green-600" : "text-muted-foreground")}>
                         {isOnline ? "ONLINE" : "OFFLINE"}
                     </Label>
                 </div>
