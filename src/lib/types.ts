@@ -1,4 +1,5 @@
 
+
 import type { GeoPoint } from 'firebase/firestore';
 
 export interface ClientSession {
@@ -74,13 +75,13 @@ export interface JobRequest extends Omit<RideData, 'pickup' | 'destination'> {
     riderName?: string;
     riderGender?: string;
     rideType?: string;
-    distance?: number;
-    driverDistance?: number;
-    driverEta?: number;
+    pickupDistance?: number;
+    pickupEta?: number;
     pickup: { address: string; location: GeoPoint; };
     destination: { address: string; location: GeoPoint; };
     pickupAddress: string;
     destinationAddress: string;
     createdAt: any;
     rejectedBy?: string[];
+    eta?: number;
 }

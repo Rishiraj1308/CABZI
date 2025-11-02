@@ -123,20 +123,6 @@ export default function DriverDashboardPage() {
   
   const isOnline = partnerData?.isOnline ?? false;
 
-  const handleAvailabilityChange = async (checked: boolean) => {
-    if (!partnerData || !db) return;
-    const partnerRef = doc(db, 'partners', partnerData.id);
-    try {
-      await updateDoc(partnerRef, { isOnline: checked, status: checked ? 'online' : 'offline' });
-      toast({
-        title: checked ? "You are now ONLINE" : "You are OFFLINE",
-        description: checked ? "You will start receiving ride requests." : "You won't receive new requests.",
-      });
-    } catch (error) {
-      toast({ variant: 'destructive', title: 'Error', description: 'Could not update your status.' });
-    }
-  };
-
   // This effect listens for ride requests.
   useEffect(() => {
     if (!db || !partnerData?.id || !isOnline || activeRide || jobRequest) return;
@@ -214,7 +200,7 @@ export default function DriverDashboardPage() {
     });
 
     return () => unsubscribe();
-  }, [db, partnerData?.id, jobRequest, activeRide, isOnline]);
+  }, [db, partnerData, jobRequest, activeRide, isOnline]);
 
   
   // Listen for updates on an active ride
@@ -441,6 +427,43 @@ export default function DriverDashboardPage() {
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
         <div className={cn("space-y-6", activeRide ? "hidden lg:block lg:col-span-2" : "lg:col-span-3")}>
              <AnimatePresence>
+                {!isMapVisible && (
+                    <motion.div
+                        initial={{ opacity: 1, height: 'auto' }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                        transition={{ duration: 0.5, ease: 'easeInOut' }}
+                    >
+                         <Card>
+                             <CardHeader>
+                                <div className="flex justify-between items-center">
+                                    <CardTitle>Your Dashboard</CardTitle>
+                                    <div className="flex items-center space-x-2">
+                                        <Switch id="online-status" checked={isOnline} onCheckedChange={handleAvailabilityChange} />
+                                        <Label htmlFor="online-status" className={cn("font-semibold", isOnline ? "text-green-600" : "text-muted-foreground")}>
+                                            {isOnline ? "ONLINE" : "OFFLINE"}
+                                        </Label>
+                                    </div>
+                                </div>
+                                {isOnline && <CardDescription><LocationDisplay /></CardDescription>}
+                            </CardHeader>
+                             {isOnline ? (
+                                <CardContent className="text-center py-12">
+                                    <SearchingIndicator partnerType="path" className="w-32 h-32" />
+                                    <h3 className="text-3xl font-bold mt-4">Waiting for Rides...</h3>
+                                    <p className="text-muted-foreground">Your location is being shared to get nearby requests.</p>
+                                    <Button variant="outline" size="sm" className="mt-4" onClick={() => setIsMapVisible(true)}>Show Map View</Button>
+                                </CardContent>
+                             ) : (
+                                <CardContent className="text-center py-12">
+                                    <CardDescription>You are currently offline. Go online to receive ride requests.</CardDescription>
+                                </CardContent>
+                             )}
+                         </Card>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+             <AnimatePresence>
                 {isMapVisible && (
                 <motion.div
                     initial={{ opacity: 0, height: 0 }}
@@ -485,15 +508,16 @@ export default function DriverDashboardPage() {
                 <>
                     <Card className="shadow-lg">
                         <CardHeader className="border-b">
-                          <div className="flex justify-between items-center">
-                              <CardTitle>Your Dashboard</CardTitle>
-                              <div className="flex items-center space-x-2">
-                                <Switch id="online-status" checked={isOnline} onCheckedChange={handleAvailabilityChange} />
-                                <Label htmlFor="online-status" className={cn("font-semibold", isOnline ? "text-green-600" : "text-muted-foreground")}>
-                                    {isOnline ? "ONLINE" : "OFFLINE"}
-                                </Label>
+                            <CardTitle>Your Dashboard</CardTitle>
+                             <div className="flex justify-between items-center">
+                                <LocationDisplay />
+                                <div className="flex items-center space-x-2">
+                                    <Switch id="online-status" checked={isOnline} onCheckedChange={handleAvailabilityChange} />
+                                    <Label htmlFor="online-status" className={cn("font-semibold", isOnline ? "text-green-600" : "text-muted-foreground")}>
+                                        {isOnline ? "ONLINE" : "OFFLINE"}
+                                    </Label>
+                                </div>
                             </div>
-                          </div>
                         </CardHeader>
                         {isOnline ? (
                         <CardContent className="text-center py-12">
@@ -583,31 +607,6 @@ export default function DriverDashboardPage() {
             </p>
           </div>
         </div>
-
-        <div className="h-40 w-full rounded-md overflow-hidden border mt-3">
-          <LiveMap
-            driverLocation={driverLocation}
-            riderLocation={
-              jobRequest?.pickup?.location
-                ? {
-                    lat: jobRequest.pickup.location.latitude,
-                    lon: jobRequest.pickup.location.longitude,
-                  }
-                : undefined
-            }
-            destinationLocation={
-              jobRequest?.destination?.location
-                ? {
-                    lat: jobRequest.destination.location.latitude,
-                    lon: jobRequest.destination.location.longitude,
-                  }
-                : undefined
-            }
-            isTripInProgress={false}
-            zoom={11}
-          />
-        </div>
-
         <div className="grid grid-cols-3 gap-2 text-center mt-3">
           <div className="p-2 bg-muted rounded-md">
             <p className="text-xs text-muted-foreground">Est. Fare</p>
@@ -618,7 +617,7 @@ export default function DriverDashboardPage() {
           <div className="p-2 bg-muted rounded-md">
             <p className="text-xs text-muted-foreground">To Pickup</p>
             <p className="font-bold text-lg">
-                {jobRequest.distance ? `${jobRequest.distance.toFixed(1)} km` : '~km'}
+                {jobRequest.distance ? `${jobRequest.distance.toFixed(1)} km` : "~km"}
             </p>
           </div>
           <div className="p-2 bg-muted rounded-md">
