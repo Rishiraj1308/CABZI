@@ -18,6 +18,7 @@ import { BikeIcon, AutoIcon, CabIcon } from '@/components/icons'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import dynamic from 'next/dynamic'
 import { Progress } from '@/components/ui/progress'
+import CuroMindReveal from '@/components/CuroMindReveal'
 
 
 const LiveMap = dynamic(() => import('@/components/live-map'), {
@@ -489,23 +490,7 @@ export default function HomePage() {
                 </div>
             </section>
             
-            <section className="py-20 md:py-24 bg-muted/40">
-                <div className="container text-center">
-                    <motion.div 
-                        initial={{ opacity: 0, y: 20 }}
-                        whileInView={{ opacity: 1, y: 0 }}
-                        viewport={{ once: true, amount: 0.5 }}
-                        transition={{ duration: 0.5 }}
-                    >
-                        <h2 className="text-3xl font-bold tracking-tight sm:text-4xl font-headline flex items-center justify-center gap-3">
-                            <BrainCircuit className="w-8 h-8 text-primary" /> Something intelligent is awakening...
-                        </h2>
-                        <p className="mt-4 text-lg text-muted-foreground">
-                            Coming soon: The mind that cares.
-                        </p>
-                    </motion.div>
-                </div>
-            </section>
+            <CuroMindReveal />
 
             {/* Your Journey Section */}
              <section className="py-20 md:py-24">
