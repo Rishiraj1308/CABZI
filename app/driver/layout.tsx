@@ -4,7 +4,7 @@
 import React, { useState, useEffect, useRef, useCallback, createContext, useContext } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { LayoutDashboard, Landmark, Gem, User, PanelLeft, LogOut, Sun, Moon, Wrench, MapPin } from 'lucide-react'
+import { LayoutDashboard, Landmark, Gem, User, PanelLeft, LogOut, Sun, Moon, Wrench, MapPin, Map } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Toaster } from '@/components/ui/toaster'
@@ -38,8 +38,15 @@ import { Badge } from '@/components/ui/badge'
 import { MotionDiv } from '@/components/ui/motion-div'
 import { NotificationsProvider } from '@/context/NotificationContext';
 import { Skeleton } from '@/components/ui/skeleton'
-import { Switch } from '@/components/ui/switch'
-import { Label } from '@/components/ui/label'
+import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog'
+import dynamic from 'next/dynamic'
+
+
+const LiveMap = dynamic(() => import('@/components/live-map'), { 
+    ssr: false,
+    loading: () => <div className="w-full h-full bg-muted flex items-center justify-center"><p>Loading Map...</p></div>
+});
+
 
 interface PartnerData {
     id: string;
@@ -377,6 +384,16 @@ function DriverLayoutContent({ children }: { children: React.ReactNode }) {
             </Sheet>
             <LocationDisplay />
             <div className="ml-auto flex items-center gap-4">
+                 <Dialog>
+                    <DialogTrigger asChild>
+                       <Button variant="outline"><Map className="mr-2 h-4 w-4"/> View Live Map</Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-3xl h-[80vh] p-0">
+                       <LiveMap 
+                          driverLocation={partnerData?.currentLocation ? { lat: partnerData.currentLocation.latitude, lon: partnerData.currentLocation.longitude } : undefined}
+                       />
+                    </DialogContent>
+                </Dialog>
                 <ThemeToggle />
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -432,7 +449,7 @@ function DriverLayoutContent({ children }: { children: React.ReactNode }) {
           </main>
       </div>
     </div>
-  );
+  )
 }
 
 export default function DriverLayout({ children }: { children: React.ReactNode }) {
