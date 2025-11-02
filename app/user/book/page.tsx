@@ -18,22 +18,16 @@ const recentTrips = [
         icon: MapPin,
         title: "Connaught Place",
         description: "New Delhi, Delhi",
-        distance: "5.2 km",
-        time: "15 min"
     },
     {
         icon: MapPin,
         title: "Indira Gandhi International Airport",
         description: "New Delhi, Delhi",
-        distance: "18.7 km",
-        time: "45 min"
     },
     {
         icon: MapPin,
         title: "Select Citywalk",
         description: "Saket, New Delhi",
-        distance: "12.1 km",
-        time: "30 min"
     },
 ]
 
@@ -86,23 +80,20 @@ export default function BookRidePage() {
             animate="visible"
             variants={containerVariants}
         >
-            <header className="bg-[#F0FDF4] dark:bg-green-900/20 p-4 relative text-green-900 dark:text-green-200">
+            <header className="bg-background p-4 relative">
                 <div className="container mx-auto">
                     <motion.div variants={itemVariants} className="flex justify-between items-center">
-                        <Button variant="ghost" size="icon" className="hover:bg-black/10 dark:hover:bg-white/10" onClick={() => router.push('/user')}>
+                        <Button variant="ghost" size="icon" className="hover:bg-muted" onClick={() => router.push('/user')}>
                             <ArrowLeft className="w-5 h-5"/>
                         </Button>
-                         <Button variant="outline" className="bg-white/50 dark:bg-black/20 border-green-900/20 dark:border-green-200/20">
+                         <Button variant="outline">
                             <Map className="w-4 h-4 mr-2"/> Map
                          </Button>
                     </motion.div>
                     <motion.div variants={itemVariants} className="pt-8 pb-20 flex justify-between items-end">
                         <div>
                              <h1 className="text-4xl font-bold">Transport</h1>
-                             <p className="opacity-80 mt-1 max-w-md">Wherever you're going, let's get you there!</p>
-                        </div>
-                        <div className="relative w-40 h-20 hidden sm:block">
-                            <Image src="/car.svg" alt="Car illustration" layout="fill" objectFit="contain" data-ai-hint="happy car journey" />
+                             <p className="text-muted-foreground mt-1 max-w-md">Wherever you're going, let's get you there!</p>
                         </div>
                     </motion.div>
                 </div>
