@@ -417,20 +417,6 @@ export default function DriverDashboardPage() {
                     <StatCard title="Acceptance Rate" value={`${partnerData?.acceptanceRate || '95'}%`} icon={Power} isLoading={isDriverLoading} />
                     <StatCard title="Rating" value={partnerData?.rating?.toString() || '4.9'} icon={Star} isLoading={isDriverLoading} />
                 </div>
-
-                <Card className="bg-gradient-to-r from-primary/80 to-primary/70 text-primary-foreground border-none">
-                    <CardHeader>
-                    <CardTitle className="flex items-center gap-2"><Sparkles className="text-yellow-300" /> AI Earnings Coach</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                    <p>Focus on the Cyber Hub area between 5 PM - 8 PM. High demand is expected, and you could earn up to 30% more.</p>
-                     <div className="flex flex-wrap gap-x-4 gap-y-2 text-xs mt-3 text-primary-foreground/80">
-                            <span className="flex items-center gap-1.5"><MapPin className="w-3 h-3"/> Cyber Hub</span>
-                            <span className="flex items-center gap-1.5"><Clock className="w-3 h-3"/> 5 PM - 8 PM</span>
-                            <span className="flex items-center gap-1.5"><TrendingUp className="w-3 h-3"/> +30% potential</span>
-                        </div>
-                    </CardContent>
-                </Card>
                 
                  {isOnline && (
                    <Card>
@@ -460,6 +446,21 @@ export default function DriverDashboardPage() {
                     </CardContent>
                    </Card>
                 )}
+
+                <Card className="bg-gradient-to-r from-primary/80 to-primary/70 text-primary-foreground border-none">
+                    <CardHeader>
+                    <CardTitle className="flex items-center gap-2"><Sparkles className="text-yellow-300" /> AI Earnings Coach</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                    <p>Focus on the Cyber Hub area between 5 PM - 8 PM. High demand is expected, and you could earn up to 30% more.</p>
+                     <div className="flex flex-wrap gap-x-4 gap-y-2 text-xs mt-3 text-primary-foreground/80">
+                            <span className="flex items-center gap-1.5"><MapPin className="w-3 h-3"/> Cyber Hub</span>
+                            <span className="flex items-center gap-1.5"><Clock className="w-3 h-3"/> 5 PM - 8 PM</span>
+                            <span className="flex items-center gap-1.5"><TrendingUp className="w-3 h-3"/> +30% potential</span>
+                        </div>
+                    </CardContent>
+                </Card>
+                
                  <div className="grid grid-cols-3 gap-2 sticky bottom-4">
                     <Button variant="secondary" className="h-14 flex-col" onClick={() => handleAvailabilityChange(!isOnline)}>
                         <Send className="w-5 h-5 mb-1" />
@@ -558,4 +559,3 @@ export default function DriverDashboardPage() {
     </div>
   );
 }
-
