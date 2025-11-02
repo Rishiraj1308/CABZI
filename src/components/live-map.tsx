@@ -147,10 +147,7 @@ const LiveMap = forwardRef<any, LiveMapProps>((props, ref) => {
         
         setTimeout(() => map.invalidateSize(), 100);
 
-        const isDark = resolvedTheme === 'dark';
-        const initialUrl = isDark 
-            ? 'https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png'
-            : 'https://tiles.stadiamaps.com/tiles/alidade_smooth/{z}/{x}/{y}{r}.png';
+        const initialUrl = 'https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png';
         const initialAttribution = '&copy; <a href="https://www.stadiamaps.com/" target="_blank">Stadia Maps</a> &copy; <a href="https://openmaptiles.org/" target="_blank">OpenMapTiles</a> &copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a>';
 
         tileLayerRef.current = L.tileLayer(initialUrl, { attribution: initialAttribution }).addTo(map);
@@ -188,17 +185,7 @@ const LiveMap = forwardRef<any, LiveMapProps>((props, ref) => {
             }
         }
 
-    }, [getAddress, props, resolvedTheme, props.zoom]);
-
-    useEffect(() => {
-        if (!tileLayerRef.current) return;
-        const isDark = resolvedTheme === 'dark';
-        const newUrl = isDark
-            ? 'https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png'
-            : 'https://tiles.stadiamaps.com/tiles/alidade_smooth/{z}/{x}/{y}{r}.png';
-        tileLayerRef.current.setUrl(newUrl);
-    }, [resolvedTheme]);
-
+    }, [getAddress, props, props.zoom]);
 
     useEffect(() => {
         const map = mapInstanceRef.current;
@@ -359,4 +346,5 @@ const LiveMap = forwardRef<any, LiveMapProps>((props, ref) => {
 
 LiveMap.displayName = 'LiveMap';
 export default LiveMap;
+
 
