@@ -157,6 +157,68 @@ export default function DriverDashboardPage() {
     }
   };
 
+  const handleAcceptJob = async () => {
+    if (!jobRequest || !partnerData || !db) return;
+    if (requestTimerRef.current) clearInterval(requestTimerRef.current);
+  
+    const jobRef = doc(db, 'rides', jobRequest.id);
+    const partnerRef = doc(db, 'partners', partnerData.id);
+  
+    try {
+      await runTransaction(db, async (transaction) => {
+        const jobDoc = await transaction.get(jobRef);
+        if (!jobDoc.exists()) throw new Error("Ride not found.");
+        const jobData = jobDoc.data();
+  
+        if (jobData.status !== 'searching') {
+          throw new Error("This ride has already been accepted by another driver.");
+        }
+  
+        const updateData: any = {
+          status: 'accepted',
+          driverId: partnerData.id,
+          driverName: partnerData.name,
+          driverDetails: {
+            name: partnerData.name,
+            vehicle: `${partnerData.vehicleBrand || ''} ${partnerData.vehicleName || ''}`.trim(),
+            rating: partnerData.rating ?? 5.0,
+            photoUrl: partnerData.photoUrl || '',
+            phone: partnerData.phone || '',
+          },
+          acceptedAt: serverTimestamp(),
+          driverEta: jobRequest.eta, // Use eta from jobRequest
+          driverDistance: jobRequest.distance, // Use distance from jobRequest
+        };
+  
+        Object.keys(updateData).forEach((key) => {
+          if (updateData[key] === undefined || updateData[key] === null) {
+            delete updateData[key];
+          }
+        });
+  
+        transaction.update(jobRef, updateData);
+        transaction.update(partnerRef, { status: 'on_trip' });
+      });
+  
+      setJobRequest(null);
+      setActiveRide({ ...jobRequest, status: 'accepted' } as RideData);
+      localStorage.setItem('activeRideId', jobRequest.id);
+  
+      toast({
+        title: 'Ride Accepted!',
+        description: 'Get ready to navigate to the pickup location.',
+      });
+    } catch (err: any) {
+      console.error("Error accepting job:", err);
+      toast({
+        variant: 'destructive',
+        title: 'Could not accept job',
+        description: err.message || 'It might have been taken by another driver.',
+      });
+      setJobRequest(null);
+    }
+  };  
+
   const renderActiveRide = () => {
         if (!activeRide) return null;
         
@@ -216,7 +278,7 @@ export default function DriverDashboardPage() {
                         <div className="flex justify-between items-center">
                             <CardTitle>Your Dashboard</CardTitle>
                             <div className="flex items-center space-x-2">
-                                <Switch id="online-status" checked={isOnline} />
+                                <Switch id="online-status" checked={isOnline} onCheckedChange={handleAvailabilityChange} />
                                 <Label htmlFor="online-status" className={cn("font-semibold", isOnline ? "text-green-600" : "text-muted-foreground")}>
                                     {isOnline ? "ONLINE" : "OFFLINE"}
                                 </Label>
