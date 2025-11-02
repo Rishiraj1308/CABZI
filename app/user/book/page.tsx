@@ -324,5 +324,4 @@ export default function BookRidePage() {
             </div>
         </motion.div>
     );
-
-    
+}
