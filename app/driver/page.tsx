@@ -139,41 +139,84 @@ export default function DriverDashboardPage() {
 
   // This effect listens for ride requests.
   useEffect(() => {
-    if (!db || !partnerData?.id || !isOnline || activeRide || jobRequest) {
-      return;
-    }
-  
-    const q = query(
-      collection(db, "rides"),
-      where("status", "==", "searching"),
-    );
-  
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      if (jobRequest || activeRide) return; // Don't process if already busy
-  
-      const potentialJobs = snapshot.docs.map(doc => {
+    if (!db || !partnerData?.id || !isOnline || activeRide || jobRequest) return;
+
+    const q = query(collection(db, "rides"), where("status", "==", "searching"));
+
+    const unsubscribe = onSnapshot(q, async (snapshot) => {
+      if (jobRequest || activeRide) return;
+
+      const driverLoc = partnerData?.currentLocation;
+      if (!driverLoc) return;
+
+      const toRad = (v: number) => (v * Math.PI) / 180;
+      const calcDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
+        const R = 6371; // km
+        const dLat = toRad(lat2 - lat1);
+        const dLon = toRad(lon2 - lon1);
+        const a =
+          Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+          Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
+          Math.sin(dLon / 2) * Math.sin(dLon / 2);
+        return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      };
+
+      const potentialJobs = snapshot.docs.map((doc) => {
         const data = doc.data() as any;
+        const pickupLoc = data?.pickup?.location;
+        const destLoc = data?.destination?.location;
+
+        let pickupDistance = null;
+        let pickupEta = null;
+        let dropDistance = null;
+        let dropEta = null;
+
+        if (pickupLoc) {
+          pickupDistance = calcDistance(
+            driverLoc.latitude,
+            driverLoc.longitude,
+            pickupLoc.latitude,
+            pickupLoc.longitude
+          );
+          pickupEta = Math.max(2, Math.round((pickupDistance / 0.5) * 2)); // approx min
+        }
+
+        if (destLoc && pickupLoc) {
+          dropDistance = calcDistance(
+            pickupLoc.latitude,
+            pickupLoc.longitude,
+            destLoc.latitude,
+            destLoc.longitude
+          );
+          dropEta = Math.max(3, Math.round((dropDistance / 0.5) * 3)); // approx
+        }
+
         return {
           id: doc.id,
           ...data,
-          pickupAddress: data.pickupAddress || data?.pickup?.address || 'Pickup not available',
-          destinationAddress: data.destinationAddress || data?.destination?.address || 'Drop not available',
+          pickupAddress: data?.pickup?.address || "Pickup not available",
+          destinationAddress: data?.destination?.address || "Drop not available",
+          pickupDistance,
+          pickupEta,
+          dropDistance,
+          dropEta,
         } as JobRequest;
-      });      
-      const newJob = potentialJobs.find(job => 
-        !job.rejectedBy?.includes(partnerData.id)
+      });
+
+      const newJob = potentialJobs.find(
+        (job) => !job.rejectedBy?.includes(partnerData.id)
       );
-  
+
       if (newJob) {
-        notificationSoundRef.current?.play().catch(e => console.warn("Sound blocked until user interaction:", e));
+        notificationSoundRef.current?.play().catch(() => {});
         setJobRequest(newJob);
       }
     });
-  
+
     return () => unsubscribe();
   }, [db, partnerData?.id, jobRequest, activeRide, isOnline]);
 
-
+  
   // Listen for updates on an active ride
   useEffect(() => {
     if (!db || !activeRide?.id) return;
@@ -250,7 +293,7 @@ export default function DriverDashboardPage() {
             phone: partnerData.phone || '',
           },
           acceptedAt: serverTimestamp(),
-          driverEta: jobRequest.driverEta,
+          driverEta: jobRequest.pickupEta,
         };
   
         Object.keys(updateData).forEach((key) => {
@@ -396,7 +439,7 @@ export default function DriverDashboardPage() {
     }
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-        <div className={cn("space-y-6", activeRide ? "hidden lg:block lg:col-span-3" : "lg:col-span-3")}>
+        <div className={cn("space-y-6", activeRide ? "hidden lg:block lg:col-span-2" : "lg:col-span-3")}>
              <AnimatePresence>
                 {isMapVisible && (
                 <motion.div
@@ -451,9 +494,6 @@ export default function DriverDashboardPage() {
                                 </Label>
                             </div>
                           </div>
-                           <div className="flex items-center gap-2 pt-2">
-                                <Button variant="ghost" size="sm" onClick={() => setIsMapVisible(!isMapVisible)}>{isMapVisible ? 'Hide' : 'Show'} Map</Button>
-                            </div>
                         </CardHeader>
                         {isOnline ? (
                         <CardContent className="text-center py-12">
@@ -578,13 +618,13 @@ export default function DriverDashboardPage() {
           <div className="p-2 bg-muted rounded-md">
             <p className="text-xs text-muted-foreground">To Pickup</p>
             <p className="font-bold text-lg">
-              {jobRequest.distance ? `${jobRequest.distance.toFixed(1)} km` : '~km'}
+                {jobRequest.distance ? `${jobRequest.distance.toFixed(1)} km` : '~km'}
             </p>
           </div>
           <div className="p-2 bg-muted rounded-md">
             <p className="text-xs text-muted-foreground">Est. Arrival</p>
             <p className="font-bold text-lg">
-              {jobRequest.eta ? `~${Math.ceil(jobRequest.eta)} min` : '~min'}
+                {jobRequest.eta ? `~${Math.ceil(jobRequest.eta)} min` : '~min'}
             </p>
           </div>
         </div>
@@ -620,3 +660,4 @@ export default function DriverDashboardPage() {
     </div>
   );
 }
+
