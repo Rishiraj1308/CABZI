@@ -404,7 +404,7 @@ export default function DriverDashboardPage() {
                     {isOnline ? (
                     <CardContent className="text-center py-12">
                         <div className="flex justify-center mb-4">
-                            <Dialog>
+                           <Dialog>
                                 <DialogTrigger asChild>
                                     <Button variant="outline" size="lg">
                                         <Map className="mr-2 h-5 w-5"/>
@@ -485,6 +485,7 @@ export default function DriverDashboardPage() {
                 <LiveMap
                   driverLocation={driverLocation}
                   riderLocation={jobRequest.pickup?.location ? { lat: jobRequest.pickup.location.latitude, lon: jobRequest.pickup.location.longitude } : undefined}
+                  destinationLocation={jobRequest.destination?.location ? { lat: jobRequest.destination.location.latitude, lon: (jobRequest.destination.location as any).longitude } : undefined}
                   isTripInProgress={false}
                   zoom={11}
                 />
@@ -531,4 +532,3 @@ export default function DriverDashboardPage() {
     </div>
   );
 }
-
