@@ -97,11 +97,6 @@ export default function DriverDashboardPage() {
   const [isHistoryLoading, setIsHistoryLoading] = useState(true);
 
   
-  // New state for waiting timer
-  const [waitingTime, setWaitingTime] = useState(60);
-  const [waitingCharges, setWaitingCharges] = useState(0);
-  const waitingTimerRef = useRef<NodeJS.Timeout | null>(null);
-
   useEffect(() => {
     if (!db || !partnerData?.id) {
         setIsHistoryLoading(false);
@@ -109,11 +104,15 @@ export default function DriverDashboardPage() {
     };
     
     setIsHistoryLoading(true);
+    const ninetyDaysAgo = new Date();
+    ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+    const ninetyDaysAgoTimestamp = Timestamp.fromDate(ninetyDaysAgo);
+
     const ridesQuery = query(
         collection(db, 'rides'), 
-        where('driverId', '==', partnerData.id), 
-        orderBy('createdAt', 'desc'),
-        limit(10)
+        where('driverId', '==', partnerData.id),
+        where('createdAt', '>=', ninetyDaysAgoTimestamp),
+        orderBy('createdAt', 'desc')
     );
 
     const unsubscribe = onSnapshot(ridesQuery, (snapshot) => {
@@ -687,3 +686,4 @@ export default function DriverDashboardPage() {
     
 
     
+
