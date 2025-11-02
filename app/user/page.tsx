@@ -1,7 +1,7 @@
 
 'use client'
 
-import React, { useState, useEffect, useCallback, useRef } from 'react'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button, buttonVariants } from '@/components/ui/button'
 import {
@@ -52,7 +52,7 @@ const ServiceCard = ({
 
 export default function ServicePortalPage() {
   const router = useRouter()
-  const { t } = useLanguage()
+  const { language, t } = useLanguage();
   const { toast } = useToast()
   
   const [searchQuery, setSearchQuery] = useState('');
@@ -63,17 +63,17 @@ export default function ServicePortalPage() {
 
   const headingText = "How can we help you today?".split("");
 
-  const serviceData = [
-    { id: 'ride', href: '/user/book', icon: Car, title: 'Ride', description: 'On-demand transport to clinics', tag: '5–10m', tagIcon: Clock, iconBg: 'bg-emerald-400/15', iconRing: 'ring-emerald-400/30', iconColor: 'text-emerald-500', tagBg: 'bg-emerald-400/10', tagBorder: 'border-emerald-400/30', tagColor: 'text-emerald-600', label: 'ride transport car taxi clinic mobility hospital cab' },
-    { id: 'resq', href: '/user/resq', icon: Wrench, title: 'ResQ', description: 'On-site assistance for minor issues', tag: 'On-Demand', tagIcon: Wrench, iconBg: 'bg-amber-400/15', iconRing: 'ring-amber-400/30', iconColor: 'text-amber-500', tagBg: 'bg-amber-400/10', tagBorder: 'border-amber-400/30', tagColor: 'text-amber-600', label: 'resq on-site assistance home help nurse minor issues support' },
-    { id: 'sos', onClick: () => setIsSosModalOpen(true), icon: Ambulance, title: 'Emergency SOS', description: 'Connect to 24/7 emergency line', tag: '24/7', tagIcon: AlertTriangle, iconBg: 'bg-red-500/20', iconRing: 'ring-red-500/40', iconColor: 'text-red-500', tagBg: 'bg-red-400/10', tagBorder: 'border-red-400/40', tagColor: 'text-red-600', label: 'sos emergency ambulance urgent help police fire medical' },
-    { id: 'appointment', href: '/user/appointments', icon: Calendar, title: 'Book Appointment', description: 'Clinics, specialists, telehealth', tag: 'Next: 1–2d', tagIcon: Clock, iconBg: 'bg-sky-400/15', iconRing: 'ring-sky-400/30', iconColor: 'text-sky-500', tagBg: 'bg-sky-400/10', tagBorder: 'border-sky-400/30', tagColor: 'text-sky-200', label: 'book appointment doctor specialist telehealth clinic schedule calendar' },
-    { id: 'lab_tests', href: '/user/lab-tests', icon: TestTube, title: 'Lab Tests', description: 'Home sample pickup available', tag: 'Home pickup', tagIcon: Home, iconBg: 'bg-fuchsia-400/15', iconRing: 'ring-fuchsia-400/30', iconColor: 'text-fuchsia-500', tagBg: 'bg-fuchsia-400/10', tagBorder: 'border-fuchsia-400/30', tagColor: 'text-fuchsia-200', label: 'lab tests diagnostics blood test home pickup reports' }
-  ];
+  const serviceData = React.useMemo(() => [
+    { id: 'ride', href: '/user/book', icon: Car, title: 'Ride', description: 'On-demand transport to clinics', tag: '5–10m', tagIcon: Clock, iconBg: 'bg-emerald-400/15', iconRing: 'ring-emerald-400/30', iconColor: 'text-emerald-500', tagBg: 'bg-emerald-400/10', tagBorder: 'border-emerald-400/30', tagColor: 'text-emerald-600', label: 'ride transport car taxi clinic mobility hospital cab गाड़ी कार टैक्सी' },
+    { id: 'resq', href: '/user/resq', icon: Wrench, title: 'ResQ', description: 'On-site assistance for minor issues', tag: 'On-Demand', tagIcon: Wrench, iconBg: 'bg-amber-400/15', iconRing: 'ring-amber-400/30', iconColor: 'text-amber-500', tagBg: 'bg-amber-400/10', tagBorder: 'border-amber-400/30', tagColor: 'text-amber-600', label: 'resq on-site assistance home help nurse minor issues support मदद सहायता' },
+    { id: 'sos', onClick: () => setIsSosModalOpen(true), icon: Ambulance, title: 'Emergency SOS', description: 'Connect to 24/7 emergency line', tag: '24/7', tagIcon: AlertTriangle, iconBg: 'bg-red-500/20', iconRing: 'ring-red-500/40', iconColor: 'text-red-500', tagBg: 'bg-red-400/10', tagBorder: 'border-red-400/40', tagColor: 'text-red-600', label: 'sos emergency ambulance urgent help police fire medical आपातकालीन एम्बुलेंस मदद' },
+    { id: 'appointment', href: '/user/appointments', icon: Calendar, title: 'Book Appointment', description: 'Clinics, specialists, telehealth', tag: 'Next: 1–2d', tagIcon: Clock, iconBg: 'bg-sky-400/15', iconRing: 'ring-sky-400/30', iconColor: 'text-sky-500', tagBg: 'bg-sky-400/10', tagBorder: 'border-sky-400/30', tagColor: 'text-sky-200', label: 'book appointment doctor specialist telehealth clinic schedule calendar अपॉइंटमेंट डॉक्टर' },
+    { id: 'lab_tests', href: '/user/lab-tests', icon: TestTube, title: 'Lab Tests', description: 'Home sample pickup available', tag: 'Home pickup', tagIcon: Home, iconBg: 'bg-fuchsia-400/15', iconRing: 'ring-fuchsia-400/30', iconColor: 'text-fuchsia-500', tagBg: 'bg-fuchsia-400/10', tagBorder: 'border-fuchsia-400/30', tagColor: 'text-fuchsia-600', label: 'lab tests diagnostics blood test home pickup reports लैब टेस्ट' }
+  ], []);
   
   useEffect(() => {
     setServices(serviceData);
-  }, []);
+  }, [serviceData]);
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     const query = e.target.value.toLowerCase();
@@ -85,12 +85,13 @@ export default function ServicePortalPage() {
       setServices(serviceData);
       return;
     }
+    const lowercasedQuery = searchQuery.toLowerCase();
     const filtered = serviceData.filter(service => 
-      service.label.toLowerCase().includes(searchQuery) ||
-      service.title.toLowerCase().includes(searchQuery)
+      service.label.toLowerCase().includes(lowercasedQuery) ||
+      service.title.toLowerCase().includes(lowercasedQuery)
     );
     setServices(filtered);
-  }, [searchQuery]);
+  }, [searchQuery, serviceData]);
   
   const handleServiceClick = (service: any) => {
     if (service.onClick) {
@@ -118,6 +119,9 @@ export default function ServicePortalPage() {
 
     const recognition = new SpeechRecognition();
     recognitionRef.current = recognition;
+    
+    // Set language for recognition
+    recognition.lang = language === 'hi' ? 'hi-IN' : 'en-US';
 
     recognition.onstart = () => setIsListening(true);
     recognition.onend = () => setIsListening(false);
