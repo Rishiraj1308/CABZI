@@ -6,11 +6,11 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { ArrowLeft, Map, MapPin, Calendar as CalendarIcon } from 'lucide-react';
+import { ArrowLeft, Map, MapPin, Calendar as CalendarIcon, Clock, Car } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { searchPlace } from '@/lib/routing';
+import { getRoute, searchPlace } from '@/lib/routing';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -50,11 +50,33 @@ export default function BookRidePage() {
     const [destination, setDestination] = useState('');
     const [searchResults, setSearchResults] = useState<any[]>([]);
     const [isSearching, setIsSearching] = useState(false);
+    const [currentUserLocation, setCurrentUserLocation] = useState<{ lat: number, lon: number } | null>(null);
     
     // State for scheduling
     const [isScheduleDialogOpen, setIsScheduleDialogOpen] = useState(false);
     const [scheduledDate, setScheduledDate] = useState<Date | undefined>(new Date());
     const [scheduledTime, setScheduledTime] = useState('');
+
+    useEffect(() => {
+      // Get user's current location on mount
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            setCurrentUserLocation({
+              lat: position.coords.latitude,
+              lon: position.coords.longitude,
+            });
+          },
+          () => {
+            toast({
+              variant: 'destructive',
+              title: 'Location Access Denied',
+              description: 'Distance and ETA cannot be calculated without your location.',
+            });
+          }
+        );
+      }
+    }, [toast]);
 
 
     const containerVariants = {
@@ -79,12 +101,40 @@ export default function BookRidePage() {
         const handler = setTimeout(async () => {
             setIsSearching(true);
             const results = await searchPlace(destination);
-            setSearchResults(results || []);
+            
+            if (currentUserLocation && results) {
+                // For each result, fetch route info to get distance and time
+                const resultsWithRouteInfo = await Promise.all(
+                    results.map(async (place: any) => {
+                        try {
+                            const routeData = await getRoute(
+                                currentUserLocation, 
+                                { lat: parseFloat(place.lat), lon: parseFloat(place.lon) }
+                            );
+                            if (routeData && routeData.routes && routeData.routes.length > 0) {
+                                const route = routeData.routes[0];
+                                return {
+                                    ...place,
+                                    distance: route.distance / 1000, // in km
+                                    duration: Math.round(route.duration / 60), // in minutes
+                                };
+                            }
+                        } catch (error) {
+                            // If routing fails for one result, just return the original place
+                            return place;
+                        }
+                        return place;
+                    })
+                );
+                setSearchResults(resultsWithRouteInfo);
+            } else {
+                setSearchResults(results || []);
+            }
             setIsSearching(false);
-        }, 300); // Debounce search
+        }, 500); // Debounce search
 
         return () => clearTimeout(handler);
-    }, [destination]);
+    }, [destination, currentUserLocation]);
 
     const handleSelectDestination = (place: any) => {
         const destinationName = place.display_name.split(',')[0];
@@ -183,15 +233,13 @@ export default function BookRidePage() {
                                                     {scheduledDate ? format(scheduledDate, "PPP") : <span>Pick a date</span>}
                                                 </Button>
                                                 </PopoverTrigger>
-                                                <PopoverContent className="w-auto p-0">
-                                                <Calendar
+                                                <PopoverContent className="w-auto p-0"><Calendar
                                                     mode="single"
                                                     selected={scheduledDate}
                                                     onSelect={setScheduledDate}
                                                     initialFocus
                                                     disabled={(d) => d < new Date(new Date().setDate(new Date().getDate()))}
-                                                />
-                                                </PopoverContent>
+                                                /></PopoverContent>
                                             </Popover>
                                         </div>
                                          <div className="space-y-2">
@@ -236,6 +284,12 @@ export default function BookRidePage() {
                                             <div className="flex-1">
                                                  <p className="font-semibold text-sm">{place.display_name.split(',')[0]}</p>
                                                  <p className="text-xs text-muted-foreground" dangerouslySetInnerHTML={{ __html: place.display_name.split(',').slice(1).join(', ') }} />
+                                                 {place.distance && place.duration && (
+                                                    <div className="text-xs text-primary font-semibold flex items-center gap-2 mt-1">
+                                                       <div className="flex items-center gap-1"><Car className="w-3 h-3"/> {place.distance.toFixed(1)} km</div>
+                                                       <div className="flex items-center gap-1"><Clock className="w-3 h-3"/> ~{place.duration} min</div>
+                                                    </div>
+                                                 )}
                                             </div>
                                         </div>
                                     ))
@@ -270,4 +324,5 @@ export default function BookRidePage() {
             </div>
         </motion.div>
     );
-}
+
+    
