@@ -6,7 +6,7 @@ import Image from 'next/image'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
-import { Star, History, IndianRupee, Power, KeyRound, Clock, MapPin, Route, Navigation, CheckCircle, Sparkles, Eye, Map } from 'lucide-react'
+import { Star, History, IndianRupee, Power, KeyRound, Clock, MapPin, Route, Navigation, CheckCircle, Sparkles, Eye, Map, TrendingUp } from 'lucide-react'
 import {
   AlertDialog,
   AlertDialogContent,
@@ -392,7 +392,7 @@ export default function DriverDashboardPage() {
        <Card className="shadow-lg">
           <CardHeader>
               <div className="flex justify-between items-center">
-                  <CardTitle>Your Dashboard</CardTitle>
+                  <CardTitle className="text-foreground">Your Dashboard</CardTitle>
                   <div className="flex items-center space-x-2">
                       <Switch id="online-status" checked={isOnline} onCheckedChange={handleAvailabilityChange} />
                       <Label htmlFor="online-status" className={cn("font-semibold", isOnline ? "text-green-600" : "text-muted-foreground")}>
@@ -400,11 +400,14 @@ export default function DriverDashboardPage() {
                       </Label>
                   </div>
               </div>
+               <CardDescription className="text-muted-foreground">
+                Welcome back. {isOnline ? 'You are online and ready for rides.' : 'Go online to start receiving requests.'}
+               </CardDescription>
           </CardHeader>
-          {isOnline ? (
+          {isOnline && !activeRide && (
           <CardContent className="text-center py-12">
               <SearchingIndicator partnerType="path" className="w-32 h-32" />
-                  <h3 className="text-3xl font-bold mt-4">Waiting for Rides...</h3>
+                  <h3 className="text-3xl font-bold mt-4 text-foreground">Waiting for Rides...</h3>
                   <p className="text-muted-foreground mt-2 text-sm">Your location is being shared to get nearby requests.</p>
                   <Dialog>
                       <DialogTrigger asChild>
@@ -424,23 +427,19 @@ export default function DriverDashboardPage() {
                       </DialogContent>
                   </Dialog>
           </CardContent>
-          ) : (
-          <CardContent className="text-center py-12">
-              <CardDescription>You are currently offline. Go online to receive ride requests.</CardDescription>
-          </CardContent>
           )}
         </Card>
 
         {activeRide ? renderActiveRide() : (
             <>
-                <div className="flex flex-col md:flex-row gap-2">
+                 <div className="flex space-x-2">
                     <StatCard title="Today's Earnings" value={isEarningsVisible ? `₹${(partnerData?.todaysEarnings || 0).toLocaleString()}` : '₹ •••••'} icon={IndianRupee} isLoading={isDriverLoading} onValueClick={() => !isEarningsVisible && setIsPinDialogOpen(true)} />
                     <StatCard title="Today's Rides" value={partnerData?.jobsToday?.toString() || '0'} icon={History} isLoading={isDriverLoading} />
                     <StatCard title="Acceptance" value={`${partnerData?.acceptanceRate || '95'}%`} icon={Power} isLoading={isDriverLoading} />
                     <StatCard title="Rating" value={partnerData?.rating?.toString() || '4.9'} icon={Star} isLoading={isDriverLoading} />
                 </div>
                 
-                 <Card className="bg-background/80 backdrop-blur-sm border border-border/50 shadow-lg">
+                 <Card className="bg-background/80 backdrop-blur-sm border-border/50 shadow-lg">
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2 text-foreground"><Sparkles className="text-primary" /> AI Earnings Coach</CardTitle>
                     </CardHeader>
@@ -537,6 +536,3 @@ export default function DriverDashboardPage() {
     </div>
   );
 }
-
-
-    
