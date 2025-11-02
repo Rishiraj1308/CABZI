@@ -113,6 +113,20 @@ export default function DriverDashboardPage() {
         updateDoc(doc(db, 'partners', partnerData.id), { status: 'online' });
     }
   }, [partnerData, db]);
+
+  const handleAvailabilityChange = async (checked: boolean) => {
+    if (!partnerData || !db) return;
+    const partnerRef = doc(db, 'partners', partnerData.id);
+    try {
+      await updateDoc(partnerRef, { isOnline: checked, status: checked ? 'online' : 'offline' });
+      toast({
+        title: checked ? "You are now ONLINE" : "You are OFFLINE",
+        description: checked ? "You will start receiving ride requests." : "You won't receive new requests.",
+      });
+    } catch (error) {
+      toast({ variant: 'destructive', title: 'Error', description: 'Could not update your status.' });
+    }
+  };
   
   // This effect listens for updates on the active ride.
   useEffect(() => {
