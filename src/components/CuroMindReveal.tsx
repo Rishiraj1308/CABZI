@@ -1,6 +1,8 @@
+
 'use client'
 
 import { motion } from 'framer-motion'
+import { BrainCircuit } from 'lucide-react'
 
 export default function CuroMindReveal() {
   return (
@@ -33,9 +35,9 @@ export default function CuroMindReveal() {
         ))}
       </div>
 
-      {/* === Floating Energy Orb === */}
+      {/* === Floating Energy Orb with Icon === */}
       <motion.div
-        className="absolute w-24 h-24 bg-cyan-400/20 rounded-full blur-3xl"
+        className="absolute w-24 h-24 bg-cyan-400/20 rounded-full blur-3xl flex items-center justify-center"
         animate={{
           y: [0, -30, 0],
           opacity: [0.3, 0.7, 0.3],
@@ -45,7 +47,9 @@ export default function CuroMindReveal() {
           repeat: Infinity,
           ease: 'easeInOut',
         }}
-      />
+      >
+        <BrainCircuit className="w-12 h-12 text-cyan-200/50" />
+      </motion.div>
 
       {/* === Title === */}
       <motion.h2
