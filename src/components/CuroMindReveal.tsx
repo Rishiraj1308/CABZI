@@ -66,10 +66,9 @@ export default function CuroMindReveal() {
 
       {/* === Floating Energy Orb with Icon === */}
       <motion.div
-        className="relative w-24 h-24 bg-primary/20 rounded-full blur-3xl flex items-center justify-center mb-8"
+        className="relative w-24 h-24 flex items-center justify-center mb-8"
         animate={{
-          y: [0, -20, 0],
-          opacity: [0.3, 0.7, 0.3],
+          y: [0, -10, 0],
         }}
         transition={{
           duration: 6,
@@ -77,7 +76,8 @@ export default function CuroMindReveal() {
           ease: 'easeInOut',
         }}
       >
-        <BrainCircuit className="w-16 h-16 text-primary/50" />
+        <div className="absolute w-full h-full bg-primary/20 rounded-full blur-2xl" />
+        <BrainCircuit className="relative w-16 h-16 text-primary/80" />
       </motion.div>
 
       {/* === Title with Typewriter effect === */}
@@ -121,5 +121,3 @@ export default function CuroMindReveal() {
     </section>
   )
 }
-
-    
