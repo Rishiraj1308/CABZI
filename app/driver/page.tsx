@@ -88,7 +88,6 @@ export default function DriverDashboardPage() {
 
   const drivingSoundRef = useRef<HTMLAudioElement | null>(null)
   const hornSoundRef = useRef<HTMLAudioElement | null>(null)
-  const mapRef = useRef<any>(null);
   const [isMapVisible, setIsMapVisible] = useState(true);
 
 
@@ -384,7 +383,7 @@ export default function DriverDashboardPage() {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
         <div className="lg:col-span-2">
-            <Card>
+             <Card>
                 <CardHeader className="flex flex-row items-center justify-between p-3">
                      <h3 className="font-semibold">Live Map</h3>
                     <Button variant="ghost" size="sm" onClick={() => setIsMapVisible(prev => !prev)}>
@@ -395,27 +394,25 @@ export default function DriverDashboardPage() {
                 <AnimatePresence>
                 {isMapVisible && (
                     <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        transition={{ duration: 0.5 }}
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: '75vh', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.5, ease: 'easeInOut' }}
+                        className="overflow-hidden"
                     >
-                        <div className="h-[75vh]">
-                            <CardContent className="p-0 h-full">
-                                <LiveMap 
-                                    ref={mapRef}
-                                    onLocationFound={(address, coords) => {
-                                        if (db && partnerData) {
-                                            updateDoc(doc(db, 'partners', partnerData.id), {
-                                                currentLocation: new GeoPoint(coords.lat, coords.lon)
-                                            });
-                                        }
-                                    }}
-                                    driverLocation={driverLocation}
-                                    isTripInProgress={activeRide?.status === 'in-progress'}
-                                />
-                            </CardContent>
-                        </div>
+                        <CardContent className="p-0 h-full">
+                           <LiveMap 
+                                onLocationFound={(address, coords) => {
+                                    if (db && partnerData) {
+                                        updateDoc(doc(db, 'partners', partnerData.id), {
+                                            currentLocation: new GeoPoint(coords.lat, coords.lon)
+                                        });
+                                    }
+                                }}
+                                driverLocation={driverLocation}
+                                isTripInProgress={activeRide?.status === 'in-progress'}
+                            />
+                        </CardContent>
                     </motion.div>
                 )}
                 </AnimatePresence>
@@ -549,3 +546,5 @@ export default function DriverDashboardPage() {
   );
 }
 
+
+    
