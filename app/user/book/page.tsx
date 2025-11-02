@@ -123,7 +123,7 @@ export default function BookRidePage() {
                         <Button variant="ghost" size="icon" className="hover:bg-muted" onClick={() => router.push('/user')}>
                             <ArrowLeft className="w-5 h-5"/>
                         </Button>
-                         <Button variant="outline">
+                         <Button variant="outline" onClick={() => router.push('/user/book/map')}>
                             <Map className="w-4 h-4 mr-2"/> Map
                          </Button>
                     </motion.div>
@@ -132,6 +132,7 @@ export default function BookRidePage() {
                              <h1 className="text-4xl font-bold">Transport</h1>
                              <p className="text-muted-foreground mt-1 max-w-md">Wherever you're going, let's get you there!</p>
                         </div>
+                         <Image src="/car.svg" alt="Car" width={120} height={60} className="hidden sm:block" data-ai-hint="car illustration" />
                     </motion.div>
                 </div>
             </header>
