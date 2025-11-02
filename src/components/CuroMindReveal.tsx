@@ -12,28 +12,20 @@ export default function CuroMindReveal() {
     hidden: { opacity: 1 },
     visible: (i = 1) => ({
       opacity: 1,
-      transition: { staggerChildren: 0.04, delayChildren: 0.04 * i },
+      transition: { staggerChildren: 0.05, delayChildren: 0.04 * i },
     }),
   };
 
+  // Corrected animation variant to remove the "dancing" effect
   const child = {
     visible: {
       opacity: 1,
-      y: 0,
       transition: {
-        type: "spring",
-        damping: 12,
-        stiffness: 100,
+        duration: 0.1, // Quick fade-in for each letter
       },
     },
     hidden: {
       opacity: 0,
-      y: 20,
-      transition: {
-        type: "spring",
-        damping: 12,
-        stiffness: 100,
-      },
     },
   };
   
