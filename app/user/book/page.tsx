@@ -12,6 +12,7 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { searchPlace } from '@/lib/routing';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useToast } from '@/hooks/use-toast';
 
 const recentTrips = [
     {
@@ -33,6 +34,7 @@ const recentTrips = [
 
 export default function BookRidePage() {
     const router = useRouter();
+    const { toast } = useToast();
     const [destination, setDestination] = useState('');
     const [searchResults, setSearchResults] = useState<any[]>([]);
     const [isSearching, setIsSearching] = useState(false);
@@ -118,7 +120,7 @@ export default function BookRidePage() {
                                     onKeyDown={(e) => e.key === 'Enter' && searchResults.length > 0 && handleSelectDestination(searchResults[0])}
                                 />
                             </div>
-                            <Button variant="outline">
+                            <Button variant="outline" onClick={() => toast({ title: 'Coming Soon!', description: 'The ability to schedule rides for a later time is under development.' })}>
                                 <Calendar className="w-4 h-4 mr-2"/> Later
                             </Button>
                         </CardContent>
