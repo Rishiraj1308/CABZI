@@ -14,9 +14,6 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
-  AlertDialogCancel,
-  AlertDialogAction,
 } from "@/components/ui/alert-dialog"
 import { useToast } from '@/hooks/use-toast'
 import {
@@ -140,6 +137,25 @@ export default function DriverDashboardPage() {
 
     return () => unsub(); // Cleanup on component unmount or when activeRide.id changes
   }, [db, activeRide?.id, toast, resetAfterRide]);
+
+  const handlePinSubmit = () => {
+    const storedPin = localStorage.getItem('curocity-user-pin');
+    if (!storedPin) {
+        toast({ variant: 'destructive', title: 'PIN Not Set', description: 'Please set a UPI PIN from your wallet first.' });
+        setIsPinDialogOpen(false);
+        return;
+    }
+    if (pin === storedPin) {
+        setIsEarningsVisible(true);
+        setIsPinDialogOpen(false);
+        setPin('');
+        toast({ title: 'Earnings Revealed', description: 'Your earnings for today are now visible.' });
+        setTimeout(() => setIsEarningsVisible(false), 10000); // Hide after 10 seconds
+    } else {
+        toast({ variant: 'destructive', title: 'Invalid PIN', description: 'Please enter the correct 4-digit PIN.' });
+        setPin('');
+    }
+  };
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start h-full">
