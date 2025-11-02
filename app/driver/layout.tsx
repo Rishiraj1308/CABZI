@@ -204,52 +204,6 @@ function ThemeToggle() {
     )
 }
 
-function LocationDisplay() {
-    const { partnerData } = useDriver();
-    const [locationAddress, setLocationAddress] = useState('Locating...');
-
-    useEffect(() => {
-        let isMounted = true;
-        const getAddress = async (lat: number, lon: number) => {
-            try {
-                const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=14`);
-                if (!response.ok || !isMounted) return;
-                const data = await response.json();
-                const address = data.address;
-                const primaryLocation = address.suburb || address.neighbourhood || address.city || address.town || address.village;
-                const secondaryLocation = address.city || address.state;
-
-                if (isMounted) {
-                    if (primaryLocation && secondaryLocation && primaryLocation !== secondaryLocation) {
-                        setLocationAddress(`${primaryLocation}, ${secondaryLocation}`);
-                    } else if (primaryLocation) {
-                        setLocationAddress(primaryLocation);
-                    } else {
-                        setLocationAddress(data.display_name.split(',').slice(0, 2).join(', '));
-                    }
-                }
-            } catch (error) {
-                if (isMounted) setLocationAddress('Location details unavailable');
-            }
-        };
-
-        if (partnerData?.currentLocation) {
-            getAddress(partnerData.currentLocation.latitude, partnerData.currentLocation.longitude);
-        } else {
-            setLocationAddress('Location Unknown');
-        }
-
-        return () => { isMounted = false; };
-    }, [partnerData?.currentLocation]);
-
-    return (
-        <div className="flex items-center gap-2">
-            <MapPin className="w-4 h-4 text-muted-foreground"/>
-            <span className="text-sm font-medium text-muted-foreground truncate">{locationAddress}</span>
-        </div>
-    );
-}
-
 function DriverLayoutContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -398,10 +352,6 @@ function DriverLayoutContent({ children }: { children: React.ReactNode }) {
                     </div>
                 </SheetContent>
             </Sheet>
-            
-            <div className="hidden md:flex">
-                <LocationDisplay />
-            </div>
 
             <div className="ml-auto flex items-center gap-4">
                 <div className="flex items-center space-x-2">
