@@ -56,7 +56,16 @@ import SearchingIndicator from '@/components/ui/searching-indicator';
 import type { RideData } from '@/lib/types';
 import type { AmbulanceCase } from '@/lib/types';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useFirebase } from '@/firebase/client-provider';
+import { collection, addDoc, serverTimestamp, onSnapshot, query, orderBy, Timestamp, doc, updateDoc } from 'firebase/firestore';
+import { Input } from './ui/input';
 
+interface ChatMessage {
+    id: string;
+    text: string;
+    senderId: string;
+    timestamp: Timestamp;
+}
 
 interface Props {
   ride: RideData | AmbulanceCase | any;
@@ -67,6 +76,76 @@ interface Props {
   onEndRide?: () => void;
   rating?: number;
   setRating?: (rating: number) => void;
+}
+
+function InAppChat({ rideId }: { rideId: string }) {
+    const { user, db } = useFirebase();
+    const [messages, setMessages] = useState<ChatMessage[]>([]);
+    const [newMessage, setNewMessage] = useState('');
+    const messagesEndRef = useRef<null | HTMLDivElement>(null);
+
+    useEffect(() => {
+        if (!db || !rideId) return;
+
+        const messagesRef = collection(db, 'rides', rideId, 'messages');
+        const q = query(messagesRef, orderBy('timestamp', 'asc'));
+
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            const newMessages = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ChatMessage));
+            setMessages(newMessages);
+        });
+
+        return () => unsubscribe();
+    }, [db, rideId]);
+
+    useEffect(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }, [messages]);
+
+    const handleSendMessage = async () => {
+        if (newMessage.trim() === '' || !user || !db) return;
+
+        const messagesRef = collection(db, 'rides', rideId, 'messages');
+        await addDoc(messagesRef, {
+            text: newMessage,
+            senderId: user.uid,
+            timestamp: serverTimestamp(),
+        });
+        setNewMessage('');
+    };
+
+    return (
+        <div className="flex flex-col h-[60vh]">
+            <DialogHeader>
+                <DialogTitle>In-App Chat</DialogTitle>
+                <DialogDescription>Your conversation is private and secure.</DialogDescription>
+            </DialogHeader>
+            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                {messages.map((msg) => (
+                    <div key={msg.id} className={cn("flex items-end gap-2", msg.senderId === user?.uid ? "justify-end" : "justify-start")}>
+                        <div className={cn(
+                            "max-w-[75%] p-3 rounded-2xl text-sm",
+                            msg.senderId === user?.uid
+                                ? 'bg-primary text-primary-foreground rounded-br-none'
+                                : 'bg-muted rounded-bl-none'
+                        )}>
+                            <p>{msg.text}</p>
+                        </div>
+                    </div>
+                ))}
+                <div ref={messagesEndRef} />
+            </div>
+            <div className="flex items-center gap-2 border-t pt-4">
+                <Input
+                    placeholder="Type your message..."
+                    value={newMessage}
+                    onChange={(e) => setNewMessage(e.target.value)}
+                    onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                />
+                <Button onClick={handleSendMessage}><Send className="w-4 h-4" /></Button>
+            </div>
+        </div>
+    );
 }
 
 export default function RideStatus({
@@ -80,8 +159,10 @@ export default function RideStatus({
   setRating,
 }: Props) {
   const { toast } = useToast();
+  const { user, db } = useFirebase();
   const [isPaying, setIsPaying] = useState(false);
   const [showDriverDetails, setShowDriverDetails] = useState(false);
+  const [enteredOtp, setEnteredOtp] = useState('');
   
   const prevStatusRef = React.useRef<string | null>(null);
 
@@ -99,6 +180,7 @@ export default function RideStatus({
 
 
   const rideData = ride as RideData;
+  const isDriverView = user?.uid === rideData?.driverId;
 
   useEffect(() => {
     if (prevStatusRef.current === 'searching' && ride.status === 'accepted') {
@@ -130,6 +212,33 @@ export default function RideStatus({
         description: "This feature will be available soon!",
     });
   };
+  
+    const handleUpdateRideStatus = async (status: 'arrived' | 'in-progress' | 'payment_pending' | 'completed') => {
+    if (!rideData || !db) return;
+    const rideRef = doc(db, 'rides', rideData.id);
+    try {
+        await updateDoc(rideRef, { status });
+        toast({
+            title: "Ride Status Updated",
+            description: `Status is now: ${status.replace('_', ' ')}`,
+        });
+        if (status === 'completed') {
+            if(onDone) onDone();
+        }
+    } catch (error) {
+        toast({ variant: 'destructive', title: 'Update Failed' });
+    }
+  };
+  
+  const handleVerifyOtp = () => {
+      if (enteredOtp === rideData?.otp) {
+          handleUpdateRideStatus('in-progress');
+          toast({title: 'OTP Verified!', description: 'Trip has started.', className: 'bg-green-600 text-white'});
+      } else {
+          toast({variant: 'destructive', title: 'Invalid OTP'});
+      }
+  }
+
 
   const handlePaymentClick = async (paymentMode: 'cash' | 'wallet') => {
     setIsPaying(true);
@@ -139,155 +248,56 @@ export default function RideStatus({
     setIsPaying(false);
   };
 
-  const renderContent = () => {
-    if (isAmbulanceCase) {
-      const caseData = ride as AmbulanceCase;
-       switch(caseData.status) {
-            case 'pending':
-                return (
-                    <div className="text-center py-10">
-                        <SearchingIndicator partnerType="cure" />
-                        <h3 className="text-2xl font-bold mt-4">Finding Help...</h3>
-                        <p className="text-muted-foreground">Contacting nearby hospitals for dispatch.</p>
-                    </div>
-                )
-            case 'accepted':
-            case 'onTheWay':
-                return (
-                     <div className="space-y-4 animate-fade-in">
-                        <CardHeader className="p-0 text-center">
-                            <CardTitle>Ambulance En-Route</CardTitle>
-                            <CardDescription>Paramedic: {caseData.assignedPartner?.name}</CardDescription>
-                        </CardHeader>
-                        <div className="p-4 rounded-lg bg-muted text-center">
-                            <p className="text-sm text-muted-foreground">Estimated Arrival Time</p>
-                            <p className="text-4xl font-bold text-primary">{caseData.partnerEta ? `${Math.ceil(caseData.partnerEta)} min` : '...'}</p>
-                        </div>
-                        <Button className="w-full" asChild><a href={`tel:${caseData.assignedPartner?.phone}`}><Phone className="mr-2 h-4 w-4"/> Call Paramedic</a></Button>
-                     </div>
-                );
-            case 'inTransit':
-                 return (
-                     <div className="space-y-4 animate-fade-in">
-                        <CardHeader className="p-0 text-center">
-                            <CardTitle>In Transit to Hospital</CardTitle>
-                            <CardDescription>{caseData.assignedPartner?.name}</CardDescription>
-                        </CardHeader>
-                        <div className="p-4 rounded-lg bg-muted text-center">
-                            <p className="text-sm text-muted-foreground">ETA to Hospital</p>
-                            <p className="text-4xl font-bold text-primary">{caseData.hospitalEta ? `${Math.ceil(caseData.hospitalEta)} min` : 'Calculating...'}</p>
-                        </div>
-                     </div>
-                 );
-             case 'completed':
-                 return (
-                    <div className="text-center space-y-4 animate-fade-in p-6">
-                        <div className="mx-auto w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mb-4">
-                            <CheckCircle className="w-8 h-8 text-green-600" />
-                        </div>
-                        <CardTitle>Case Completed</CardTitle>
-                        <CardDescription>You have safely arrived at the hospital. Please rate the ambulance service.</CardDescription>
-                        <div className="flex justify-center gap-2 py-2">
-                            {[1, 2, 3, 4, 5].map((star) => (
-                                <Star
-                                    key={star}
-                                    className={cn(
-                                        'w-8 h-8 text-muted-foreground cursor-pointer',
-                                        (rating || 0) >= star && 'text-yellow-400 fill-yellow-400'
-                                    )}
-                                    onClick={() => setRating && setRating(star)}
-                                />
-                            ))}
-                        </div>
-                        <Button onClick={onDone} className="w-full">Done</Button>
-                    </div>
-                 );
-            default:
-                return <p>Unknown ambulance status: {caseData.status}</p>;
-        }
-    }
-    
-    if (isGarageRequest) {
-        switch(rideData.status) {
-            case 'pending':
-                return (
-                    <div className="text-center py-10">
-                        <SearchingIndicator partnerType="resq" />
-                        <h3 className="text-2xl font-bold mt-4">Finding a Mechanic...</h3>
-                        <p className="text-muted-foreground">Contacting nearby ResQ partners.</p>
-                    </div>
-                );
-            case 'accepted':
-                return (
-                     <div className="space-y-4 animate-fade-in">
-                        <CardHeader className="p-0 text-center">
-                            <CardTitle>Mechanic is on the way</CardTitle>
-                            <CardDescription>{ride.mechanicName}</CardDescription>
-                        </CardHeader>
-                         <div className="p-4 rounded-lg bg-muted text-center">
-                            <p className="text-sm text-muted-foreground">Estimated Arrival Time</p>
-                            <p className="text-4xl font-bold text-primary">{ride.eta ? `${Math.ceil(ride.eta)} min` : '...'}</p>
-                        </div>
-                         <Button className="w-full" asChild><a href={`tel:${ride.mechanicPhone}`}><Phone className="mr-2 h-4 w-4"/> Call Mechanic</a></Button>
-                     </div>
-                );
-            case 'bill_sent':
-                return (
-                    <div className="text-center space-y-4 animate-fade-in">
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Job Card Approval</CardTitle>
-                                <CardDescription>Please review the estimated cost and approve to start the work.</CardDescription>
-                            </CardHeader>
-                            <CardContent>
-                                {ride.billItems?.map((item: any, index: number) => (
-                                    <div key={index} className="flex justify-between text-sm py-2 border-b">
-                                        <span>{item.description}</span>
-                                        <span className="font-medium">₹{item.amount.toFixed(2)}</span>
-                                    </div>
-                                ))}
-                                <div className="flex justify-between font-bold text-lg pt-2">
-                                    <span>Total Amount:</span>
-                                    <span>₹{ride.totalAmount?.toFixed(2)}</span>
-                                </div>
-                            </CardContent>
-                        </Card>
-                        <div className="grid grid-cols-2 gap-2">
-                            <Button size="lg" className="w-full" onClick={() => onPayment && onPayment('wallet')} disabled={isPaying}>{isPaying ? 'Approving...' : 'Approve & Pay from Wallet'}</Button>
-                            <Button size="lg" variant="outline" className="w-full" onClick={() => toast({title: "Please approve and pay the mechanic in cash."})}>Approve & Pay Cash</Button>
-                        </div>
-                    </div>
-                );
-             case 'completed':
-                 return (
-                    <div className="text-center space-y-4 animate-fade-in p-6">
-                        <div className="mx-auto w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mb-4">
-                            <CheckCircle className="w-8 h-8 text-green-600" />
-                        </div>
-                        <CardTitle>Service Completed</CardTitle>
-                        <CardDescription>Please rate your experience with {ride.mechanicName || 'the mechanic'}.</CardDescription>
-                        <div className="flex justify-center gap-2 py-2">
-                            {[1, 2, 3, 4, 5].map((star) => (
-                                <Star
-                                    key={star}
-                                    className={cn(
-                                        'w-8 h-8 text-muted-foreground cursor-pointer',
-                                        (rating || 0) >= star && 'text-yellow-400 fill-yellow-400'
-                                    )}
-                                    onClick={() => setRating && setRating(star)}
-                                />
-                            ))}
-                        </div>
-                        <Button onClick={onDone} className="w-full">Done</Button>
-                    </div>
-                 );
-            default:
-                return <p>Unknown garage status: {ride.status}</p>;
-        }
-    }
+  const renderDriverView = () => {
+    const isNavigatingToRider = ['accepted', 'arrived'].includes(ride.status);
+    const destinationLocation = isNavigatingToRider ? ride.pickup.location : ride.destination.location;
+    const navigateUrl = destinationLocation ? `https://www.google.com/maps/dir/?api=1&destination=${destinationLocation.latitude},${destinationLocation.longitude}` : '#';
 
+     return (
+        <Card className="shadow-lg animate-fade-in w-full">
+            <CardHeader>
+                <CardTitle className="capitalize">{ride.status.replace('_', ' ')}</CardTitle>
+                <CardDescription>Rider: {ride.riderName}</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+                 <div className="p-3 rounded-lg bg-muted flex items-center gap-3">
+                    <Avatar className="w-12 h-12"><AvatarImage src={'https://placehold.co/100x100.png'} alt={ride.riderName} /><AvatarFallback>{ride.riderName?.[0] || 'R'}</AvatarFallback></Avatar>
+                    <div className="flex-1">
+                        <p className="font-bold">{ride.riderName}</p>
+                        <p className="text-sm text-muted-foreground capitalize">{ride.riderGender}</p>
+                    </div>
+                    <Button asChild variant="outline" size="icon"><a href={`tel:${ride.riderPhone}`}><Phone/></a></Button>
+                 </div>
+                 {ride.status === 'arrived' && (
+                    <div className="space-y-2">
+                       <Label htmlFor="otp">Enter Rider's OTP</Label>
+                       <div className="flex gap-2">
+                          <Input id="otp" value={enteredOtp} onChange={(e) => setEnteredOtp(e.target.value)} placeholder="4-Digit OTP" maxLength={4}/>
+                          <Button onClick={handleVerifyOtp}><CheckCircle className="w-4 h-4 mr-2"/>Verify & Start</Button>
+                       </div>
+                    </div>
+                 )}
+                 <Button asChild size="lg" className="w-full bg-blue-600 hover:bg-blue-700 text-white">
+                     <a href={navigateUrl} target="_blank" rel="noopener noreferrer">
+                         <Navigation className="mr-2 h-5 w-5"/>
+                         Navigate to {isNavigatingToRider ? 'Pickup' : 'Destination'}
+                     </a>
+                 </Button>
+            </CardContent>
+            <CardFooter>
+                {ride.status === 'accepted' && (
+                    <Button className="w-full" size="lg" onClick={() => handleUpdateRideStatus('arrived')}>Arrived at Pickup</Button>
+                )}
+                {ride.status === 'in-progress' && (
+                    <Button className="w-full bg-destructive hover:bg-destructive/80" size="lg" onClick={() => handleUpdateRideStatus('completed')}>End Trip</Button>
+                )}
+            </CardFooter>
+        </Card>
+    );
+  }
 
-    switch (rideData.status) {
+  const renderRiderView = () => {
+     switch (rideData.status) {
         case "searching":
              return (
                 <div className="text-center py-10 flex flex-col items-center h-[260px] justify-center overflow-hidden">
@@ -407,8 +417,19 @@ export default function RideStatus({
             </div>
         );
       default:
+        // This handles any status not explicitly covered, including 'arrived' for a regular ride
         return <p>Current status: {ride.status}</p>;
     }
+  }
+
+  const renderContent = () => {
+    if (isDriverView) return renderDriverView();
+    if (isAmbulanceCase || isGarageRequest) {
+        // These views are inherently from the rider's perspective
+        // and don't need a driver-specific view in this component.
+        return <p>Error: Driver view for this service is not handled here.</p>;
+    }
+    return renderRiderView();
   };
 
   const getActiveRideTitle = () => {
@@ -416,12 +437,21 @@ export default function RideStatus({
     if (isAmbulanceCase) return 'Emergency Case';
     if (isGarageRequest) return 'Service Request';
     
+    if (isDriverView) {
+        switch(ride.status) {
+            case 'accepted': return 'Navigate to Rider';
+            case 'arrived': return 'Waiting for Rider';
+            case 'in-progress': return 'Trip to Destination';
+            default: return 'Active Ride';
+        }
+    }
+
+    // Rider View Titles
     switch(ride.status) {
         case 'searching': return 'Finding you a ride...';
         case 'accepted': return 'Partner is on the way';
         case 'in-progress': return 'Trip in Progress';
         case 'payment_pending': return 'Payment & Rating';
-        case 'bill_sent': return 'Job Card Approval';
         case 'completed': return 'Trip Finished';
         default: return 'Ride Status';
     }
@@ -485,14 +515,21 @@ export default function RideStatus({
                      <div className="flex">
                         {rideData.driverDetails?.phone && (
                           <Button asChild variant="ghost" size="icon" className="rounded-full">
-                            <a href={`tel:${rideData.driverDetails.phone}`}>
+                            <a href={`tel:${isDriverView ? rideData.riderPhone : rideData.driverDetails.phone}`}>
                                 <Phone className="w-5 h-5" />
                             </a>
                           </Button>
                         )}
-                        <Button variant="ghost" size="icon" className="rounded-full">
-                            <MessageSquare className="w-5 h-5" />
-                        </Button>
+                        <Dialog>
+                            <DialogTrigger asChild>
+                                 <Button variant="ghost" size="icon" className="rounded-full">
+                                    <MessageSquare className="w-5 h-5" />
+                                </Button>
+                            </DialogTrigger>
+                             <DialogContent>
+                                <InAppChat rideId={ride.id} />
+                            </DialogContent>
+                        </Dialog>
                     </div>
                 </CardFooter>
             )}

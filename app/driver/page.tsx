@@ -44,7 +44,6 @@ import { Switch } from '@/components/ui/switch'
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import RideStatus from '@/components/ride-status'
 
@@ -85,12 +84,6 @@ export default function DriverDashboardPage() {
   const { partnerData, isLoading: isDriverLoading } = useDriver()
   const { db } = useFirebase()
   const { toast } = useToast()
-  const [enteredOtp, setEnteredOtp] = useState('');
-  const [showDriverDetails, setShowDriverDetails] = useState(false)
-  const prevStatusRef = React.useRef<string | null>(null)
-
-  const drivingSoundRef = useRef<HTMLAudioElement | null>(null)
-  const hornSoundRef = useRef<HTMLAudioElement | null>(null)
   
   // New state for recent rides
   const [recentRides, setRecentRides] = useState<RideData[]>([]);
@@ -128,16 +121,6 @@ export default function DriverDashboardPage() {
   }, [db, partnerData?.id]);
 
 
-  useEffect(() => {
-    drivingSoundRef.current = new Audio('/sounds/car-driving.mp3')
-    hornSoundRef.current = new Audio('/sounds/car-horn.mp3')
-  }, [])
-  
-  const playSound = (soundRef: React.RefObject<HTMLAudioElement>) => {
-    soundRef.current?.play().catch(e => console.warn("Sound play failed:", e))
-  }
-
-  // 🔔 Setup sound
   useEffect(() => {
     if (typeof window !== 'undefined') {
       notificationSoundRef.current = new Audio('/sounds/notification.mp3')
@@ -205,8 +188,6 @@ export default function DriverDashboardPage() {
         const dropLoc = data?.destination?.location;
         let distance = null;
         let eta = null;
-        let dropDistance = null;
-        let dropEta = null;
       
         if (pickupLoc) {
           distance = calcDistance(
@@ -217,17 +198,7 @@ export default function DriverDashboardPage() {
           );
           eta = Math.max(2, Math.round((distance / 0.4))); // approx 25 km/h
         }
-      
-        if (pickupLoc && dropLoc) {
-          dropDistance = calcDistance(
-            pickupLoc.latitude,
-            pickupLoc.longitude,
-            dropLoc.latitude,
-            dropLoc.longitude
-          );
-          dropEta = Math.max(2, Math.round((dropDistance / 0.4)));
-        }
-      
+        
         return {
           id: doc.id,
           ...data,
@@ -235,8 +206,6 @@ export default function DriverDashboardPage() {
           destinationAddress: data?.destination?.address || "Not available",
           distance,
           eta,
-          dropDistance,
-          dropEta,
         } as JobRequest;
       });
       
@@ -368,77 +337,6 @@ export default function DriverDashboardPage() {
       setJobRequest(null);
     }
   };  
-  
-   const handleUpdateRideStatus = async (status: 'arrived' | 'in-progress' | 'payment_pending' | 'completed') => {
-    if (!activeRide || !db) return;
-    const rideRef = doc(db, 'rides', activeRide.id);
-    try {
-        await updateDoc(rideRef, { status });
-        
-        // Optimistically update local state to reflect the change immediately
-        setActiveRide(prev => prev ? ({ ...prev, status } as RideData) : null);
-        toast({
-            title: "Ride Status Updated",
-            description: `Status is now: ${status.replace('_', ' ')}`,
-        });
-
-        if (status === 'completed') {
-            resetAfterRide();
-        }
-    } catch (error) {
-        console.error("Error updating ride status:", error);
-        toast({
-            variant: 'destructive',
-            title: 'Update Failed',
-            description: 'Could not update the ride status.',
-        });
-    }
-  };
-  
-  const handleVerifyOtp = () => {
-      if (enteredOtp === activeRide?.otp) {
-          handleUpdateRideStatus('in-progress');
-          toast({title: 'OTP Verified!', description: 'Trip has started.', className: 'bg-green-600 text-white'});
-      } else {
-          toast({variant: 'destructive', title: 'Invalid OTP'});
-      }
-  }
-
-  const handlePinSubmit = () => {
-    const storedPin = localStorage.getItem('curocity-user-pin')
-    if (!storedPin) {
-      toast({ variant: 'destructive', title: 'PIN Not Set', description: 'Please set a UPI PIN from your wallet first.' })
-      return
-    }
-    if (pin === storedPin) {
-      setIsEarningsVisible(true)
-      setIsPinDialogOpen(false)
-      setPin('')
-      toast({ title: 'Earnings Revealed', description: 'Your earnings for today are now visible.' })
-      setTimeout(() => setIsEarningsVisible(false), 10000)
-    } else {
-      toast({ variant: 'destructive', title: 'Invalid PIN', description: 'Please enter the correct 4-digit PIN.' })
-    }
-  }
-
-    useEffect(() => {
-    if (prevStatusRef.current === 'searching' && activeRide?.status === 'accepted') {
-      playSound(drivingSoundRef);
-      setShowDriverDetails(false); 
-      const timer = setTimeout(() => {
-        setShowDriverDetails(true);
-      }, 2000);
-      return () => clearTimeout(timer);
-    } else if (activeRide?.status === 'accepted') {
-      setShowDriverDetails(true);
-    }
-    
-    if (prevStatusRef.current === 'accepted' && activeRide?.status === 'arrived') {
-        playSound(hornSoundRef);
-    }
-    
-    prevStatusRef.current = activeRide?.status || null;
-  }, [activeRide?.status]);
 
   // New effect to check for an active ride on initial load
   useEffect(() => {
@@ -474,55 +372,6 @@ export default function DriverDashboardPage() {
   const driverLocation = partnerData?.currentLocation
     ? { lat: partnerData.currentLocation.latitude, lon: partnerData.currentLocation.longitude }
     : undefined;
-    
-    const renderActiveRide = () => {
-        if (!activeRide) return null;
-
-        const isNavigatingToRider = ['accepted', 'arrived'].includes(activeRide.status);
-        const destinationLocation = isNavigatingToRider ? activeRide.pickup.location : activeRide.destination.location;
-        const navigateUrl = destinationLocation ? `https://www.google.com/maps/dir/?api=1&destination=${destinationLocation.latitude},${destinationLocation.longitude}` : '#';
-
-        return (
-            <Card className="shadow-lg animate-fade-in w-full">
-                <CardHeader>
-                    <CardTitle className="capitalize">{activeRide.status.replace('_', ' ')}</CardTitle>
-                    <CardDescription>Rider: {activeRide.riderName}</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                     <div className="p-3 rounded-lg bg-muted flex items-center gap-3">
-                        <Avatar className="w-12 h-12"><AvatarImage src={'https://placehold.co/100x100.png'} alt={activeRide.riderName} /><AvatarFallback>{activeRide.riderName?.[0] || 'R'}</AvatarFallback></Avatar>
-                        <div className="flex-1">
-                            <p className="font-bold">{activeRide.riderName}</p>
-                            <p className="text-sm text-muted-foreground capitalize">{activeRide.riderGender}</p>
-                        </div>
-                     </div>
-                     {activeRide.status === 'arrived' && (
-                        <div className="space-y-2">
-                           <Label htmlFor="otp">Enter Rider's OTP</Label>
-                           <div className="flex gap-2">
-                              <Input id="otp" value={enteredOtp} onChange={(e) => setEnteredOtp(e.target.value)} placeholder="4-Digit OTP" maxLength={4}/>
-                              <Button onClick={handleVerifyOtp}><CheckCircle className="w-4 h-4 mr-2"/>Verify & Start</Button>
-                           </div>
-                        </div>
-                     )}
-                     <Button asChild size="lg" className="w-full bg-blue-600 hover:bg-blue-700 text-white">
-                         <a href={navigateUrl} target="_blank" rel="noopener noreferrer">
-                             <Navigation className="mr-2 h-5 w-5"/>
-                             Navigate to {isNavigatingToRider ? 'Pickup' : 'Destination'}
-                         </a>
-                     </Button>
-                </CardContent>
-                <CardFooter>
-                    {activeRide.status === 'accepted' && (
-                        <Button className="w-full" size="lg" onClick={() => handleUpdateRideStatus('arrived')}>Arrived at Pickup</Button>
-                    )}
-                    {activeRide.status === 'in-progress' && (
-                        <Button className="w-full bg-destructive hover:bg-destructive/80" size="lg" onClick={() => handleUpdateRideStatus('completed')}>End Trip</Button>
-                    )}
-                </CardFooter>
-            </Card>
-        );
-    }
     
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start h-full">
@@ -657,7 +506,7 @@ export default function DriverDashboardPage() {
                  <div className="p-2 bg-muted rounded-md">
                      <p className="text-xs text-muted-foreground">Est. Fare</p>
                      <p className="font-bold text-lg text-green-600">
-                       ₹{jobRequest.fare || '—'}
+                       ₹{jobRequest.fare}
                      </p>
                  </div>
                  <div className="p-2 bg-muted rounded-md">
@@ -684,7 +533,6 @@ export default function DriverDashboardPage() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* PIN Dialog */}
       <Dialog open={isPinDialogOpen} onOpenChange={setIsPinDialogOpen}>
         <DialogContent className="max-w-xs">
           <DialogHeader>
@@ -704,4 +552,3 @@ export default function DriverDashboardPage() {
   );
 }
 
-    
