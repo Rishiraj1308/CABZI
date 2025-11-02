@@ -240,23 +240,29 @@ export default function DriverDashboardPage() {
     return () => unsubscribe();
   }, [db, partnerData, jobRequest, activeRide, isOnline]);
   
-  // Listen for updates on an active ride
-  useEffect(() => {
-    if (!db || !activeRide?.id) return;
-    const unsub = onSnapshot(doc(db, 'rides', activeRide.id), (docSnap) => {
-      if (docSnap.exists()) {
-        const data = docSnap.data();
-        if (data.status === 'cancelled_by_rider') {
-          toast({ variant: 'destructive', title: 'Ride Cancelled by User' });
-          resetAfterRide();
-        } else {
-          setActiveRide({ id: docSnap.id, ...data } as RideData);
-        }
-      }
-    });
-    return () => unsub();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [db, activeRide?.id]);
+    // Listen for updates on an active ride
+    useEffect(() => {
+        if (!db || !activeRide?.id) return;
+        const unsub = onSnapshot(doc(db, 'rides', activeRide.id), (docSnap) => {
+            if (docSnap.exists()) {
+                const data = docSnap.data();
+                if (['completed', 'cancelled_by_rider', 'cancelled_by_driver'].includes(data.status)) {
+                    toast({
+                        variant: data.status === 'completed' ? 'default' : 'destructive',
+                        title: data.status === 'completed' ? 'Ride Completed' : 'Ride Cancelled',
+                    });
+                    resetAfterRide();
+                } else {
+                    setActiveRide({ id: docSnap.id, ...data } as RideData);
+                }
+            } else {
+                // If the document is deleted or doesn't exist, reset the state.
+                resetAfterRide();
+            }
+        });
+        return () => unsub();
+    }, [db, activeRide?.id, toast]);
+
 
   // Timer for request
   useEffect(() => {
@@ -442,6 +448,37 @@ export default function DriverDashboardPage() {
     
     prevStatusRef.current = activeRide?.status || null;
   }, [activeRide?.status]);
+
+  // New effect to check for an active ride on initial load
+  useEffect(() => {
+      if (!db || !partnerData?.id) return; // Wait for db and partnerData
+      
+      const activeRideId = localStorage.getItem('activeRideId');
+      
+      const checkActiveRide = async () => {
+          if (activeRideId) {
+              const rideRef = doc(db, 'rides', activeRideId);
+              try {
+                  const docSnap = await getDoc(rideRef);
+                  if (docSnap.exists()) {
+                      const rideData = docSnap.data() as RideData;
+                      if (!['completed', 'cancelled_by_driver', 'cancelled_by_rider'].includes(rideData.status)) {
+                          setActiveRide({ id: docSnap.id, ...rideData });
+                      } else {
+                          localStorage.removeItem('activeRideId'); // Clean up finished ride
+                      }
+                  } else {
+                      localStorage.removeItem('activeRideId'); // Clean up non-existent ride
+                  }
+              } catch (error) {
+                  console.error("Error fetching active ride:", error);
+              }
+          }
+      };
+
+      checkActiveRide();
+  }, [db, partnerData]);
+
   
   const driverLocation = partnerData?.currentLocation
     ? { lat: partnerData.currentLocation.latitude, lon: partnerData.currentLocation.longitude }
@@ -455,112 +492,92 @@ export default function DriverDashboardPage() {
         const navigateUrl = destinationLocation ? `https://www.google.com/maps/dir/?api=1&destination=${destinationLocation.latitude},${destinationLocation.longitude}` : '#';
 
         return (
-            <Card className="shadow-lg animate-fade-in w-full">
-                <CardHeader>
-                    <CardTitle className="capitalize">{activeRide.status.replace('_', ' ')}</CardTitle>
-                    <CardDescription>Rider: {activeRide.riderName}</CardDescription>
-                </CardHeader>
-                 <CardContent className="space-y-4">
-                     {activeRide.status === 'accepted' && (
-                        <div className="p-4 rounded-lg bg-muted flex items-center gap-3">
-                            <Avatar className="w-12 h-12"><AvatarImage src="https://i.pravatar.cc/100?u=rider" alt={activeRide.riderName} data-ai-hint="rider portrait" /><AvatarFallback>{activeRide.riderName?.substring(0,2)}</AvatarFallback></Avatar>
-                            <div className="flex-1">
-                                <p className="font-bold">{activeRide.riderName}</p>
-                                <p className="font-bold text-lg text-primary">OTP: {activeRide.otp}</p>
-                            </div>
-                            <div className="flex flex-col gap-2">
-                                <Button size="icon" variant="outline" asChild><a href={`tel:${activeRide.riderPhone}`}><Phone/></a></Button>
-                                <Button size="icon" variant="outline"><MessageSquare/></Button>
-                            </div>
-                        </div>
-                     )}
-
-                     {activeRide.status === 'arrived' && (
-                        <div className="space-y-4">
-                             {waitingTime > 0 ? (
-                                <div className="text-center p-3 border-2 border-dashed border-primary rounded-lg">
-                                    <p className="font-bold text-primary animate-pulse">Waiting for Rider...</p>
-                                    <p className="text-4xl font-mono font-bold">{waitingTime}</p>
-                                    <p className="text-xs text-muted-foreground">Free waiting time remaining</p>
+            <div className="space-y-4">
+                <Card className="shadow-lg">
+                    <CardHeader>
+                        <CardTitle className="capitalize">{activeRide.status.replace('_', ' ')}</CardTitle>
+                        <CardDescription>Rider: {activeRide.riderName}</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        {activeRide.status === 'accepted' && (
+                            <div className="p-4 rounded-lg bg-muted flex items-center gap-3">
+                                <Avatar className="w-12 h-12"><AvatarImage src="https://i.pravatar.cc/100?u=rider" alt={activeRide.riderName} data-ai-hint="rider portrait" /><AvatarFallback>{activeRide.riderName?.substring(0,2)}</AvatarFallback></Avatar>
+                                <div className="flex-1">
+                                    <p className="font-bold">{activeRide.riderName}</p>
+                                    <p className="font-bold text-lg text-primary">OTP: {activeRide.otp}</p>
                                 </div>
-                            ) : (
-                                <div className="text-center p-3 border-2 border-dashed border-destructive rounded-lg">
-                                     <p className="font-bold text-destructive">Waiting Charges Apply</p>
-                                     <p className="text-4xl font-mono font-bold">₹{waitingCharges}</p>
-                                     <p className="text-xs text-muted-foreground">₹2/min will be added to the bill</p>
+                                <div className="flex flex-col gap-2">
+                                    <Button size="icon" variant="outline" asChild><a href={`tel:${activeRide.riderPhone}`}><Phone/></a></Button>
+                                    <Button size="icon" variant="outline"><MessageSquare/></Button>
                                 </div>
-                            )}
+                            </div>
+                        )}
 
-                           <Label htmlFor="otp">Enter Rider's OTP</Label>
-                           <div className="flex gap-2">
-                              <Input id="otp" value={enteredOtp} onChange={(e) => setEnteredOtp(e.target.value)} placeholder="4-Digit OTP" maxLength={4}/>
-                              <Button onClick={handleVerifyOtp}><CheckCircle className="w-4 h-4 mr-2"/>Verify & Start</Button>
-                           </div>
-                        </div>
-                     )}
+                        {activeRide.status === 'arrived' && (
+                            <div className="space-y-4">
+                                {waitingTime > 0 ? (
+                                    <div className="text-center p-3 border-2 border-dashed border-primary rounded-lg">
+                                        <p className="font-bold text-primary animate-pulse">Waiting for Rider...</p>
+                                        <p className="text-4xl font-mono font-bold">{waitingTime}</p>
+                                        <p className="text-xs text-muted-foreground">Free waiting time remaining</p>
+                                    </div>
+                                ) : (
+                                    <div className="text-center p-3 border-2 border-dashed border-destructive rounded-lg">
+                                        <p className="font-bold text-destructive">Waiting Charges Apply</p>
+                                        <p className="text-4xl font-mono font-bold">₹{waitingCharges}</p>
+                                        <p className="text-xs text-muted-foreground">₹2/min will be added to the bill</p>
+                                    </div>
+                                )}
 
-                     <Button asChild size="lg" className="w-full bg-blue-600 hover:bg-blue-700 text-white">
-                         <a href={navigateUrl} target="_blank" rel="noopener noreferrer">
-                             <Navigation className="mr-2 h-5 w-5"/>
-                             Navigate to {isNavigatingToRider ? 'Pickup' : 'Destination'}
-                         </a>
-                     </Button>
-                </CardContent>
-                <CardFooter>
-                    {activeRide.status === 'accepted' && (
-                        <Button className="w-full" size="lg" onClick={() => handleUpdateRideStatus('arrived')}>Arrived at Pickup</Button>
-                    )}
-                    {activeRide.status === 'in-progress' && (
-                        <Button className="w-full bg-destructive hover:bg-destructive/80" size="lg" onClick={() => handleUpdateRideStatus('payment_pending')}>End Trip</Button>
-                    )}
-                </CardFooter>
-            </Card>
+                            <Label htmlFor="otp">Enter Rider's OTP</Label>
+                            <div className="flex gap-2">
+                                <Input id="otp" value={enteredOtp} onChange={(e) => setEnteredOtp(e.target.value)} placeholder="4-Digit OTP" maxLength={4}/>
+                                <Button onClick={handleVerifyOtp}><CheckCircle className="w-4 h-4 mr-2"/>Verify & Start</Button>
+                            </div>
+                            </div>
+                        )}
+
+                        <Button asChild size="lg" className="w-full bg-blue-600 hover:bg-blue-700 text-white">
+                            <a href={navigateUrl} target="_blank" rel="noopener noreferrer">
+                                <Navigation className="mr-2 h-5 w-5"/>
+                                Navigate to {isNavigatingToRider ? 'Pickup' : 'Destination'}
+                            </a>
+                        </Button>
+                    </CardContent>
+                    <CardFooter>
+                        {activeRide.status === 'accepted' && (
+                            <Button className="w-full" size="lg" onClick={() => handleUpdateRideStatus('arrived')}>Arrived at Pickup</Button>
+                        )}
+                        {activeRide.status === 'in-progress' && (
+                            <Button className="w-full bg-destructive hover:bg-destructive/80" size="lg" onClick={() => handleUpdateRideStatus('payment_pending')}>End Trip</Button>
+                        )}
+                    </CardFooter>
+                </Card>
+            </div>
         );
     }
   
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start h-full">
-       <AnimatePresence>
-            {activeRide ? (
-                <motion.div 
-                  className="lg:col-span-3 h-full"
-                  initial={{ height: '75vh' }}
-                  animate={{ height: '40vh' }}
-                  transition={{ type: 'spring', stiffness: 100, damping: 20 }}
-                >
-                     <Card className="h-full">
-                         <CardContent className="p-0 h-full">
-                            <LiveMap
-                                riderLocation={activeRide?.pickup.location ? { lat: activeRide.pickup.location.latitude, lon: activeRide.pickup.location.longitude } : undefined}
-                                driverLocation={driverLocation} 
-                                isTripInProgress={activeRide?.status === 'in-progress'}
-                            />
-                        </CardContent>
-                     </Card>
-                </motion.div>
-            ) : (
-                <div className="lg:col-span-2">
-                    <Card className="h-[75vh]">
-                        <CardContent className="p-0 h-full">
-                            <LiveMap
-                                onLocationFound={(address, coords) => {
-                                    if (db && partnerData) {
-                                        updateDoc(doc(db, 'partners', partnerData.id), {
-                                            currentLocation: new GeoPoint(coords.lat, coords.lon)
-                                        });
-                                    }
-                                }}
-                                driverLocation={driverLocation}
-                                isTripInProgress={activeRide?.status === 'in-progress'}
-                            />
-                        </CardContent>
-                    </Card>
-                </div>
-            )}
-        </AnimatePresence>
-
-
-        <div className={cn("space-y-6 lg:col-span-1", activeRide && 'lg:col-span-3')}>
+        <div className="lg:col-span-3 h-96 lg:h-auto lg:row-start-1 lg:col-span-2">
+           <Card className="h-full">
+                <CardContent className="p-0 h-full">
+                     <LiveMap 
+                        onLocationFound={(address, coords) => {
+                            if (db && partnerData) {
+                                updateDoc(doc(db, 'partners', partnerData.id), {
+                                    currentLocation: new GeoPoint(coords.lat, coords.lon)
+                                });
+                            }
+                        }}
+                        driverLocation={driverLocation}
+                        isTripInProgress={activeRide?.status === 'in-progress'}
+                     />
+                </CardContent>
+            </Card>
+        </div>
+        
+        <div className={cn("space-y-6 lg:col-span-1", activeRide && 'lg:col-span-3 lg:row-start-2')}>
             {activeRide ? renderActiveRide() : (
                 <>
                      <Card>
@@ -688,7 +705,7 @@ export default function DriverDashboardPage() {
             )}
           <AlertDialogFooter className="grid grid-cols-2 gap-2">
             <Button variant="destructive" onClick={() => handleDeclineJob()}>Decline</Button>
-            <Button onClick={() => handleAcceptJob()}>Accept Ride</Button>
+            <Button onClick={handleAcceptJob}>Accept Ride</Button>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
@@ -705,12 +722,10 @@ export default function DriverDashboardPage() {
             <Input id="pin-input" type="password" inputMode="numeric" maxLength={4} value={pin} onChange={(e) => setPin(e.target.value)} className="text-center text-2xl font-bold tracking-[1em] w-40" placeholder="••••" autoFocus />
           </div>
           <DialogFooter>
-            <Button type="button" className="w-full" onClick={() => handlePinSubmit()}>Submit</Button>
+            <Button type="button" className="w-full" onClick={handlePinSubmit}>Submit</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
   );
 }
-
-    
