@@ -535,9 +535,7 @@ export default function HomePage() {
                 </div>
             </section>
             
-             <div className="py-20 md:py-24">
-                <CuroMindReveal />
-            </div>
+            <CuroMindReveal />
 
              {/* Partner CTA Section */}
             <section className="py-20 md:py-24">
@@ -579,3 +577,5 @@ export default function HomePage() {
       </div>
   );
 }
+
+    
