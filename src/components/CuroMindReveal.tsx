@@ -86,7 +86,7 @@ export default function CuroMindReveal() {
         initial="hidden"
         whileInView="visible"
         viewport={{ once: true }}
-        className="text-4xl md:text-6xl font-bold tracking-tight z-10 leading-snug flex flex-wrap justify-center"
+        className="text-3xl sm:text-5xl md:text-6xl font-bold tracking-tight z-10 leading-snug flex flex-wrap justify-center"
       >
         {chars.map((char, index) => (
           <motion.span
