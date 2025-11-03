@@ -1,4 +1,5 @@
 
+
 'use client'
 
 import React, { useState, useEffect, useRef, useCallback, createContext, useContext } from 'react'
@@ -25,10 +26,11 @@ import { useToast } from '@/hooks/use-toast'
 import BrandLogo from '@/components/brand-logo'
 import { useTheme } from 'next-themes'
 import { useFirebase } from '@/firebase/client-provider'
-import { doc, updateDoc, serverTimestamp, onSnapshot } from 'firebase/firestore'
+import { doc, onSnapshot, updateDoc, serverTimestamp, collection, query, where } from "firebase/firestore";
 import { MotionDiv } from '@/components/ui/motion-div'
 import { Skeleton } from '@/components/ui/skeleton'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog'
 
 // Centralized Partner Provider
 interface PartnerDataContextType {
@@ -53,18 +55,26 @@ function PartnerProvider({ children, partnerType }: { children: React.ReactNode,
     const router = useRouter();
     const pathname = usePathname();
 
-     const handleLogout = useCallback(() => {
-        if (partnerData?.id && db) {
-            updateDoc(doc(db, partnerType === 'driver' ? 'partners' : 'mechanics', partnerData.id), { 
-                isOnline: false, 
-                isAvailable: false, 
-                lastSeen: serverTimestamp() 
-            }).catch(e => console.warn("Failed to update status on logout:", e));
+    const handleLogout = useCallback(() => {
+      try {
+        const sessionKey = `curocity-${partnerType === 'driver' ? 'session' : 'resq-session'}`;
+        const session = localStorage.getItem(sessionKey);
+        if (db && session) {
+          const sessionData = JSON.parse(session);
+          const collectionName = partnerType === 'driver' ? 'partners' : 'mechanics';
+          updateDoc(doc(db, collectionName, sessionData.partnerId), {
+            isOnline: false,
+            isAvailable: false,
+            lastSeen: serverTimestamp(),
+          }).catch(e => console.warn("Failed to update status on logout:", e));
         }
-        localStorage.removeItem(`curocity-${partnerType === 'driver' ? 'session' : 'resq-session'}`);
-        router.push('/');
-    }, [db, partnerData, partnerType, router]);
-    
+      } catch (err) {
+        console.warn('Logout error:', err);
+      }
+      localStorage.removeItem(`curocity-${partnerType === 'driver' ? 'session' : 'resq-session'}`);
+      router.push('/');
+    }, [db, partnerType, router]);
+        
     useEffect(() => {
         if (isUserLoading || !db) return;
 
@@ -77,18 +87,17 @@ function PartnerProvider({ children, partnerType }: { children: React.ReactNode,
 
         const sessionKey = `curocity-resq-session`;
         const session = localStorage.getItem(sessionKey);
-        
+
         if (!session) {
             if (!isOnboarding) handleLogout();
             setIsLoading(false);
             return;
         }
-        
+
         let unsubscribe: (() => void) | undefined;
         try {
             const sessionData = JSON.parse(session);
-            const collectionName = 'mechanics';
-            const partnerDocRef = doc(db, collectionName, sessionData.partnerId);
+            const partnerDocRef = doc(db, 'mechanics', sessionData.partnerId);
 
             unsubscribe = onSnapshot(partnerDocRef, (docSnap) => {
                 if (docSnap.exists()) {
@@ -112,16 +121,16 @@ function PartnerProvider({ children, partnerType }: { children: React.ReactNode,
                 unsubscribe();
             }
         };
-    // CRITICAL FIX: The dependency array must include all external variables that the effect uses.
-    }, [isUserLoading, user, db, handleLogout, pathname, router, partnerType]);
+    }, [isUserLoading, user, db, handleLogout, partnerType, pathname, router]);
+
+    const value = useMemo(() => ({ partnerData, isLoading }), [partnerData, isLoading]);
 
     return (
-        <PartnerDataContext.Provider value={{ partnerData, isLoading }}>
+        <PartnerDataContext.Provider value={value}>
             {children}
         </PartnerDataContext.Provider>
     );
 }
-
 
 const navItems = [
   { href: '/mechanic', label: 'Dashboard', icon: LayoutDashboard },

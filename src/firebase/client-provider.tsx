@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import React, { createContext, useContext, useEffect, useState, useMemo, type ReactNode } from 'react';
@@ -8,8 +7,19 @@ import { getAuth, type Auth, onAuthStateChanged, type User } from 'firebase/auth
 import { getFirestore, type Firestore, enableIndexedDbPersistence, initializeFirestore, memoryLocalCache } from 'firebase/firestore';
 import { getFunctions, type Functions } from 'firebase/functions';
 import { getMessaging, type Messaging } from 'firebase/messaging';
-import { firebaseConfig } from './config';
 import { FirebaseErrorListener } from '@/components/FirebaseErrorListener';
+
+// Moved config here to keep everything in one place
+export const firebaseConfig = {
+  "projectId": "cabzi-welr1",
+  "appId": "1:786266287419:web:4ad396cbd949ba46695b1e",
+  "apiKey": "AIzaSyB8bFxF6fILR4myxGUCN9IR9Qis9ljADMA",
+  "authDomain": "cabzi-welr1.firebaseapp.com",
+  "storageBucket": "cabzi-welr1.appspot.com",
+  "measurementId": "G-LGK753VG5R",
+  "messagingSenderId": "786266287419"
+};
+
 
 interface FirebaseContextValue {
   firebaseApp: FirebaseApp | null;
@@ -24,9 +34,6 @@ interface FirebaseContextValue {
 const FirebaseContext = createContext<FirebaseContextValue | undefined>(undefined);
 
 export function FirebaseProviderClient({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [isUserLoading, setIsUserLoading] = useState(true);
-  
   const [firebaseServices, setFirebaseServices] = useState<{
     app: FirebaseApp | null;
     auth: Auth | null;
@@ -34,22 +41,21 @@ export function FirebaseProviderClient({ children }: { children: ReactNode }) {
     functions: Functions | null;
     messaging: Messaging | null;
   }>({ app: null, auth: null, db: null, functions: null, messaging: null });
+  
+  const [user, setUser] = useState<User | null>(null);
+  const [isUserLoading, setIsUserLoading] = useState(true);
 
   useEffect(() => {
     let app: FirebaseApp;
-    let auth: Auth;
-    let db: Firestore;
-    let functions: Functions;
-    let messaging: Messaging | null = null;
-    
     if (typeof window !== 'undefined') {
         app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
-        auth = getAuth(app);
-        db = initializeFirestore(app, {
+        
+        const auth = getAuth(app);
+        const db = initializeFirestore(app, {
             localCache: memoryLocalCache(),
         });
-        functions = getFunctions(app);
-
+        const functions = getFunctions(app);
+        let messaging: Messaging | null = null;
         if ('Notification' in window && 'serviceWorker' in navigator && 'PushManager' in window) {
             messaging = getMessaging(app);
         }
@@ -63,7 +69,7 @@ export function FirebaseProviderClient({ children }: { children: ReactNode }) {
 
         return () => unsubscribe();
     } else {
-        setIsUserLoading(false);
+      setIsUserLoading(false);
     }
   }, []);
 
@@ -95,16 +101,10 @@ export function useFirebase() {
 
 export const useDb = () => {
     const { db } = useFirebase();
-    if (!db) {
-        console.warn("Firestore not initialized yet, returning null.");
-    }
     return db;
 };
 
 export const useFunctions = () => {
     const { functions } = useFirebase();
-    if (!functions) {
-        console.warn("Functions not initialized yet, returning null.");
-    }
     return functions;
 }
