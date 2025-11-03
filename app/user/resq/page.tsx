@@ -14,6 +14,12 @@ import { Wrench, Zap, Fuel, Car, MoreHorizontal, ArrowLeft, MapPin, History } fr
 import { cn } from '@/lib/utils'
 import { motion } from 'framer-motion'
 import Image from 'next/image'
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
+import { Label } from '@/components/ui/label'
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
+import { useLanguage } from '@/hooks/use-language'
+
+const LiveMap = React.lazy(() => import('@/components/live-map'));
 
 const commonIssues = [
     { id: 'flat_tyre', label: 'Flat Tyre', icon: Wrench },
@@ -112,18 +118,20 @@ export default function ResQPage() {
         const requestDoc = snapshot.docs[0];
         const requestData = { id: requestDoc.id, ...requestDoc.data() };
         
-        if (activeGarageRequest?.status !== 'accepted' && requestData.status === 'accepted') {
-            toast({ title: "ResQ Partner Assigned!", description: `${requestData.mechanicName} is on the way.` });
-        }
-        if (activeGarageRequest?.status !== 'bill_sent' && requestData.status === 'bill_sent') {
-            toast({
-                title: "Job Card Ready for Approval",
-                description: `Please review and approve the job card from ${requestData.mechanicName}.`,
-                duration: 9000
-            });
-        }
-        
-        setActiveGarageRequest(requestData as GarageRequest);
+        setActiveGarageRequest(prev => {
+            if (prev?.status !== 'accepted' && requestData.status === 'accepted') {
+                toast({ title: "ResQ Partner Assigned!", description: `${requestData.mechanicName} is on the way.` });
+            }
+            if (prev?.status !== 'bill_sent' && requestData.status === 'bill_sent') {
+                toast({
+                    title: "Job Card Ready for Approval",
+                    description: `Please review and approve the job card from ${requestData.mechanicName}.`,
+                    duration: 9000
+                });
+            }
+            return requestData as GarageRequest;
+        });
+
         localStorage.setItem('activeGarageRequestId', requestDoc.id);
       } else {
         resetFlow();
@@ -131,7 +139,7 @@ export default function ResQPage() {
     });
 
     return () => unsubscribe();
-  }, [db, session?.userId, activeGarageRequest?.status, toast, resetFlow]);
+  }, [db, session?.userId, resetFlow]);
   
   const handleGaragePayment = async (paymentMode: 'cash' | 'wallet') => {
     if (!db || !activeGarageRequest || !user || !activeGarageRequest.mechanicId) return;
