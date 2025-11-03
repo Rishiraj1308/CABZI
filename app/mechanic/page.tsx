@@ -66,21 +66,21 @@ interface BillItem {
 }
 
 const StatCard = ({ title, value, icon: Icon, isLoading, onValueClick }: { title: string, value: string, icon: React.ElementType, isLoading?: boolean, onValueClick?: () => void }) => (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-sm font-medium">{title}</CardTitle>
-        <Icon className="h-4 w-4 text-muted-foreground" />
-      </CardHeader>
-      <CardContent>
-        {isLoading ? (
-          <Skeleton className="h-8 w-20" />
-        ) : (
-          <div className="text-2xl font-bold cursor-pointer" onClick={onValueClick}>
-            {value}
-          </div>
-        )}
-      </CardContent>
-    </Card>
+  <Card>
+    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+      <CardTitle className="text-sm font-medium">{title}</CardTitle>
+      <Icon className="h-4 w-4 text-muted-foreground" />
+    </CardHeader>
+    <CardContent>
+      {isLoading ? (
+        <Skeleton className="h-8 w-20" />
+      ) : (
+        <div className="text-2xl font-bold cursor-pointer" onClick={onValueClick}>
+          {value}
+        </div>
+      )}
+    </CardContent>
+  </Card>
 )
 
 
@@ -218,6 +218,8 @@ export default function ResQDashboard() {
                     ...jobData,
                     location: JSON.parse(jobData.location || '{}'),
                     createdAt: new Timestamp(parseInt(jobData.createdAt) / 1000, 0),
+                    distance: parseFloat(jobData.distance),
+                    eta: parseFloat(jobData.eta),
                 } as JobRequest;
 
                 if (!acceptedJob && !jobRequest) { // Ensure we're not already in a job
@@ -684,5 +686,3 @@ export default function ResQDashboard() {
     </div>
   )
 }
-
-    

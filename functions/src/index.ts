@@ -1,5 +1,4 @@
 
-
 'use server';
 /**
  * @fileOverview This file contains server-side Cloud Functions for dispatching
@@ -155,6 +154,7 @@ const handleGarageRequestDispatch = async (requestData: any, requestId: string) 
             if (!mechanic.currentLocation) return false;
             const mechanicLocation = mechanic.currentLocation as GeoPoint;
             const distance = getDistance(driverLocation.latitude, driverLocation.longitude, mechanicLocation.latitude, mechanicLocation.longitude);
+            mechanic.distanceToDriver = distance;
             return distance < 15; // 15km radius for mechanics
         });
 
@@ -164,29 +164,36 @@ const handleGarageRequestDispatch = async (requestData: any, requestId: string) 
         return;
     }
     
-    const tokens = nearbyMechanics.map(m => m.fcmToken).filter((t): t is string => !!t);
-    if (tokens.length > 0) {
-        // Correctly serialize the data for FCM payload
-        const payloadData = {
-            type: 'new_garage_request',
-            requestId: requestId,
-            driverId: requestData.driverId,
-            driverName: requestData.driverName,
-            driverPhone: requestData.driverPhone,
-            issue: requestData.issue,
-            location: JSON.stringify(requestData.location),
-            status: requestData.status,
-            otp: requestData.otp,
-            createdAt: requestData.createdAt.toMillis().toString(), // CRITICAL FIX
-        };
-        const message = {
-            data: payloadData,
-            tokens: tokens,
-        };
-        await messaging.sendEachForMulticast(message);
-        console.log(`Garage request ${requestId} sent to ${tokens.length} mechanics.`);
-    } else {
-         console.log('No mechanics with FCM tokens found for this request.');
+    for (const mechanic of nearbyMechanics) {
+        if (mechanic.fcmToken) {
+            const distanceToDriver = mechanic.distanceToDriver || 0;
+            const eta = distanceToDriver * 3; // ETA for mechanics might be slower
+            const payloadData = {
+                type: 'new_garage_request',
+                requestId: requestId,
+                driverName: requestData.driverName,
+                driverPhone: requestData.driverPhone,
+                issue: requestData.issue,
+                location: JSON.stringify(requestData.location),
+                status: requestData.status,
+                otp: requestData.otp,
+                createdAt: requestData.createdAt.toMillis().toString(),
+                distance: String(distanceToDriver),
+                eta: String(eta),
+            };
+
+            const message = {
+                data: payloadData,
+                token: mechanic.fcmToken,
+            };
+            
+            try {
+                await messaging.send(message);
+                console.log(`Garage request ${requestId} sent to mechanic ${mechanic.id}.`);
+            } catch (error) {
+                console.error(`Failed to send garage request to mechanic ${mechanic.id}:`, error);
+            }
+        }
     }
 }
 
