@@ -110,11 +110,13 @@ export default function MechanicOnboardingPage() {
         const phone = formData.get('phone') as string;
         const businessPan = formData.get('businessPan') as string;
         const gstNumber = formData.get('gstNumber') as string;
+
+        // Conditional logic for firmName and businessType
         const firmName = partnerType === 'garage' ? formData.get('firmName') as string : ownerName;
         const businessType = partnerType === 'garage' ? formData.get('businessType') as string : 'Individual';
 
         if (!ownerName || !phone || !businessPan || !firmName || !businessType || selectedServices.length === 0) {
-            toast({ variant: 'destructive', title: "Incomplete Form", description: "Please fill out all business details and select your services." });
+            toast({ variant: 'destructive', title: "Incomplete Form", description: "Please fill out all details and select your services." });
             setIsLoading(false);
             return;
         }
@@ -125,7 +127,6 @@ export default function MechanicOnboardingPage() {
             return;
         }
         
-        // This is a simplified check. A real app might check multiple collections.
         const q = query(collection(db, "mechanics"), where("phone", "==", phone), limit(1));
         const querySnapshot = await getDocs(q);
         if (!querySnapshot.empty) {
