@@ -4,7 +4,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 import Image from 'next/image'
 import { Button, buttonVariants } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card'
 import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
@@ -30,6 +30,8 @@ import BrandLogo from '@/components/brand-logo'
 import SearchingIndicator from '@/components/ui/searching-indicator'
 import { useFirebase } from '@/firebase/client-provider'
 import { onMessage } from 'firebase/messaging'
+import { format } from 'date-fns'
+import type { JobRequest } from '@/lib/types'
 
 
 const LiveMap = dynamic(() => import('@/components/live-map'), { 
@@ -42,20 +44,6 @@ const QrScanner = dynamic(() => import('@/components/ui/qr-scanner'), {
   loading: () => <div className="flex items-center justify-center w-full h-full bg-muted"><p>Loading Scanner...</p></div>
 })
 
-
-interface JobRequest {
-    id: string;
-    driverName: string;
-    issue: string;
-    distance?: number;
-    location: GeoPoint;
-    otp: string;
-    rejectedBy?: string[];
-    billedTo?: string;
-    invoiceId?: string;
-    billDate?: any;
-    createdAt: Timestamp;
-}
 
 interface MechanicData {
     id: string;
@@ -77,6 +65,24 @@ interface BillItem {
     amount: string;
 }
 
+const StatCard = ({ title, value, icon: Icon, isLoading, onValueClick }: { title: string, value: string, icon: React.ElementType, isLoading?: boolean, onValueClick?: () => void }) => (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <CardTitle className="text-sm font-medium">{title}</CardTitle>
+        <Icon className="h-4 w-4 text-muted-foreground" />
+      </CardHeader>
+      <CardContent>
+        {isLoading ? (
+          <Skeleton className="h-8 w-20" />
+        ) : (
+          <div className="text-2xl font-bold cursor-pointer" onClick={onValueClick}>
+            {value}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+)
+
 
 export default function ResQDashboard() {
   const [isMounted, setIsMounted] = useState(false);
@@ -96,6 +102,7 @@ export default function ResQDashboard() {
   const notificationSoundRef = useRef<HTMLAudioElement | null>(null);
   const earningsTimerRef = useRef<NodeJS.Timeout | null>(null);
   const requestTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const [currentTime, setCurrentTime] = useState(new Date());
   
   const { toast } = useToast();
   const { messaging, db } = useFirebase();
@@ -104,6 +111,9 @@ export default function ResQDashboard() {
   const [isEarningsVisible, setIsEarningsVisible] = useState(false);
   const [isPinDialogOpen, setIsPinDialogOpen] = useState(false);
   const [pin, setPin] = useState('');
+  const [recentJobs, setRecentJobs] = useState<JobRequest[]>([]);
+  const [isHistoryLoading, setIsHistoryLoading] = useState(true);
+
 
   useEffect(() => {
     notificationSoundRef.current = new Audio('/sounds/notification.mp3');
@@ -159,7 +169,14 @@ export default function ResQDashboard() {
     };
     checkActiveJob();
 
-    return () => unsubscribe();
+    const timer = setInterval(() => {
+        setCurrentTime(new Date());
+    }, 1000);
+
+    return () => {
+        unsubscribe();
+        clearInterval(timer);
+    };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [toast, db]);
 
@@ -464,186 +481,206 @@ export default function ResQDashboard() {
     return <div className="flex items-center justify-center h-full"><Skeleton className="w-full h-96" /></div>
   }
 
-  return (
-    <div className="h-screen w-screen flex flex-col bg-background">
-      <div className="flex-1 relative">
-           <LiveMap 
-              riderLocation={driverLocation} // The "Rider" in this context is the stranded driver
-              driverLocation={mechanicLiveLocation} // The "Driver" is the mechanic themself
-              routeGeometry={routeGeometry}
-              onLocationFound={(addr, coords) => {
-                if (db && mechanicData) {
-                    updateDoc(doc(db, 'mechanics', mechanicData.id), {
-                        currentLocation: new GeoPoint(coords.lat, coords.lon)
-                    });
-                }
-              }}
-          />
-          <div className="absolute top-4 right-4 z-10 flex flex-col gap-2">
-              <Card className="p-2 bg-background/80 backdrop-blur-sm flex items-center gap-2">
-                  <div className="flex items-center space-x-2">
-                      <Switch id="online-status" checked={isAvailable} onCheckedChange={handleAvailabilityChange} className="data-[state=checked]:bg-green-500" />
-                      <Label htmlFor="online-status" className={cn("font-medium", isAvailable ? 'text-primary' : 'text-muted-foreground')}>{isAvailable ? 'Available' : 'Unavailable'}</Label>
-                  </div>
-               </Card>
-           </div>
-      </div>
-
-       <div className="h-1/2 bg-muted/30 rounded-t-2xl shadow-2xl -mt-4 z-10 p-4 flex flex-col gap-4 overflow-y-auto">
-        {jobRequest && !acceptedJob && (
-            <AlertDialog open={!!jobRequest}>
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                        <AlertDialogTitle className="flex items-center gap-2"><Wrench className="w-8 h-8 text-primary" /> New Service Request!</AlertDialogTitle>
-                        <AlertDialogDescription>A nearby driver needs assistance.</AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <div className="space-y-3 py-4">
-                        <div><Label>Driver</Label><p className="font-semibold">{jobRequest.driverName}</p></div>
-                        <div><Label>Distance</Label><p className="font-semibold">{jobRequest.distance} km away</p></div>
-                        <div><Label>Issue</Label><p className="font-semibold">{jobRequest.issue}</p></div>
+  const renderActiveJob = () => {
+    if (!acceptedJob) return null;
+    
+    return (
+        <Card className="shadow-lg animate-fade-in w-full">
+            <CardHeader>
+                <CardTitle>Ongoing Job</CardTitle>
+                <CardDescription>Driver: {acceptedJob.driverName} - Issue: {acceptedJob.issue}</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+                {jobStatus === 'navigating' && (
+                    <div className="grid grid-cols-1 gap-2">
+                        <Button className="w-full" size="lg" onClick={() => setJobStatus('arrived')}>Arrived at Location</Button>
+                        <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white" size="lg" onClick={() => window.open(`https://www.google.com/maps/dir/?api=1&destination=${acceptedJob.location.latitude},${acceptedJob.location.longitude}`, '_blank')}>
+                            <Navigation className="mr-2 h-4 h-4" />
+                            Navigate with Google Maps
+                        </Button>
                     </div>
-                    <AlertDialogFooter className="grid grid-cols-2">
-                        <Button variant="destructive" onClick={() => handleDeclineJob()}>Decline ({requestTimeout}s)</Button>
-                        <Button onClick={handleAcceptJob}>Accept Job</Button>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
-        )}
+                )}
+                {jobStatus === 'arrived' && (
+                    <div className="space-y-4">
+                        <Label>Enter OTP from driver to start service</Label>
+                        <Input className="text-center text-xl tracking-[0.5em]" maxLength={4} value={enteredOtp} onChange={(e) => setEnteredOtp(e.target.value)} />
+                        <Button className="w-full" onClick={handleVerifyOtp}>Verify & Start Service</Button>
+                    </div>
+                )}
+                {jobStatus === 'in_progress' && (
+                    <div className="text-center space-y-4 p-4 bg-muted rounded-lg">
+                        <p className="font-semibold">Service Ongoing...</p>
+                        <Button className="w-full" size="lg" onClick={() => setJobStatus('billing')}>Complete Service & Generate Bill</Button>
+                    </div>
+                )}
+                 {jobStatus === 'billing' && (
+                    <div className="space-y-4">
+                        <Label className="text-lg font-semibold">Generate Job Card</Label>
+                        <div className="space-y-2 max-h-48 overflow-y-auto pr-2">
+                            {billItems.map((item, index) => (
+                                <div key={index} className="flex gap-2 items-center">
+                                    <Input
+                                        placeholder="Service / Item Description"
+                                        value={item.description}
+                                        onChange={(e) => handleBillItemChange(index, 'description', e.target.value)}
+                                    />
+                                    <Input
+                                        type="number"
+                                        placeholder="Amount"
+                                        className="w-28"
+                                        value={item.amount}
+                                        onChange={(e) => handleBillItemChange(index, 'amount', e.target.value)}
+                                    />
+                                    <Button variant="ghost" size="icon" onClick={() => removeBillItem(index)} disabled={billItems.length === 1}>
+                                        <Trash2 className="w-4 h-4 text-destructive" />
+                                    </Button>
+                                </div>
+                            ))}
+                        </div>
+                        <Button variant="outline" size="sm" onClick={addBillItem} className="w-full">
+                            <PlusCircle className="w-4 h-4 mr-2" /> Add Line Item
+                        </Button>
+                         <div className="flex justify-between items-center font-bold text-lg pt-2 border-t">
+                            <span>Total Amount:</span>
+                            <span>₹{totalAmount.toFixed(2)}</span>
+                        </div>
+                        <Button className="w-full" size="lg" onClick={completeJob}>Submit Job Card for Approval</Button>
+                    </div>
+                )}
+                {jobStatus === 'payment' && (
+                     <div className="text-center space-y-4 p-4 bg-muted rounded-lg">
+                        <p className="font-semibold">Waiting for Payment</p>
+                        <p className="text-sm text-muted-foreground">The bill has been sent to the driver for approval and payment.</p>
+                        <p className="text-3xl font-bold">₹{totalAmount.toFixed(2)}</p>
+                    </div>
+                )}
+            </CardContent>
+        </Card>
+    );
+  }
 
-        {acceptedJob ? (
-            <Card className="animate-fade-in">
-                <CardHeader>
-                    <CardTitle>Ongoing Job</CardTitle>
-                    <CardDescription>Driver: {acceptedJob.driverName} - Issue: {acceptedJob.issue}</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                    {jobStatus === 'navigating' && (
-                        <div className="grid grid-cols-1 gap-2">
-                            <Button className="w-full" size="lg" onClick={() => setJobStatus('arrived')}>Arrived at Location</Button>
-                            <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white" size="lg" onClick={() => window.open(`https://www.google.com/maps/dir/?api=1&destination=${acceptedJob.location.latitude},${acceptedJob.location.longitude}`, '_blank')}>
-                                <Navigation className="mr-2 h-4 h-4" />
-                                Navigate with Google Maps
-                            </Button>
-                        </div>
-                    )}
-                    {jobStatus === 'arrived' && (
-                        <div className="space-y-4">
-                            <Label>Enter OTP from driver to start service</Label>
-                            <Input className="text-center text-xl tracking-[0.5em]" maxLength={4} value={enteredOtp} onChange={(e) => setEnteredOtp(e.target.value)} />
-                            <Button className="w-full" onClick={handleVerifyOtp}>Verify & Start Service</Button>
-                        </div>
-                    )}
-                    {jobStatus === 'in_progress' && (
-                        <div className="text-center space-y-4 p-4 bg-muted rounded-lg">
-                            <p className="font-semibold">Service Ongoing...</p>
-                            <Button className="w-full" size="lg" onClick={() => setJobStatus('billing')}>Complete Service & Generate Bill</Button>
-                        </div>
-                    )}
-                     {jobStatus === 'billing' && (
-                        <div className="space-y-4">
-                            <Label className="text-lg font-semibold">Generate Job Card</Label>
-                            <div className="space-y-2 max-h-48 overflow-y-auto pr-2">
-                                {billItems.map((item, index) => (
-                                    <div key={index} className="flex gap-2 items-center">
-                                        <Input
-                                            placeholder="Service / Item Description"
-                                            value={item.description}
-                                            onChange={(e) => handleBillItemChange(index, 'description', e.target.value)}
-                                        />
-                                        <Input
-                                            type="number"
-                                            placeholder="Amount"
-                                            className="w-28"
-                                            value={item.amount}
-                                            onChange={(e) => handleBillItemChange(index, 'amount', e.target.value)}
-                                        />
-                                        <Button variant="ghost" size="icon" onClick={() => removeBillItem(index)} disabled={billItems.length === 1}>
-                                            <Trash2 className="w-4 h-4 text-destructive" />
-                                        </Button>
-                                    </div>
-                                ))}
-                            </div>
-                            <Button variant="outline" size="sm" onClick={addBillItem} className="w-full">
-                                <PlusCircle className="w-4 h-4 mr-2" /> Add Line Item
-                            </Button>
-                             <div className="flex justify-between items-center font-bold text-lg pt-2 border-t">
-                                <span>Total Amount:</span>
-                                <span>₹{totalAmount.toFixed(2)}</span>
-                            </div>
-                            <Button className="w-full" size="lg" onClick={completeJob}>Submit Job Card for Approval</Button>
-                        </div>
-                    )}
-                    {jobStatus === 'payment' && (
-                         <div className="text-center space-y-4 p-4 bg-muted rounded-lg">
-                            <p className="font-semibold">Waiting for Payment</p>
-                            <p className="text-sm text-muted-foreground">The bill has been sent to the driver for approval and payment.</p>
-                            <p className="text-3xl font-bold">₹{totalAmount.toFixed(2)}</p>
-                        </div>
-                    )}
-                </CardContent>
-            </Card>
-        ) : (
+  return (
+    <div className="grid gap-6">
+        {acceptedJob ? renderActiveJob() : (
             <>
-                 <div className="grid grid-cols-4 gap-2 text-center">
-                    <Card><CardContent className="p-2"><div className="text-xs text-muted-foreground">Jobs Today</div><div className="font-bold text-lg flex items-center justify-center gap-1"><History className="w-4 h-4 text-muted-foreground"/>{mechanicData?.jobsToday || 0}</div></CardContent></Card>
-                    <Card><CardContent className="p-2"><div className="text-xs text-muted-foreground">Rating</div><div className="font-bold text-lg flex items-center justify-center gap-1"><Star className="w-4 h-4 text-muted-foreground"/>{mechanicData?.rating || '4.8'}</div></CardContent></Card>
-                    <Card><CardContent className="p-2"><div className="text-xs text-muted-foreground">Acceptance</div><div className="font-bold text-lg flex items-center justify-center gap-1"><CheckCircle className="w-4 h-4 text-muted-foreground"/>{mechanicData?.acceptanceRate || '95'}%</div></CardContent></Card>
-                     <Card>
-                        <CardContent className="p-2">
-                             <div className="text-xs text-muted-foreground">Earnings</div>
-                             {isEarningsVisible ? (
-                                 <div className="font-bold text-lg flex items-center justify-center gap-1">
-                                     <IndianRupee className="w-4 h-4 text-muted-foreground"/>{(mechanicData?.todaysEarnings || 0).toLocaleString()}
-                                 </div>
-                             ) : (
-                                 <Button variant="ghost" size="sm" className="w-full h-auto py-0.5" onClick={() => setIsPinDialogOpen(true)}>
-                                     <span className="font-bold text-lg">₹ ****</span>
-                                     <Eye className="w-4 h-4 ml-2 text-muted-foreground"/>
-                                 </Button>
-                             )}
+                <Card className="shadow-lg">
+                    <CardHeader>
+                        <div className="flex justify-between items-center">
+                            <div>
+                                <CardTitle>Your Dashboard</CardTitle>
+                                <CardDescription className="text-xs">{format(currentTime, 'EEEE, d MMMM yyyy')}</CardDescription>
+                            </div>
+                            <div className="text-right">
+                                <p className="font-bold text-2xl font-mono">{format(currentTime, 'h:mm:ss a')}</p>
+                                 <div className="flex items-center space-x-2 justify-end">
+                                    <Switch id="online-status" checked={isAvailable} onCheckedChange={handleAvailabilityChange} />
+                                    <Label htmlFor="online-status" className={cn("font-semibold", isAvailable ? "text-green-600" : "text-muted-foreground")}>
+                                        {isAvailable ? "Available" : "Unavailable"}
+                                    </Label>
+                                </div>
+                            </div>
+                        </div>
+                    </CardHeader>
+                    {isAvailable ? (
+                        <CardContent className="text-center py-12">
+                            <SearchingIndicator partnerType="resq" className="w-32 h-32" />
+                            <h3 className="text-3xl font-bold mt-4">Waiting for Jobs...</h3>
+                            <p className="text-muted-foreground">You are online and ready to accept jobs.</p>
                         </CardContent>
-                    </Card>
-                </div>
-                 <Tabs defaultValue="coach" className="flex-1 flex flex-col">
-                    <TabsList className="grid w-full grid-cols-1">
-                        <TabsTrigger value="coach">AI Coach</TabsTrigger>
+                    ) : (
+                        <CardContent className="text-center py-12">
+                            <CardTitle>You are Offline</CardTitle>
+                            <CardDescription>Go online to receive service requests.</CardDescription>
+                        </CardContent>
+                    )}
+                </Card>
+                <Tabs defaultValue="stats" className="w-full">
+                    <TabsList className="grid w-full grid-cols-2">
+                        <TabsTrigger value="stats">Today's Stats</TabsTrigger>
+                        <TabsTrigger value="history">Recent Activity</TabsTrigger>
                     </TabsList>
-                    <TabsContent value="coach" className="mt-4 flex-1">
-                         <Card className="bg-gradient-to-r from-primary to-primary/80 text-primary-foreground border-none h-full flex items-center">
-                            <CardContent className="p-4"><div className="flex gap-3 items-center"><Sparkles className="w-8 h-8 text-yellow-300 flex-shrink-0" />
-                                <div><p className="font-bold">AI Earnings Coach</p><p className="text-sm text-primary-foreground/90">Focus on battery jump-starts in the evening. It's a high-demand service in your area!</p></div>
-                            </div></CardContent>
-                        </Card>
+                    <TabsContent value="stats" className="mt-4">
+                        <div className="grid gap-4 grid-cols-2 lg:grid-cols-2">
+                            <StatCard title="Today's Earnings" value={isEarningsVisible ? `₹${(mechanicData?.todaysEarnings || 0).toLocaleString()}` : '₹ ****'} icon={IndianRupee} isLoading={isLoading} onValueClick={() => !isEarningsVisible && setIsPinDialogOpen(true)} />
+                            <StatCard title="Today's Jobs" value={mechanicData?.jobsToday?.toString() || '0'} icon={History} isLoading={isLoading} />
+                            <StatCard title="Acceptance Rate" value={`${mechanicData?.acceptanceRate || '95'}%`} icon={Power} isLoading={isLoading} />
+                            <StatCard title="Rating" value={mechanicData?.rating?.toString() || '4.9'} icon={Star} isLoading={isLoading} />
+                        </div>
+                    </TabsContent>
+                    <TabsContent value="history" className="mt-4 flex-1 space-y-2 max-h-48 overflow-y-auto">
+                        {isHistoryLoading ? (
+                            Array.from({length: 2}).map((_, i) => <Skeleton key={i} className="h-16 w-full" />)
+                        ) : recentJobs.length > 0 ? (
+                            recentJobs.map(job => (
+                                <Card key={job.id}>
+                                    <CardContent className="p-2 flex items-center justify-between">
+                                        <div className="text-sm">
+                                            <p className="font-semibold line-clamp-1">{job.issue}</p>
+                                            <p className="text-xs text-muted-foreground">{job.createdAt ? new Date(job.createdAt.seconds * 1000).toLocaleString() : 'N/A'}</p>
+                                        </div>
+                                        <p className="font-bold text-lg">₹{(job as any).totalAmount || 0}</p>
+                                    </CardContent>
+                                </Card>
+                            ))
+                        ) : (
+                            <div className="text-center py-10 text-muted-foreground">No recent jobs found.</div>
+                        )}
                     </TabsContent>
                 </Tabs>
             </>
         )}
-      </div>
-        <Dialog open={isPinDialogOpen} onOpenChange={setIsPinDialogOpen}>
-            <DialogContent className="max-w-xs">
-                <DialogHeader>
-                    <DialogTitle>Enter PIN to View</DialogTitle>
-                    <DialogDescription>For your privacy, please enter your PIN to see today's earnings.</DialogDescription>
-                </DialogHeader>
-                 <div className="flex flex-col items-center justify-center gap-4 py-4">
-                    <Label htmlFor="pin-input-earnings" className="sr-only">Enter PIN</Label>
-                    <Input 
-                        id="pin-input-earnings" 
-                        type="password" 
-                        inputMode="numeric" 
-                        maxLength={4}
-                        value={pin}
-                        onChange={(e) => setPin(e.target.value)}
-                        className="text-center text-2xl font-bold tracking-[1em] w-40" 
-                        placeholder="••••"
-                        autoFocus
-                    />
-                </div>
-                <DialogFooter>
-                    <Button type="button" className="w-full" onClick={handlePinSubmit}>Submit</Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
+
+      <AlertDialog open={!!jobRequest}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+              <AlertDialogTitle>New Service Request!</AlertDialogTitle>
+              <AlertDialogDescription>A new job is available. Please review and respond quickly.</AlertDialogDescription>
+          </AlertDialogHeader>
+          {jobRequest && (
+            <>
+              <div className="absolute top-4 right-4 w-12 h-12 flex items-center justify-center rounded-full border-4 border-primary text-primary font-bold text-2xl">
+                {requestTimeout}
+              </div>
+               <div className="flex items-center gap-4">
+                  <Avatar className="w-12 h-12"><AvatarImage src={'https://placehold.co/100x100.png'} alt={jobRequest.driverName} data-ai-hint="driver portrait" /><AvatarFallback>{jobRequest?.driverName?.[0] || 'D'}</AvatarFallback></Avatar>
+                 <div>
+                   <p className="font-bold">{jobRequest?.driverName}</p>
+                 </div>
+               </div>
+                <div className="space-y-2 text-sm">
+                   <div className="flex items-start gap-2">
+                       <MapPin className="w-4 h-4 mt-1 text-green-500 flex-shrink-0" />
+                       <p><span className="font-semibold">LOCATION:</span> {jobRequest.location.latitude.toFixed(4)}, {jobRequest.location.longitude.toFixed(4)}</p>
+                   </div>
+                   <div className="flex items-start gap-2">
+                       <Wrench className="w-4 h-4 mt-1 text-red-500 flex-shrink-0" />
+                       <p><span className="font-semibold">ISSUE:</span> {jobRequest.issue}</p>
+                   </div>
+               </div>
+            </>
+          )}
+          <AlertDialogFooter className="grid grid-cols-2 gap-2">
+            <Button variant="destructive" onClick={() => handleDeclineJob()}>Decline</Button>
+            <Button onClick={handleAcceptJob}>Accept Job</Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <Dialog open={isPinDialogOpen} onOpenChange={setIsPinDialogOpen}>
+        <DialogContent className="max-w-xs">
+          <DialogHeader>
+            <DialogTitle>Enter PIN to View</DialogTitle>
+            <DialogDescription>For your privacy, please enter your PIN to see today's earnings.</DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col items-center justify-center gap-4 py-4">
+            <Label htmlFor="pin-input" className="sr-only">Enter PIN</Label>
+            <Input id="pin-input" type="password" inputMode="numeric" maxLength={4} value={pin} onChange={(e) => setPin(e.target.value)} className="text-center text-2xl font-bold tracking-[1em] w-40" placeholder="••••" autoFocus />
+          </div>
+          <DialogFooter>
+            <Button type="button" className="w-full" onClick={handlePinSubmit}>Submit</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
