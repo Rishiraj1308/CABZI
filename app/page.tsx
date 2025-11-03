@@ -20,6 +20,7 @@ import dynamic from 'next/dynamic'
 import { Progress } from '@/components/ui/progress'
 import CuroMindReveal from '@/components/CuroMindReveal'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
+import { Separator } from '@/components/ui/separator'
 
 
 const LiveMap = dynamic(() => import('@/components/live-map'), {
@@ -298,8 +299,8 @@ export default function HomePage() {
                     <ThemeToggle />
                     <Sheet>
                         <SheetTrigger asChild>
-                            <Button variant="outline" size="sm" className="h-9">
-                                <User className="w-4 h-4 sm:mr-2"/>
+                           <Button variant="outline" size="sm" className="h-9">
+                                <Menu className="w-4 h-4 sm:hidden"/>
                                 <span className="hidden sm:inline">Login / Signup</span>
                             </Button>
                         </SheetTrigger>
@@ -584,5 +585,3 @@ export default function HomePage() {
       </div>
   );
 }
-
-    
