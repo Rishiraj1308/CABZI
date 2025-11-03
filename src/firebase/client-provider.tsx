@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React, { createContext, useContext, useEffect, useState, useMemo, type ReactNode } from 'react';
@@ -89,10 +90,16 @@ export function useFirebase() {
 
 export const useDb = () => {
     const { db } = useFirebase();
+    if (!db) {
+        console.warn("Firestore not initialized yet, returning null.");
+    }
     return db;
 };
 
 export const useFunctions = () => {
     const { functions } = useFirebase();
+    if (!functions) {
+        console.warn("Functions not initialized yet, returning null.");
+    }
     return functions;
 }

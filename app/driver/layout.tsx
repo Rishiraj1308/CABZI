@@ -1,4 +1,5 @@
 
+
 'use client'
 
 import React, { useState, useEffect, useRef, useCallback, createContext, useContext } from 'react'
@@ -10,14 +11,6 @@ import { Button } from '@/components/ui/button'
 import { Toaster } from '@/components/ui/toaster'
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -265,6 +258,18 @@ function DriverLayoutContent({ children }: { children: React.ReactNode }) {
   const { auth, db } = useFirebase();
   const { partnerData, isLoading } = useDriver();
   
+  useEffect(() => {
+    // This effect will redirect the user away from any page in the /driver route
+    // except for the onboarding page.
+    if (pathname !== '/driver/onboarding') {
+      toast({
+        title: "Driver Dashboard Disabled",
+        description: "This feature is temporarily unavailable while we work on other parts of the app.",
+      });
+      router.push('/');
+    }
+  }, [pathname, router, toast]);
+
   const handleLogout = useCallback(() => {
     if (auth) auth.signOut();
     const sessionString = localStorage.getItem('curocity-session');
@@ -320,138 +325,12 @@ function DriverLayoutContent({ children }: { children: React.ReactNode }) {
     return <>{children}<Toaster /></>
   }
 
-  if (isLoading) {
-     return (
-      <div className="flex h-screen w-full flex-col">
-        <header className="flex h-16 items-center gap-4 border-b bg-background px-4 md:px-6">
-          <Skeleton className="h-10 w-28" />
-          <div className="ml-auto flex items-center gap-4">
-            <Skeleton className="h-10 w-10 rounded-full" />
-            <Skeleton className="h-10 w-10 rounded-full" />
-          </div>
-        </header>
-        <main className="flex-1 p-6">
-          <Skeleton className="h-full w-full" />
-        </main>
-      </div>
-    );
-  }
-
-  const getInitials = (name: string) => {
-    if (!name) return 'D';
-    const names = name.split(' ');
-    if (names.length > 1) {
-      return names[0][0] + names[names.length - 1][0];
-    }
-    return name.substring(0, 2);
-  }
-
-  const LogoArea = ({ isPinkPartner }: { isPinkPartner: boolean }) => (
-    <Link href="/driver" className="flex items-center gap-2 font-semibold">
-      <BrandLogo />
-      {isPinkPartner && <Badge className="bg-pink-600/20 text-pink-700 dark:bg-pink-500/20 dark:text-pink-400 border-pink-600/30">Pink Partner</Badge>}
-    </Link>
-  );
-
+  // A loading or placeholder screen while redirecting
   return (
-    <div className={cn("flex min-h-screen w-full", partnerData?.isCabziPinkPartner ? 'pink-theme' : 'default-theme')}>
-      <aside className="hidden w-64 flex-col border-r bg-background/95 md:flex">
-         <div className="flex h-16 items-center border-b px-6">
-             <LogoArea isPinkPartner={partnerData?.isCabziPinkPartner || false} />
-         </div>
-         <div className="flex-1 overflow-auto py-2">
-             <DriverNav isPinkPartner={partnerData?.isCabziPinkPartner || false} />
-          </div>
-      </aside>
-      <div className="flex flex-col flex-1">
-         <header className="sticky top-0 z-30 flex h-16 items-center gap-2 border-b bg-background/95 px-4 backdrop-blur-sm sm:px-6">
-            <Sheet>
-                <SheetTrigger asChild>
-                    <Button variant="outline" size="icon" className="shrink-0 md:hidden">
-                        <PanelLeft className="h-5 w-5" />
-                        <span className="sr-only">Toggle navigation menu</span>
-                    </Button>
-                </SheetTrigger>
-                <SheetContent side="left" className="p-0">
-                    <SheetHeader className="p-6">
-                        <SheetTitle><LogoArea isPinkPartner={partnerData?.isCabziPinkPartner || false} /></SheetTitle>
-                        <SheetDescription className="sr-only">Main menu for driver</SheetDescription>
-                    </SheetHeader>
-                    <div className="flex-1 overflow-auto py-2">
-                        <DriverNav isPinkPartner={partnerData?.isCabziPinkPartner || false} />
-                    </div>
-                </SheetContent>
-            </Sheet>
-            <div className="flex-1 overflow-hidden">
-                <LocationDisplay />
-            </div>
-            <div className="flex items-center gap-2">
-                 <Dialog>
-                    <DialogTrigger asChild>
-                       <Button variant="outline" size="icon" className="hidden sm:inline-flex"><Map className="h-4 w-4"/></Button>
-                    </DialogTrigger>
-                    <DialogContent className="max-w-3xl h-[80vh] p-0">
-                       <LiveMap 
-                          driverLocation={partnerData?.currentLocation ? { lat: partnerData.currentLocation.latitude, lon: partnerData.currentLocation.longitude } : undefined}
-                       />
-                    </DialogContent>
-                </Dialog>
-                <ThemeToggle />
-                <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                    <Button variant="secondary" size="icon" className="rounded-full">
-                        <Avatar className="h-8 w-8">
-                        <AvatarImage src={partnerData?.photoUrl || `https://i.pravatar.cc/40?u=${partnerData?.id}`} alt={partnerData?.name} data-ai-hint="driver portrait" />
-                        <AvatarFallback>{getInitials(partnerData?.name || '').toUpperCase()}</AvatarFallback>
-                        </Avatar>
-                        <span className="sr-only">Toggle user menu</span>
-                    </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                    <DropdownMenuLabel>My Account</DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onSelect={() => router.push('/driver/profile')}>Profile</DropdownMenuItem>
-                    <DropdownMenuItem onSelect={() => router.push('/driver/support')}>Support</DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                            <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:text-destructive">
-                                Logout
-                            </DropdownMenuItem>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                            <AlertDialogHeader>
-                                <AlertDialogTitle>Are you sure you want to log out?</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                You will need to sign in again to access your dashboard.
-                                </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction onClick={handleLogout} className="bg-destructive hover:bg-destructive/90">
-                                Logout
-                                </AlertDialogAction>
-                            </AlertDialogFooter>
-                        </AlertDialogContent>
-                    </AlertDialog>
-                    </DropdownMenuContent>
-                </DropdownMenu>
-            </div>
-          </header>
-          <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6 overflow-auto">
-              <MotionDiv 
-                key={pathname}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, ease: 'easeInOut' }}
-                className="h-full relative"
-              >
-                {children}
-              </MotionDiv>
-          </main>
-      </div>
+    <div className="flex h-screen w-full items-center justify-center">
+        <Skeleton className="h-full w-full" />
     </div>
-  )
+  );
 }
 
 export default function DriverLayout({ children }: { children: React.ReactNode }) {

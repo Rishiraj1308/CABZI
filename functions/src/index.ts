@@ -1,4 +1,5 @@
 
+
 'use server';
 /**
  * @fileOverview This file contains server-side Cloud Functions for dispatching
@@ -86,7 +87,7 @@ const handleRideDispatch = async (initialRideData: any, rideId: string) => {
             }
             
             const distance = getDistance(rideLocation.latitude, rideLocation.longitude, partner.currentLocation.latitude, partner.currentLocation.longitude);
-            partner.distanceToRider = distance; // Temporarily attach distance
+            partner.distanceToRider = distance; 
             return distance < 10; // 10km radius
         });
     
@@ -119,6 +120,7 @@ const handleRideDispatch = async (initialRideData: any, rideId: string) => {
                 otp: rideData.otp,
                 distance: String(distanceToRider), // Specific distance for this driver
                 eta: String(eta), // Specific ETA for this driver
+                vehicleNumber: partner.vehicleNumber || 'N/A',
             };
             
             const message = {
@@ -438,7 +440,7 @@ const callAutomationWebhook = async (payload: any, partnerType: string) => {
 export const onNewPathPartner = onDocumentCreated('partners/{partnerId}', (event) => {
   const data = event.data?.data();
   if (data) {
-    callAutomationWebhook({ id: event.params.partnerId, ...data }, 'path');
+    callAutomationWebhook({ id: event.params.partnerId, ...data, type: 'Path' }, 'path');
   }
 });
 
@@ -446,7 +448,7 @@ export const onNewPathPartner = onDocumentCreated('partners/{partnerId}', (event
 export const onNewResQPartner = onDocumentCreated('mechanics/{mechanicId}', (event) => {
   const data = event.data?.data();
   if (data) {
-    callAutomationWebhook({ id: event.params.mechanicId, ...data }, 'resq');
+    callAutomationWebhook({ id: event.params.mechanicId, ...data, type: 'ResQ' }, 'resq');
   }
 });
 
@@ -454,7 +456,7 @@ export const onNewResQPartner = onDocumentCreated('mechanics/{mechanicId}', (eve
 export const onNewCurePartner = onDocumentCreated('ambulances/{ambulanceId}', (event) => {
   const data = event.data?.data();
   if (data) {
-    callAutomationWebhook({ id: event.params.ambulanceId, ...data }, 'cure');
+    callAutomationWebhook({ id: event.params.ambulanceId, ...data, type: 'Cure' }, 'cure');
   }
 });
 

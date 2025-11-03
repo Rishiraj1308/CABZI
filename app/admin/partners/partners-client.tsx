@@ -1,4 +1,5 @@
 
+
 'use client'
 
 import { useState, useMemo, useEffect, useCallback } from 'react'
@@ -30,7 +31,7 @@ import {
 import { Input } from '@/components/ui/input'
 import Link from 'next/link'
 import { useDb } from '@/firebase/client-provider'
-import { collection, getDocs, query, doc, updateDoc, deleteDoc, onSnapshot, collectionGroup, where } from 'firebase/firestore'
+import { collection, getDocs, query, doc, updateDoc, deleteDoc, onSnapshot, collectionGroup, where, Timestamp } from 'firebase/firestore'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
@@ -42,7 +43,7 @@ interface PartnerData {
   status?: string;
   docStatus?: 'Verified' | 'Pending' | 'Awaiting Final Approval' | 'Rejected';
   type: 'driver' | 'mechanic' | 'cure' | 'doctor';
-  createdAt: { toDate: () => Date };
+  createdAt: Timestamp;
   specialization?: string;
   hospitalName?: string;
   hospitalId?: string;
@@ -96,12 +97,7 @@ export default function PartnersClient() {
                 const docData = doc.data();
                 return {
                     id: doc.id,
-                    name: docData.name,
-                    phone: docData.phone,
-                    partnerId: docData.partnerId,
-                    status: docData.status,
-                    type: type as 'driver' | 'mechanic' | 'cure',
-                    createdAt: docData.createdAt,
+                    ...docData
                 } as PartnerData;
             });
         } catch (error) {
@@ -153,7 +149,7 @@ export default function PartnersClient() {
             });
         }
         
-        allPartnersData.sort((a, b) => b.createdAt.toDate().getTime() - a.createdAt.toDate().getTime());
+        allPartnersData.sort((a, b) => (b.createdAt?.toDate?.().getTime() || 0) - (a.createdAt?.toDate?.().getTime() || 0));
         setAllPartners(allPartnersData);
     } catch(error) {
         console.error("Error fetching all partners:", error);
