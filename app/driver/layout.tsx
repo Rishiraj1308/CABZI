@@ -250,8 +250,8 @@ function LocationDisplay() {
     }, [partnerData?.currentLocation]);
 
     return (
-        <div className="flex items-center gap-2">
-            <MapPin className="w-4 h-4 text-muted-foreground"/>
+        <div className="flex items-center gap-2 overflow-hidden">
+            <MapPin className="w-4 h-4 text-muted-foreground flex-shrink-0"/>
             <span className="text-sm font-medium text-muted-foreground truncate">{locationAddress}</span>
         </div>
     );
@@ -364,7 +364,7 @@ function DriverLayoutContent({ children }: { children: React.ReactNode }) {
           </div>
       </aside>
       <div className="flex flex-col flex-1">
-         <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-background/95 px-4 backdrop-blur-sm sm:px-6">
+         <header className="sticky top-0 z-30 flex h-16 items-center gap-2 border-b bg-background/95 px-4 backdrop-blur-sm sm:px-6">
             <Sheet>
                 <SheetTrigger asChild>
                     <Button variant="outline" size="icon" className="shrink-0 md:hidden">
@@ -382,11 +382,13 @@ function DriverLayoutContent({ children }: { children: React.ReactNode }) {
                     </div>
                 </SheetContent>
             </Sheet>
-            <LocationDisplay />
-            <div className="ml-auto flex items-center gap-4">
+            <div className="flex-1 overflow-hidden">
+                <LocationDisplay />
+            </div>
+            <div className="flex items-center gap-2">
                  <Dialog>
                     <DialogTrigger asChild>
-                       <Button variant="outline"><Map className="mr-2 h-4 w-4"/> View Live Map</Button>
+                       <Button variant="outline" size="icon" className="hidden sm:inline-flex"><Map className="h-4 w-4"/></Button>
                     </DialogTrigger>
                     <DialogContent className="max-w-3xl h-[80vh] p-0">
                        <LiveMap 

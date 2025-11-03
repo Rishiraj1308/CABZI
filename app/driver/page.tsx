@@ -199,6 +199,7 @@ export default function DriverDashboardPage() {
           status: 'accepted',
           driverId: partnerData.id,
           driverName: partnerData.name,
+          vehicleNumber: partnerData.vehicleNumber || 'N/A', // Added vehicle number
           driverDetails: {
             name: partnerData.name,
             vehicle: `${partnerData.vehicleBrand || ''} ${partnerData.vehicleName || ''}`.trim(),
@@ -321,14 +322,14 @@ export default function DriverDashboardPage() {
                     <CardHeader>
                         <div className="flex justify-between items-center">
                             <div>
-                                <CardTitle>Your Dashboard</CardTitle>
-                                <CardDescription className="text-xs">{format(currentTime, 'EEEE, d MMMM yyyy')}</CardDescription>
+                                <CardTitle className="text-xl md:text-2xl">Your Dashboard</CardTitle>
+                                <CardDescription className="text-xs">{format(currentTime, 'EEEE, d MMMM')}</CardDescription>
                             </div>
                             <div className="text-right">
-                                <p className="font-bold text-2xl font-mono">{format(currentTime, 'h:mm:ss a')}</p>
+                                <p className="font-bold text-lg md:text-2xl font-mono">{format(currentTime, 'h:mm a')}</p>
                                  <div className="flex items-center space-x-2 justify-end">
                                     <Switch id="online-status" checked={isOnline} onCheckedChange={handleAvailabilityChange} />
-                                    <Label htmlFor="online-status" className={cn("font-semibold", isOnline ? "text-green-600" : "text-muted-foreground")}>
+                                    <Label htmlFor="online-status" className={cn("font-semibold text-xs", isOnline ? "text-green-600" : "text-muted-foreground")}>
                                         {isOnline ? "ONLINE" : "OFFLINE"}
                                     </Label>
                                 </div>
@@ -336,10 +337,10 @@ export default function DriverDashboardPage() {
                         </div>
                     </CardHeader>
                     {isOnline ? (
-                        <CardContent className="text-center py-12">
-                            <SearchingIndicator partnerType="path" className="w-32 h-32" />
-                            <h3 className="text-3xl font-bold mt-4">Waiting for Rides...</h3>
-                            <p className="text-muted-foreground">You are online and ready to accept jobs.</p>
+                        <CardContent className="text-center py-8 md:py-12">
+                            <SearchingIndicator partnerType="path" className="w-24 h-24 md:w-32 md:h-32" />
+                            <h3 className="text-xl md:text-3xl font-bold mt-4">Waiting for Rides...</h3>
+                            <p className="text-muted-foreground text-sm">You are online and ready to accept jobs.</p>
                         </CardContent>
                     ) : (
                         <CardContent className="text-center py-12">
