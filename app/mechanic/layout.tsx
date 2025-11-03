@@ -1,3 +1,4 @@
+
 'use client'
 
 import React, { useState, useEffect, useRef, useCallback, createContext, useContext, useMemo } from 'react'
@@ -7,7 +8,7 @@ import { LayoutDashboard, Landmark, History, User, PanelLeft, LogOut, Sun, Moon 
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Toaster } from '@/components/ui/toaster'
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
+import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import {
   AlertDialog,
@@ -33,7 +34,7 @@ import { doc, onSnapshot, updateDoc, serverTimestamp, collection, query, where }
 interface PartnerDataContextType {
   partnerData: any;
   isLoading: boolean;
-  requests: any[]; // 🟢 added
+  requests: any[];
 }
 
 const PartnerDataContext = createContext<PartnerDataContextType | null>(null);
@@ -49,7 +50,7 @@ export const usePartnerData = () => {
 function PartnerProvider({ children, partnerType }: { children: React.ReactNode, partnerType: 'driver' | 'mechanic' }) {
   const [partnerData, setPartnerData] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [requests, setRequests] = useState<any[]>([]); // 🟢 added
+  const [requests, setRequests] = useState<any[]>([]);
   const { db, user, isUserLoading } = useFirebase();
   const router = useRouter();
   const pathname = usePathname();
@@ -100,21 +101,26 @@ function PartnerProvider({ children, partnerType }: { children: React.ReactNode,
       const sessionData = JSON.parse(session);
       const partnerDocRef = doc(db, 'mechanics', sessionData.partnerId);
 
-      // 🔹 Listen to mechanic profile
       unsubscribeMechanic = onSnapshot(partnerDocRef, (docSnap) => {
         if (docSnap.exists()) {
           const mechanic = { id: docSnap.id, ...docSnap.data() };
           setPartnerData(mechanic);
 
-          // 🟢 Listen to all requests assigned to this mechanic
-          const reqQuery = query(
-            collection(db, "requests"), // <-- Make sure your collection name is correct
-            where("mechanicId", "==", mechanic.id)
-          );
-          unsubscribeRequests = onSnapshot(reqQuery, (snap) => {
-            const reqs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-            setRequests(reqs);
-          });
+          if (mechanic.isOnline) {
+            // Listen for new, unassigned garage requests
+            const reqQuery = query(
+              collection(db, "garageRequests"),
+              where("status", "==", "pending")
+            );
+            unsubscribeRequests = onSnapshot(reqQuery, (snap) => {
+              const reqs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+              setRequests(reqs);
+            });
+          } else {
+            setRequests([]); // Clear requests if offline
+            if (unsubscribeRequests) unsubscribeRequests();
+          }
+
         } else {
           if (!isOnboarding) handleLogout();
         }
@@ -135,7 +141,7 @@ function PartnerProvider({ children, partnerType }: { children: React.ReactNode,
     };
   }, [isUserLoading, user, db, handleLogout, partnerType, pathname, router]);
 
-  const value = useMemo(() => ({ partnerData, isLoading, requests }), [partnerData, isLoading, requests]); // 🟢 added requests
+  const value = useMemo(() => ({ partnerData, isLoading, requests }), [partnerData, isLoading, requests]);
 
   return (
     <PartnerDataContext.Provider value={value}>
@@ -199,7 +205,7 @@ function MechanicLayoutContent({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const { toast } = useToast();
   const { auth } = useFirebase();
-  const { partnerData, isLoading: isSessionLoading, requests } = usePartnerData(); // 🟢 added requests
+  const { partnerData, isLoading: isSessionLoading } = usePartnerData();
 
   const handleLogout = useCallback(() => {
     if (auth) auth.signOut();
@@ -310,25 +316,6 @@ function MechanicLayoutContent({ children }: { children: React.ReactNode }) {
           className="h-full"
         >
           {children}
-
-          {/* 🟢 Added preview section */}
-          <div className="mt-8 bg-muted/30 p-4 rounded-lg">
-            <h3 className="font-semibold mb-2">🔧 Incoming Service Requests</h3>
-            {requests.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No requests yet.</p>
-            ) : (
-              <ul className="space-y-2">
-                {requests.map((r) => (
-                  <li key={r.id} className="p-3 bg-background rounded-md shadow-sm border">
-                    <div className="flex justify-between">
-                      <p><b>{r.userName || 'Unknown User'}</b> - {r.serviceType || 'Service Request'}</p>
-                      <span className="text-xs text-muted-foreground">{r.status || 'pending'}</span>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
         </MotionDiv>
       </main>
       <Toaster />
