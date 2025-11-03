@@ -215,9 +215,9 @@ export default function ResQDashboard() {
             if(type === 'new_garage_request' && requestId) {
                  const newJobRequest: JobRequest = {
                     id: requestId,
-                    driverId: jobData.driverId,
-                    driverName: jobData.driverName,
-                    driverPhone: jobData.driverPhone,
+                    userId: jobData.userId,
+                    userName: jobData.userName,
+                    userPhone: jobData.userPhone,
                     issue: jobData.issue,
                     location: JSON.parse(jobData.location || '{}'),
                     status: jobData.status,
@@ -362,7 +362,7 @@ export default function ResQDashboard() {
         setAcceptedJob(jobRequest);
         setJobRequest(null);
         setJobStatus('navigating');
-        toast({ title: 'Job Accepted!', description: `Navigate to ${jobRequest.driverName}'s location.` });
+        toast({ title: 'Job Accepted!', description: `Navigate to ${jobRequest.userName}'s location.` });
     } catch (error) {
         toast({ variant: 'destructive', title: 'Error', description: 'Could not accept the job. It may have been taken.' });
     }
@@ -435,7 +435,7 @@ export default function ResQDashboard() {
               totalAmount: totalAmount,
               invoiceId: invoiceId,
               billDate: serverTimestamp(),
-              billedTo: acceptedJob.driverName
+              billedTo: acceptedJob.userName
           });
           
           setJobStatus('payment'); // Local state update for UI
@@ -495,7 +495,7 @@ export default function ResQDashboard() {
         <Card className="shadow-lg animate-fade-in w-full">
             <CardHeader>
                 <CardTitle>Ongoing Job</CardTitle>
-                <CardDescription>Driver: {acceptedJob.driverName} - Issue: {acceptedJob.issue}</CardDescription>
+                <CardDescription>User: {acceptedJob.userName} - Issue: {acceptedJob.issue}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
                 {jobStatus === 'navigating' && (
@@ -649,9 +649,9 @@ export default function ResQDashboard() {
                 {requestTimeout}
               </div>
                <div className="flex items-center gap-4">
-                  <Avatar className="w-12 h-12"><AvatarImage src={'https://placehold.co/100x100.png'} alt={jobRequest.driverName} data-ai-hint="driver portrait" /><AvatarFallback>{jobRequest?.driverName?.[0] || 'D'}</AvatarFallback></Avatar>
+                  <Avatar className="w-12 h-12"><AvatarImage src={'https://placehold.co/100x100.png'} alt={jobRequest.userName} data-ai-hint="driver portrait" /><AvatarFallback>{jobRequest?.userName?.[0] || 'D'}</AvatarFallback></Avatar>
                  <div>
-                   <p className="font-bold">{jobRequest?.driverName}</p>
+                   <p className="font-bold">{jobRequest?.userName}</p>
                  </div>
                </div>
                 <div className="space-y-2 text-sm">
