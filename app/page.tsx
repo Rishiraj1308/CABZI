@@ -5,7 +5,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import BrandLogo, { NewLogoIcon } from '@/components/brand-logo'
-import { ArrowRight, Car, Wrench, Ambulance, Landmark, CheckCircle, Shield, IndianRupee, Signal, Wifi, Battery, Sun, Moon, Globe, User, LogIn, Star, MapPin, Clock, Bike, Phone, Share2, Siren, Send, ScanLine, NotebookText, Banknote, Sparkles, PiggyBank, HeartHandshake, CircleHelp, Hand, Briefcase, Home, MessageSquare, Calendar, Building, BrainCircuit, AppWindow } from 'lucide-react'
+import { ArrowRight, Car, Wrench, Ambulance, Landmark, CheckCircle, Shield, IndianRupee, Signal, Wifi, Battery, Sun, Moon, Globe, User, LogIn, Star, MapPin, Clock, Bike, Phone, Share2, Siren, Send, ScanLine, NotebookText, Banknote, Sparkles, PiggyBank, HeartHandshake, CircleHelp, Hand, Briefcase, Home, MessageSquare, Calendar, Building, BrainCircuit, AppWindow, Menu } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
@@ -19,6 +19,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import dynamic from 'next/dynamic'
 import { Progress } from '@/components/ui/progress'
 import CuroMindReveal from '@/components/CuroMindReveal'
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
 
 
 const LiveMap = dynamic(() => import('@/components/live-map'), {
@@ -288,30 +289,33 @@ export default function HomePage() {
   return (
       <div className={cn("flex flex-col min-h-screen bg-background aurora-background")}>
           <header className="sticky top-0 z-50 w-full border-b bg-background/80 backdrop-blur-sm">
-            <div className="container flex h-14 items-center">
-                <div className="mr-auto flex items-center">
-                    <Link href="/" className="flex items-center gap-2">
-                        <BrandLogo hideText={false} iconClassName="w-8 h-8" />
-                    </Link>
+            <div className="container flex h-14 items-center justify-between">
+                <Link href="/" className="flex items-center gap-2">
+                    <BrandLogo hideText={false} iconClassName="w-8 h-8" />
+                </Link>
+                <div className="flex items-center gap-1 sm:gap-2">
+                    <LanguageToggle />
+                    <ThemeToggle />
+                    <Sheet>
+                        <SheetTrigger asChild>
+                            <Button variant="outline" size="sm" className="h-9">
+                                <User className="w-4 h-4 sm:mr-2"/>
+                                <span className="hidden sm:inline">Login / Signup</span>
+                            </Button>
+                        </SheetTrigger>
+                        <SheetContent>
+                            <SheetHeader>
+                                <SheetTitle className="text-left"><BrandLogo/></SheetTitle>
+                            </SheetHeader>
+                            <div className="grid gap-4 py-4">
+                                <Button asChild variant="secondary"><Link href="/login?role=user">Login as User</Link></Button>
+                                <Button asChild variant="outline"><Link href="/login?role=driver">Login as Partner</Link></Button>
+                                <Separator className="my-2"/>
+                                <Button asChild variant="ghost" className="text-xs text-muted-foreground"><Link href="/admin">Admin Panel</Link></Button>
+                            </div>
+                        </SheetContent>
+                    </Sheet>
                 </div>
-              <div className="flex items-center gap-1 sm:gap-2">
-                <LanguageToggle />
-                <ThemeToggle />
-                 <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                        <Button variant="outline" size="sm" className="h-9">
-                            <User className="w-4 h-4 sm:mr-2"/>
-                            <span className="hidden sm:inline">Login / Signup</span>
-                        </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                        <DropdownMenuItem asChild><Link href="/login?role=user">Login as User</Link></DropdownMenuItem>
-                        <DropdownMenuItem asChild><Link href="/login?role=driver">Login as Partner</Link></DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem asChild><Link href="/admin" className="text-xs">Admin Panel</Link></DropdownMenuItem>
-                    </DropdownMenuContent>
-                 </DropdownMenu>
-              </div>
             </div>
           </header>
           <main className="flex-1">
@@ -580,3 +584,5 @@ export default function HomePage() {
       </div>
   );
 }
+
+    
