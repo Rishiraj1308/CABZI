@@ -5,7 +5,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button, buttonVariants } from '@/components/ui/button'
 import {
-  Car, Wrench, Ambulance, Calendar, TestTube, Search, X, Mic, AlertTriangle, Phone, History, MapPin, ArrowUpRight, Clock, MessageCircle, Shield, Home
+  Car, Wrench, Ambulance, Calendar, TestTube, Search, X, Mic, AlertTriangle, Phone, History, MapPin, ArrowUpRight, Clock, MessageCircle, Shield
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { cn } from '@/lib/utils'
@@ -17,8 +17,6 @@ import { useFirebase } from '@/firebase/client-provider'
 import { getDoc, doc } from 'firebase/firestore'
 import type { ClientSession } from '@/lib/types'
 import EmergencyButtons from '@/components/EmergencyButtons'
-import { Dialog, DialogTrigger, DialogContent } from '@/components/ui/dialog'
-
 
 const ServiceCard = ({
   service,
@@ -62,10 +60,11 @@ const ServiceCard = ({
 
 export default function ServicePortalPage() {
   const router = useRouter()
-  const { t } = useLanguage();
+  const { t } = useLanguage()
   const { toast } = useToast()
   
   const [searchQuery, setSearchQuery] = useState('');
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isSosModalOpen, setIsSosModalOpen] = useState(false);
   const [services, setServices] = useState<any[]>([]);
   const [isListening, setIsListening] = useState(false);
@@ -250,9 +249,9 @@ export default function ServicePortalPage() {
           </div>
         </section>
         
-        <Dialog open={isSosModalOpen} onOpenChange={setIsSosModalOpen}>
-            <DialogContent className="sm:max-w-md">
-                 <EmergencyButtons 
+        <AlertDialog open={isSosModalOpen} onOpenChange={setIsSosModalOpen}>
+            <AlertDialogContent>
+                <EmergencyButtons 
                     serviceType="cure"
                     // These props are simplified as the component is now self-contained for location
                     liveMapRef={{current: null}} 
@@ -263,8 +262,8 @@ export default function ServicePortalPage() {
                     onBack={() => setIsSosModalOpen(false)}
                     session={session}
                 />
-            </DialogContent>
-        </Dialog>
+            </AlertDialogContent>
+        </AlertDialog>
 
       </main>
     </>
