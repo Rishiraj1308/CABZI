@@ -17,7 +17,7 @@ import { useFirebase } from '@/firebase/client-provider'
 import { doc, getDoc } from 'firebase/firestore'
 import type { ClientSession } from '@/lib/types'
 import EmergencyButtons from '@/components/EmergencyButtons'
-import { Dialog, DialogTrigger } from '@/components/ui/dialog'
+import { Dialog, DialogTrigger, DialogContent } from '@/components/ui/dialog'
 
 
 const ServiceCard = ({
