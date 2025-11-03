@@ -104,7 +104,7 @@ export default function ResQPage() {
     const q = query(
       collection(db, "garageRequests"),
       where("driverId", "==", session.userId),
-      where("status", "not-in", ["completed", "cancelled_by_driver", "cancelled_by_mechanic"])
+      where("status", "not-in", ["completed", "cancelled_by_driver", "cancelled_by_mechanic", "cancelled_by_user"])
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -191,7 +191,7 @@ export default function ResQPage() {
     if (!db || !activeGarageRequest) return;
     const requestRef = doc(db, 'garageRequests', activeGarageRequest.id);
     try {
-      await updateDoc(requestRef, { status: 'cancelled_by_driver' });
+      await updateDoc(requestRef, { status: 'cancelled_by_user' });
       toast({ variant: 'destructive', title: 'Service Request Cancelled' });
       resetFlow();
     } catch (error) {
@@ -257,10 +257,10 @@ export default function ResQPage() {
                         className={cn(
                             "group flex flex-col items-center justify-center p-4 bg-background rounded-xl border-2 border-transparent hover:shadow-lg hover:-translate-y-1 transition-all cursor-pointer h-full w-full",
                             "hover:border-amber-500/50",
-                            selectedIssue === item.label && "ring-2 ring-amber-500 border-amber-500"
+                            selectedIssue === item.label && "ring-2 ring-primary border-primary"
                         )}
                         >
-                            <item.icon className="text-amber-500 w-8 h-8 mb-2 transition-all" />
+                            <item.icon className="text-primary w-8 h-8 mb-2 transition-all" />
                             <span className="font-semibold text-center text-sm">{item.label}</span>
                         </button>
                       </motion.div>
