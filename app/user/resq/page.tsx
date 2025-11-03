@@ -10,7 +10,7 @@ import { useToast } from '@/hooks/use-toast'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import RideStatus from '@/components/ride-status'
-import { Wrench, Zap, Fuel, Car, MoreHorizontal, ArrowLeft, MapPin, History, AlertTriangle } from 'lucide-react'
+import { Wrench, Zap, Fuel, Car, MoreHorizontal, ArrowLeft, MapPin, History, AlertTriangle, RefreshCw } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { motion } from 'framer-motion'
 import Image from 'next/image'
@@ -42,6 +42,7 @@ export default function ResQPage() {
   const [currentUserLocation, setCurrentUserLocation] = useState<{ lat: number; lon: number } | null>(null);
   const [locationAddress, setLocationAddress] = useState('Locating...');
   const [selectedIssue, setSelectedIssue] = useState('');
+  const [locationError, setLocationError] = useState(false);
 
   const { user, db } = useFirebase();
   const { toast } = useToast();
@@ -59,6 +60,8 @@ export default function ResQPage() {
   }, []);
   
   const fetchLocation = useCallback(() => {
+     setLocationError(false);
+     setLocationAddress('Locating...');
      if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
             async (position) => {
@@ -68,10 +71,15 @@ export default function ResQPage() {
                 setLocationAddress(address);
             },
             () => {
-                setLocationAddress('Location access denied. Please enable it in your browser settings.');
+                setLocationAddress('Location access denied. Please enable it in browser settings.');
+                setLocationError(true);
                 toast({ variant: 'destructive', title: 'Location Access Denied' });
-            }
+            },
+            { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
         );
+    } else {
+        setLocationAddress('Geolocation is not supported by this browser.');
+        setLocationError(true);
     }
   }, [getAddressFromCoords, toast]);
 
@@ -193,7 +201,6 @@ export default function ResQPage() {
         
         setActiveGarageRequest({ id: requestDocRef.id, ...requestData } as unknown as GarageRequest);
         localStorage.setItem('activeGarageRequestId', requestDocRef.id);
-        // Toast removed to allow UI to update to RideStatus component
     } catch (error) {
         toast({ variant: 'destructive', title: 'Request Failed', description: 'Could not create service request.' });
     }
@@ -251,8 +258,9 @@ export default function ResQPage() {
         </CardHeader>
         <CardContent className="space-y-6">
             <div className="p-3 flex items-center gap-3 bg-muted rounded-lg">
-                <MapPin className="w-5 h-5 text-primary flex-shrink-0" />
+                <MapPin className={cn("w-5 h-5 flex-shrink-0", locationError ? "text-destructive" : "text-primary")} />
                 <p className="font-semibold text-base text-muted-foreground truncate">{locationAddress}</p>
+                {locationError && <Button variant="ghost" size="icon" className="h-8 w-8" onClick={fetchLocation}><RefreshCw className="w-4 h-4" /></Button>}
             </div>
             
             <div className="space-y-3">
@@ -299,7 +307,7 @@ export default function ResQPage() {
          <CardFooter className="p-4 border-t">
             <Button
                 size="lg"
-                disabled={!selectedIssue}
+                disabled={!selectedIssue || !currentUserLocation}
                 onClick={handleRequestMechanic}
                 className="w-full font-semibold h-12 text-lg bg-accent text-accent-foreground hover:bg-accent/90"
             >
@@ -310,3 +318,4 @@ export default function ResQPage() {
     </motion.div>
   );
 }
+
