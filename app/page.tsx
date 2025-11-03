@@ -289,9 +289,11 @@ export default function HomePage() {
       <div className={cn("flex flex-col min-h-screen bg-background aurora-background")}>
           <header className="sticky top-0 z-50 w-full border-b bg-background/80 backdrop-blur-sm">
             <div className="container flex h-14 items-center">
-                <Link href="/" className="mr-auto flex items-center gap-2">
-                    <BrandLogo hideText={false} iconClassName="w-8 h-8" />
-                </Link>
+                <div className="mr-auto flex items-center">
+                    <Link href="/" className="flex items-center gap-2">
+                        <BrandLogo hideText={false} iconClassName="w-8 h-8" />
+                    </Link>
+                </div>
               <div className="flex items-center gap-1 sm:gap-2">
                 <LanguageToggle />
                 <ThemeToggle />
