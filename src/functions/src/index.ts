@@ -138,7 +138,7 @@ const handleRideDispatch = async (initialRideData: any, rideId: string) => {
 }
 
 const handleGarageRequestDispatch = async (requestData: any, requestId: string) => {
-    const mechanicsQuery = db.collection('mechanics').where('isAvailable', '==', true);
+    const mechanicsQuery = db.collection('mechanics').where('isOnline', '==', true);
     const mechanicsSnapshot = await mechanicsQuery.get();
     
     if (mechanicsSnapshot.empty) {
@@ -147,14 +147,14 @@ const handleGarageRequestDispatch = async (requestData: any, requestId: string) 
         return;
     }
     
-    const driverLocation = requestData.location as GeoPoint;
+    const userLocation = requestData.location as GeoPoint;
     const nearbyMechanics = mechanicsSnapshot.docs
         .map(doc => ({ id: doc.id, ...doc.data() } as Partner))
         .filter(mechanic => {
             if (!mechanic.currentLocation) return false;
             const mechanicLocation = mechanic.currentLocation as GeoPoint;
-            const distance = getDistance(driverLocation.latitude, driverLocation.longitude, mechanicLocation.latitude, mechanicLocation.longitude);
-            mechanic.distanceToDriver = distance;
+            const distance = getDistance(userLocation.latitude, userLocation.longitude, mechanicLocation.latitude, mechanicLocation.longitude);
+            mechanic.distanceToUser = distance;
             return distance < 15; // 15km radius for mechanics
         });
 
@@ -166,8 +166,8 @@ const handleGarageRequestDispatch = async (requestData: any, requestId: string) 
     
     for (const mechanic of nearbyMechanics) {
         if (mechanic.fcmToken) {
-            const distanceToDriver = mechanic.distanceToDriver || 0;
-            const eta = distanceToDriver * 3; // ETA for mechanics might be slower
+            const distanceToUser = mechanic.distanceToUser || 0;
+            const eta = distanceToUser * 3; // ETA for mechanics might be slower
             const payloadData = {
                 type: 'new_garage_request',
                 requestId: requestId,
@@ -179,7 +179,7 @@ const handleGarageRequestDispatch = async (requestData: any, requestId: string) 
                 status: requestData.status,
                 otp: requestData.otp,
                 createdAt: requestData.createdAt.toMillis().toString(),
-                distance: String(distanceToDriver),
+                distance: String(distanceToUser),
                 eta: String(eta),
             };
 
@@ -362,7 +362,7 @@ export const statusCleanup = onSchedule("every 1 minutes", async (event) => {
     // Process all three types of active entities
     await processStaleEntities('users', 'isOnline');
     await processStaleEntities('partners', 'isOnline');
-    await processStaleEntities('mechanics', 'isAvailable');
+    await processStaleEntities('mechanics', 'isOnline');
     await processStaleEntities('ambulances', 'isOnline');
   } catch (error) {
     console.error("Error during scheduled status cleanup:", error);
