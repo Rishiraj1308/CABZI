@@ -91,3 +91,8 @@ export const useDb = () => {
     const { db } = useFirebase();
     return db;
 };
+
+export const useFunctions = () => {
+    const { functions } = useFirebase();
+    return functions;
+}
