@@ -1,4 +1,5 @@
 
+
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
@@ -10,12 +11,11 @@ import { Label } from '@/components/ui/label'
 import { useToast } from '@/hooks/use-toast'
 import Link from 'next/link'
 import BrandLogo from '@/components/brand-logo'
-import { useFirestore } from '@/firebase/client-provider'
+import { useFirebase } from '@/firebase/client-provider'
 import { collection, addDoc, serverTimestamp, GeoPoint, query, where, getDocs, writeBatch, doc, limit } from "firebase/firestore";
 import { Checkbox } from '@/components/ui/checkbox'
 import dynamic from 'next/dynamic'
 import { Skeleton } from '@/components/ui/skeleton'
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { ArrowLeft, Wrench, Building } from 'lucide-react'
 import { Progress } from '@/components/ui/progress'
@@ -47,7 +47,7 @@ const garageServices = [
 export default function MechanicOnboardingPage() {
     const { toast } = useToast()
     const router = useRouter()
-    const db = useFirestore();
+    const { db } = useFirebase();
     const [isLoading, setIsLoading] = useState(false)
     const [isMounted, setIsMounted] = useState(false)
     const [selectedServices, setSelectedServices] = useState<string[]>([]);
@@ -78,6 +78,15 @@ export default function MechanicOnboardingPage() {
         );
     }
     
+    const handleLocationSelect = async () => {
+        if (mapRef.current && location) {
+            const newAddress = await mapRef.current.getAddress(location.coords.lat, location.coords.lon);
+            if (newAddress) {
+                setLocation(prev => prev ? { ...prev, address: newAddress } : null);
+            }
+        }
+    }
+
     const selectPartnerType = (type: 'individual' | 'garage') => {
         setPartnerType(type);
         setStep('form');
