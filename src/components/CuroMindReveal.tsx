@@ -113,7 +113,7 @@ export default function CuroMindReveal() {
         transition={{ delay: 2.5, duration: 1 }}
         className="mt-4 text-muted-foreground text-lg md:text-xl z-10"
       >
-        Coming soon: The mind that cares.
+        Awaken soon: The mind that cares.
       </motion.p>
 
       {/* === Bottom Glow === */}
