@@ -193,7 +193,7 @@ export default function ResQPage() {
         
         setActiveGarageRequest({ id: requestDocRef.id, ...requestData } as unknown as GarageRequest);
         localStorage.setItem('activeGarageRequestId', requestDocRef.id);
-        toast({ title: "Request Sent!", description: "We are finding a nearby ResQ partner for you." });
+        // Toast removed to allow UI to update to RideStatus component
     } catch (error) {
         toast({ variant: 'destructive', title: 'Request Failed', description: 'Could not create service request.' });
     }
@@ -310,3 +310,4 @@ export default function ResQPage() {
     </motion.div>
   );
 }
+
