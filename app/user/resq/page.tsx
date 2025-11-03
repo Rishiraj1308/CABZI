@@ -252,17 +252,17 @@ export default function ResQPage() {
                         variants={itemVariants}
                         transition={{ delay: i * 0.05 }}
                       >
-                        <div
+                        <button
                         onClick={() => setSelectedIssue(item.label)}
                         className={cn(
-                            "group flex flex-col items-center justify-center p-4 bg-background rounded-xl border-2 border-transparent hover:shadow-lg hover:-translate-y-1 transition-all cursor-pointer h-full",
+                            "group flex flex-col items-center justify-center p-4 bg-background rounded-xl border-2 border-transparent hover:shadow-lg hover:-translate-y-1 transition-all cursor-pointer h-full w-full",
                             "hover:border-amber-500/50",
                             selectedIssue === item.label && "ring-2 ring-amber-500 border-amber-500"
                         )}
                         >
                             <item.icon className="text-amber-500 w-8 h-8 mb-2 transition-all" />
                             <span className="font-semibold text-center text-sm">{item.label}</span>
-                        </div>
+                        </button>
                       </motion.div>
                     ))}
                 </div>
