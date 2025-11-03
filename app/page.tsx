@@ -289,16 +289,17 @@ export default function HomePage() {
       <div className={cn("flex flex-col min-h-screen bg-background aurora-background")}>
           <header className="sticky top-0 z-50 w-full border-b bg-background/80 backdrop-blur-sm">
             <div className="container flex h-14 items-center">
-                <Link href="/" className="mr-6 flex items-center gap-2">
+                <Link href="/" className="mr-auto flex items-center gap-2">
                     <BrandLogo hideText={false} iconClassName="w-8 h-8" />
                 </Link>
-              <div className="flex flex-1 items-center justify-end gap-2">
+              <div className="flex items-center gap-1 sm:gap-2">
                 <LanguageToggle />
                 <ThemeToggle />
                  <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                        <Button variant="outline">
-                            <User className="mr-2 h-4 w-4"/> Login / Signup
+                        <Button variant="outline" size="sm" className="h-9">
+                            <User className="w-4 h-4 sm:mr-2"/>
+                            <span className="hidden sm:inline">Login / Signup</span>
                         </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
