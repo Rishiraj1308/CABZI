@@ -238,7 +238,30 @@ export default function DriverDashboardPage() {
       });
       setJobRequest(null);
     }
-  };  
+  };
+  
+  const handleRideStatusUpdate = async (newStatus: RideData['status']) => {
+    if (!db || !activeRide) return;
+    const rideRef = doc(db, 'rides', activeRide.id);
+    try {
+        await updateDoc(rideRef, { status: newStatus });
+        toast({ title: "Status Updated", description: `Ride is now ${newStatus}`});
+    } catch (error) {
+        toast({ variant: "destructive", title: "Update Failed", description: "Could not update ride status."})
+    }
+  }
+
+  const handleVerifyOtp = async () => {
+    if (enteredOtp !== activeRide?.otp) {
+        toast({ variant: 'destructive', title: 'Invalid OTP' });
+        return;
+    }
+    await handleRideStatusUpdate('in-progress');
+  }
+
+  const handleEndRide = async () => {
+      await handleRideStatusUpdate('payment_pending');
+  }
 
   const renderActiveRide = () => {
         if (!activeRide) return null;
@@ -267,7 +290,7 @@ export default function DriverDashboardPage() {
                            <Label htmlFor="otp">Enter Rider's OTP</Label>
                            <div className="flex gap-2">
                               <Input id="otp" value={enteredOtp} onChange={(e) => setEnteredOtp(e.target.value)} placeholder="4-Digit OTP" maxLength={4}/>
-                              <Button><CheckCircle className="w-4 h-4 mr-2"/>Verify & Start</Button>
+                              <Button onClick={handleVerifyOtp}><CheckCircle className="w-4 h-4 mr-2"/>Verify & Start</Button>
                            </div>
                         </div>
                      )}
@@ -280,10 +303,10 @@ export default function DriverDashboardPage() {
                 </CardContent>
                 <CardFooter>
                     {activeRide.status === 'accepted' && (
-                        <Button className="w-full" size="lg">Arrived at Pickup</Button>
+                        <Button className="w-full" size="lg" onClick={() => handleRideStatusUpdate('arrived')}>Arrived at Pickup</Button>
                     )}
                     {activeRide.status === 'in-progress' && (
-                        <Button className="w-full bg-destructive hover:bg-destructive/80" size="lg">End Trip</Button>
+                        <Button className="w-full bg-destructive hover:bg-destructive/80" size="lg" onClick={handleEndRide}>End Trip</Button>
                     )}
                 </CardFooter>
             </Card>
