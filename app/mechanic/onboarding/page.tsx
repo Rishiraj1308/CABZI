@@ -1,5 +1,4 @@
 
-
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
@@ -18,7 +17,6 @@ import dynamic from 'next/dynamic'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { ArrowLeft, Wrench, Building } from 'lucide-react'
-import { Progress } from '@/components/ui/progress'
 
 const LiveMap = dynamic(() => import('@/components/live-map'), { 
     ssr: false,
@@ -52,23 +50,17 @@ export default function MechanicOnboardingPage() {
     const [isMounted, setIsMounted] = useState(false)
     const [selectedServices, setSelectedServices] = useState<string[]>([]);
     const [location, setLocation] = useState<{ address: string, coords: { lat: number, lon: number } } | null>(null);
-    const [gender, setGender] = useState('');
     const mapRef = useRef<any>(null);
-
-    const [step, setStep] = useState<'selection' | 'form'>('selection');
     const [partnerType, setPartnerType] = useState<'individual' | 'garage' | null>(null);
-    const [currentFormStep, setCurrentFormStep] = useState(1);
-    
-    const totalFormSteps = partnerType === 'garage' ? 4 : 3;
 
     useEffect(() => { 
         setIsMounted(true);
-        if (step === 'form' && currentFormStep === totalFormSteps && mapRef.current) {
+        if (partnerType === 'garage' && mapRef.current) {
             setTimeout(() => {
                 mapRef.current?.locate();
             }, 500);
         }
-    }, [step, currentFormStep, totalFormSteps]);
+    }, [partnerType]);
 
     const handleServiceChange = (serviceId: string) => {
         setSelectedServices(prev => 
@@ -79,21 +71,20 @@ export default function MechanicOnboardingPage() {
     }
     
     const handleLocationSelect = async () => {
-        if (mapRef.current && location) {
-            const newAddress = await mapRef.current.getAddress(location.coords.lat, location.coords.lon);
-            if (newAddress) {
-                setLocation(prev => prev ? { ...prev, address: newAddress } : null);
+        if (mapRef.current) {
+             const center = mapRef.current.getCenter();
+            if (center) {
+                const address = await mapRef.current.getAddress(center.lat, center.lng);
+                setLocation({ address: address || 'Could not fetch address', coords: { lat: center.lat, lon: center.lng } });
+                toast({ title: "Location Confirmed!", description: address });
             }
         }
     }
+    
 
     const selectPartnerType = (type: 'individual' | 'garage') => {
         setPartnerType(type);
-        setStep('form');
     }
-    
-    const handleNextStep = () => setCurrentFormStep(prev => prev + 1);
-    const handlePrevStep = () => setCurrentFormStep(prev => prev - 1);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -110,19 +101,17 @@ export default function MechanicOnboardingPage() {
         const phone = formData.get('phone') as string;
         const businessPan = formData.get('businessPan') as string;
         const gstNumber = formData.get('gstNumber') as string;
+        const firmName = formData.get('firmName') as string;
+        const businessType = formData.get('businessType') as string;
 
-        // Conditional logic for firmName and businessType
-        const firmName = partnerType === 'garage' ? formData.get('firmName') as string : ownerName;
-        const businessType = partnerType === 'garage' ? formData.get('businessType') as string : 'Individual';
-
-        if (!ownerName || !phone || !businessPan || !firmName || !businessType || selectedServices.length === 0) {
-            toast({ variant: 'destructive', title: "Incomplete Form", description: "Please fill out all details and select your services." });
+        if (!ownerName || !phone || !businessPan || selectedServices.length === 0) {
+            toast({ variant: 'destructive', title: "Incomplete Form", description: "Please fill out all personal details and select your services." });
             setIsLoading(false);
             return;
         }
         
-        if (partnerType === 'garage' && !location) {
-            toast({ variant: 'destructive', title: "Location Required", description: "Please set your workshop location on the map to continue." });
+        if (partnerType === 'garage' && (!firmName || !businessType || !location)) {
+            toast({ variant: 'destructive', title: "Incomplete Form", description: "Please fill out all business details and set your location." });
             setIsLoading(false);
             return;
         }
@@ -136,19 +125,21 @@ export default function MechanicOnboardingPage() {
         }
 
         try {
-            const partnerId = `CZR-${phone.slice(-4)}${(firmName || '').slice(0, 2).toUpperCase()}`;
+            const finalFirmName = partnerType === 'garage' ? firmName : ownerName;
+            const finalBusinessType = partnerType === 'garage' ? businessType : 'Individual';
+            const partnerId = `CZR-${phone.slice(-4)}${(finalFirmName || '').slice(0, 2).toUpperCase()}`;
 
             await addDoc(collection(db, "mechanics"), {
                 partnerId: partnerId,
                 name: ownerName,
-                firmName: firmName,
+                firmName: finalFirmName,
                 phone: phone,
-                businessType: businessType,
+                businessType: finalBusinessType,
                 panCard: businessPan,
                 gstNumber: gstNumber,
                 services: selectedServices,
-                location: location ? new GeoPoint(location.coords.lat, location.coords.lon) : null,
-                address: location?.address,
+                location: partnerType === 'garage' ? new GeoPoint(location!.coords.lat, location!.coords.lon) : null,
+                address: partnerType === 'garage' ? location!.address : null,
                 type: 'mechanic',
                 status: 'pending_verification',
                 isAvailable: false,
@@ -158,7 +149,7 @@ export default function MechanicOnboardingPage() {
             
             toast({
                 title: "Application Submitted!",
-                description: `Thank you, ${firmName}. Your application as a ResQ partner is under review.`,
+                description: `Thank you, ${finalFirmName}. Your application as a ResQ partner is under review.`,
             });
 
             setTimeout(() => {
@@ -199,14 +190,19 @@ export default function MechanicOnboardingPage() {
             </CardFooter>
         </Card>
     );
-    
-    const renderFormSteps = () => {
-        switch(currentFormStep) {
-            case 1:
-                return (
-                    <div className="space-y-6">
+
+    const renderForm = () => {
+        const servicesToShow = partnerType === 'garage' ? [...onSpotServices, ...garageServices] : onSpotServices;
+        return (
+            <Card className="w-full max-w-3xl">
+                <CardHeader className="text-center">
+                    <CardTitle className="text-3xl mt-4">Become a ResQ Partner</CardTitle>
+                    <CardDescription>You are registering as an <span className="font-bold text-primary capitalize">{partnerType}</span>.</CardDescription>
+                </CardHeader>
+                <form onSubmit={handleSubmit}>
+                    <CardContent className="space-y-6">
                         {partnerType === 'garage' && (
-                            <>
+                            <div className="border-b pb-6">
                                <h3 className="text-lg font-medium mb-4">Business Information</h3>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div className="space-y-2">
@@ -226,47 +222,36 @@ export default function MechanicOnboardingPage() {
                                         </Select>
                                     </div>
                                 </div>
-                            </>
-                        )}
-                        <h3 className="text-lg font-medium mb-4">{partnerType === 'garage' ? "Owner's" : "Personal"} Information</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div className="space-y-2">
-                                <Label htmlFor="ownerName">{partnerType === 'garage' ? "Owner's Full Name" : 'Your Name'}</Label>
-                                <Input id="ownerName" name="ownerName" required />
                             </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="phone">Contact Phone Number</Label>
-                                 <div className="flex items-center gap-0 rounded-md border border-input focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2">
-                                    <span className="pl-3 text-muted-foreground text-sm">+91</span>
-                                    <Input id="phone" name="phone" type="tel" maxLength={10} placeholder="12345 67890" required className="border-0 h-9 focus-visible:ring-0 focus-visible:ring-offset-0 flex-1" />
+                        )}
+                         <div className="border-b pb-6">
+                           <h3 className="text-lg font-medium mb-4">{partnerType === 'garage' ? "Owner's" : "Personal"} Information</h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div className="space-y-2">
+                                    <Label htmlFor="ownerName">{partnerType === 'garage' ? "Owner's Full Name" : 'Your Name'}</Label>
+                                    <Input id="ownerName" name="ownerName" required />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="phone">Contact Phone Number</Label>
+                                     <div className="flex items-center gap-0 rounded-md border border-input focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2">
+                                        <span className="pl-3 text-muted-foreground text-sm">+91</span>
+                                        <Input id="phone" name="phone" type="tel" maxLength={10} placeholder="12345 67890" required className="border-0 h-9 focus-visible:ring-0 focus-visible:ring-offset-0 flex-1" />
+                                    </div>
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="businessPan">{partnerType === 'garage' ? 'Business PAN' : 'Personal PAN'}</Label>
+                                    <Input id="businessPan" name="businessPan" required className="uppercase" />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="gstNumber">GST Number (Optional)</Label>
+                                    <Input id="gstNumber" name="gstNumber" className="uppercase" />
                                 </div>
                             </div>
                         </div>
-                    </div>
-                );
-            case 2:
-                return (
-                     <div className="space-y-6">
-                         <h3 className="text-lg font-medium mb-4">KYC & Tax Information</h3>
-                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div className="space-y-2">
-                                <Label htmlFor="businessPan">{partnerType === 'garage' ? 'Business PAN' : 'Personal PAN'}</Label>
-                                <Input id="businessPan" name="businessPan" required className="uppercase" />
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="gstNumber">GST Number (Optional)</Label>
-                                <Input id="gstNumber" name="gstNumber" className="uppercase" />
-                            </div>
-                         </div>
-                    </div>
-                );
-            case 3:
-                const servicesToShow = partnerType === 'garage' ? [...onSpotServices, ...garageServices] : onSpotServices;
-                return (
-                     <div className="space-y-4">
-                        <Label className="text-lg font-medium">Services Offered</Label>
-                        <Card className="p-4">
-                            <div className="grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-3">
+
+                        <div className="space-y-4 border-b pb-6">
+                            <Label className="text-lg font-medium">Services Offered</Label>
+                             <div className="grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-3 p-4 border rounded-lg">
                                 {servicesToShow.map(service => (
                                     <div key={service.id} className="flex items-center space-x-2">
                                         <Checkbox id={service.id} onCheckedChange={() => handleServiceChange(service.label)} />
@@ -274,54 +259,32 @@ export default function MechanicOnboardingPage() {
                                     </div>
                                 ))}
                             </div>
-                        </Card>
-                        
-                    </div>
-                );
-            case 4: // Garage only step
-                 return (
-                     <div className="space-y-2">
-                        <Label className="text-lg font-medium">Set Your Workshop Location</Label>
-                        <CardDescription>Drag the map to pin your exact garage location. This is crucial for job allocation.</CardDescription>
-                         <div className="h-64 w-full rounded-md overflow-hidden border">
-                            <LiveMap ref={mapRef} onLocationFound={(addr, coords) => setLocation({ address: addr, coords })} />
                         </div>
-                        {location && <p className="text-sm text-green-600 font-medium text-center pt-2">Location Selected: {location.address}</p>}
-                    </div>
-                 );
-            default:
-                return null;
-        }
+
+                         {partnerType === 'garage' && (
+                            <div className="space-y-2">
+                                <Label className="text-lg font-medium">Set Your Workshop Location</Label>
+                                <CardDescription>Drag the map to pin your exact garage location. This is crucial for job allocation.</CardDescription>
+                                <div className="h-64 w-full rounded-md overflow-hidden border">
+                                    <LiveMap ref={mapRef} onLocationFound={(addr, coords) => setLocation({ address: addr, coords })} />
+                                </div>
+                                <Button type="button" variant="outline" className="w-full" onClick={handleLocationSelect}>Confirm My Location on Map</Button>
+                                {location && <p className="text-sm text-green-600 font-medium text-center">Location Selected: {location.address}</p>}
+                            </div>
+                        )}
+                    </CardContent>
+                    <CardFooter className="flex-col gap-4">
+                        <Button type="submit" className="w-full btn-glow bg-accent text-accent-foreground hover:bg-accent/90" disabled={isLoading}>
+                            {isLoading ? 'Submitting...' : 'Submit Application'}
+                        </Button>
+                        <Button variant="link" className="text-muted-foreground" onClick={() => setPartnerType(null)}>
+                           <ArrowLeft className="mr-2 h-4 w-4" /> Back to Partner Type
+                        </Button>
+                    </CardFooter>
+                </form>
+            </Card>
+        );
     }
-    
-    const renderForm = () => (
-        <Card className="w-full max-w-3xl">
-            <CardHeader className="text-center">
-                <CardTitle className="text-3xl mt-4">Become a ResQ Partner</CardTitle>
-                <CardDescription>You are registering as an <span className="font-bold text-primary capitalize">{partnerType}</span>.</CardDescription>
-            </CardHeader>
-             <form onSubmit={handleSubmit}>
-                <CardContent className="space-y-6">
-                    <div className="px-10">
-                      <Progress value={(currentFormStep / totalFormSteps) * 100} className="w-full" />
-                    </div>
-                    <div className="p-4 border rounded-lg min-h-[300px]">
-                        {renderFormSteps()}
-                    </div>
-                </CardContent>
-                <CardFooter className="flex-col gap-4">
-                    <div className="w-full flex justify-between">
-                         <Button type="button" variant="outline" onClick={handlePrevStep} disabled={currentFormStep === 1}>Previous</Button>
-                         {currentFormStep < totalFormSteps && <Button type="button" onClick={handleNextStep}>Next</Button>}
-                         {currentFormStep === totalFormSteps && <Button type="submit" disabled={isLoading}>{isLoading ? 'Submitting...' : 'Submit Application'}</Button>}
-                    </div>
-                     <Button variant="link" className="text-muted-foreground" onClick={() => setStep('selection')}>
-                       <ArrowLeft className="mr-2 h-4 w-4" /> Back to Partner Type
-                    </Button>
-                </CardFooter>
-            </form>
-        </Card>
-    );
 
     if (!isMounted) {
         return (
@@ -333,7 +296,7 @@ export default function MechanicOnboardingPage() {
 
     return (
         <div className="flex min-h-screen items-center justify-center p-4 bg-muted/40">
-           {step === 'selection' ? renderSelectionStep() : renderForm()}
+           {!partnerType ? renderSelectionStep() : renderForm()}
         </div>
     )
 }
