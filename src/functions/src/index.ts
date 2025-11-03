@@ -118,8 +118,8 @@ const handleRideDispatch = async (initialRideData: any, rideId: string) => {
                 riderId: rideData.riderId,
                 riderGender: rideData.riderGender,
                 otp: rideData.otp,
-                distance: String(distanceToRider), // Corrected: This is the distance TO THE PICKUP
-                eta: String(eta), // Corrected: This is the ETA TO THE PICKUP
+                distance: String(distanceToRider), // Specific distance for this driver
+                eta: String(eta), // Specific ETA for this driver
                 vehicleNumber: partner.vehicleNumber || 'N/A',
             };
             
@@ -177,7 +177,7 @@ const handleGarageRequestDispatch = async (requestData: any, requestId: string) 
             location: JSON.stringify(requestData.location),
             status: requestData.status,
             otp: requestData.otp,
-            createdAt: requestData.createdAt.toMillis().toString(), // CRITICAL FIX
+            createdAt: requestData.createdAt.toMillis().toString(),
         };
         const message = {
             data: payloadData,
@@ -440,7 +440,7 @@ const callAutomationWebhook = async (payload: any, partnerType: string) => {
 export const onNewPathPartner = onDocumentCreated('partners/{partnerId}', (event) => {
   const data = event.data?.data();
   if (data) {
-    callAutomationWebhook({ id: event.params.partnerId, ...data }, 'path');
+    callAutomationWebhook({ id: event.params.partnerId, ...data, type: 'Path' }, 'path');
   }
 });
 
@@ -448,7 +448,7 @@ export const onNewPathPartner = onDocumentCreated('partners/{partnerId}', (event
 export const onNewResQPartner = onDocumentCreated('mechanics/{mechanicId}', (event) => {
   const data = event.data?.data();
   if (data) {
-    callAutomationWebhook({ id: event.params.mechanicId, ...data }, 'resq');
+    callAutomationWebhook({ id: event.params.mechanicId, ...data, type: 'ResQ' }, 'resq');
   }
 });
 
@@ -456,7 +456,7 @@ export const onNewResQPartner = onDocumentCreated('mechanics/{mechanicId}', (eve
 export const onNewCurePartner = onDocumentCreated('ambulances/{ambulanceId}', (event) => {
   const data = event.data?.data();
   if (data) {
-    callAutomationWebhook({ id: event.params.ambulanceId, ...data }, 'cure');
+    callAutomationWebhook({ id: event.params.ambulanceId, ...data, type: 'Cure' }, 'cure');
   }
 });
 
@@ -496,3 +496,4 @@ export const simulateHighDemand = onCall(async (request) => {
 });
 
     
+
