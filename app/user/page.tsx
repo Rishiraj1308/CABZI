@@ -14,7 +14,7 @@ import { Input } from '@/components/ui/input'
 import { AlertDialog, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogCancel, AlertDialogAction } from '@/components/ui/alert-dialog'
 import { useToast } from '@/hooks/use-toast'
 import { useFirebase } from '@/firebase/client-provider'
-import { doc, getDoc } from 'firebase/firestore'
+import { getDoc, doc } from 'firebase/firestore'
 import type { ClientSession } from '@/lib/types'
 import EmergencyButtons from '@/components/EmergencyButtons'
 import { Dialog, DialogTrigger, DialogContent } from '@/components/ui/dialog'
@@ -27,15 +27,19 @@ const ServiceCard = ({
   service: any
   onClick: () => void
 }) => (
-  <button
-    className="serviceCard group flex items-center justify-between rounded-2xl border border-border bg-card p-5 sm:p-6 hover:bg-accent/10 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+  <motion.button
+    className="serviceCard group flex items-center justify-between rounded-2xl border border-border bg-card p-5 sm:p-6 hover:bg-accent/10 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 relative"
     role="button"
     tabIndex={0}
     title={service.title}
     onClick={onClick}
     data-label={service.label}
+    style={{ '--glow-color': service.glowColor } as React.CSSProperties}
+    whileHover={{ scale: 1.02 }}
+    transition={{ type: 'spring', stiffness: 400, damping: 10 }}
   >
-    <div className="flex items-center gap-4 text-left">
+    <div className="absolute inset-0 rounded-2xl animate-card-glow opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+    <div className="flex items-center gap-4 text-left relative">
       <span className={cn("inline-flex h-10 w-10 items-center justify-center rounded-full ring-1", service.iconBg, service.iconRing, service.iconColor)}>
         <service.icon className="h-5 w-5" />
       </span>
@@ -44,7 +48,7 @@ const ServiceCard = ({
         <p className="text-xs text-muted-foreground mt-0.5">{service.description}</p>
       </div>
     </div>
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-2 relative">
       {service.tag && (
         <span className={cn("inline-flex items-center gap-1 rounded-full border px-2 py-1 text-[11px]", service.tagBg, service.tagBorder, service.tagColor)}>
           <service.tagIcon className="h-3 w-3" />
@@ -53,7 +57,7 @@ const ServiceCard = ({
       )}
       <ArrowUpRight className="h-5 w-5 text-muted-foreground group-hover:text-foreground" />
     </div>
-  </button>
+  </motion.button>
 )
 
 export default function ServicePortalPage() {
@@ -91,11 +95,11 @@ export default function ServicePortalPage() {
   const headingText = "How can we help you today?".split("");
 
   const serviceData = React.useMemo(() => [
-    { id: 'ride', href: '/user/book', icon: Car, title: 'Ride', description: 'Fair fares for your daily commute.', tag: '5–10m', tagIcon: Clock, iconBg: 'bg-emerald-400/15', iconRing: 'ring-emerald-400/30', iconColor: 'text-emerald-500', tagBg: 'bg-emerald-400/10', tagBorder: 'border-emerald-400/30', tagColor: 'text-emerald-600', label: 'ride transport car taxi clinic mobility hospital cab गाड़ी कार टैक्सी' },
-    { id: 'resq', href: '/user/resq', icon: Wrench, title: 'ResQ', description: 'On-site assistance for minor issues', tag: 'On-Demand', tagIcon: Wrench, iconBg: 'bg-amber-400/15', iconRing: 'ring-amber-400/30', iconColor: 'text-amber-500', tagBg: 'bg-amber-400/10', tagBorder: 'border-amber-400/30', tagColor: 'text-amber-600', label: 'resq on-site assistance home help nurse minor issues support मदद सहायता' },
-    { id: 'sos', onClick: () => setIsSosModalOpen(true), icon: Ambulance, title: 'Emergency SOS', description: 'Connect to 24/7 emergency line', tag: '~15 min', tagIcon: Clock, iconBg: 'bg-red-500/20', iconRing: 'ring-red-500/40', iconColor: 'text-red-500', tagBg: 'bg-red-400/10', tagBorder: 'border-red-400/40', tagColor: 'text-red-600', label: 'sos emergency ambulance urgent help police fire medical आपातकालीन एम्बुलेंस मदद' },
-    { id: 'appointment', href: '/user/appointments', icon: Calendar, title: 'Book Appointment', description: 'Clinics, specialists, telehealth', tag: 'Next: 1–2d', tagIcon: Clock, iconBg: 'bg-sky-400/15', iconRing: 'ring-sky-400/30', iconColor: 'text-sky-500', tagBg: 'bg-sky-400/10', tagBorder: 'border-sky-400/30', tagColor: 'text-sky-200', label: 'book appointment doctor specialist telehealth clinic schedule calendar अपॉइंटमेंट डॉक्टर' },
-    { id: 'lab_tests', href: '/user/lab-tests', icon: TestTube, title: 'Lab Tests', description: 'Home sample pickup available', tag: 'Home pickup', tagIcon: Home, iconBg: 'bg-fuchsia-400/15', iconRing: 'ring-fuchsia-400/30', iconColor: 'text-fuchsia-500', tagBg: 'bg-fuchsia-400/10', tagBorder: 'border-fuchsia-400/30', tagColor: 'text-fuchsia-600', label: 'lab tests diagnostics blood test home pickup reports लैब टेस्ट' }
+    { id: 'ride', href: '/user/book', icon: Car, title: 'Ride', description: 'Fair fares for your daily commute.', tag: '5–10m', tagIcon: Clock, iconBg: 'bg-emerald-400/15', iconRing: 'ring-emerald-400/30', iconColor: 'text-emerald-500', tagBg: 'bg-emerald-400/10', tagBorder: 'border-emerald-400/30', tagColor: 'text-emerald-600', label: 'ride transport car taxi clinic mobility hospital cab गाड़ी कार टैक्सी', glowColor: 'hsl(145, 63%, 49%)' },
+    { id: 'resq', href: '/user/resq', icon: Wrench, title: 'ResQ', description: 'On-site assistance for minor issues', tag: 'On-Demand', tagIcon: Wrench, iconBg: 'bg-amber-400/15', iconRing: 'ring-amber-400/30', iconColor: 'text-amber-500', tagBg: 'bg-amber-400/10', tagBorder: 'border-amber-400/30', tagColor: 'text-amber-600', label: 'resq on-site assistance home help nurse minor issues support मदद सहायता', glowColor: 'hsl(45, 100%, 51%)' },
+    { id: 'sos', onClick: () => setIsSosModalOpen(true), icon: Ambulance, title: 'Emergency SOS', description: 'Connect to 24/7 emergency line', tag: '~15 min', tagIcon: Clock, iconBg: 'bg-red-500/20', iconRing: 'ring-red-500/40', iconColor: 'text-red-500', tagBg: 'bg-red-400/10', tagBorder: 'border-red-400/40', tagColor: 'text-red-600', label: 'sos emergency ambulance urgent help police fire medical आपातकालीन एम्बुलेंस मदद', glowColor: 'hsl(0, 84%, 60%)' },
+    { id: 'appointment', href: '/user/appointments', icon: Calendar, title: 'Book Appointment', description: 'Clinics, specialists, telehealth', tag: 'Next: 1–2d', tagIcon: Clock, iconBg: 'bg-sky-400/15', iconRing: 'ring-sky-400/30', iconColor: 'text-sky-500', tagBg: 'bg-sky-400/10', tagBorder: 'border-sky-400/30', tagColor: 'text-sky-200', label: 'book appointment doctor specialist telehealth clinic schedule calendar अपॉइंटमेंट डॉक्टर', glowColor: 'hsl(204, 100%, 50%)' },
+    { id: 'lab_tests', href: '/user/lab-tests', icon: TestTube, title: 'Lab Tests', description: 'Home sample pickup available', tag: 'Home pickup', tagIcon: Home, iconBg: 'bg-fuchsia-400/15', iconRing: 'ring-fuchsia-400/30', iconColor: 'text-fuchsia-500', tagBg: 'bg-fuchsia-400/10', tagBorder: 'border-fuchsia-400/30', tagColor: 'text-fuchsia-600', label: 'lab tests diagnostics blood test home pickup reports लैब टेस्ट', glowColor: 'hsl(280, 84%, 60%)' }
   ], []);
   
   useEffect(() => {
@@ -147,7 +151,7 @@ export default function ServicePortalPage() {
     const recognition = new SpeechRecognition();
     recognitionRef.current = recognition;
     
-    recognition.lang = language === 'hi' ? 'hi-IN' : 'en-US';
+    recognition.lang = 'en-US';
 
     recognition.onstart = () => setIsListening(true);
     recognition.onend = () => setIsListening(false);

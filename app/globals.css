@@ -143,6 +143,19 @@
       0% { background-position: 0% 50%; }
       100% { background-position: 100% 50%; }
     }
+    
+    .animate-card-glow {
+        animation: card-glow 3s infinite;
+        box-shadow: 0 0 20px 5px var(--glow-color);
+    }
+    @keyframes card-glow {
+      0%, 100% {
+        box-shadow: 0 0 20px -5px var(--glow-color);
+      }
+      50% {
+        box-shadow: 0 0 30px 5px var(--glow-color);
+      }
+    }
 }
 
 
