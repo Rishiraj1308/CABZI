@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast'
 import Link from 'next/link'
 import BrandLogo from '@/components/brand-logo'
-import { useFirestore } from '@/firebase/client-provider'
+import { useFirebase } from '@/firebase/client-provider'
 import { collection, addDoc, serverTimestamp, query, where, getDocs, limit } from "firebase/firestore";
 import { Skeleton } from '@/components/ui/skeleton'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -44,7 +44,7 @@ const vehicleBrands = [
 export default function OnboardingPage() {
     const { toast } = useToast()
     const router = useRouter()
-    const db = useFirestore();
+    const { db } = useFirebase();
     const [isLoading, setIsLoading] = useState(false)
     const [isMounted, setIsMounted] = useState(false)
     const [isCurocityPink, setIsCurocityPink] = useState(false);
