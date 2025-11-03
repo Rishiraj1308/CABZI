@@ -13,6 +13,12 @@ import { useLanguage } from '@/hooks/use-language'
 import { Input } from '@/components/ui/input'
 import { AlertDialog, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogCancel, AlertDialogAction } from '@/components/ui/alert-dialog'
 import { useToast } from '@/hooks/use-toast'
+import { useFirebase } from '@/firebase/client-provider'
+import { doc, getDoc } from 'firebase/firestore'
+import type { ClientSession } from '@/lib/types'
+import EmergencyButtons from '@/components/EmergencyButtons'
+import { Dialog, DialogTrigger } from '@/components/ui/dialog'
+
 
 const ServiceCard = ({
   service,
@@ -52,7 +58,7 @@ const ServiceCard = ({
 
 export default function ServicePortalPage() {
   const router = useRouter()
-  const { language, t } = useLanguage();
+  const { t } = useLanguage();
   const { toast } = useToast()
   
   const [searchQuery, setSearchQuery] = useState('');
@@ -60,6 +66,27 @@ export default function ServicePortalPage() {
   const [services, setServices] = useState<any[]>([]);
   const [isListening, setIsListening] = useState(false);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
+
+  const [session, setSession] = useState<ClientSession | null>(null);
+  const { user, db } = useFirebase();
+
+  useEffect(() => {
+    if (user && db) {
+      const userDocRef = doc(db, 'users', user.uid);
+      getDoc(userDocRef).then(docSnap => {
+        if (docSnap.exists()) {
+          const userData = docSnap.data();
+          setSession({
+            userId: user.uid,
+            name: userData.name,
+            phone: userData.phone,
+            gender: userData.gender
+          });
+        }
+      });
+    }
+  }, [user, db]);
+
 
   const headingText = "How can we help you today?".split("");
 
@@ -120,7 +147,6 @@ export default function ServicePortalPage() {
     const recognition = new SpeechRecognition();
     recognitionRef.current = recognition;
     
-    // Set language for recognition
     recognition.lang = language === 'hi' ? 'hi-IN' : 'en-US';
 
     recognition.onstart = () => setIsListening(true);
@@ -217,38 +243,25 @@ export default function ServicePortalPage() {
                     <p className="mt-2 text-sm text-muted-foreground">No services match your search.</p>
                 </div>
             )}
-
-            <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
-              
-            </div>
           </div>
         </section>
+        
+        <Dialog open={isSosModalOpen} onOpenChange={setIsSosModalOpen}>
+            <DialogContent className="sm:max-w-md">
+                 <EmergencyButtons 
+                    serviceType="cure"
+                    // These props are simplified as the component is now self-contained for location
+                    liveMapRef={{current: null}} 
+                    pickupCoords={null} 
+                    setIsRequestingSos={() => {}}
+                    setActiveAmbulanceCase={() => {}}
+                    setActiveGarageRequest={() => {}}
+                    onBack={() => setIsSosModalOpen(false)}
+                    session={session}
+                />
+            </DialogContent>
+        </Dialog>
 
-        <AlertDialog open={isSosModalOpen} onOpenChange={setIsSosModalOpen}>
-            <AlertDialogContent>
-                <AlertDialogHeader>
-                    <div className="flex items-start gap-3">
-                        <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-red-500/20 ring-1 ring-red-500/50 text-red-600">
-                            <AlertTriangle className="h-5 w-5" />
-                        </span>
-                        <div>
-                        <AlertDialogTitle>Confirm Emergency SOS</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            We will connect you to emergency services and share your contact details.
-                        </AlertDialogDescription>
-                        </div>
-                    </div>
-                </AlertDialogHeader>
-                <AlertDialogFooter className="mt-5 grid grid-cols-2 gap-3">
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction asChild>
-                        <a href="tel:112" className={cn(buttonVariants({variant: "destructive"}), "bg-red-600 hover:bg-red-700")}>
-                           <Phone className="h-4 w-4 mr-2" /> Call now
-                        </a>
-                    </AlertDialogAction>
-                </AlertDialogFooter>
-            </AlertDialogContent>
-        </AlertDialog>
       </main>
     </>
   )

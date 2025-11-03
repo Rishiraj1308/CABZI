@@ -283,38 +283,26 @@ export default function EmergencyButtons({ serviceType, liveMapRef, pickupCoords
   }
 
   return (
-    <div className="p-4">
-        <Button onClick={onBack} variant="ghost" size="icon" className="absolute top-2 left-2 h-8 w-8 bg-background/50 backdrop-blur-sm"><ArrowLeft className="w-5 h-5"/></Button>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
-                <Button variant="ghost" className={`w-full h-24 flex-col gap-1 text-lg font-bold ${serviceType === 'cure' ? 'text-red-600' : 'text-amber-600'}`}>
-                    {serviceType === 'cure' ? <Ambulance className="h-8 w-8" /> : <Wrench className="h-8 w-8" />}
-                    <span className="capitalize">{serviceType} SOS</span>
-                </Button>
-            </DialogTrigger>
-            <DialogContent>
-                <DialogHeader>
-                    <DialogTitle>Request {serviceType === 'cure' ? 'Emergency Ambulance' : 'Roadside Assistance'}</DialogTitle>
-                    <DialogDescription>Please provide details to help us serve you better.</DialogDescription>
-                </DialogHeader>
-                {renderContent()}
-                <DialogFooter>
-                    {serviceType === 'cure' && sosStep === 'triage' && (
-                        <Button className="w-full" onClick={handleFindHospitals} disabled={!severity || isFindingHospitals}>{isFindingHospitals ? 'Finding...' : 'Find Hospitals'}</Button>
-                    )}
-                    {serviceType === 'cure' && sosStep === 'hospitals' && (
-                        <>
-                            <Button variant="outline" onClick={() => setSosStep('triage')}>Back</Button>
-                            <Button className="w-full" onClick={handleConfirmAmbulanceRequest} disabled={!selectedHospital}>Confirm & Dispatch</Button>
-                        </>
-                    )}
-                    {serviceType === 'resq' && (
-                        <Button className="w-full" onClick={handleRequestMechanic} disabled={!selectedIssue}>Find Help</Button>
-                    )}
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
-    </div>
+    <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogHeader>
+            <DialogTitle>Request {serviceType === 'cure' ? 'Emergency Ambulance' : 'Roadside Assistance'}</DialogTitle>
+            <DialogDescription>Please provide details to help us serve you better.</DialogDescription>
+        </DialogHeader>
+        {renderContent()}
+        <DialogFooter>
+            {serviceType === 'cure' && sosStep === 'triage' && (
+                <Button className="w-full" onClick={handleFindHospitals} disabled={!severity || isFindingHospitals}>{isFindingHospitals ? 'Finding...' : 'Find Hospitals'}</Button>
+            )}
+            {serviceType === 'cure' && sosStep === 'hospitals' && (
+                <>
+                    <Button variant="outline" onClick={() => setSosStep('triage')}>Back</Button>
+                    <Button className="w-full" onClick={handleConfirmAmbulanceRequest} disabled={!selectedHospital}>Confirm & Dispatch</Button>
+                </>
+            )}
+            {serviceType === 'resq' && (
+                <Button className="w-full" onClick={handleRequestMechanic} disabled={!selectedIssue}>Find Help</Button>
+            )}
+        </DialogFooter>
+    </Dialog>
   );
 }
-
