@@ -28,6 +28,7 @@ import { useFirebase } from '@/firebase/client-provider'
 import { doc, updateDoc, serverTimestamp, onSnapshot } from 'firebase/firestore'
 import { MotionDiv } from '@/components/ui/motion-div'
 import { Skeleton } from '@/components/ui/skeleton'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 
 // Centralized Partner Provider
 interface PartnerDataContextType {
