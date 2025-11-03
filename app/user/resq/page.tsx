@@ -10,7 +10,7 @@ import { useToast } from '@/hooks/use-toast'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import RideStatus from '@/components/ride-status'
-import { Wrench, Zap, Fuel, Car, MoreHorizontal, ArrowLeft, MapPin } from 'lucide-react'
+import { Wrench, Zap, Fuel, Car, MoreHorizontal, ArrowLeft, MapPin, History } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { motion } from 'framer-motion'
 import Image from 'next/image'
@@ -23,6 +23,12 @@ const commonIssues = [
     { id: 'minor_repair', label: 'Minor Repair', icon: Wrench },
     { id: 'other', label: 'Other', icon: MoreHorizontal },
 ]
+
+const recentServices = [
+    { issue: 'Flat Tyre', location: 'Cyber Hub, Gurgaon' },
+    { issue: 'Battery Jump-Start', location: 'MG Road, New Delhi' },
+]
+
 
 export default function ResQPage() {
   const [session, setSession] = useState<ClientSession | null>(null);
@@ -198,7 +204,7 @@ export default function ResQPage() {
     visible: { opacity: 1, transition: { staggerChildren: 0.05 } }
   };
   const itemVariants = {
-      hidden: { opacity: 0, y: 10 },
+      hidden: { opacity: 0, y: 20 },
       visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: 'easeOut' } }
   };
 
@@ -261,6 +267,21 @@ export default function ResQPage() {
                     ))}
                 </div>
             </div>
+
+            <motion.div variants={itemVariants} className="space-y-2 pt-4">
+                <h3 className="font-bold text-lg">Recent Requests</h3>
+                {recentServices.map((service, index) => (
+                    <div key={index} className="flex items-center gap-4 p-3 rounded-lg hover:bg-card cursor-pointer transition-colors">
+                        <div className="p-3 bg-card rounded-full border">
+                            <History className="w-5 h-5 text-muted-foreground" />
+                        </div>
+                        <div className="flex-1">
+                            <p className="font-semibold">{service.issue}</p>
+                            <p className="text-sm text-muted-foreground">{service.location}</p>
+                        </div>
+                    </div>
+                ))}
+            </motion.div>
 
         </CardContent>
          <CardFooter className="p-4 border-t">
