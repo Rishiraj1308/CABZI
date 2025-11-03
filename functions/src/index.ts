@@ -171,13 +171,14 @@ const handleGarageRequestDispatch = async (requestData: any, requestId: string) 
             const payloadData = {
                 type: 'new_garage_request',
                 requestId: requestId,
+                driverId: requestData.driverId,
                 driverName: requestData.driverName,
                 driverPhone: requestData.driverPhone,
                 issue: requestData.issue,
                 location: JSON.stringify(requestData.location),
                 status: requestData.status,
                 otp: requestData.otp,
-                createdAt: requestData.createdAt.toMillis().toString(),
+                createdAt: requestData.createdAt.toMillis().toString(), // CRITICAL FIX
                 distance: String(distanceToDriver),
                 eta: String(eta),
             };
@@ -501,5 +502,3 @@ export const simulateHighDemand = onCall(async (request) => {
 
     return { success: true, message: `High demand alert triggered for ${zoneName}.` };
 });
-
-    

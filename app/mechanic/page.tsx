@@ -215,8 +215,13 @@ export default function ResQDashboard() {
             if(type === 'new_garage_request' && requestId) {
                  const newJobRequest: JobRequest = {
                     id: requestId,
-                    ...jobData,
+                    driverId: jobData.driverId,
+                    driverName: jobData.driverName,
+                    driverPhone: jobData.driverPhone,
+                    issue: jobData.issue,
                     location: JSON.parse(jobData.location || '{}'),
+                    status: jobData.status,
+                    otp: jobData.otp,
                     createdAt: new Timestamp(parseInt(jobData.createdAt) / 1000, 0),
                     distance: parseFloat(jobData.distance),
                     eta: parseFloat(jobData.eta),
@@ -606,7 +611,7 @@ export default function ResQDashboard() {
                             <StatCard title="Today's Earnings" value={isEarningsVisible ? `₹${(mechanicData?.todaysEarnings || 0).toLocaleString()}` : '₹ ****'} icon={IndianRupee} isLoading={isLoading} onValueClick={() => !isEarningsVisible && setIsPinDialogOpen(true)} />
                             <StatCard title="Today's Jobs" value={mechanicData?.jobsToday?.toString() || '0'} icon={History} isLoading={isLoading} />
                             <StatCard title="Acceptance Rate" value={`${mechanicData?.acceptanceRate || '95'}%`} icon={Power} isLoading={isLoading} />
-                            <StatCard title="Rating" value={mechanicData?.rating?.toString() || '4.9'} icon={Star} isLoading={isLoading} />
+                            <StatCard title="Rating" value={mechanicData?.rating?.toString() || '4.8'} icon={Star} isLoading={isLoading} />
                         </div>
                     </TabsContent>
                     <TabsContent value="history" className="mt-4 flex-1 space-y-2 max-h-48 overflow-y-auto">
