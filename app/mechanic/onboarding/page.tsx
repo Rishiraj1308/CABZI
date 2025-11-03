@@ -185,7 +185,9 @@ export default function MechanicOnboardingPage() {
             </CardContent>
              <CardFooter>
                  <Button asChild variant="link" className="w-full text-muted-foreground">
-                    <Link href="/partner-hub" legacyBehavior><ArrowLeft className="mr-2 h-4 w-4" />Back to Partner Hub</Link>
+                    <Link href="/partner-hub">
+                        <span><ArrowLeft className="mr-2 h-4 w-4" />Back to Partner Hub</span>
+                    </Link>
                 </Button>
             </CardFooter>
         </Card>
