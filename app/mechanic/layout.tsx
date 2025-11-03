@@ -75,7 +75,7 @@ function PartnerProvider({ children, partnerType }: { children: React.ReactNode,
             return;
         }
 
-        const sessionKey = `curocity-${partnerType === 'driver' ? 'session' : 'resq-session'}`;
+        const sessionKey = `curocity-resq-session`;
         const session = localStorage.getItem(sessionKey);
         
         if (!session) {
@@ -84,12 +84,12 @@ function PartnerProvider({ children, partnerType }: { children: React.ReactNode,
             return;
         }
 
-        let unsubscribe: (() => void) | null = null;
+        let unsubscribe: (() => void) | undefined;
         let isSubscribed = true;
         
         try {
             const sessionData = JSON.parse(session);
-            const collectionName = partnerType === 'driver' ? 'partners' : 'mechanics';
+            const collectionName = 'mechanics';
             const partnerDocRef = doc(db, collectionName, sessionData.partnerId);
 
             unsubscribe = onSnapshot(partnerDocRef, (docSnap) => {
@@ -112,7 +112,9 @@ function PartnerProvider({ children, partnerType }: { children: React.ReactNode,
         
         return () => {
             isSubscribed = false;
-            if (unsubscribe) unsubscribe();
+            if (unsubscribe) {
+                unsubscribe();
+            }
         };
 
     }, [isUserLoading, user, db, handleLogout, pathname, router, partnerType]);
