@@ -11,29 +11,6 @@ import { getMessaging, type Messaging } from 'firebase/messaging';
 import { firebaseConfig } from './config';
 import { FirebaseErrorListener } from '@/components/FirebaseErrorListener';
 
-// --- Start of Singleton Initialization ---
-let app: FirebaseApp;
-let auth: Auth;
-let db: Firestore;
-let functions: Functions;
-let messaging: Messaging | null = null;
-
-if (typeof window !== 'undefined') {
-  app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
-  auth = getAuth(app);
-  // Use initializeFirestore to handle persistence settings
-  db = initializeFirestore(app, {
-      localCache: memoryLocalCache(),
-  });
-  functions = getFunctions(app);
-
-  if ('Notification' in window && 'serviceWorker' in navigator && 'PushManager' in window) {
-    messaging = getMessaging(app);
-  }
-}
-
-// --- End of Singleton Initialization ---
-
 interface FirebaseContextValue {
   firebaseApp: FirebaseApp | null;
   auth: Auth | null;
@@ -49,28 +26,56 @@ const FirebaseContext = createContext<FirebaseContextValue | undefined>(undefine
 export function FirebaseProviderClient({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isUserLoading, setIsUserLoading] = useState(true);
+  
+  const [firebaseServices, setFirebaseServices] = useState<{
+    app: FirebaseApp | null;
+    auth: Auth | null;
+    db: Firestore | null;
+    functions: Functions | null;
+    messaging: Messaging | null;
+  }>({ app: null, auth: null, db: null, functions: null, messaging: null });
 
   useEffect(() => {
-    if (!auth) {
+    let app: FirebaseApp;
+    let auth: Auth;
+    let db: Firestore;
+    let functions: Functions;
+    let messaging: Messaging | null = null;
+    
+    if (typeof window !== 'undefined') {
+        app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+        auth = getAuth(app);
+        db = initializeFirestore(app, {
+            localCache: memoryLocalCache(),
+        });
+        functions = getFunctions(app);
+
+        if ('Notification' in window && 'serviceWorker' in navigator && 'PushManager' in window) {
+            messaging = getMessaging(app);
+        }
+
+        setFirebaseServices({ app, auth, db, functions, messaging });
+
+        const unsubscribe = onAuthStateChanged(auth, (user) => {
+          setUser(user);
+          setIsUserLoading(false);
+        });
+
+        return () => unsubscribe();
+    } else {
         setIsUserLoading(false);
-        return;
     }
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setUser(user);
-      setIsUserLoading(false);
-    });
-    return () => unsubscribe();
   }, []);
 
   const memoizedValue = useMemo(() => ({
-    firebaseApp: app,
-    auth,
-    db,
-    functions,
-    messaging,
+    firebaseApp: firebaseServices.app,
+    auth: firebaseServices.auth,
+    db: firebaseServices.db,
+    functions: firebaseServices.functions,
+    messaging: firebaseServices.messaging,
     user,
     isUserLoading,
-  }), [user, isUserLoading]);
+  }), [firebaseServices, user, isUserLoading]);
 
   return (
     <FirebaseContext.Provider value={memoizedValue}>
