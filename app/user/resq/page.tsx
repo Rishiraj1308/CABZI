@@ -7,7 +7,7 @@ import { useFirebase } from '@/firebase/client-provider'
 import { getDoc, doc, onSnapshot, query, collection, where, updateDoc, GeoPoint, serverTimestamp, addDoc, runTransaction } from 'firebase/firestore'
 import type { GarageRequest, ClientSession } from '@/lib/types'
 import { useToast } from '@/hooks/use-toast'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import RideStatus from '@/components/ride-status'
 import { Wrench, Zap, Fuel, Car, MoreHorizontal, ArrowLeft, MapPin } from 'lucide-react'
@@ -176,7 +176,7 @@ export default function ResQPage() {
     };
     const requestDocRef = await addDoc(collection(db, 'garageRequests'), requestData);
     
-    setActiveGarageRequest({ id: requestDocRef.id, ...requestData, status: 'pending' });
+    setActiveGarageRequest({ id: requestDocRef.id, ...requestData, status: 'pending' } as GarageRequest);
     localStorage.setItem('activeGarageRequestId', requestDocRef.id);
     toast({ title: "Request Sent!", description: "We are finding a nearby ResQ partner for you." });
   }
