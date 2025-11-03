@@ -1,5 +1,4 @@
 
-
 'use server';
 /**
  * @fileOverview This file contains server-side Cloud Functions for dispatching
@@ -177,7 +176,7 @@ const handleGarageRequestDispatch = async (requestData: any, requestId: string) 
             location: JSON.stringify(requestData.location),
             status: requestData.status,
             otp: requestData.otp,
-            createdAt: requestData.createdAt.toMillis().toString(),
+            createdAt: requestData.createdAt.toMillis().toString(), // CRITICAL FIX
         };
         const message = {
             data: payloadData,
@@ -497,3 +496,4 @@ export const simulateHighDemand = onCall(async (request) => {
 
     
 
+    

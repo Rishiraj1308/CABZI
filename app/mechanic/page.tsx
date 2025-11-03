@@ -560,7 +560,7 @@ export default function ResQDashboard() {
   }
 
   return (
-    <div className="grid gap-6">
+    <div className="space-y-6">
         {acceptedJob ? renderActiveJob() : (
             <>
                 <Card className="shadow-lg">
@@ -684,3 +684,5 @@ export default function ResQDashboard() {
     </div>
   )
 }
+
+    
