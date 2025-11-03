@@ -14,10 +14,6 @@ import { Wrench, Zap, Fuel, Car, MoreHorizontal, ArrowLeft, MapPin, History } fr
 import { cn } from '@/lib/utils'
 import { motion } from 'framer-motion'
 import Image from 'next/image'
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
-import { Label } from '@/components/ui/label'
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
-import { useLanguage } from '@/hooks/use-language'
 
 const LiveMap = React.lazy(() => import('@/components/live-map'));
 
@@ -139,7 +135,7 @@ export default function ResQPage() {
     });
 
     return () => unsubscribe();
-  }, [db, session?.userId, resetFlow]);
+  }, [db, session?.userId, resetFlow, toast]);
   
   const handleGaragePayment = async (paymentMode: 'cash' | 'wallet') => {
     if (!db || !activeGarageRequest || !user || !activeGarageRequest.mechanicId) return;
@@ -188,11 +184,15 @@ export default function ResQPage() {
         otp: generatedOtp,
         createdAt: serverTimestamp(),
     };
-    const requestDocRef = await addDoc(collection(db, 'garageRequests'), requestData);
-    
-    setActiveGarageRequest({ id: requestDocRef.id, ...requestData } as unknown as GarageRequest);
-    localStorage.setItem('activeGarageRequestId', requestDocRef.id);
-    toast({ title: "Request Sent!", description: "We are finding a nearby ResQ partner for you." });
+    try {
+        const requestDocRef = await addDoc(collection(db, 'garageRequests'), requestData);
+        
+        setActiveGarageRequest({ id: requestDocRef.id, ...requestData } as unknown as GarageRequest);
+        localStorage.setItem('activeGarageRequestId', requestDocRef.id);
+        toast({ title: "Request Sent!", description: "We are finding a nearby ResQ partner for you." });
+    } catch (error) {
+        toast({ variant: 'destructive', title: 'Request Failed', description: 'Could not create service request.' });
+    }
   }
 
   const handleCancelServiceRequest = async () => {
