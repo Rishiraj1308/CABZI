@@ -138,7 +138,7 @@ const handleRideDispatch = async (initialRideData: any, rideId: string) => {
 }
 
 const handleGarageRequestDispatch = async (requestData: any, requestId: string) => {
-    const mechanicsQuery = db.collection('mechanics').where('isAvailable', '==', true);
+    const mechanicsQuery = db.collection('mechanics').where('isOnline', '==', true);
     const mechanicsSnapshot = await mechanicsQuery.get();
     
     if (mechanicsSnapshot.empty) {
@@ -362,7 +362,7 @@ export const statusCleanup = onSchedule("every 1 minutes", async (event) => {
     // Process all three types of active entities
     await processStaleEntities('users', 'isOnline');
     await processStaleEntities('partners', 'isOnline');
-    await processStaleEntities('mechanics', 'isAvailable');
+    await processStaleEntities('mechanics', 'isOnline');
     await processStaleEntities('ambulances', 'isOnline');
   } catch (error) {
     console.error("Error during scheduled status cleanup:", error);
@@ -502,3 +502,7 @@ export const simulateHighDemand = onCall(async (request) => {
 
     return { success: true, message: `High demand alert triggered for ${zoneName}.` };
 });
+
+    
+
+    
