@@ -1,5 +1,4 @@
 
-
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
@@ -22,7 +21,7 @@ import { Progress } from '@/components/ui/progress'
 
 const LiveMap = dynamic(() => import('@/components/live-map'), { 
     ssr: false,
-    loading: () => <Skeleton className="w-full h-full bg-muted" />
+    loading: () => <Skeleton className="w-full h-full bg-muted" />,
 });
 
 const onSpotServices = [
@@ -229,7 +228,10 @@ export default function MechanicOnboardingPage() {
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="phone">Contact Phone Number</Label>
-                                <Input id="phone" name="phone" type="tel" maxLength={10} required />
+                                 <div className="flex items-center gap-0 rounded-md border border-input focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2">
+                                    <span className="pl-3 text-muted-foreground text-sm">+91</span>
+                                    <Input id="phone" name="phone" type="tel" maxLength={10} placeholder="12345 67890" required className="border-0 h-9 focus-visible:ring-0 focus-visible:ring-offset-0 flex-1" />
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -339,3 +341,5 @@ export default function MechanicOnboardingPage() {
         </div>
     )
 }
+
+    
