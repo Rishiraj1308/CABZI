@@ -83,17 +83,14 @@ function PartnerProvider({ children, partnerType }: { children: React.ReactNode,
             setIsLoading(false);
             return;
         }
-
-        let unsubscribe: (() => void) | undefined;
-        let isSubscribed = true;
         
+        let unsubscribe: (() => void) | undefined;
         try {
             const sessionData = JSON.parse(session);
             const collectionName = 'mechanics';
             const partnerDocRef = doc(db, collectionName, sessionData.partnerId);
 
             unsubscribe = onSnapshot(partnerDocRef, (docSnap) => {
-                if (!isSubscribed) return;
                 if (docSnap.exists()) {
                     setPartnerData({ id: docSnap.id, ...docSnap.data() });
                 } else {
@@ -111,12 +108,11 @@ function PartnerProvider({ children, partnerType }: { children: React.ReactNode,
         }
         
         return () => {
-            isSubscribed = false;
             if (unsubscribe) {
                 unsubscribe();
             }
         };
-
+    // CRITICAL FIX: The dependency array must include all external variables that the effect uses.
     }, [isUserLoading, user, db, handleLogout, pathname, router, partnerType]);
 
     return (
