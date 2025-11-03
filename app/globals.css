@@ -13,10 +13,10 @@
     --card-foreground: 210 10% 23%;
     --popover: 210 20% 98%;
     --popover-foreground: 210 10% 23%;
-    --primary: 175 40% 30%;
-    --primary-foreground: 175 20% 98%;
+    --primary: 180 35% 35%;
+    --primary-foreground: 210 20% 98%;
     --secondary: 210 20% 94%;
-    --secondary-foreground: 175 40% 30%;
+    --secondary-foreground: 180 35% 35%;
     --muted: 210 20% 94%;
     --muted-foreground: 210 10% 45%;
     --accent: 45 95% 55%;
@@ -25,7 +25,7 @@
     --destructive-foreground: 0 0% 98%;
     --border: 210 20% 88%;
     --input: 210 20% 88%;
-    --ring: 175 40% 50%;
+    --ring: 180 40% 50%;
     --radius: 0.8rem;
   }
  
@@ -40,8 +40,8 @@
     --popover: 180 15% 5%;
     --popover-foreground: 180 10% 95%;
  
-    --primary: 175 25% 95%;
-    --primary-foreground: 175 15% 10%;
+    --primary: 180 10% 95%;
+    --primary-foreground: 180 15% 10%;
  
     --secondary: 180 10% 15%;
     --secondary-foreground: 180 10% 95%;
@@ -57,7 +57,7 @@
  
     --border: 180 10% 25%;
     --input: 180 10% 12%;
-    --ring: 175 40% 60%;
+    --ring: 180 40% 60%;
   }
 
   .pink {

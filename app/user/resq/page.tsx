@@ -227,16 +227,16 @@ export default function ResQPage() {
         animate="visible"
         variants={containerVariants}
     >
-        <header className="bg-gradient-to-br from-amber-500 via-amber-400 to-amber-300 text-white p-4 relative">
+        <header className="bg-gradient-to-br from-amber-500 via-amber-400 to-amber-300 text-amber-900 p-4 relative">
             <div className="container mx-auto">
                 <motion.div variants={itemVariants}>
-                    <Button variant="ghost" size="icon" className="hover:bg-white/10" onClick={() => router.push('/user')}>
+                    <Button variant="ghost" size="icon" className="hover:bg-black/10 text-white" onClick={() => router.push('/user')}>
                         <ArrowLeft className="w-5 h-5"/>
                     </Button>
                 </motion.div>
                 <motion.div variants={itemVariants} className="pt-8 pb-20 text-left">
-                    <h1 className="text-4xl font-bold">Roadside ResQ assistance</h1>
-                    <p className="opacity-90 mt-1 max-w-md">Stuck on the road? We&apos;re here to help.</p>
+                    <h1 className="text-4xl font-bold text-white">Roadside ResQ</h1>
+                    <p className="text-white/90 mt-1 max-w-md">Stuck on the road? We&apos;re here to help.</p>
                 </motion.div>
             </div>
         </header>
