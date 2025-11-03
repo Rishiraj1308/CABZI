@@ -6,13 +6,14 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
-import { Ambulance, HospitalIcon, ArrowLeft, Wrench } from 'lucide-react';
+import { Ambulance, HospitalIcon, ArrowLeft, Wrench, Building, CheckCircle, Hospital } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useFirebase } from '@/firebase/client-provider';
 import { addDoc, collection, serverTimestamp, GeoPoint, getDocs, query, where } from 'firebase/firestore';
 import SearchingIndicator from './ui/searching-indicator';
-import { Card } from './ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
 import type { AmbulanceCase, GarageRequest, ClientSession } from '@/lib/types';
+import { cn } from '@/lib/utils';
 
 
 interface EmergencyButtonsProps {
@@ -210,6 +211,13 @@ export default function EmergencyButtons({ serviceType, liveMapRef, pickupCoords
     toast({ title: "Request Sent!", description: "We are finding a nearby ResQ partner for you." });
     setIsDialogOpen(false);
   }
+  
+  const TriageSelectionCard = ({ id, value, label, checked, onSelect }: { id: string, value: string, label: string, checked: boolean, onSelect: (value: string) => void }) => (
+    <div onClick={() => onSelect(value)} className={cn("rounded-lg border bg-background p-3 flex items-center justify-between cursor-pointer transition-all", checked && "ring-2 ring-primary border-primary")}>
+        <Label htmlFor={id} className="font-semibold cursor-pointer">{label}</Label>
+        <RadioGroupItem value={value} id={id} />
+    </div>
+  );
 
   const renderContent = () => {
     if (serviceType === 'cure') {
@@ -217,26 +225,34 @@ export default function EmergencyButtons({ serviceType, liveMapRef, pickupCoords
             <div className="py-4 space-y-6">
                 {sosStep === 'triage' ? (
                     <>
-                        <div className="space-y-3">
-                            <Label className="font-semibold">1. Select Severity</Label>
-                            <RadioGroup value={severity} onValueChange={(v) => setSeverity(v as any)}>
-                                <div className="flex items-center space-x-2"><RadioGroupItem value="Non-Critical" id="s1" /><Label htmlFor="s1">Non-Critical</Label></div>
-                                <div className="flex items-center space-x-2"><RadioGroupItem value="Serious" id="s2" /><Label htmlFor="s2">Serious</Label></div>
-                                <div className="flex items-center space-x-2"><RadioGroupItem value="Critical" id="s3" /><Label htmlFor="s3">Critical</Label></div>
-                            </RadioGroup>
-                        </div>
-                        <div className="space-y-3">
-                            <Label className="font-semibold">2. Hospital Preference</Label>
-                            <RadioGroup value={hospitalType} onValueChange={(v) => setHospitalType(v as any)}>
-                                <div className="flex items-center space-x-2"><RadioGroupItem value="any" id="h1" /><Label htmlFor="h1">Any Nearby</Label></div>
-                                <div className="flex items-center space-x-2"><RadioGroupItem value="Govt Hospital" id="h2" /><Label htmlFor="h2">Government</Label></div>
-                                <div className="flex items-center space-x-2"><RadioGroupItem value="Private Hospital" id="h3" /><Label htmlFor="h3">Private</Label></div>
-                            </RadioGroup>
-                        </div>
+                         <Card>
+                            <CardHeader className="pb-4">
+                                <CardTitle className="text-base">1. Select Severity</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <RadioGroup value={severity} onValueChange={(v) => setSeverity(v as any)} className="space-y-2">
+                                    <TriageSelectionCard id="s1" value="Non-Critical" label="Non-Critical" checked={severity === 'Non-Critical'} onSelect={setSeverity} />
+                                    <TriageSelectionCard id="s2" value="Serious" label="Serious" checked={severity === 'Serious'} onSelect={setSeverity} />
+                                    <TriageSelectionCard id="s3" value="Critical" label="Critical" checked={severity === 'Critical'} onSelect={setSeverity} />
+                                </RadioGroup>
+                            </CardContent>
+                         </Card>
+                         <Card>
+                            <CardHeader className="pb-4">
+                                <CardTitle className="text-base">2. Hospital Preference</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <RadioGroup value={hospitalType} onValueChange={(v) => setHospitalType(v as any)} className="space-y-2">
+                                    <TriageSelectionCard id="h1" value="any" label="Any Nearby" checked={hospitalType === 'any'} onSelect={setHospitalType} />
+                                    <TriageSelectionCard id="h2" value="Govt Hospital" label="Government" checked={hospitalType === 'Govt Hospital'} onSelect={setHospitalType} />
+                                    <TriageSelectionCard id="h3" value="Private Hospital" label="Private" checked={hospitalType === 'Private Hospital'} onSelect={setHospitalType} />
+                                </RadioGroup>
+                            </CardContent>
+                        </Card>
                     </>
                 ) : (
                     <div className="space-y-4">
-                        <Label className="font-semibold">3. Select a Hospital</Label>
+                        <Label className="font-semibold text-base">3. Select a Hospital</Label>
                         {isFindingHospitals ? (
                             <div className="text-center py-4">
                                <SearchingIndicator partnerType="cure" />
@@ -245,9 +261,9 @@ export default function EmergencyButtons({ serviceType, liveMapRef, pickupCoords
                         ) : (
                             <div className="max-h-60 overflow-y-auto space-y-2 pr-2">
                                 {nearbyHospitals.map(h => (
-                                    <Card key={h.id} className={`p-3 cursor-pointer ${selectedHospital === h.id ? 'ring-2 ring-primary' : ''}`} onClick={() => setSelectedHospital(h.id)}>
+                                    <Card key={h.id} className={cn("p-3 cursor-pointer", selectedHospital === h.id && "ring-2 ring-primary")} onClick={() => setSelectedHospital(h.id)}>
                                         <div className="flex items-center gap-3">
-                                            <HospitalIcon className="w-5 h-5 text-primary"/>
+                                            <div className="p-2 rounded-md bg-muted"><Hospital className="w-5 h-5 text-primary"/></div>
                                             <div className="flex-1">
                                                 <p className="font-bold text-sm">{h.name}</p>
                                                 <p className="text-xs text-muted-foreground">{h.address}</p>
@@ -285,22 +301,22 @@ export default function EmergencyButtons({ serviceType, liveMapRef, pickupCoords
   return (
     <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogHeader>
-            <DialogTitle>Request {serviceType === 'cure' ? 'Emergency Ambulance' : 'Roadside Assistance'}</DialogTitle>
+            <DialogTitle className="flex items-center gap-2">
+                {serviceType === 'cure' ? <Ambulance className="w-6 h-6 text-destructive"/> : <Wrench className="w-6 h-6 text-amber-600"/>}
+                Request {serviceType === 'cure' ? 'Emergency Ambulance' : 'Roadside Assistance'}
+            </DialogTitle>
             <DialogDescription>Please provide details to help us serve you better.</DialogDescription>
         </DialogHeader>
         {renderContent()}
         <DialogFooter>
-            {serviceType === 'cure' && sosStep === 'triage' && (
+            {sosStep === 'triage' && (
                 <Button className="w-full" onClick={handleFindHospitals} disabled={!severity || isFindingHospitals}>{isFindingHospitals ? 'Finding...' : 'Find Hospitals'}</Button>
             )}
-            {serviceType === 'cure' && sosStep === 'hospitals' && (
+            {sosStep === 'hospitals' && (
                 <>
                     <Button variant="outline" onClick={() => setSosStep('triage')}>Back</Button>
                     <Button className="w-full" onClick={handleConfirmAmbulanceRequest} disabled={!selectedHospital}>Confirm & Dispatch</Button>
                 </>
-            )}
-            {serviceType === 'resq' && (
-                <Button className="w-full" onClick={handleRequestMechanic} disabled={!selectedIssue}>Find Help</Button>
             )}
         </DialogFooter>
     </Dialog>
