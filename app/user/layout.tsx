@@ -177,22 +177,18 @@ export default function UserLayout({
   return (
     <OuterContainer>
         <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
-            <header className="relative z-10">
+             <header className="fixed top-0 left-0 right-0 z-50 bg-gradient-to-br from-amber-500/10 via-amber-400/10 to-amber-300/10 backdrop-blur-lg">
                 <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                     <nav className="flex items-center justify-between py-4">
                         <SheetTrigger asChild>
-                            <Button id="openDrawer" className="inline-flex md:hidden items-center justify-center h-10 w-10 rounded-full border border-border bg-card/50 backdrop-blur hover:bg-accent/80 focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-white/30" aria-label="Open menu" aria-controls="drawer" aria-expanded={isMobileMenuOpen} title="Open menu">
+                            <Button id="openDrawer" className="inline-flex items-center justify-center h-10 w-10 rounded-full border border-border bg-card/50 backdrop-blur hover:bg-accent/80 focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-white/30" aria-label="Open menu" aria-controls="drawer" aria-expanded={isMobileMenuOpen} title="Open menu">
                                 <Menu className="h-5 w-5"></Menu>
                             </Button>
                         </SheetTrigger>
-
-                        <Link href="/user" className="hidden md:inline-flex items-center gap-2 rounded-full border border-border bg-card/50 px-3 py-2 backdrop-blur hover:bg-accent/80 focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-white/30" aria-label="Home">
-                            <BrandLogo iconClassName='w-8 h-8' />
-                        </Link>
                         
                         <LocationDisplay />
 
-                        <div className="ml-auto flex items-center gap-2">
+                        <div className="flex items-center gap-2">
                             <ThemeToggle />
                             <LanguageToggle />
                             <DropdownMenu>
@@ -263,6 +259,7 @@ export default function UserLayout({
                 exit="out"
                 variants={pageVariants}
                 transition={pageTransition}
+                className="pt-24"
             >
             {children}
             </motion.main>

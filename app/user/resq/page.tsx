@@ -1,3 +1,4 @@
+
 'use client'
 
 import React, { useState, useEffect, useCallback } from 'react'
@@ -21,11 +22,6 @@ const commonIssues = [
     { id: 'fuel_delivery', label: 'Fuel Refill', icon: Fuel },
     { id: 'minor_repair', label: 'Minor Repair', icon: Wrench },
     { id: 'other', label: 'Other', icon: MoreHorizontal },
-]
-
-const recentServices = [
-    { issue: 'Flat Tyre', location: 'Cyber Hub, Gurgaon' },
-    { issue: 'Battery Jump-Start', location: 'MG Road, New Delhi' },
 ]
 
 export default function ResQPage() {
@@ -199,11 +195,11 @@ export default function ResQPage() {
 
   const containerVariants = {
     hidden: { opacity: 0 },
-    visible: { opacity: 1, transition: { staggerChildren: 0.1 } }
+    visible: { opacity: 1, transition: { staggerChildren: 0.05 } }
   };
   const itemVariants = {
-      hidden: { opacity: 0, y: 20 },
-      visible: { opacity: 1, y: 0 }
+      hidden: { opacity: 0, y: 10 },
+      visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: 'easeOut' } }
   };
 
   if (activeGarageRequest) {
@@ -222,76 +218,51 @@ export default function ResQPage() {
 
   return (
     <motion.div 
-        className="min-h-screen w-full flex flex-col bg-muted/30 overflow-hidden"
+        className="p-4 md:p-6"
         initial="hidden"
         animate="visible"
         variants={containerVariants}
     >
-        <header className="bg-gradient-to-br from-amber-500 via-amber-400 to-amber-300 text-amber-900 p-4 relative">
-            <div className="container mx-auto">
-                <motion.div variants={itemVariants}>
-                    <Button variant="ghost" size="icon" className="hover:bg-black/10 text-white" onClick={() => router.push('/user')}>
-                        <ArrowLeft className="w-5 h-5"/>
-                    </Button>
-                </motion.div>
-                <motion.div variants={itemVariants} className="pt-8 pb-20 text-left">
-                    <h1 className="text-4xl font-bold text-white">Roadside ResQ</h1>
-                    <p className="text-white/90 mt-1 max-w-md">Stuck on the road? We&apos;re here to help.</p>
-                </motion.div>
+      <Card className="bg-card/70 backdrop-blur-sm">
+        <CardHeader className="text-center">
+            <div className="mx-auto bg-amber-500/10 p-3 rounded-full w-fit border border-amber-500/20">
+              <Wrench className="w-8 h-8 text-amber-500"/>
             </div>
-        </header>
-
-       <div className="flex-1 container mx-auto p-4 space-y-6 relative z-10 -mt-16">
-            <motion.div 
-                initial={{ y: 50, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ delay: 0.3, type: 'spring' }}
-            >
-                <Card className="shadow-lg">
-                    <CardContent className="p-3 flex items-center gap-3">
-                        <div className="w-2.5 h-2.5 rounded-full bg-green-500 ring-2 ring-green-500/30 ml-2"/>
-                        <p className="font-semibold text-base text-muted-foreground">{locationAddress}</p>
-                    </CardContent>
-                </Card>
-            </motion.div>
+            <CardTitle className="text-3xl font-bold pt-2">Roadside ResQ</CardTitle>
+            <CardDescription>Stuck on the road? Tell us what&apos;s wrong and we&apos;ll find help nearby.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+            <div className="p-3 flex items-center gap-3 bg-muted rounded-lg">
+                <MapPin className="w-5 h-5 text-primary flex-shrink-0" />
+                <p className="font-semibold text-base text-muted-foreground truncate">{locationAddress}</p>
+            </div>
             
-            <motion.div variants={itemVariants}>
+            <div className="space-y-3">
                 <h3 className="font-bold text-lg">What&apos;s the issue?</h3>
-                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mt-2">
-                    {commonIssues.map((item) => (
-                        <div
+                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                    {commonIssues.map((item, i) => (
+                      <motion.div
                         key={item.id}
+                        variants={itemVariants}
+                        transition={{ delay: i * 0.05 }}
+                      >
+                        <div
                         onClick={() => setSelectedIssue(item.label)}
                         className={cn(
-                            "group flex flex-col items-center justify-center p-4 bg-card rounded-xl border-2 border-transparent hover:shadow-lg hover:-translate-y-1 transition-all cursor-pointer",
+                            "group flex flex-col items-center justify-center p-4 bg-background rounded-xl border-2 border-transparent hover:shadow-lg hover:-translate-y-1 transition-all cursor-pointer h-full",
                             selectedIssue === item.label && "ring-2 ring-primary border-primary"
                         )}
                         >
                             <item.icon className="text-primary w-8 h-8 mb-2 transition-all" />
                             <span className="font-semibold text-center text-sm">{item.label}</span>
                         </div>
+                      </motion.div>
                     ))}
                 </div>
-            </motion.div>
+            </div>
 
-            <motion.div variants={itemVariants}>
-                 <h3 className="font-bold text-lg pt-4">Recent Requests</h3>
-                 <div className="space-y-2 mt-2">
-                    {recentServices.map((service, index) => (
-                        <div key={index} className="flex items-center gap-4 p-3 rounded-lg hover:bg-card cursor-pointer transition-colors">
-                            <div className="p-3 bg-card rounded-full border">
-                                <Wrench className="w-5 h-5 text-muted-foreground" />
-                            </div>
-                            <div className="flex-1">
-                                <p className="font-semibold">{service.issue}</p>
-                                <p className="text-sm text-muted-foreground">{service.location}</p>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            </motion.div>
-        </div>
-         <div className="p-4 border-t bg-background sticky bottom-0">
+        </CardContent>
+         <CardFooter className="p-4 border-t">
             <Button
                 size="lg"
                 disabled={!selectedIssue}
@@ -299,7 +270,8 @@ export default function ResQPage() {
                 className="w-full font-semibold h-12 text-lg">
                 Find a Mechanic
             </Button>
-        </div>
+        </CardFooter>
+      </Card>
     </motion.div>
   );
 }
