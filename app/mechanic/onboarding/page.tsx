@@ -1,4 +1,5 @@
 
+
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
@@ -112,8 +113,14 @@ export default function MechanicOnboardingPage() {
         const firmName = partnerType === 'garage' ? formData.get('firmName') as string : ownerName;
         const businessType = partnerType === 'garage' ? formData.get('businessType') as string : 'Individual';
 
-        if (!ownerName || !phone || !businessPan || !firmName || !businessType || selectedServices.length === 0 || (partnerType === 'garage' && !location)) {
-            toast({ variant: 'destructive', title: "Incomplete Form", description: "Please fill out all business details, select services and set your location." });
+        if (!ownerName || !phone || !businessPan || !firmName || !businessType || selectedServices.length === 0) {
+            toast({ variant: 'destructive', title: "Incomplete Form", description: "Please fill out all business details and select your services." });
+            setIsLoading(false);
+            return;
+        }
+        
+        if (partnerType === 'garage' && !location) {
+            toast({ variant: 'destructive', title: "Location Required", description: "Please set your workshop location on the map to continue." });
             setIsLoading(false);
             return;
         }
@@ -183,7 +190,7 @@ export default function MechanicOnboardingPage() {
                 </Card>
             </CardContent>
              <CardFooter>
-                 <Button asChild variant="link" className="w-full text-muted-foreground">
+                <Button asChild variant="link" className="w-full text-muted-foreground">
                     <Link href="/partner-hub">
                         <span><ArrowLeft className="mr-2 h-4 w-4" />Back to Partner Hub</span>
                     </Link>
@@ -253,13 +260,13 @@ export default function MechanicOnboardingPage() {
                     </div>
                 );
             case 3:
+                const servicesToShow = partnerType === 'garage' ? [...onSpotServices, ...garageServices] : onSpotServices;
                 return (
                      <div className="space-y-4">
                         <Label className="text-lg font-medium">Services Offered</Label>
                         <Card className="p-4">
-                            <CardTitle className="text-md mb-2">On-Spot Service</CardTitle>
                             <div className="grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-3">
-                                {onSpotServices.map(service => (
+                                {servicesToShow.map(service => (
                                     <div key={service.id} className="flex items-center space-x-2">
                                         <Checkbox id={service.id} onCheckedChange={() => handleServiceChange(service.label)} />
                                         <Label htmlFor={service.id} className="text-sm font-normal cursor-pointer">{service.label}</Label>
@@ -267,19 +274,7 @@ export default function MechanicOnboardingPage() {
                                 ))}
                             </div>
                         </Card>
-                        {partnerType === 'garage' && (
-                            <Card className="p-4">
-                                <CardTitle className="text-md mb-2">Workshop Services</CardTitle>
-                                <div className="grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-2">
-                                    {garageServices.map(service => (
-                                        <div key={service.id} className="flex items-center space-x-2">
-                                            <Checkbox id={service.id} onCheckedChange={() => handleServiceChange(service.label)} />
-                                            <Label htmlFor={service.id} className="text-sm font-normal cursor-pointer">{service.label}</Label>
-                                        </div>
-                                    ))}
-                                </div>
-                            </Card>
-                        )}
+                        
                     </div>
                 );
             case 4: // Garage only step
@@ -341,5 +336,3 @@ export default function MechanicOnboardingPage() {
         </div>
     )
 }
-
-    
