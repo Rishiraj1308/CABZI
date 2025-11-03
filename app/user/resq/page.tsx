@@ -10,7 +10,7 @@ import { useToast } from '@/hooks/use-toast'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import RideStatus from '@/components/ride-status'
-import { Wrench, Zap, Fuel, Car, MoreHorizontal, ArrowLeft, MapPin, History } from 'lucide-react'
+import { Wrench, Zap, Fuel, Car, MoreHorizontal, ArrowLeft, MapPin, History, AlertTriangle } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { motion } from 'framer-motion'
 import Image from 'next/image'
@@ -22,11 +22,12 @@ import { useLanguage } from '@/hooks/use-language'
 const LiveMap = React.lazy(() => import('@/components/live-map'));
 
 const commonIssues = [
-    { id: 'flat_tyre', label: 'Flat Tyre / Puncture' },
-    { id: 'battery_jumpstart', label: 'Battery Jump-Start' },
-    { id: 'engine_trouble', label: 'Minor Engine Trouble' },
-    { id: 'towing_required', label: 'Towing Required' },
-    { id: 'other', label: 'Other Issue' },
+    { id: 'flat_tyre', label: 'Flat Tyre / Puncture', icon: Car },
+    { id: 'battery_jumpstart', label: 'Battery Jump-Start', icon: Zap },
+    { id: 'engine_trouble', label: 'Minor Engine Trouble', icon: Wrench },
+    { id: 'fuel_delivery', label: 'Emergency Fuel Delivery', icon: Fuel },
+    { id: 'towing_required', label: 'Towing Required', icon: Car },
+    { id: 'other', label: 'Other Issue', icon: AlertTriangle },
 ]
 
 const recentServices = [
