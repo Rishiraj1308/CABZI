@@ -176,7 +176,7 @@ export default function ResQPage() {
     };
     const requestDocRef = await addDoc(collection(db, 'garageRequests'), requestData);
     
-    setActiveGarageRequest({ id: requestDocRef.id, ...requestData, status: 'pending' } as GarageRequest);
+    setActiveGarageRequest({ id: requestDocRef.id, ...requestData } as unknown as GarageRequest);
     localStorage.setItem('activeGarageRequestId', requestDocRef.id);
     toast({ title: "Request Sent!", description: "We are finding a nearby ResQ partner for you." });
   }
@@ -225,8 +225,8 @@ export default function ResQPage() {
     >
       <Card className="bg-card/70 backdrop-blur-sm">
         <CardHeader className="text-center">
-            <div className="mx-auto bg-amber-500/10 p-3 rounded-full w-fit border border-amber-500/20">
-              <Wrench className="w-8 h-8 text-amber-500"/>
+            <div className="mx-auto bg-amber-500/10 p-4 rounded-full w-fit border border-amber-500/20">
+              <Wrench className="w-10 h-10 text-amber-500"/>
             </div>
             <CardTitle className="text-3xl font-bold pt-2">Roadside ResQ</CardTitle>
             <CardDescription>Stuck on the road? Tell us what&apos;s wrong and we&apos;ll find help nearby.</CardDescription>
@@ -250,10 +250,11 @@ export default function ResQPage() {
                         onClick={() => setSelectedIssue(item.label)}
                         className={cn(
                             "group flex flex-col items-center justify-center p-4 bg-background rounded-xl border-2 border-transparent hover:shadow-lg hover:-translate-y-1 transition-all cursor-pointer h-full",
-                            selectedIssue === item.label && "ring-2 ring-primary border-primary"
+                            "hover:border-amber-500/50",
+                            selectedIssue === item.label && "ring-2 ring-amber-500 border-amber-500"
                         )}
                         >
-                            <item.icon className="text-primary w-8 h-8 mb-2 transition-all" />
+                            <item.icon className="text-amber-500 w-8 h-8 mb-2 transition-all" />
                             <span className="font-semibold text-center text-sm">{item.label}</span>
                         </div>
                       </motion.div>
@@ -267,7 +268,8 @@ export default function ResQPage() {
                 size="lg"
                 disabled={!selectedIssue}
                 onClick={handleRequestMechanic}
-                className="w-full font-semibold h-12 text-lg">
+                className="w-full font-semibold h-12 text-lg bg-accent text-accent-foreground hover:bg-accent/90"
+            >
                 Find a Mechanic
             </Button>
         </CardFooter>
