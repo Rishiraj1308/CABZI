@@ -14,14 +14,19 @@ import { Wrench, Zap, Fuel, Car, MoreHorizontal, ArrowLeft, MapPin, History } fr
 import { cn } from '@/lib/utils'
 import { motion } from 'framer-motion'
 import Image from 'next/image'
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
+import { Label } from '@/components/ui/label'
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
+import { useLanguage } from '@/hooks/use-language'
+
+const LiveMap = React.lazy(() => import('@/components/live-map'));
 
 const commonIssues = [
-    { id: 'flat_tyre', label: 'Flat Tyre', icon: Wrench },
-    { id: 'battery_jumpstart', label: 'Jump Start', icon: Zap },
-    { id: 'towing_required', label: 'Towing', icon: Car },
-    { id: 'fuel_delivery', label: 'Fuel Refill', icon: Fuel },
-    { id: 'minor_repair', label: 'Minor Repair', icon: Wrench },
-    { id: 'other', label: 'Other', icon: MoreHorizontal },
+    { id: 'flat_tyre', label: 'Flat Tyre / Puncture' },
+    { id: 'battery_jumpstart', label: 'Battery Jump-Start' },
+    { id: 'engine_trouble', label: 'Minor Engine Trouble' },
+    { id: 'towing_required', label: 'Towing Required' },
+    { id: 'other', label: 'Other Issue' },
 ]
 
 const recentServices = [
@@ -112,7 +117,6 @@ export default function ResQPage() {
         const requestDoc = snapshot.docs[0];
         const requestData = { id: requestDoc.id, ...requestDoc.data() };
         
-        // Check previous state before showing toast to avoid duplicates
         setActiveGarageRequest(prev => {
             if (prev?.status !== 'accepted' && requestData.status === 'accepted') {
                 toast({ title: "ResQ Partner Assigned!", description: `${requestData.mechanicName} is on the way.` });
@@ -134,7 +138,7 @@ export default function ResQPage() {
     });
 
     return () => unsubscribe();
-  }, [db, session?.userId, toast, resetFlow]);
+  }, [db, session?.userId, resetFlow, toast]);
   
   const handleGaragePayment = async (paymentMode: 'cash' | 'wallet') => {
     if (!db || !activeGarageRequest || !user || !activeGarageRequest.mechanicId) return;
@@ -183,11 +187,15 @@ export default function ResQPage() {
         otp: generatedOtp,
         createdAt: serverTimestamp(),
     };
-    const requestDocRef = await addDoc(collection(db, 'garageRequests'), requestData);
-    
-    setActiveGarageRequest({ id: requestDocRef.id, ...requestData } as unknown as GarageRequest);
-    localStorage.setItem('activeGarageRequestId', requestDocRef.id);
-    toast({ title: "Request Sent!", description: "We are finding a nearby ResQ partner for you." });
+    try {
+        const requestDocRef = await addDoc(collection(db, 'garageRequests'), requestData);
+        
+        setActiveGarageRequest({ id: requestDocRef.id, ...requestData } as unknown as GarageRequest);
+        localStorage.setItem('activeGarageRequestId', requestDocRef.id);
+        toast({ title: "Request Sent!", description: "We are finding a nearby ResQ partner for you." });
+    } catch (error) {
+        toast({ variant: 'destructive', title: 'Request Failed', description: 'Could not create service request.' });
+    }
   }
 
   const handleCancelServiceRequest = async () => {
