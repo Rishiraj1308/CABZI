@@ -151,18 +151,23 @@ const handleRideDispatch = async (initialRideData: any, rideId: string) => {
    ✅ GARAGE DISPATCH (ResQ) - REWRITTEN
 -------------------------------------------------- */
 const handleGarageRequestDispatch = async (requestData: any, requestId: string) => {
+    const requestRef = db.doc(`garageRequests/${requestId}`);
+    const userLoc = requestData.location as GeoPoint;
+    
+    // First, enrich the document with the address
+    const locationAddress = await getAddressFromCoords(userLoc.latitude, userLoc.longitude);
+    await requestRef.update({ locationAddress });
+    
     const mechanicsSnapshot = await db
       .collection("mechanics")
       .where("isOnline", "==", true)
       .get();
   
     if (mechanicsSnapshot.empty) {
-      await db.doc(`garageRequests/${requestId}`).update({ status: "no_mechanics_available" });
+      await requestRef.update({ status: "no_mechanics_available" });
       return;
     }
   
-    const userLoc = requestData.location as GeoPoint;
-    const locationAddress = await getAddressFromCoords(userLoc.latitude, userLoc.longitude);
     const rejectedBy = requestData.rejectedBy || [];
   
     const nearbyMechanics = mechanicsSnapshot.docs
@@ -181,7 +186,7 @@ const handleGarageRequestDispatch = async (requestData: any, requestId: string) 
       .sort((a, b) => (a.distanceToUser || 99) - (b.distanceToUser || 99));
   
     if (nearbyMechanics.length === 0) {
-      await db.doc(`garageRequests/${requestId}`).update({ status: "no_mechanics_available" });
+      await requestRef.update({ status: "no_mechanics_available" });
       return;
     }
   
@@ -189,21 +194,21 @@ const handleGarageRequestDispatch = async (requestData: any, requestId: string) 
   
     if (!targetMechanic.fcmToken) {
         console.log(`Mechanic ${targetMechanic.id} has no FCM token. Cascading...`);
-        await db.doc(`garageRequests/${requestId}`).update({
+        await requestRef.update({
             rejectedBy: FieldValue.arrayUnion(targetMechanic.id),
         });
         return;
     }
     
     const distanceToUser = targetMechanic.distanceToUser || 0;
-    const eta = distanceToUser * 3; // 3 mins per km for a mechanic
+    const eta = distanceToUser * 3;
 
     const payload = {
         type: "new_garage_request",
         requestId,
-        userId: requestData.driverId, // Ensure correct ID field
-        userName: requestData.driverName, // Ensure correct name field
-        userPhone: requestData.driverPhone,
+        userId: requestData.userId,
+        userName: requestData.userName,
+        userPhone: requestData.userPhone,
         issue: requestData.issue,
         location: JSON.stringify(requestData.location),
         locationAddress, // Include the human-readable address
@@ -219,8 +224,7 @@ const handleGarageRequestDispatch = async (requestData: any, requestId: string) 
         console.log(`Garage request ${requestId} sent to mechanic ${targetMechanic.id}.`);
     } catch (error) {
         console.error(`Failed to send garage request to mechanic ${targetMechanic.id}:`, error);
-        // If sending fails, treat as a rejection to cascade to the next one.
-        await db.doc(`garageRequests/${requestId}`).update({
+        await requestRef.update({
             rejectedBy: FieldValue.arrayUnion(targetMechanic.id),
         });
     }

@@ -134,7 +134,6 @@ export default function ResQDashboard() {
       setProcessedRequestIds((prev) => new Set(prev).add(declinedJobId));
       setJobRequest(null);
 
-      // Only update firestore if it's a manual decline
       if (!isTimeout) {
           await updateDoc(doc(db, 'garageRequests', declinedJobId), {
             rejectedBy: arrayUnion(mechanicData.id),
@@ -181,7 +180,7 @@ export default function ResQDashboard() {
       setRequestTimeout((p) => {
         if (p <= 1) {
           clearInterval(t);
-          handleDeclineJob(true);
+          setJobRequest(null); // Just close the dialog
           return 0;
         }
         return p - 1;
@@ -189,7 +188,7 @@ export default function ResQDashboard() {
     }, 1000);
     requestTimerRef.current = t;
     return () => clearInterval(t);
-  }, [jobRequest, handleDeclineJob]);
+  }, [jobRequest]);
 
   // Accept job
   const handleAcceptJob = async () => {

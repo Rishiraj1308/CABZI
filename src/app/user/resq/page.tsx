@@ -115,10 +115,9 @@ export default function ResQPage() {
   useEffect(() => {
     if (!db || !session?.userId) return;
 
-    // Corrected the query to use 'driverId' which matches the field used when creating the request.
     const q = query(
       collection(db, "garageRequests"),
-      where("driverId", "==", session.userId),
+      where("userId", "==", session.userId),
       where("status", "not-in", ["completed", "cancelled_by_driver", "cancelled_by_mechanic", "cancelled_by_user"])
     );
 
@@ -188,9 +187,9 @@ export default function ResQPage() {
     }
     const generatedOtp = Math.floor(1000 + Math.random() * 9000).toString();
     const requestData = {
-        driverId: session.userId,
-        driverName: session.name,
-        driverPhone: session.phone,
+        userId: session.userId,
+        userName: session.name,
+        userPhone: session.phone,
         issue: selectedIssue,
         location: new GeoPoint(currentUserLocation.lat, currentUserLocation.lon),
         status: 'pending' as const,
