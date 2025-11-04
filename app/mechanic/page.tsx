@@ -110,6 +110,24 @@ export default function ResQDashboard() {
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+  
+  useEffect(() => {
+    if (!mechanicData?.id || !db) return;
+    setIsHistoryLoading(true);
+    const q = query(
+      collection(db, "garageRequests"),
+      where("mechanicId", "==", mechanicData.id),
+      orderBy("createdAt", "desc"),
+      limit(5)
+    );
+    const unsub = onSnapshot(q, (snapshot) => {
+      const jobs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as JobRequest));
+      setRecentJobs(jobs);
+      setIsHistoryLoading(false);
+    });
+    return () => unsub();
+  }, [mechanicData?.id, db]);
+
 
   const handleDeclineJob = useCallback(async (isTimeout = false) => {
     if (!jobRequest || !mechanicData?.id || !db) return
@@ -484,7 +502,7 @@ export default function ResQDashboard() {
         </Card>
     );
   }
-
+  
   if (isPartnerDataLoading || !isMounted) {
     return <div className="flex items-center justify-center h-full"><Skeleton className="w-full h-96" /></div>
   }
@@ -571,17 +589,17 @@ export default function ResQDashboard() {
               <div className="absolute top-4 right-4 w-12 h-12 flex items-center justify-center rounded-full border-4 border-primary text-primary font-bold text-2xl">
                 {requestTimeout}
               </div>
-              <div className="flex items-center gap-4">
-                <Avatar className="w-12 h-12"><AvatarImage src={'https://placehold.co/100x100.png'} alt={jobRequest.riderName} data-ai-hint="user portrait" /><AvatarFallback>{jobRequest?.riderName?.[0] || 'U'}</AvatarFallback></Avatar>
-                <div>
-                  <p className="font-bold">{jobRequest?.riderName}</p>
-                   <Button variant="link" size="sm" className="h-auto p-0" asChild>
-                    <a href={`tel:${jobRequest.userPhone}`}><Phone className="w-3 h-3 mr-1"/>Call User</a>
-                  </Button>
-                </div>
-              </div>
-              <div className="space-y-2 text-sm">
-                 {jobRequest.pickupAddress && (
+               <div className="flex items-center gap-4">
+                  <Avatar className="w-12 h-12"><AvatarImage src={'https://placehold.co/100x100.png'} alt={jobRequest.riderName} data-ai-hint="user portrait" /><AvatarFallback>{jobRequest?.riderName?.[0] || 'U'}</AvatarFallback></Avatar>
+                 <div>
+                   <p className="font-bold">{jobRequest?.riderName}</p>
+                    <Button variant="link" size="sm" className="h-auto p-0" asChild>
+                        <a href={`tel:${jobRequest.userPhone}`}><Phone className="w-3 h-3 mr-1"/>Call User</a>
+                    </Button>
+                 </div>
+               </div>
+                <div className="space-y-2 text-sm">
+                   {jobRequest.pickupAddress && (
                     <div className="flex items-start gap-2">
                         <MapPin className="w-4 h-4 mt-1 text-green-500" />
                         <p><span className="font-semibold">LOCATION:</span> {jobRequest.pickupAddress}</p>

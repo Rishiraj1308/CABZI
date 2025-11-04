@@ -188,8 +188,8 @@ const handleGarageRequestDispatch = async (requestData: any, requestId: string) 
                 type: 'new_garage_request',
                 requestId: requestId,
                 userId: requestData.userId,
-                riderName: requestData.userName,
-                userPhone: requestData.userPhone,
+                riderName: requestData.driverName,
+                userPhone: requestData.driverPhone,
                 issue: requestData.issue,
                 pickupAddress: locationAddress,
                 location: JSON.stringify(requestData.location),
@@ -519,7 +519,3 @@ export const simulateHighDemand = onCall(async (request) => {
 
     return { success: true, message: `High demand alert triggered for ${zoneName}.` };
 });
-
-    
-
-    
