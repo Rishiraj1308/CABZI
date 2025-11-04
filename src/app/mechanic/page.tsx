@@ -3,12 +3,10 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 import Image from 'next/image'
-import { Button, buttonVariants } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card'
-import { Switch } from '@/components/ui/switch'
+import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
-import { Input } from '@/components/ui/input'
-import { Star, CheckCircle, Car, Route, Shield, LifeBuoy, Phone, Sparkles, KeyRound, Clock, Pin, User as UserIcon, Send, ScanLine, Wallet, BarChart, Settings, Power, CircleDot, CreditCard, Bot, ChevronsUpDown, AlertCircle, Hand, History, IndianRupee, Eye, Navigation, LocateFixed, HeartHandshake, MessageSquare, Wrench, Ambulance, FileText, PlusCircle, Trash2 } from 'lucide-react'
+import { Star, CheckCircle, Car, Route, Shield, LifeBuoy, Phone, Sparkles, KeyRound, Clock, Pin, User as UserIcon, Send, ScanLine, Wallet, BarChart, Settings, Power, CircleDot, CreditCard, Bot, ChevronsUpDown, AlertCircle, Hand, History, IndianRupee, Eye, Navigation, LocateFixed, HeartHandshake, MessageSquare, Wrench, Ambulance, FileText, PlusCircle, Trash2, MapPin } from 'lucide-react'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger, } from "@/components/ui/alert-dialog"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription, DialogFooter } from '@/components/ui/dialog'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -32,6 +30,8 @@ import { useFirebase } from '@/firebase/client-provider'
 import { onMessage } from 'firebase/messaging'
 import { format } from 'date-fns'
 import type { JobRequest } from '@/lib/types'
+import { Input } from '@/components/ui/input'
+import { usePartnerData } from './layout'
 
 
 const LiveMap = dynamic(() => import('@/components/live-map'), { 
@@ -86,9 +86,6 @@ const StatCard = ({ title, value, icon: Icon, isLoading, onValueClick }: { title
 
 export default function ResQDashboard() {
   const [isMounted, setIsMounted] = useState(false);
-  const [mechanicData, setMechanicData] = useState<MechanicData | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isOnline, setIsOnline] = useState(false);
   const [jobRequest, setJobRequest] = useState<JobRequest | null>(null);
   const [acceptedJob, setAcceptedJob] = useState<JobRequest | null>(null);
   const [jobStatus, setJobStatus] = useState<'navigating' | 'arrived' | 'in_progress' | 'billing' | 'payment' | 'completed' | null>(null);
@@ -106,6 +103,7 @@ export default function ResQDashboard() {
   
   const { toast } = useToast();
   const { messaging, db } = useFirebase();
+  const { partner: mechanicData, isLoading: isPartnerDataLoading, handleAvailabilityChange, requests } = usePartnerData();
   
   // PIN lock state
   const [isEarningsVisible, setIsEarningsVisible] = useState(false);
@@ -114,73 +112,56 @@ export default function ResQDashboard() {
   const [recentJobs, setRecentJobs] = useState<JobRequest[]>([]);
   const [isHistoryLoading, setIsHistoryLoading] = useState(true);
 
+  const isOnline = mechanicData?.isOnline ?? false;
+
 
   useEffect(() => {
     notificationSoundRef.current = new Audio('/sounds/notification.mp3');
     setIsMounted(true);
-    const session = localStorage.getItem('curocity-resq-session');
-    if (!session) {
-        setIsLoading(false);
-        return;
-    }
-    const { phone } = JSON.parse(session);
-    if (!db) return;
-    const mechanicsRef = collection(db, "mechanics");
-    const q = query(mechanicsRef, where("phone", "==", phone));
     
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-        if (!snapshot.empty) {
-            const doc = snapshot.docs[0];
-            const data = doc.data();
-            setMechanicData({ 
-              id: doc.id, 
-              ...data,
-              rating: data.rating || 4.8,
-              acceptanceRate: data.acceptanceRate || 95,
-              jobsToday: data.jobsToday || 0,
-              todaysEarnings: data.todaysEarnings || 0,
-              qrCodeUrl: data.qrCodeUrl || `https://placehold.co/300x300/FBBF24/1E293B?text=CurocityUPI`,
-              upiId: data.upiId || `${data.phone}@curocity`,
-            } as MechanicData);
-            setIsOnline(data.isOnline);
-        }
-        setIsLoading(false);
-    });
-
-     // Check for active job on load
-    const checkActiveJob = async () => {
-      if (!db) return;
-      const jobId = localStorage.getItem('activeJobId');
-      if (jobId) {
-        const jobRef = doc(db, 'garageRequests', jobId);
-        const jobSnap = await getDoc(jobRef);
-        if (jobSnap.exists() && ['accepted', 'in_progress', 'bill_sent'].includes(jobSnap.data().status)) {
-            const jobData = { id: jobSnap.id, ...jobSnap.data() } as JobRequest;
-            setAcceptedJob(jobData);
-
-            let currentStatus = 'navigating';
-            if(jobSnap.data().status === 'in_progress') currentStatus = 'in_progress';
-            if(jobSnap.data().status === 'bill_sent') currentStatus = 'payment';
-            setJobStatus(currentStatus as any);
-        } else {
-            localStorage.removeItem('activeJobId');
-        }
-      }
-    };
-    checkActiveJob();
-
     const timer = setInterval(() => {
         setCurrentTime(new Date());
     }, 1000);
 
     return () => {
-        unsubscribe();
         clearInterval(timer);
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [toast, db]);
+  }, []);
 
-   // Effect for the request countdown timer
+  const handleDeclineJob = useCallback(async (isTimeout = false) => {
+    if (!jobRequest || !mechanicData?.id || !db) return
+    if (requestTimerRef.current) clearInterval(requestTimerRef.current)
+    
+    const jobRef = doc(db, 'garageRequests', jobRequest.id);
+    await updateDoc(jobRef, {
+        rejectedBy: arrayUnion(mechanicData.id)
+    });
+
+    setJobRequest(null);
+    if (!isTimeout) toast({ title: "Job Declined" })
+    else toast({ variant: 'destructive', title: "Request Timed Out" })
+  }, [jobRequest, mechanicData?.id, db, toast]);
+  
+  const resetAfterJob = useCallback(() => {
+    setAcceptedJob(null);
+    localStorage.removeItem('activeJobId');
+    if (mechanicData?.id && db) {
+        updateDoc(doc(db, 'mechanics', mechanicData.id), { status: 'online' });
+    }
+  }, [mechanicData, db]);
+
+  
+  useEffect(() => {
+    if (requests.length > 0 && !jobRequest && !acceptedJob) {
+        const nextRequest = requests[0];
+        setJobRequest(nextRequest);
+        notificationSoundRef.current?.play().catch(e => console.error("Audio play failed:", e));
+    }
+  }, [requests, jobRequest, acceptedJob]);
+
+
+   // Countdown timer for job request
    useEffect(() => {
     let timer: NodeJS.Timeout | null = null;
     if (jobRequest) {
@@ -202,40 +183,54 @@ export default function ResQDashboard() {
         if (timer) clearInterval(timer);
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [jobRequest]);
+  }, [jobRequest, handleDeclineJob]);
   
-    // Listen for new garage requests via FCM
-    useEffect(() => {
-        if (!messaging || !isOnline || !mechanicData?.id || acceptedJob || jobRequest) return;
+  const handleAcceptJob = async () => {
+    if (!jobRequest || !mechanicData || !db) return;
+     if (requestTimerRef.current) {
+         clearInterval(requestTimerRef.current);
+         requestTimerRef.current = null;
+     }
+  
+    const jobRef = doc(db, 'garageRequests', jobRequest.id);
+    const partnerRef = doc(db, 'mechanics', mechanicData.id);
+  
+    try {
+      await runTransaction(db, async (transaction) => {
+        const jobDoc = await transaction.get(jobRef);
+        if (!jobDoc.exists()) throw new Error("Job not found.");
         
-        const unsubscribe = onMessage(messaging, (payload) => {
-            console.log('FCM Message received for ResQ.', payload);
-            const { type, requestId, ...jobData } = payload.data || {};
-
-            if(type === 'new_garage_request' && requestId) {
-                 const newJobRequest: JobRequest = {
-                    id: requestId,
-                    userId: jobData.userId,
-                    userName: jobData.userName,
-                    userPhone: jobData.userPhone,
-                    issue: jobData.issue,
-                    location: JSON.parse(jobData.location || '{}'),
-                    status: jobData.status,
-                    otp: jobData.otp,
-                    createdAt: new Timestamp(parseInt(jobData.createdAt) / 1000, 0),
-                    distance: parseFloat(jobData.distance),
-                    eta: parseFloat(jobData.eta),
-                } as JobRequest;
-
-                if (!acceptedJob && !jobRequest) { // Ensure we're not already in a job
-                    setJobRequest(newJobRequest);
-                    notificationSoundRef.current?.play().catch(e => console.error("Audio play failed:", e));
-                }
-            }
+        if (jobDoc.data().status !== 'pending') {
+          throw new Error("This job has already been accepted.");
+        }
+  
+        transaction.update(jobRef, {
+          status: 'accepted',
+          mechanicId: mechanicData.id,
+          mechanicName: mechanicData.name,
+          mechanicPhone: mechanicData.phone,
         });
-
-        return () => unsubscribe();
-    }, [messaging, isOnline, mechanicData, acceptedJob, jobRequest]);
+        transaction.update(partnerRef, { status: 'on_job' });
+      });
+  
+      setAcceptedJob({ ...jobRequest, status: 'accepted' });
+      setJobRequest(null);
+      localStorage.setItem('activeJobId', jobRequest.id);
+  
+      toast({
+        title: 'Job Accepted!',
+        description: `Navigate to ${jobRequest.userName}'s location.`,
+      });
+    } catch (err: any) {
+      console.error("Error accepting job:", err);
+      toast({
+        variant: 'destructive',
+        title: 'Could not accept job',
+        description: err.message || 'It might have been taken by another mechanic.',
+      });
+      setJobRequest(null);
+    }
+  };  
 
   // Effect to fetch route when a job is accepted
   useEffect(() => {
@@ -326,67 +321,6 @@ export default function ResQDashboard() {
     }
   }
 
-
-  const handleAvailabilityChange = async (checked: boolean) => {
-    if (!mechanicData || !db) return;
-    setIsOnline(checked);
-    const mechanicRef = doc(db, 'mechanics', mechanicData.id);
-    try {
-        await updateDoc(mechanicRef, { isOnline: checked, status: checked ? 'online' : 'offline' });
-        toast({
-            title: checked ? "You are now ONLINE" : "You are OFFLINE",
-            description: checked ? "Waiting for nearby service requests." : "You will not receive new job requests.",
-        });
-    } catch (error) {
-        toast({ variant: 'destructive', title: 'Error', description: 'Could not update your status.' });
-        setIsOnline(!checked); // Revert on failure
-    }
-  }
-
-  const handleAcceptJob = async () => {
-    if (!jobRequest || !mechanicData || !db) return;
-     if (requestTimerRef.current) {
-         clearInterval(requestTimerRef.current);
-         requestTimerRef.current = null;
-     }
-
-    const jobRef = doc(db, 'garageRequests', jobRequest.id);
-    try {
-        await updateDoc(jobRef, {
-            status: 'accepted',
-            mechanicId: mechanicData.id,
-            mechanicName: mechanicData.name,
-            mechanicPhone: mechanicData.phone,
-        });
-        localStorage.setItem('activeJobId', jobRequest.id);
-        setAcceptedJob(jobRequest);
-        setJobRequest(null);
-        setJobStatus('navigating');
-        toast({ title: 'Job Accepted!', description: `Navigate to ${jobRequest.userName}'s location.` });
-    } catch (error) {
-        toast({ variant: 'destructive', title: 'Error', description: 'Could not accept the job. It may have been taken.' });
-    }
-  }
-
-  const handleDeclineJob = async (isTimeout = false) => {
-    if (!jobRequest || !mechanicData || !db) return;
-
-    if (requestTimerRef.current) {
-        clearInterval(requestTimerRef.current);
-        requestTimerRef.current = null;
-    }
-    
-    const jobRef = doc(db, 'garageRequests', jobRequest.id);
-    await updateDoc(jobRef, { rejectedBy: arrayUnion(mechanicData.id) });
-
-    if (!isTimeout) {
-        toast({ title: "Job Declined", description: "You will be shown the next available job." });
-    } else {
-        toast({ variant: 'destructive', title: "Request Timed Out", description: "Looking for next available job." });
-    }
-    setJobRequest(null);
-  }
-
   const handleVerifyOtp = async () => {
       if (enteredOtp === acceptedJob?.otp && acceptedJob && db) {
           const jobRef = doc(db, 'garageRequests', acceptedJob.id);
@@ -451,6 +385,7 @@ export default function ResQDashboard() {
       const storedPin = localStorage.getItem('curocity-user-pin');
       if (!storedPin) {
           toast({ variant: 'destructive', title: 'PIN Not Set', description: 'Please set a UPI PIN from your wallet first.' });
+          setIsPinDialogOpen(false);
           return;
       }
       if (pin === storedPin) {
@@ -465,6 +400,7 @@ export default function ResQDashboard() {
           }, 10000);
       } else {
           toast({ variant: 'destructive', title: 'Invalid PIN', description: 'Please enter the correct 4-digit PIN.' });
+          setPin('');
       }
   }
 
@@ -484,7 +420,7 @@ export default function ResQDashboard() {
     ? { lat: acceptedJob.location.latitude, lon: acceptedJob.location.longitude }
     : undefined;
 
-  if (isLoading || !isMounted) {
+  if (isPartnerDataLoading || !isMounted) {
     return <div className="flex items-center justify-center h-full"><Skeleton className="w-full h-96" /></div>
   }
 
@@ -582,7 +518,7 @@ export default function ResQDashboard() {
                                  <div className="flex items-center space-x-2 justify-end">
                                     <Switch id="online-status" checked={isOnline} onCheckedChange={handleAvailabilityChange} />
                                     <Label htmlFor="online-status" className={cn("font-semibold", isOnline ? "text-green-600" : "text-muted-foreground")}>
-                                        {isOnline ? "Online" : "Offline"}
+                                        {isOnline ? "ONLINE" : "OFFLINE"}
                                     </Label>
                                 </div>
                             </div>
@@ -608,10 +544,10 @@ export default function ResQDashboard() {
                     </TabsList>
                     <TabsContent value="stats" className="mt-4">
                         <div className="grid gap-4 grid-cols-2 lg:grid-cols-2">
-                            <StatCard title="Today's Earnings" value={isEarningsVisible ? `₹${(mechanicData?.todaysEarnings || 0).toLocaleString()}` : '₹ ****'} icon={IndianRupee} isLoading={isLoading} onValueClick={() => !isEarningsVisible && setIsPinDialogOpen(true)} />
-                            <StatCard title="Today's Jobs" value={mechanicData?.jobsToday?.toString() || '0'} icon={History} isLoading={isLoading} />
-                            <StatCard title="Acceptance Rate" value={`${mechanicData?.acceptanceRate || '95'}%`} icon={Power} isLoading={isLoading} />
-                            <StatCard title="Rating" value={mechanicData?.rating?.toString() || '4.8'} icon={Star} isLoading={isLoading} />
+                            <StatCard title="Today's Earnings" value={isEarningsVisible ? `₹${(mechanicData?.todaysEarnings || 0).toLocaleString()}` : '₹ ****'} icon={IndianRupee} isLoading={isPartnerDataLoading} onValueClick={() => !isEarningsVisible && setIsPinDialogOpen(true)} />
+                            <StatCard title="Today's Jobs" value={mechanicData?.jobsToday?.toString() || '0'} icon={History} isLoading={isPartnerDataLoading} />
+                            <StatCard title="Acceptance Rate" value={`${mechanicData?.acceptanceRate || '95'}%`} icon={Power} isLoading={isPartnerDataLoading} />
+                            <StatCard title="Rating" value={mechanicData?.rating?.toString() || '4.8'} icon={Star} isLoading={isPartnerDataLoading} />
                         </div>
                     </TabsContent>
                     <TabsContent value="history" className="mt-4 flex-1 space-y-2 max-h-48 overflow-y-auto">
@@ -663,6 +599,20 @@ export default function ResQDashboard() {
                        <Wrench className="w-4 h-4 mt-1 text-red-500 flex-shrink-0" />
                        <p><span className="font-semibold">ISSUE:</span> {jobRequest.issue}</p>
                    </div>
+               </div>
+               <div className="grid grid-cols-2 gap-2 text-center mt-3">
+                 <div className="p-2 bg-muted rounded-md">
+                     <p className="text-xs text-muted-foreground">To User</p>
+                     <p className="font-bold text-lg">
+                       {jobRequest.distance ? `~${jobRequest.distance.toFixed(1)} km` : '~ km'}
+                     </p>
+                 </div>
+                 <div className="p-2 bg-muted rounded-md">
+                     <p className="text-xs text-muted-foreground">Est. Arrival</p>
+                     <p className="font-bold text-lg">
+                       {jobRequest.eta ? `~${Math.ceil(jobRequest.eta)} min` : '~ min'}
+                     </p>
+                 </div>
                </div>
             </>
           )}
