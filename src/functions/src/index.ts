@@ -163,11 +163,14 @@ const handleGarageRequestDispatch = async (requestData: any, requestId: string) 
     
     const userLocation = requestData.location as GeoPoint;
     const locationAddress = await getAddressFromCoords(userLocation.latitude, userLocation.longitude);
+    const rejectedBy = requestData.rejectedBy || []; // Get the list of mechanics who have rejected
 
     const nearbyMechanics = mechanicsSnapshot.docs
         .map(doc => ({ id: doc.id, ...doc.data() } as Partner))
         .filter(mechanic => {
-            if (!mechanic.currentLocation) return false;
+            // FIX: Check if mechanic has already rejected this request
+            if (!mechanic.currentLocation || rejectedBy.includes(mechanic.id)) return false;
+            
             const mechanicLocation = mechanic.currentLocation as GeoPoint;
             const distance = getDistance(userLocation.latitude, userLocation.longitude, mechanicLocation.latitude, mechanicLocation.longitude);
             mechanic.distanceToUser = distance;
@@ -175,11 +178,13 @@ const handleGarageRequestDispatch = async (requestData: any, requestId: string) 
         });
 
     if (nearbyMechanics.length === 0) {
-        console.log('No ResQ partners found within the 15km radius.');
+        console.log('No available ResQ partners found within the 15km radius.');
         await db.doc(`garageRequests/${requestId}`).update({ status: 'no_mechanics_available' });
         return;
     }
     
+    // Use the first mechanic for ETA/distance calculation to save to DB.
+    // All mechanics will receive their own personalized ETA in the notification.
     const firstMechanic = nearbyMechanics[0];
     const distanceToUser = firstMechanic.distanceToUser || 0;
     const eta = distanceToUser * 3;
@@ -193,6 +198,9 @@ const handleGarageRequestDispatch = async (requestData: any, requestId: string) 
 
     for (const mechanic of nearbyMechanics) {
         if (mechanic.fcmToken) {
+            // Recalculate ETA for each specific mechanic for the notification
+            const specificEta = (mechanic.distanceToUser || 0) * 3;
+
             const payloadData = {
                 type: 'new_garage_request',
                 requestId: requestId,
@@ -205,8 +213,8 @@ const handleGarageRequestDispatch = async (requestData: any, requestId: string) 
                 otp: requestData.otp,
                 createdAt: requestData.createdAt.toMillis().toString(),
                 locationAddress,
-                distance: String(distanceToUser),
-                eta: String(eta),
+                distance: String(mechanic.distanceToUser),
+                eta: String(specificEta),
             };
 
             const message = {
