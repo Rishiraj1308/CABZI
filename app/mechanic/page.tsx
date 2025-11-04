@@ -368,7 +368,7 @@ export default function ResQDashboard() {
   
   const handleBillItemChange = (index: number, field: 'description' | 'amount', value: string) => {
     const newItems = [...billItems];
-    newItems[index] = { ...newItems[index], [field]: value };
+    newItems[index][field] = value;
     setBillItems(newItems);
   };
 
@@ -446,12 +446,15 @@ export default function ResQDashboard() {
     };
   }, []);
   
+  const getLat = (loc: any) => loc?.latitude ?? loc?._lat;
+  const getLng = (loc: any) => loc?.longitude ?? loc?._long;
+
   const mechanicLiveLocation = mechanicData?.currentLocation 
-    ? { lat: mechanicData.currentLocation.latitude, lon: mechanicData.currentLocation.longitude }
+    ? { lat: getLat(mechanicData.currentLocation), lon: getLng(mechanicData.currentLocation) }
     : undefined;
     
   const userLocation = acceptedJob
-    ? { lat: acceptedJob.location.latitude, lon: acceptedJob.location.longitude }
+    ? { lat: getLat(acceptedJob.location), lon: getLng(acceptedJob.location) }
     : undefined;
 
   
@@ -468,7 +471,7 @@ export default function ResQDashboard() {
                 {jobStatus === 'navigating' && (
                     <div className="grid grid-cols-1 gap-2">
                         <Button className="w-full" size="lg" onClick={() => setJobStatus('arrived')}>Arrived at Location</Button>
-                        <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white" size="lg" onClick={() => window.open(`https://www.google.com/maps/dir/?api=1&destination=${acceptedJob.location.latitude},${acceptedJob.location.longitude}`, '_blank')}>
+                        <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white" size="lg" onClick={() => window.open(`https://www.google.com/maps/dir/?api=1&destination=${getLat(acceptedJob.location)},${getLng(acceptedJob.location)}`, '_blank')}>
                             <Navigation className="mr-2 h-4 h-4" />
                             Navigate with Google Maps
                         </Button>
@@ -643,7 +646,7 @@ export default function ResQDashboard() {
                <div className="h-40 w-full rounded-md overflow-hidden my-3 border">
                 <LiveMap
                   riderLocation={userLocation}
-                  driverLocation={ mechanicData?.currentLocation ? { lat: mechanicData.currentLocation.latitude, lon: mechanicData.currentLocation.longitude } : undefined }
+                  driverLocation={ mechanicData?.currentLocation ? { lat: getLat(mechanicData.currentLocation), lon: getLng(mechanicData.currentLocation) } : undefined }
                 />
               </div>
               <div className="grid grid-cols-2 gap-2 text-center mt-3">
@@ -683,3 +686,5 @@ export default function ResQDashboard() {
     </div>
   )
 }
+
+    
