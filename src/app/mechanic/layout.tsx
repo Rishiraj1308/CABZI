@@ -1,7 +1,7 @@
 
 'use client'
 
-import React, { useState, useEffect, useRef, useCallback, createContext, useContext } from "react";
+import React, { useState, useEffect, useCallback, useMemo, createContext, useContext } from "react";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import { collection, doc, onSnapshot, query, updateDoc, where, serverTimestamp } from "firebase/firestore";
@@ -13,7 +13,6 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Toaster } from "@/components/ui/toaster";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from "@/components/ui/alert-dialog";
 import { MotionDiv } from "@/components/ui/motion-div";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -57,7 +56,6 @@ export const usePartnerData = () => {
 function MechanicProvider({ children }: { children: React.ReactNode }) {
   const { db, user, isUserLoading } = useFirebase();
   const router = useRouter();
-  const pathname = usePathname();
   const { toast } = useToast();
 
   const [partner, setPartner] = useState<MechanicData | null>(null);
@@ -94,6 +92,10 @@ function MechanicProvider({ children }: { children: React.ReactNode }) {
     }
 
     const { partnerId } = JSON.parse(session);
+    if (!partnerId) {
+        logout();
+        return;
+    }
     const mechRef = doc(db, "mechanics", partnerId);
 
     let unsubMech = () => {};
@@ -117,8 +119,9 @@ function MechanicProvider({ children }: { children: React.ReactNode }) {
         );
 
         unsubReq = onSnapshot(q, (reqSnap) => {
-          const list = reqSnap.docs.map((d) => ({ id: d.id, ...d.data() }))
-            .filter(job => !job.rejectedBy || !job.rejectedBy.includes(partnerId));
+          const list = reqSnap.docs
+            .map((d) => ({ id: d.id, ...d.data() }))
+            .filter(job => !job.rejectedBy || !job.rejectedBy.includes(partnerId)); // Filter out rejected jobs
           setRequests(list);
         });
       } else {
@@ -127,7 +130,7 @@ function MechanicProvider({ children }: { children: React.ReactNode }) {
       }
 
       setIsLoading(false);
-    });
+    }, logout); // On error, logout
 
     return () => {
       unsubMech();
