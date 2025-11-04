@@ -151,17 +151,23 @@ const handleRideDispatch = async (initialRideData: any, rideId: string) => {
    ✅ GARAGE DISPATCH (ResQ) - REWRITTEN
 -------------------------------------------------- */
 const handleGarageRequestDispatch = async (requestData: any, requestId: string) => {
+    const requestRef = db.doc(`garageRequests/${requestId}`);
+    const userLoc = requestData.location as GeoPoint;
+    const locationAddress = await getAddressFromCoords(userLoc.latitude, userLoc.longitude);
+    
+    // Enrich the document with the address first
+    await requestRef.update({ locationAddress });
+    
     const mechanicsSnapshot = await db
       .collection("mechanics")
       .where("isOnline", "==", true)
       .get();
   
     if (mechanicsSnapshot.empty) {
-      await db.doc(`garageRequests/${requestId}`).update({ status: "no_mechanics_available" });
+      await requestRef.update({ status: "no_mechanics_available" });
       return;
     }
   
-    const userLoc = requestData.location as GeoPoint;
     const rejectedBy = requestData.rejectedBy || [];
   
     const nearbyMechanics = mechanicsSnapshot.docs
@@ -180,7 +186,7 @@ const handleGarageRequestDispatch = async (requestData: any, requestId: string) 
       .sort((a, b) => (a.distanceToUser || 99) - (b.distanceToUser || 99));
   
     if (nearbyMechanics.length === 0) {
-      await db.doc(`garageRequests/${requestId}`).update({ status: "no_mechanics_available" });
+      await requestRef.update({ status: "no_mechanics_available" });
       return;
     }
   
@@ -188,28 +194,21 @@ const handleGarageRequestDispatch = async (requestData: any, requestId: string) 
   
     if (!targetMechanic.fcmToken) {
         console.log(`Mechanic ${targetMechanic.id} has no FCM token. Cascading...`);
-        await db.doc(`garageRequests/${requestId}`).update({
+        await requestRef.update({
             rejectedBy: FieldValue.arrayUnion(targetMechanic.id),
         });
         return;
     }
     
     const distanceToUser = targetMechanic.distanceToUser || 0;
-    const eta = distanceToUser * 3;
-    const locationAddress = await getAddressFromCoords(userLoc.latitude, userLoc.longitude);
-  
-    await db.doc(`garageRequests/${requestId}`).update({
-        distance: distanceToUser,
-        eta,
-        locationAddress
-    });
+    const eta = distanceToUser * 3; // 3 mins per km for a mechanic
 
     const payload = {
         type: "new_garage_request",
         requestId,
-        userId: requestData.driverId,
-        userName: requestData.driverName,
-        userPhone: requestData.driverPhone,
+        userId: requestData.userId, 
+        userName: requestData.userName,
+        userPhone: requestData.userPhone,
         issue: requestData.issue,
         location: JSON.stringify(requestData.location),
         locationAddress,
@@ -225,8 +224,7 @@ const handleGarageRequestDispatch = async (requestData: any, requestId: string) 
         console.log(`Garage request ${requestId} sent to mechanic ${targetMechanic.id}.`);
     } catch (error) {
         console.error(`Failed to send garage request to mechanic ${targetMechanic.id}:`, error);
-        // If sending fails, treat as a rejection to cascade to the next one.
-        await db.doc(`garageRequests/${requestId}`).update({
+        await requestRef.update({
             rejectedBy: FieldValue.arrayUnion(targetMechanic.id),
         });
     }
@@ -358,7 +356,7 @@ export const emergencyCaseUpdater = onDocumentUpdated(
         ? after.status.split("_by_")[1]
         : "system";
 
-      message = `Status changed from ${before.status} to ${after.status} by ${actor}`;
+      message = `Status changed from ${before.status} to ${after.status} by ${actor}.`;
     }
 
     const rb = before.rejectedBy || [];
@@ -366,7 +364,7 @@ export const emergencyCaseUpdater = onDocumentUpdated(
 
     if (ra.length > rb.length) {
       const who = ra.find((id: string) => !rb.includes(id));
-      message = `Case rejected by ${who}. Re-dispatching.`;
+      message = `Case rejected by partner ${who}. Re-dispatching.`;
     }
 
     if (message) {
@@ -431,7 +429,7 @@ export const onNewPathPartner = onDocumentCreated(
   "partners/{id}",
   (event) => {
     const data = event.data?.data();
-    if (data) callAutomationWebhook({ id: event.params.id, ...data }, "path");
+    if (data) callAutomationWebhook({ id: event.params.id, ...data, type: 'Path' }, "path");
   }
 );
 
@@ -439,7 +437,7 @@ export const onNewResQPartner = onDocumentCreated(
   "mechanics/{id}",
   (event) => {
     const data = event.data?.data();
-    if (data) callAutomationWebhook({ id: event.params.id, ...data }, "resq");
+    if (data) callAutomationWebhook({ id: event.params.id, ...data, type: 'ResQ' }, "resq");
   }
 );
 
@@ -447,7 +445,7 @@ export const onNewCurePartner = onDocumentCreated(
   "ambulances/{id}",
   (event) => {
     const data = event.data?.data();
-    if (data) callAutomationWebhook({ id: event.params.id, ...data }, "cure");
+    if (data) callAutomationWebhook({ id: event.params.id, ...data, type: 'Cure' }, "cure");
   }
 );
 

@@ -140,8 +140,6 @@ export default function ResQDashboard() {
             rejectedBy: arrayUnion(mechanicData.id),
           });
           toast({ title: 'Job Declined' });
-      } else {
-        toast({ variant: 'destructive', title: 'Request Timed Out' });
       }
     },
     [jobRequest, mechanicData, db, toast]
