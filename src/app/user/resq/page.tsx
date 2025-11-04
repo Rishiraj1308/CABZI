@@ -318,3 +318,4 @@ export default function ResQPage() {
     </motion.div>
   );
 }
+
