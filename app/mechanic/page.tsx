@@ -1,38 +1,39 @@
 
-'use client';
+'use client'
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import Image from 'next/image';
+import React, { useState, useEffect, useRef, useCallback } from 'react'
+import Image from 'next/image'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Label } from '@/components/ui/label'
+import { Star, CheckCircle, Navigation, Trash2, PlusCircle, MapPin, Wrench } from 'lucide-react'
 import {
-  Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter
-} from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import {
-  Star, CheckCircle, Navigation, Trash2, PlusCircle, MapPin, Wrench
-} from 'lucide-react';
-import {
-  AlertDialog, AlertDialogContent, AlertDialogDescription,
-  AlertDialogFooter, AlertDialogHeader, AlertDialogTitle
-} from '@/components/ui/alert-dialog';
-import { useToast } from '@/hooks/use-toast';
-import { Skeleton } from '@/components/ui/skeleton';
-import dynamic from 'next/dynamic';
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+import { useToast } from '@/hooks/use-toast'
+import { Skeleton } from '@/components/ui/skeleton'
+import dynamic from 'next/dynamic'
 import {
   doc, updateDoc, runTransaction, arrayUnion
-} from 'firebase/firestore';
-import { cn } from '@/lib/utils';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import SearchingIndicator from '@/components/ui/searching-indicator';
-import { useFirebase } from '@/firebase/client-provider';
-import { format } from 'date-fns';
-import type { JobRequest } from '@/lib/types';
-import { Input } from '@/components/ui/input';
-import { usePartnerData } from './layout';
-import { Switch } from '@/components/ui/switch';
-import { IndianRupee, History, Power, Phone } from 'lucide-react';
-import { collection, query, where, onSnapshot, limit, orderBy } from 'firebase/firestore';
+} from 'firebase/firestore'
+import { cn } from '@/lib/utils'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import SearchingIndicator from '@/components/ui/searching-indicator'
+import { useFirebase } from '@/firebase/client-provider'
+import { format } from 'date-fns'
+import type { JobRequest } from '@/lib/types'
+import { Input } from '@/components/ui/input'
+import { usePartnerData } from './layout'
+import { Switch } from '@/components/ui/switch'
+import { IndianRupee, History, Power, Phone } from 'lucide-react'
+import { collection, query, where, onSnapshot, limit, orderBy, Timestamp } from 'firebase/firestore'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 
 
 const LiveMap = dynamic(() => import('@/components/live-map'), {
@@ -78,6 +79,7 @@ export default function ResQDashboard() {
   ]);
   const [requestTimeout, setRequestTimeout] = useState(15);
   const [isScannerOpen, setIsScannerOpen] = useState(false);
+  const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
   const [processedRequestIds, setProcessedRequestIds] = useState<Set<string>>(new Set());
   const [currentTime, setCurrentTime] = useState(new Date());
 
@@ -426,7 +428,16 @@ export default function ResQDashboard() {
         }
     };
   }, []);
+  
+  const mechanicLiveLocation = mechanicData?.currentLocation 
+    ? { lat: getLat(mechanicData.currentLocation), lon: getLng(mechanicData.currentLocation) }
+    : undefined;
+    
+  const userLocation = jobRequest
+    ? { lat: getLat(jobRequest.location), lon: getLng(jobRequest.location) }
+    : undefined;
 
+  
   if (isPartnerDataLoading || !isMounted) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -492,7 +503,7 @@ export default function ResQDashboard() {
                                     <CardContent className="p-2 flex items-center justify-between">
                                         <div className="text-sm">
                                             <p className="font-semibold line-clamp-1">{job.issue}</p>
-                                            <p className="text-xs text-muted-foreground">{job.createdAt ? new Date(job.createdAt.seconds * 1000).toLocaleString() : 'N/A'}</p>
+                                            <p className="text-xs text-muted-foreground">{job.createdAt ? new Date((job.createdAt as any).seconds * 1000).toLocaleString() : 'N/A'}</p>
                                         </div>
                                         <p className="font-bold text-lg">₹{(job as any).totalAmount || 0}</p>
                                     </CardContent>
@@ -506,7 +517,6 @@ export default function ResQDashboard() {
             </>
         )}
 
-      {/* New Service Request Popup */}
       <AlertDialog open={!!jobRequest}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -551,7 +561,7 @@ export default function ResQDashboard() {
                   <p className="font-bold text-lg">{jobRequest.distance ? `~${jobRequest.distance.toFixed(1)} km` : '~ km'}</p>
                 </div>
                 <div className="p-2 bg-muted rounded-md">
-                  <p className="text-xs text-muted-foreground">ETA</p>
+                  <p className="text-xs text-muted-foreground">Est. Arrival</p>
                   <p className="font-bold text-lg">{jobRequest.eta ? `~${Math.ceil(jobRequest.eta)} min` : '~ min'}</p>
                 </div>
               </div>
@@ -582,3 +592,5 @@ export default function ResQDashboard() {
     </div>
   )
 }
+
+    
