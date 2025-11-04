@@ -96,6 +96,8 @@ export default function ResQDashboard() {
   const [routeGeometry, setRouteGeometry] = useState<any>(null); // State for the route
   const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
+  const [processedRequestIds, setProcessedRequestIds] = useState<Set<string>>(new Set());
+
   
   const notificationSoundRef = useRef<HTMLAudioElement | null>(null);
   const earningsTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -133,6 +135,7 @@ export default function ResQDashboard() {
   const handleDeclineJob = useCallback(async (isTimeout = false) => {
     if (!jobRequest || !mechanicData?.id || !db) return
     if (requestTimerRef.current) clearInterval(requestTimerRef.current)
+    setProcessedRequestIds(prev => new Set(prev).add(jobRequest.id));
     
     const jobRef = doc(db, 'garageRequests', jobRequest.id);
     await updateDoc(jobRef, {
@@ -153,13 +156,15 @@ export default function ResQDashboard() {
   }, [mechanicData, db]);
 
   
-  useEffect(() => {
+    useEffect(() => {
     if (requests.length > 0 && !jobRequest && !acceptedJob) {
-        const nextRequest = requests[0];
+      const nextRequest = requests.find(req => !processedRequestIds.has(req.id));
+      if (nextRequest) {
         setJobRequest(nextRequest);
         notificationSoundRef.current?.play().catch(e => console.error("Audio play failed:", e));
+      }
     }
-  }, [requests, jobRequest, acceptedJob]);
+  }, [requests, jobRequest, acceptedJob, processedRequestIds]);
 
 
    // Countdown timer for job request
@@ -215,6 +220,7 @@ export default function ResQDashboard() {
   
       setAcceptedJob({ ...jobRequest, status: 'accepted' });
       setJobRequest(null);
+      setProcessedRequestIds(prev => new Set(prev).add(jobRequest.id));
       localStorage.setItem('activeJobId', jobRequest.id);
   
       toast({
@@ -641,3 +647,5 @@ export default function ResQDashboard() {
     </div>
   )
 }
+
+    
