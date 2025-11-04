@@ -38,6 +38,7 @@ interface MechanicContextType {
   partner: MechanicData | null;
   isLoading: boolean;
   requests: any[];
+  handleAvailabilityChange: (checked: boolean) => void;
 }
 
 
@@ -68,6 +69,20 @@ function MechanicProvider({ children }: { children: React.ReactNode }) {
     localStorage.removeItem("curocity-resq-session");
     router.push("/login?role=mechanic");
   }, [router]);
+
+  const handleAvailabilityChange = async (checked: boolean) => {
+    if (!partner || !db) return;
+    const mechanicRef = doc(db, 'mechanics', partner.id);
+    try {
+      await updateDoc(mechanicRef, { isOnline: checked, status: checked ? 'online' : 'offline' });
+      toast({
+        title: checked ? "You are now ONLINE" : "You are OFFLINE",
+        description: checked ? "You will start receiving job requests." : "You won't receive new requests.",
+      });
+    } catch (error) {
+      toast({ variant: 'destructive', title: 'Error', description: 'Could not update your status.' });
+    }
+  };
 
   useEffect(() => {
     if (isUserLoading || !db) return;
@@ -107,7 +122,7 @@ function MechanicProvider({ children }: { children: React.ReactNode }) {
         });
       } else {
         setRequests([]);
-        unsubReq();
+        if (unsubReq) unsubReq();
       }
 
       setIsLoading(false);
@@ -115,7 +130,7 @@ function MechanicProvider({ children }: { children: React.ReactNode }) {
 
     return () => {
       unsubMech();
-      unsubReq();
+      if (unsubReq) unsubReq();
     };
   }, [isUserLoading, db, logout]);
 
@@ -123,7 +138,8 @@ function MechanicProvider({ children }: { children: React.ReactNode }) {
   const value = useMemo(() => ({
     partner,
     isLoading,
-    requests
+    requests,
+    handleAvailabilityChange
   }), [partner, isLoading, requests]);
 
   return (
@@ -193,7 +209,6 @@ function ThemeToggle() {
 // ----------------------------------------------------------------
 function MechanicLayoutContent({ children }: { children: React.ReactNode }) {
   const router = useRouter();
-  const pathname = usePathname();
   const { partner, isLoading } = usePartnerData();
   const { toast } = useToast();
 
