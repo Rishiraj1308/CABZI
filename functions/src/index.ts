@@ -161,7 +161,6 @@ const handleGarageRequestDispatch = async (requestData: any, requestId: string) 
     }
     
     const userLocation = requestData.location as GeoPoint;
-    // Reverse geocode the location to get an address
     const locationAddress = await getAddressFromCoords(userLocation.latitude, userLocation.longitude);
 
     const nearbyMechanics = mechanicsSnapshot.docs
@@ -183,15 +182,23 @@ const handleGarageRequestDispatch = async (requestData: any, requestId: string) 
     for (const mechanic of nearbyMechanics) {
         if (mechanic.fcmToken) {
             const distanceToUser = mechanic.distanceToUser || 0;
-            const eta = distanceToUser * 3; // ETA for mechanics might be slower
+            const eta = distanceToUser * 3; 
+
+            // Save the calculated values to the Firestore document
+            await db.doc(`garageRequests/${requestId}`).update({
+                distance: distanceToUser,
+                eta: eta,
+                locationAddress: locationAddress
+            });
+
             const payloadData = {
                 type: 'new_garage_request',
                 requestId: requestId,
                 userId: requestData.userId,
-                riderName: requestData.driverName,
-                userPhone: requestData.driverPhone,
+                riderName: requestData.userName, // Use userName which is sent from client
+                userPhone: requestData.userPhone,
                 issue: requestData.issue,
-                pickupAddress: locationAddress,
+                pickupAddress: locationAddress, // Send the fetched address
                 location: JSON.stringify(requestData.location),
                 status: requestData.status,
                 otp: requestData.otp,
@@ -519,3 +526,5 @@ export const simulateHighDemand = onCall(async (request) => {
 
     return { success: true, message: `High demand alert triggered for ${zoneName}.` };
 });
+
+    
