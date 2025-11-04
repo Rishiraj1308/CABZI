@@ -30,7 +30,10 @@ import type { JobRequest } from '@/lib/types';
 import { Input } from '@/components/ui/input';
 import { usePartnerData } from './layout';
 import { Switch } from '@/components/ui/switch';
-import { IndianRupee, History, Power } from 'lucide-react';
+import { IndianRupee, History, Power, Phone } from 'lucide-react';
+import { collection, query, where, onSnapshot, limit, orderBy } from 'firebase/firestore';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
 
 const LiveMap = dynamic(() => import('@/components/live-map'), {
   ssr: false,
@@ -79,6 +82,7 @@ export default function ResQDashboard() {
   const [currentTime, setCurrentTime] = useState(new Date());
 
   const notificationSoundRef = useRef<HTMLAudioElement | null>(null);
+  const earningsTimerRef = useRef<NodeJS.Timeout | null>(null);
   const requestTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const { toast } = useToast();
@@ -87,6 +91,13 @@ export default function ResQDashboard() {
     usePartnerData();
 
   const isOnline = mechanicData?.isOnline ?? false;
+  
+  // PIN lock state
+  const [isEarningsVisible, setIsEarningsVisible] = useState(false);
+  const [isPinDialogOpen, setIsPinDialogOpen] = useState(false);
+  const [pin, setPin] = useState('');
+  const [recentJobs, setRecentJobs] = useState<JobRequest[]>([]);
+  const [isHistoryLoading, setIsHistoryLoading] = useState(true);
 
   useEffect(() => {
     notificationSoundRef.current = new Audio('/sounds/notification.mp3');
@@ -94,27 +105,24 @@ export default function ResQDashboard() {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
-
-  // Pick next pending request and enrich
+  
   useEffect(() => {
-    if (requests.length > 0 && !jobRequest && !acceptedJob) {
-      const nextRequest = requests.find((r: any) => !processedRequestIds.has(r.id));
-      if (!nextRequest) return;
+    if (!mechanicData?.id || !db) return;
+    setIsHistoryLoading(true);
+    const q = query(
+      collection(db, "garageRequests"),
+      where("mechanicId", "==", mechanicData.id),
+      orderBy("createdAt", "desc"),
+      limit(5)
+    );
+    const unsub = onSnapshot(q, (snapshot) => {
+      const jobs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as JobRequest));
+      setRecentJobs(jobs);
+      setIsHistoryLoading(false);
+    });
+    return () => unsub();
+  }, [mechanicData?.id, db]);
 
-      if (nextRequest.location) {
-        try {
-            if (typeof nextRequest.location === "string") {
-                nextRequest.location = JSON.parse(nextRequest.location);
-            }
-        } catch (e) {
-            console.error("Failed to parse location string:", e);
-        }
-      }
-
-      setJobRequest(nextRequest as JobRequest);
-      notificationSoundRef.current?.play().catch(() => {});
-    }
-  }, [requests, jobRequest, acceptedJob, processedRequestIds, mechanicData]);
 
   // Decline / timeout
   const handleDeclineJob = useCallback(
@@ -134,6 +142,34 @@ export default function ResQDashboard() {
     },
     [jobRequest, mechanicData, db, toast]
   );
+  
+  const resetAfterJob = useCallback(() => {
+    setAcceptedJob(null);
+    localStorage.removeItem('activeJobId');
+    if (mechanicData?.id && db) {
+        updateDoc(doc(db, 'mechanics', mechanicData.id), { status: 'online' });
+    }
+  }, [mechanicData, db]);
+
+  
+  useEffect(() => {
+    if (requests.length > 0 && !jobRequest && !acceptedJob) {
+        const nextRequest = requests.find((r: any) => !processedRequestIds.has(r.id));
+        if (nextRequest) {
+          if (nextRequest.location) {
+            try {
+              if (typeof nextRequest.location === "string") {
+                nextRequest.location = JSON.parse(nextRequest.location);
+              }
+            } catch (e) {
+                console.error("Failed to parse location string:", e);
+            }
+          }
+            setJobRequest(nextRequest as JobRequest);
+            notificationSoundRef.current?.play().catch(() => {});
+        }
+    }
+  }, [requests, jobRequest, acceptedJob, processedRequestIds, mechanicData]);
 
   // Popup countdown
   useEffect(() => {
@@ -360,6 +396,37 @@ export default function ResQDashboard() {
     );
   };
 
+   const handlePinSubmit = () => {
+      const storedPin = localStorage.getItem('curocity-user-pin');
+      if (!storedPin) {
+          toast({ variant: 'destructive', title: 'PIN Not Set', description: 'Please set a UPI PIN from your wallet first.' });
+          setIsPinDialogOpen(false);
+          return;
+      }
+      if (pin === storedPin) {
+          setIsEarningsVisible(true);
+          setIsPinDialogOpen(false);
+          setPin('');
+          toast({ title: 'Earnings Revealed', description: 'Your earnings for today are now visible.' });
+
+          if (earningsTimerRef.current) clearTimeout(earningsTimerRef.current);
+          earningsTimerRef.current = setTimeout(() => {
+              setIsEarningsVisible(false);
+          }, 10000);
+      } else {
+          toast({ variant: 'destructive', title: 'Invalid PIN', description: 'Please enter the correct 4-digit PIN.' });
+          setPin('');
+      }
+  }
+
+  useEffect(() => {
+    return () => {
+        if (earningsTimerRef.current) {
+            clearTimeout(earningsTimerRef.current);
+        }
+    };
+  }, []);
+
   if (isPartnerDataLoading || !isMounted) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -399,7 +466,7 @@ export default function ResQDashboard() {
                     ) : (
                         <CardContent className="text-center py-12">
                             <CardTitle>You Are Offline</CardTitle>
-                            <CardDescription>Go online to receive jobs.</CardDescription>
+                            <CardDescription>Go online to receive service requests.</CardDescription>
                         </CardContent>
                     )}
                 </Card>
@@ -410,7 +477,7 @@ export default function ResQDashboard() {
                     </TabsList>
                     <TabsContent value="stats" className="mt-4">
                         <div className="grid gap-4 grid-cols-2 lg:grid-cols-2">
-                            <StatCard title="Today's Earnings" value={'₹ ****'} icon={IndianRupee} isLoading={isPartnerDataLoading} onValueClick={() => {}} />
+                            <StatCard title="Today's Earnings" value={isEarningsVisible ? `₹${(mechanicData?.todaysEarnings || 0).toLocaleString()}` : '₹ ****'} icon={IndianRupee} isLoading={isPartnerDataLoading} onValueClick={() => !isEarningsVisible && setIsPinDialogOpen(true)} />
                             <StatCard title="Today's Jobs" value={mechanicData?.jobsToday?.toString() || '0'} icon={History} isLoading={isPartnerDataLoading} />
                             <StatCard title="Acceptance Rate" value={`${mechanicData?.acceptanceRate || '95'}%`} icon={Power} isLoading={isPartnerDataLoading} />
                             <StatCard title="Rating" value={mechanicData?.rating?.toString() || '4.8'} icon={Star} isLoading={isPartnerDataLoading} />
@@ -455,28 +522,39 @@ export default function ResQDashboard() {
                 <Avatar className="w-12 h-12"><AvatarImage src={'https://placehold.co/100x100.png'} alt={jobRequest.userName} data-ai-hint="user portrait" /><AvatarFallback>{jobRequest?.userName?.[0] || 'U'}</AvatarFallback></Avatar>
                  <div>
                    <p className="font-bold">{jobRequest?.userName}</p>
+                    <Button variant="link" size="sm" className="h-auto p-0" asChild>
+                        <a href={`tel:${jobRequest.userPhone}`}><Phone className="w-3 h-3 mr-1"/>Call User</a>
+                    </Button>
                  </div>
                </div>
                 <div className="space-y-2 text-sm">
-                   <div className="flex items-start gap-2">
-                       <MapPin className="w-4 h-4 mt-1 text-green-500 flex-shrink-0" />
-                       <p><span className="font-semibold">LOCATION:</span> {jobRequest.locationAddress || 'Calculating...'}</p>
-                   </div>
+                   {jobRequest.locationAddress && (
+                    <div className="flex items-start gap-2">
+                        <MapPin className="w-4 h-4 mt-1 text-green-500 flex-shrink-0" />
+                        <p><span className="font-semibold">LOCATION:</span> {jobRequest.locationAddress}</p>
+                    </div>
+                   )}
                    <div className="flex items-start gap-2">
                        <Wrench className="w-4 h-4 mt-1 text-red-500 flex-shrink-0" />
                        <p><span className="font-semibold">ISSUE:</span> {jobRequest.issue}</p>
                    </div>
                </div>
-               <div className="grid grid-cols-2 gap-2 text-center mt-3">
-                 <div className="p-2 bg-muted rounded-md">
-                     <p className="text-xs text-muted-foreground">To User</p>
-                     <p className="font-bold text-lg">{jobRequest.distance ? `~${jobRequest.distance.toFixed(1)} km` : '~ km'}</p>
-                 </div>
-                 <div className="p-2 bg-muted rounded-md">
-                     <p className="text-xs text-muted-foreground">ETA</p>
-                     <p className="font-bold text-lg">{jobRequest.eta ? `~${Math.ceil(jobRequest.eta)} min` : '~ min'}</p>
-                 </div>
-               </div>
+               <div className="h-40 w-full rounded-md overflow-hidden my-3 border">
+                <LiveMap
+                  riderLocation={userLocation}
+                  driverLocation={mechanicLiveLocation}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-2 text-center mt-3">
+                <div className="p-2 bg-muted rounded-md">
+                  <p className="text-xs text-muted-foreground">To User</p>
+                  <p className="font-bold text-lg">{jobRequest.distance ? `~${jobRequest.distance.toFixed(1)} km` : '~ km'}</p>
+                </div>
+                <div className="p-2 bg-muted rounded-md">
+                  <p className="text-xs text-muted-foreground">ETA</p>
+                  <p className="font-bold text-lg">{jobRequest.eta ? `~${Math.ceil(jobRequest.eta)} min` : '~ min'}</p>
+                </div>
+              </div>
             </>
           )}
           <AlertDialogFooter className="grid grid-cols-2 gap-2">
@@ -485,6 +563,22 @@ export default function ResQDashboard() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <Dialog open={isPinDialogOpen} onOpenChange={setIsPinDialogOpen}>
+        <DialogContent className="max-w-xs">
+          <DialogHeader>
+            <DialogTitle>Enter PIN to View</DialogTitle>
+            <DialogDescription>For your privacy, please enter your PIN to see today's earnings.</DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col items-center justify-center gap-4 py-4">
+            <Label htmlFor="pin-input" className="sr-only">Enter PIN</Label>
+            <Input id="pin-input" type="password" inputMode="numeric" maxLength={4} value={pin} onChange={(e) => setPin(e.target.value)} className="text-center text-2xl font-bold tracking-[1em] w-40" placeholder="••••" autoFocus />
+          </div>
+          <DialogFooter>
+            <Button type="button" className="w-full" onClick={handlePinSubmit}>Submit</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
