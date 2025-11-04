@@ -6,83 +6,65 @@ import Image from 'next/image'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
-import { Star, CheckCircle, Car, Route, Shield, LifeBuoy, Phone, Sparkles, KeyRound, Clock, Pin, User as UserIcon, Send, ScanLine, Wallet, BarChart, Settings, Power, CircleDot, CreditCard, Bot, ChevronsUpDown, AlertCircle, Hand, History, IndianRupee, Eye, Navigation, LocateFixed, HeartHandshake, MessageSquare, Wrench, Ambulance, FileText, PlusCircle, Trash2, MapPin } from 'lucide-react'
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger, } from "@/components/ui/alert-dialog"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription, DialogFooter } from '@/components/ui/dialog'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Star, CheckCircle, Navigation, Trash2, PlusCircle, MapPin, Wrench } from 'lucide-react'
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { useToast } from '@/hooks/use-toast'
 import { Skeleton } from '@/components/ui/skeleton'
 import dynamic from 'next/dynamic'
-import { collection, query, where, onSnapshot, doc, updateDoc, getDoc, serverTimestamp, GeoPoint, limit, runTransaction, addDoc, arrayUnion, orderBy, Timestamp, FieldValue } from 'firebase/firestore'
-import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert'
+import {
+  doc, updateDoc, runTransaction, arrayUnion
+} from 'firebase/firestore'
 import { cn } from '@/lib/utils'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip"
-import BrandLogo from '@/components/brand-logo'
 import SearchingIndicator from '@/components/ui/searching-indicator'
 import { useFirebase } from '@/firebase/client-provider'
-import { onMessage } from 'firebase/messaging'
 import { format } from 'date-fns'
 import type { JobRequest } from '@/lib/types'
 import { Input } from '@/components/ui/input'
 import { usePartnerData } from './layout'
 import { Switch } from '@/components/ui/switch'
+import { IndianRupee, History, Power, Phone } from 'lucide-react'
+import { collection, query, where, onSnapshot, limit, orderBy, Timestamp, FieldValue } from 'firebase/firestore'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+
 
 const LiveMap = dynamic(() => import('@/components/live-map'), {
   ssr: false,
-  loading: () => <div className="w-full h-full bg-muted flex items-center justify-center"><p>Loading Map...</p></div>
-})
+  loading: () => (
+    <div className="w-full h-full bg-muted flex items-center justify-center">
+      <p>Loading Map...</p>
+    </div>
+  ),
+});
 
-const QrScanner = dynamic(() => import('@/components/ui/qr-scanner'), {
-  ssr: false,
-  loading: () => <div className="flex items-center justify-center w-full h-full bg-muted"><p>Loading Scanner...</p></div>
-})
-
-
-interface MechanicData {
-    id: string;
-    name: string;
-    phone: string;
-    services: string[];
-    isOnline: boolean;
-    currentLocation?: GeoPoint;
-    qrCodeUrl?: string;
-    upiId?: string;
-    rating?: number;
-    acceptanceRate?: number;
-    jobsToday?: number;
-    todaysEarnings?: number;
-}
-
-interface BillItem {
-    description: string;
-    amount: string;
-}
+const getLat = (loc: any) => loc?.latitude ?? loc?._lat;
+const getLng = (loc: any) => loc?.longitude ?? loc?._long;
 
 const StatCard = ({ title, value, icon: Icon, isLoading, onValueClick }: { title: string, value: string, icon: React.ElementType, isLoading?: boolean, onValueClick?: () => void }) => (
-  <Card>
-    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-      <CardTitle className="text-sm font-medium">{title}</CardTitle>
-      <Icon className="h-4 w-4 text-muted-foreground" />
-    </CardHeader>
-    <CardContent>
-      {isLoading ? (
-        <Skeleton className="h-8 w-20" />
-      ) : (
-        <div className="text-2xl font-bold cursor-pointer" onClick={onValueClick}>
-          {value}
-        </div>
-      )}
-    </CardContent>
-  </Card>
-)
-
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <CardTitle className="text-sm font-medium">{title}</CardTitle>
+        <Icon className="h-4 w-4 text-muted-foreground" />
+      </CardHeader>
+      <CardContent>
+        {isLoading ? (
+          <Skeleton className="h-8 w-20" />
+        ) : (
+          <div className="text-2xl font-bold cursor-pointer" onClick={onValueClick}>
+            {value}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  )
 
 export default function ResQDashboard() {
   const [isMounted, setIsMounted] = useState(false);
@@ -90,22 +72,25 @@ export default function ResQDashboard() {
   const [acceptedJob, setAcceptedJob] = useState<JobRequest | null>(null);
   const [jobStatus, setJobStatus] = useState<'navigating' | 'arrived' | 'in_progress' | 'billing' | 'payment' | 'completed' | null>(null);
   const [enteredOtp, setEnteredOtp] = useState('');
-  const [billItems, setBillItems] = useState<BillItem[]>([{ description: '', amount: '' }]);
+  const [billItems, setBillItems] = useState<{ description: string; amount: string }[]>([
+    { description: '', amount: '' },
+  ]);
   const [requestTimeout, setRequestTimeout] = useState(15);
-  const [routeGeometry, setRouteGeometry] = useState<any>(null); // State for the route
   const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
   const [processedRequestIds, setProcessedRequestIds] = useState<Set<string>>(new Set());
+  const [currentTime, setCurrentTime] = useState(new Date());
 
-  
   const notificationSoundRef = useRef<HTMLAudioElement | null>(null);
   const earningsTimerRef = useRef<NodeJS.Timeout | null>(null);
   const requestTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const [currentTime, setCurrentTime] = useState(new Date());
-  
+
   const { toast } = useToast();
-  const { messaging, db } = useFirebase();
-  const { partner: mechanicData, isLoading: isPartnerDataLoading, handleAvailabilityChange, requests } = usePartnerData();
+  const { db } = useFirebase();
+  const { partner: mechanicData, isLoading: isPartnerDataLoading, handleAvailabilityChange, requests } =
+    usePartnerData();
+
+  const isOnline = mechanicData?.isOnline ?? false;
   
   // PIN lock state
   const [isEarningsVisible, setIsEarningsVisible] = useState(false);
@@ -114,21 +99,11 @@ export default function ResQDashboard() {
   const [recentJobs, setRecentJobs] = useState<JobRequest[]>([]);
   const [isHistoryLoading, setIsHistoryLoading] = useState(true);
 
-  const isOnline = mechanicData?.isOnline ?? false;
-
-
   useEffect(() => {
     notificationSoundRef.current = new Audio('/sounds/notification.mp3');
     setIsMounted(true);
-    
-    const timer = setInterval(() => {
-        setCurrentTime(new Date());
-    }, 1000);
-
-    return () => {
-        clearInterval(timer);
-    };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+    return () => clearInterval(timer);
   }, []);
   
   useEffect(() => {
@@ -149,20 +124,24 @@ export default function ResQDashboard() {
   }, [mechanicData?.id, db]);
 
 
-  const handleDeclineJob = useCallback(async (isTimeout = false) => {
-    if (!jobRequest || !mechanicData?.id || !db) return
-    if (requestTimerRef.current) clearInterval(requestTimerRef.current)
-    setProcessedRequestIds(prev => new Set(prev).add(jobRequest.id));
-    
-    const jobRef = doc(db, 'garageRequests', jobRequest.id);
-    await updateDoc(jobRef, {
-        rejectedBy: arrayUnion(mechanicData.id)
-    });
+  // Decline / timeout
+  const handleDeclineJob = useCallback(
+    async (isTimeout = false) => {
+      if (!jobRequest || !mechanicData?.id || !db) return;
+      if (requestTimerRef.current) clearInterval(requestTimerRef.current);
 
-    setJobRequest(null);
-    if (!isTimeout) toast({ title: "Job Declined" })
-    else toast({ variant: 'destructive', title: "Request Timed Out" })
-  }, [jobRequest, mechanicData?.id, db, toast]);
+      setProcessedRequestIds((prev) => new Set(prev).add(jobRequest.id));
+      await updateDoc(doc(db, 'garageRequests', jobRequest.id), {
+        rejectedBy: arrayUnion(mechanicData.id),
+      });
+      setJobRequest(null);
+      toast({
+        variant: isTimeout ? 'destructive' : 'default',
+        title: isTimeout ? 'Request Timed Out' : 'Job Declined',
+      });
+    },
+    [jobRequest, mechanicData, db, toast]
+  );
   
   const resetAfterJob = useCallback(() => {
     setAcceptedJob(null);
@@ -175,321 +154,202 @@ export default function ResQDashboard() {
   
   useEffect(() => {
     if (requests.length > 0 && !jobRequest && !acceptedJob) {
-        const nextRequest = requests.find(req => !processedRequestIds.has(req.id));
+        const nextRequest = requests.find((r: any) => !processedRequestIds.has(r.id));
         if (nextRequest) {
-            // Safely parse location if it's a string
-            if (nextRequest.location) {
-                try {
-                    if (typeof nextRequest.location === "string") {
-                        nextRequest.location = JSON.parse(nextRequest.location);
-                    }
-                } catch (e) {
-                    console.error("Failed to parse location string:", e);
-                }
+          if (nextRequest.location) {
+            try {
+              if (typeof nextRequest.location === "string") {
+                nextRequest.location = JSON.parse(nextRequest.location);
+              }
+            } catch (e) {
+                console.error("Failed to parse location string:", e);
             }
+          }
             setJobRequest(nextRequest as JobRequest);
-            notificationSoundRef.current?.play().catch(e => console.error("Audio play failed:", e));
+            notificationSoundRef.current?.play().catch(() => {});
         }
     }
   }, [requests, jobRequest, acceptedJob, processedRequestIds]);
 
-
-   // Countdown timer for job request
-   useEffect(() => {
-    let timer: NodeJS.Timeout | null = null;
-    if (jobRequest) {
-        setRequestTimeout(15);
-        timer = setInterval(() => {
-            setRequestTimeout(prev => {
-                if (prev <= 1) {
-                    if (timer) clearInterval(timer);
-                    handleDeclineJob(true); // Automatically decline
-                    return 0;
-                }
-                return prev - 1;
-            });
-        }, 1000);
-        requestTimerRef.current = timer;
-    }
-
-    return () => {
-        if (timer) clearInterval(timer);
-    };
+  // Popup countdown
+  useEffect(() => {
+    if (!jobRequest) return;
+    setRequestTimeout(15);
+    const t = setInterval(() => {
+      setRequestTimeout((p) => {
+        if (p <= 1) {
+          clearInterval(t);
+          handleDeclineJob(true);
+          return 0;
+        }
+        return p - 1;
+      });
+    }, 1000);
+    requestTimerRef.current = t;
+    return () => clearInterval(t);
   }, [jobRequest, handleDeclineJob]);
-  
+
+  // Accept job
   const handleAcceptJob = async () => {
     if (!jobRequest || !mechanicData || !db) return;
-     if (requestTimerRef.current) {
-         clearInterval(requestTimerRef.current);
-         requestTimerRef.current = null;
-     }
+    if (requestTimerRef.current) clearInterval(requestTimerRef.current);
   
     const jobRef = doc(db, 'garageRequests', jobRequest.id);
-    const partnerRef = doc(db, 'mechanics', mechanicData.id);
-  
     try {
-      await runTransaction(db, async (transaction) => {
-        const jobDoc = await transaction.get(jobRef);
-        if (!jobDoc.exists()) throw new Error("Job not found.");
-        
-        if (jobDoc.data().status !== 'pending') {
-          throw new Error("This job has already been accepted.");
-        }
-  
-        transaction.update(jobRef, {
+      await runTransaction(db, async (trx) => {
+        const snap = await trx.get(jobRef);
+        if (!snap.exists()) throw new Error('Request not found');
+        if (snap.data().status !== 'pending') throw new Error('Already accepted');
+
+        trx.update(jobRef, {
           status: 'accepted',
           mechanicId: mechanicData.id,
           mechanicName: mechanicData.name,
           mechanicPhone: mechanicData.phone,
         });
-        transaction.update(partnerRef, { status: 'on_job' });
+        trx.update(doc(db, 'mechanics', mechanicData.id), { status: 'on_job' });
       });
   
-      setAcceptedJob({ ...jobRequest, status: 'accepted' });
+      setAcceptedJob({ ...jobRequest, status: 'accepted' } as JobRequest);
       setJobRequest(null);
       setProcessedRequestIds(prev => new Set(prev).add(jobRequest.id));
+      setJobStatus('navigating');
       localStorage.setItem('activeJobId', jobRequest.id);
   
-      toast({
-        title: 'Job Accepted!',
-        description: `Navigate to ${jobRequest.userName}'s location.`,
-      });
+      toast({ title: 'Job Accepted', description: 'Navigate to the user.' });
     } catch (err: any) {
-      console.error("Error accepting job:", err);
-      toast({
-        variant: 'destructive',
-        title: 'Could not accept job',
-        description: err.message || 'It might have been taken by another mechanic.',
-      });
+      toast({ variant: 'destructive', title: 'Error', description: err.message });
       setJobRequest(null);
     }
-  };  
+  };
 
-  // Effect to fetch route when a job is accepted
-  useEffect(() => {
-    const fetchRoute = async () => {
-        if (!acceptedJob || !mechanicData?.currentLocation) return;
-        
-        const startCoords = {
-            lat: mechanicData.currentLocation.latitude,
-            lon: mechanicData.currentLocation.longitude,
-        };
-        const endCoords = {
-            lat: acceptedJob.location.latitude,
-            lon: acceptedJob.location.longitude,
-        };
-
-        try {
-            const osrmUrl = `https://router.project-osrm.org/route/v1/driving/${startCoords.lon},${startCoords.lat};${endCoords.lon},${endCoords.lat}?overview=full&geometries=geojson`;
-            const response = await fetch(osrmUrl);
-            const data = await response.json();
-            if (data.code === 'Ok' && data.routes?.[0]) {
-                setRouteGeometry(data.routes[0].geometry);
-            }
-        } catch (error) {
-            console.error("Failed to fetch route:", error);
-            toast({ variant: 'destructive', title: 'Routing Error', description: 'Could not fetch the route to the user.' });
-        }
-    };
-    
-    fetchRoute();
-  }, [acceptedJob, mechanicData?.currentLocation, toast]);
-  
-  useEffect(() => {
-    if (isScannerOpen) {
-      navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
-        .then(() => setHasCameraPermission(true))
-        .catch(() => {
-            setHasCameraPermission(false);
-            toast({
-                variant: 'destructive',
-                title: 'Camera Access Denied',
-                description: 'Please enable camera permissions in your browser settings to use the scanner.',
-            });
-        })
-    }
-  }, [isScannerOpen, toast]);
-
-    // Listen for job status changes (e.g., payment completion)
-  useEffect(() => {
-    if (!acceptedJob?.id || !db) return;
-
-    const jobRef = doc(db, 'garageRequests', acceptedJob.id);
-    const unsubscribe = onSnapshot(jobRef, (docSnap) => {
-        if (docSnap.exists()) {
-            const jobData = docSnap.data();
-            if (jobData.status === 'completed' && jobStatus !== 'completed') {
-                toast({
-                    title: 'Payment Received!',
-                    description: `Payment of ₹${jobData.totalAmount.toFixed(2)} has been credited to your wallet.`,
-                    className: 'bg-green-600 text-white border-green-600'
-                });
-                setAcceptedJob(null);
-                setJobStatus(null);
-                setBillItems([{ description: '', amount: '' }]);
-                setEnteredOtp('');
-                setRouteGeometry(null);
-                localStorage.removeItem('activeJobId');
-            }
-        }
-    });
-
-    return () => unsubscribe();
-  }, [acceptedJob, jobStatus, toast, db]);
-
-  const handleScanResult = (result: any, error: any) => {
-      if (!!result) {
-        setIsScannerOpen(false);
-        const textResult = result?.getText();
-        toast({
-            title: "QR Scanned (Mechanic)",
-            description: `This will soon auto-fill the payment form with: ${textResult}`
-        });
-    }
-
-    if (!!error) {
-       if (error.name !== "NotFoundException") {
-         console.info(error);
-       }
-    }
-  }
-
+  // OTP verify
   const handleVerifyOtp = async () => {
-      if (enteredOtp === acceptedJob?.otp && acceptedJob && db) {
-          const jobRef = doc(db, 'garageRequests', acceptedJob.id);
-          await updateDoc(jobRef, { status: 'in_progress' });
-          localStorage.setItem('activeJobId', acceptedJob.id);
-          setJobStatus('in_progress');
-          toast({ title: "OTP Verified!", description: "You can now start the service." });
-      } else {
-          toast({ variant: 'destructive', title: "Invalid OTP", description: "Please ask the driver for the correct OTP." });
-      }
-  }
-  
-  const handleBillItemChange = (index: number, field: 'description' | 'amount', value: string) => {
-    const newItems = [...billItems];
-    newItems[index][field] = value;
-    setBillItems(newItems);
+    if (!acceptedJob || !db) return;
+    if (enteredOtp === acceptedJob.otp) {
+      await updateDoc(doc(db, 'garageRequests', acceptedJob.id), { status: 'in_progress' });
+      setJobStatus('in_progress');
+      toast({ title: 'OTP Verified', description: 'Start the service now.' });
+    } else {
+      toast({ variant: 'destructive', title: 'Incorrect OTP', description: 'Try again.' });
+    }
   };
 
-  const addBillItem = () => {
-    setBillItems([...billItems, { description: '', amount: '' }]);
+  // Billing helpers
+  const handleBillItemChange = (
+    index: number,
+    field: 'description' | 'amount',
+    value: string
+  ) => {
+    const next = [...billItems];
+    next[index][field] = value;
+    setBillItems(next);
   };
-  
-  const removeBillItem = (index: number) => {
-      const newItems = billItems.filter((_, i) => i !== index);
-      setBillItems(newItems);
-  }
-  
-  const totalAmount = billItems.reduce((sum, item) => sum + (parseFloat(item.amount) || 0), 0);
+  const addBillItem = () => setBillItems((b) => [...b, { description: '', amount: '' }]);
+  const removeBillItem = (i: number) =>
+    setBillItems((b) => (b.length === 1 ? b : b.filter((_, x) => x !== i)));
+  const totalAmount = billItems.reduce((s, it) => s + (parseFloat(it.amount) || 0), 0);
 
   const completeJob = async () => {
-      if (!acceptedJob || !mechanicData || !db) return;
-      
-      const filledItems = billItems.filter(item => item.description && item.amount);
-      if(filledItems.length === 0) {
-          toast({ variant: 'destructive', title: 'Empty Bill', description: 'Please add at least one service item to the bill.' });
-          return;
-      }
-      
-      const jobRef = doc(db, 'garageRequests', acceptedJob.id);
-      
-      try {
-           const invoiceId = `INV-CZ-${Date.now()}`;
-          await updateDoc(jobRef, { 
-              status: 'bill_sent',
-              billItems: filledItems.map(item => ({ description: item.description, amount: parseFloat(item.amount) })),
-              totalAmount: totalAmount,
-              invoiceId: invoiceId,
-              billDate: serverTimestamp(),
-              billedTo: acceptedJob.userName
-          });
-          
-          setJobStatus('payment'); // Local state update for UI
-          toast({ title: "Job Card Sent for Approval!", description: `The bill has been sent to the user.` });
-          
-      } catch (error) {
-          console.error("Error sending bill:", error);
-          toast({ variant: 'destructive', title: 'Error', description: 'Could not send the bill to the user.' });
-      }
-  }
+    if (!acceptedJob || !db) return;
+    const cleaned = billItems
+      .map((x) => ({ description: x.description.trim(), amount: parseFloat(x.amount) }))
+      .filter((x) => x.description && !Number.isNaN(x.amount));
 
+    if (cleaned.length === 0) {
+      toast({ variant: 'destructive', title: 'Add at least one bill item' });
+      return;
+    }
 
-   const handlePinSubmit = () => {
-      const storedPin = localStorage.getItem('curocity-user-pin');
-      if (!storedPin) {
-          toast({ variant: 'destructive', title: 'PIN Not Set', description: 'Please set a UPI PIN from your wallet first.' });
-          setIsPinDialogOpen(false);
-          return;
-      }
-      if (pin === storedPin) {
-          setIsEarningsVisible(true);
-          setIsPinDialogOpen(false);
-          setPin('');
-          toast({ title: 'Earnings Revealed', description: 'Your earnings for today are now visible.' });
+    await updateDoc(doc(db, 'garageRequests', acceptedJob.id), {
+      status: 'bill_sent',
+      billItems: cleaned,
+      totalAmount,
+      invoiceId: `INV-${Date.now()}`,
+    });
+    setJobStatus('payment');
+    toast({ title: 'Job Card sent', description: 'Waiting for user approval' });
+  };
 
-          if (earningsTimerRef.current) clearTimeout(earningsTimerRef.current);
-          earningsTimerRef.current = setTimeout(() => {
-              setIsEarningsVisible(false);
-          }, 10000);
-      } else {
-          toast({ variant: 'destructive', title: 'Invalid PIN', description: 'Please enter the correct 4-digit PIN.' });
-          setPin('');
-      }
-  }
-
-  useEffect(() => {
-    return () => {
-        if (earningsTimerRef.current) {
-            clearTimeout(earningsTimerRef.current);
-        }
-    };
-  }, []);
-  
-  const getLat = (loc: any) => loc?.latitude ?? loc?._lat;
-  const getLng = (loc: any) => loc?.longitude ?? loc?._long;
-
-  const mechanicLiveLocation = mechanicData?.currentLocation 
-    ? { lat: getLat(mechanicData.currentLocation), lon: getLng(mechanicData.currentLocation) }
-    : undefined;
-    
-  const userLocation = acceptedJob
-    ? { lat: getLat(acceptedJob.location), lon: getLng(acceptedJob.location) }
-    : undefined;
-
-  
+  // ---- UI blocks ----
   const renderActiveJob = () => {
     if (!acceptedJob) return null;
-    
+    const uLat = getLat(acceptedJob.location);
+    const uLng = getLng(acceptedJob.location);
+
     return (
-        <Card className="shadow-lg animate-fade-in w-full">
-            <CardHeader>
-                <CardTitle>Ongoing Job</CardTitle>
-                <CardDescription>User: {acceptedJob.userName} - Issue: {acceptedJob.issue}</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-                {jobStatus === 'navigating' && (
-                    <div className="grid grid-cols-1 gap-2">
-                        <Button className="w-full" size="lg" onClick={() => setJobStatus('arrived')}>Arrived at Location</Button>
-                        <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white" size="lg" onClick={() => window.open(`https://www.google.com/maps/dir/?api=1&destination=${getLat(acceptedJob.location)},${getLng(acceptedJob.location)}`, '_blank')}>
-                            <Navigation className="mr-2 h-4 h-4" />
-                            Navigate with Google Maps
-                        </Button>
-                    </div>
-                )}
-                {jobStatus === 'arrived' && (
-                    <div className="space-y-4">
-                        <Label>Enter OTP from user to start service</Label>
-                        <Input className="text-center text-xl tracking-[0.5em]" maxLength={4} value={enteredOtp} onChange={(e) => setEnteredOtp(e.target.value)} />
-                        <Button className="w-full" onClick={handleVerifyOtp}>Verify & Start Service</Button>
-                    </div>
-                )}
-                {jobStatus === 'in_progress' && (
-                    <div className="text-center p-4 bg-muted rounded-lg space-y-4">
-                        <p className="font-semibold">Service Ongoing...</p>
-                        <Button className="w-full" size="lg" onClick={() => setJobStatus('billing')}>Complete Service & Generate Bill</Button>
-                    </div>
-                )}
+      <Card className="shadow-lg animate-fade-in w-full">
+        <CardHeader>
+          <CardTitle>Ongoing Job</CardTitle>
+          <CardDescription>
+            User: {acceptedJob.userName} — Issue: {acceptedJob.issue}
+          </CardDescription>
+        </CardHeader>
+
+        <CardContent className="space-y-4">
+          {/* Map strip */}
+          <div className="h-44 w-full rounded-md overflow-hidden border">
+            <LiveMap
+              riderLocation={
+                typeof uLat === 'number' && typeof uLng === 'number'
+                  ? { lat: uLat, lon: uLng }
+                  : undefined
+              }
+              driverLocation={
+                mechanicData?.currentLocation
+                  ? {
+                      lat: mechanicData.currentLocation.latitude,
+                      lon: mechanicData.currentLocation.longitude,
+                    }
+                  : undefined
+              }
+            />
+          </div>
+
+          {jobStatus === 'navigating' && (
+            <div className="grid grid-cols-1 gap-2">
+              <Button className="w-full" onClick={() => setJobStatus('arrived')}>
+                Arrived at Location
+              </Button>
+              {typeof uLat === 'number' && typeof uLng === 'number' && (
+                <Button
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                  onClick={() =>
+                    window.open(
+                      `https://www.google.com/maps/dir/?api=1&destination=${uLat},${uLng}`,
+                      '_blank'
+                    )
+                  }
+                >
+                  <Navigation className="mr-2 h-4 h-4" /> Navigate with Google Maps
+                </Button>
+              )}
+            </div>
+          )}
+
+          {jobStatus === 'arrived' && (
+            <div className="space-y-4">
+              <Label>Enter OTP from user</Label>
+              <Input
+                className="text-center text-xl tracking-[0.5em]"
+                maxLength={4}
+                value={enteredOtp}
+                onChange={(e) => setEnteredOtp(e.target.value)}
+              />
+              <Button className="w-full" onClick={handleVerifyOtp}>
+                Verify OTP & Start Service
+              </Button>
+            </div>
+          )}
+
+          {jobStatus === 'in_progress' && (
+            <div className="text-center p-4 bg-muted rounded-lg space-y-4">
+              <p className="font-semibold">Service Ongoing...</p>
+              <Button className="w-full" size="lg" onClick={() => setJobStatus('billing')}>
+                Complete Service & Generate Bill
+              </Button>
+            </div>
+          )}
                  {jobStatus === 'billing' && (
                     <div className="space-y-4">
                         <Label className="text-lg font-semibold">Generate Job Card</Label>
@@ -534,10 +394,54 @@ export default function ResQDashboard() {
             </CardContent>
         </Card>
     );
+  };
+
+   const handlePinSubmit = () => {
+      const storedPin = localStorage.getItem('curocity-user-pin');
+      if (!storedPin) {
+          toast({ variant: 'destructive', title: 'PIN Not Set', description: 'Please set a UPI PIN from your wallet first.' });
+          setIsPinDialogOpen(false);
+          return;
+      }
+      if (pin === storedPin) {
+          setIsEarningsVisible(true);
+          setIsPinDialogOpen(false);
+          setPin('');
+          toast({ title: 'Earnings Revealed', description: 'Your earnings for today are now visible.' });
+
+          if (earningsTimerRef.current) clearTimeout(earningsTimerRef.current);
+          earningsTimerRef.current = setTimeout(() => {
+              setIsEarningsVisible(false);
+          }, 10000);
+      } else {
+          toast({ variant: 'destructive', title: 'Invalid PIN', description: 'Please enter the correct 4-digit PIN.' });
+          setPin('');
+      }
   }
+
+  useEffect(() => {
+    return () => {
+        if (earningsTimerRef.current) {
+            clearTimeout(earningsTimerRef.current);
+        }
+    };
+  }, []);
+  
+  const mechanicLiveLocation = mechanicData?.currentLocation 
+    ? { lat: getLat(mechanicData.currentLocation), lon: getLng(mechanicData.currentLocation) }
+    : undefined;
+    
+  const userLocation = jobRequest
+    ? { lat: getLat(jobRequest.location), lon: getLng(jobRequest.location) }
+    : undefined;
+
   
   if (isPartnerDataLoading || !isMounted) {
-    return <div className="flex items-center justify-center h-full"><Skeleton className="w-full h-96" /></div>
+    return (
+      <div className="flex items-center justify-center h-full">
+        <Skeleton className="w-full h-96" />
+      </div>
+    );
   }
 
   return (
@@ -553,9 +457,9 @@ export default function ResQDashboard() {
                             </div>
                             <div className="text-right">
                                 <p className="font-bold text-2xl font-mono">{format(currentTime, 'h:mm:ss a')}</p>
-                                 <div className="flex items-center space-x-2 justify-end">
+                                 <div className="flex items-center space-x-2 justify-end mt-1">
                                     <Switch id="online-status" checked={isOnline} onCheckedChange={handleAvailabilityChange} />
-                                    <Label htmlFor="online-status" className={cn("font-semibold", isOnline ? "text-green-600" : "text-muted-foreground")}>
+                                    <Label htmlFor="online-status" className={cn('font-semibold', isOnline ? 'text-green-600' : 'text-muted-foreground')}>
                                         {isOnline ? "ONLINE" : "OFFLINE"}
                                     </Label>
                                 </div>
@@ -615,14 +519,14 @@ export default function ResQDashboard() {
         <AlertDialogContent>
           <AlertDialogHeader>
               <AlertDialogTitle>New Service Request!</AlertDialogTitle>
-              <AlertDialogDescription>A new job is available. Please review and respond quickly.</AlertDialogDescription>
+              <AlertDialogDescription>Review and accept within {requestTimeout} seconds.</AlertDialogDescription>
           </AlertDialogHeader>
           {jobRequest && (
             <>
               <div className="absolute top-4 right-4 w-12 h-12 flex items-center justify-center rounded-full border-4 border-primary text-primary font-bold text-2xl">
                 {requestTimeout}
               </div>
-               <div className="flex items-center gap-4">
+              <div className="flex items-center gap-4">
                   <Avatar className="w-12 h-12"><AvatarImage src={'https://placehold.co/100x100.png'} alt={jobRequest.userName} data-ai-hint="user portrait" /><AvatarFallback>{jobRequest?.userName?.[0] || 'U'}</AvatarFallback></Avatar>
                  <div>
                    <p className="font-bold">{jobRequest?.userName}</p>
@@ -632,12 +536,10 @@ export default function ResQDashboard() {
                  </div>
                </div>
                 <div className="space-y-2 text-sm">
-                   {jobRequest.locationAddress && (
-                    <div className="flex items-start gap-2">
+                   <div className="flex items-start gap-2">
                         <MapPin className="w-4 h-4 mt-1 text-green-500 flex-shrink-0" />
                         <p><span className="font-semibold">LOCATION:</span> {jobRequest.locationAddress}</p>
                     </div>
-                   )}
                    <div className="flex items-start gap-2">
                        <Wrench className="w-4 h-4 mt-1 text-red-500 flex-shrink-0" />
                        <p><span className="font-semibold">ISSUE:</span> {jobRequest.issue}</p>
