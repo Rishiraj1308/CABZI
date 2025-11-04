@@ -31,7 +31,7 @@ import { Input } from '@/components/ui/input'
 import { usePartnerData } from './layout'
 import { Switch } from '@/components/ui/switch'
 import { IndianRupee, History, Power, Phone } from 'lucide-react'
-import { collection, query, where, onSnapshot, limit, orderBy, Timestamp, FieldValue } from 'firebase/firestore'
+import { collection, query, where, onSnapshot, limit, orderBy, Timestamp, FieldValue, serverTimestamp } from 'firebase/firestore'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 
@@ -134,11 +134,14 @@ export default function ResQDashboard() {
       setProcessedRequestIds((prev) => new Set(prev).add(declinedJobId));
       setJobRequest(null);
 
-      if (!isTimeout) {
-          await updateDoc(doc(db, 'garageRequests', declinedJobId), {
-            rejectedBy: arrayUnion(mechanicData.id),
-          });
-          toast({ title: 'Job Declined' });
+      await updateDoc(doc(db, 'garageRequests', declinedJobId), {
+        rejectedBy: arrayUnion(mechanicData.id),
+      });
+
+      if (isTimeout) {
+        toast({ variant: 'destructive', title: 'Request Timed Out' });
+      } else {
+        toast({ title: 'Job Declined' });
       }
     },
     [jobRequest, mechanicData, db, toast]
@@ -180,7 +183,7 @@ export default function ResQDashboard() {
       setRequestTimeout((p) => {
         if (p <= 1) {
           clearInterval(t);
-          setJobRequest(null); // Just close the dialog
+          handleDeclineJob(true);
           return 0;
         }
         return p - 1;
@@ -188,7 +191,7 @@ export default function ResQDashboard() {
     }, 1000);
     requestTimerRef.current = t;
     return () => clearInterval(t);
-  }, [jobRequest]);
+  }, [jobRequest, handleDeclineJob]);
 
   // Accept job
   const handleAcceptJob = async () => {
@@ -196,9 +199,8 @@ export default function ResQDashboard() {
     if (requestTimerRef.current) clearInterval(requestTimerRef.current);
   
     const acceptedJobId = jobRequest.id;
-    setProcessedRequestIds(prev => new Set(prev).add(acceptedJobId));
-
     const jobRef = doc(db, 'garageRequests', acceptedJobId);
+
     try {
       await runTransaction(db, async (trx) => {
         const snap = await trx.get(jobRef);
@@ -216,6 +218,7 @@ export default function ResQDashboard() {
   
       setAcceptedJob({ ...jobRequest, status: 'accepted' } as JobRequest);
       setJobRequest(null);
+      setProcessedRequestIds(prev => new Set(prev).add(acceptedJobId));
       setJobStatus('navigating');
       localStorage.setItem('activeJobId', acceptedJobId);
   
