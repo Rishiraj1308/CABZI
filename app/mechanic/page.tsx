@@ -31,7 +31,7 @@ import { Input } from '@/components/ui/input'
 import { usePartnerData } from './layout'
 import { Switch } from '@/components/ui/switch'
 import { IndianRupee, History, Power, Phone } from 'lucide-react'
-import { collection, query, where, onSnapshot, limit, orderBy, Timestamp } from 'firebase/firestore'
+import { collection, query, where, onSnapshot, limit, orderBy, Timestamp, FieldValue } from 'firebase/firestore'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 
@@ -70,9 +70,7 @@ export default function ResQDashboard() {
   const [isMounted, setIsMounted] = useState(false);
   const [jobRequest, setJobRequest] = useState<JobRequest | null>(null);
   const [acceptedJob, setAcceptedJob] = useState<JobRequest | null>(null);
-  const [jobStatus, setJobStatus] = useState<
-    'navigating' | 'arrived' | 'in_progress' | 'billing' | 'payment' | 'completed' | null
-  >(null);
+  const [jobStatus, setJobStatus] = useState<'navigating' | 'arrived' | 'in_progress' | 'billing' | 'payment' | 'completed' | null>(null);
   const [enteredOtp, setEnteredOtp] = useState('');
   const [billItems, setBillItems] = useState<{ description: string; amount: string }[]>([
     { description: '', amount: '' },
@@ -133,14 +131,18 @@ export default function ResQDashboard() {
       if (requestTimerRef.current) clearInterval(requestTimerRef.current);
 
       setProcessedRequestIds((prev) => new Set(prev).add(jobRequest.id));
-      await updateDoc(doc(db, 'garageRequests', jobRequest.id), {
-        rejectedBy: arrayUnion(mechanicData.id),
-      });
+      
+      // Only update firestore if it's a manual decline, not a timeout
+      if (!isTimeout) {
+          await updateDoc(doc(db, 'garageRequests', jobRequest.id), {
+            rejectedBy: arrayUnion(mechanicData.id),
+          });
+          toast({ title: 'Job Declined' });
+      } else {
+        toast({ variant: 'destructive', title: 'Request Timed Out' });
+      }
+
       setJobRequest(null);
-      toast({
-        variant: isTimeout ? 'destructive' : 'default',
-        title: isTimeout ? 'Request Timed Out' : 'Job Declined',
-      });
     },
     [jobRequest, mechanicData, db, toast]
   );
@@ -171,7 +173,7 @@ export default function ResQDashboard() {
             notificationSoundRef.current?.play().catch(() => {});
         }
     }
-  }, [requests, jobRequest, acceptedJob, processedRequestIds, mechanicData]);
+  }, [requests, jobRequest, acceptedJob, processedRequestIds]);
 
   // Popup countdown
   useEffect(() => {
@@ -181,7 +183,8 @@ export default function ResQDashboard() {
       setRequestTimeout((p) => {
         if (p <= 1) {
           clearInterval(t);
-          handleDeclineJob(true);
+          setJobRequest(null); // Just close the dialog on timeout
+          toast({ variant: 'destructive', title: "Request Timed Out" });
           return 0;
         }
         return p - 1;
@@ -189,13 +192,13 @@ export default function ResQDashboard() {
     }, 1000);
     requestTimerRef.current = t;
     return () => clearInterval(t);
-  }, [jobRequest, handleDeclineJob]);
+  }, [jobRequest, toast]);
 
   // Accept job
   const handleAcceptJob = async () => {
     if (!jobRequest || !mechanicData || !db) return;
     if (requestTimerRef.current) clearInterval(requestTimerRef.current);
-
+  
     const jobRef = doc(db, 'garageRequests', jobRequest.id);
     try {
       await runTransaction(db, async (trx) => {
@@ -211,10 +214,13 @@ export default function ResQDashboard() {
         });
         trx.update(doc(db, 'mechanics', mechanicData.id), { status: 'on_job' });
       });
-
+  
       setAcceptedJob({ ...jobRequest, status: 'accepted' } as JobRequest);
       setJobRequest(null);
+      setProcessedRequestIds(prev => new Set(prev).add(jobRequest.id));
       setJobStatus('navigating');
+      localStorage.setItem('activeJobId', jobRequest.id);
+  
       toast({ title: 'Job Accepted', description: 'Navigate to the user.' });
     } catch (err: any) {
       toast({ variant: 'destructive', title: 'Error', description: err.message });
@@ -320,7 +326,7 @@ export default function ResQDashboard() {
                     )
                   }
                 >
-                  <Navigation className="mr-2 h-4 w-4" /> Navigate with Google Maps
+                  <Navigation className="mr-2 h-4 h-4" /> Navigate with Google Maps
                 </Button>
               )}
             </div>
@@ -344,57 +350,54 @@ export default function ResQDashboard() {
           {jobStatus === 'in_progress' && (
             <div className="text-center p-4 bg-muted rounded-lg space-y-4">
               <p className="font-semibold">Service Ongoing...</p>
-              <Button className="w-full" onClick={() => setJobStatus('billing')}>
+              <Button className="w-full" size="lg" onClick={() => setJobStatus('billing')}>
                 Complete Service & Generate Bill
               </Button>
             </div>
           )}
-
-          {jobStatus === 'billing' && (
-            <div className="space-y-4">
-              <Label className="text-lg font-semibold">Generate Job Card</Label>
-              <div className="space-y-2 max-h-48 overflow-y-auto pr-2">
-                {billItems.map((it, i) => (
-                  <div key={i} className="flex gap-2 items-center">
-                    <Input
-                      placeholder="Service Description"
-                      value={it.description}
-                      onChange={(e) => handleBillItemChange(i, 'description', e.target.value)}
-                    />
-                    <Input
-                      type="number"
-                      placeholder="Amount"
-                      className="w-28"
-                      value={it.amount}
-                      onChange={(e) => handleBillItemChange(i, 'amount', e.target.value)}
-                    />
-                    <Button variant="ghost" size="icon" onClick={() => removeBillItem(i)} disabled={billItems.length === 1}>
-                      <Trash2 className="w-4 h-4 text-destructive" />
-                    </Button>
-                  </div>
-                ))}
-              </div>
-              <Button variant="outline" className="w-full" onClick={addBillItem}>
-                <PlusCircle className="w-4 h-4 mr-2" /> Add More
-              </Button>
-              <div className="flex justify-between pt-2 border-t font-bold text-lg">
-                <span>Total Amount:</span>
-                <span>₹{totalAmount.toFixed(2)}</span>
-              </div>
-              <Button className="w-full" onClick={completeJob}>
-                Submit Job Card
-              </Button>
-            </div>
-          )}
-
-          {jobStatus === 'payment' && (
-            <div className="p-4 bg-muted rounded-lg text-center space-y-3">
-              <p className="text-sm text-muted-foreground">Waiting for User Payment...</p>
-              <p className="text-3xl font-bold">₹{totalAmount.toFixed(2)}</p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                 {jobStatus === 'billing' && (
+                    <div className="space-y-4">
+                        <Label className="text-lg font-semibold">Generate Job Card</Label>
+                        <div className="space-y-2 max-h-48 overflow-y-auto pr-2">
+                            {billItems.map((item, index) => (
+                                <div key={index} className="flex gap-2 items-center">
+                                    <Input
+                                        placeholder="Service / Item Description"
+                                        value={item.description}
+                                        onChange={(e) => handleBillItemChange(index, 'description', e.target.value)}
+                                    />
+                                    <Input
+                                        type="number"
+                                        placeholder="Amount"
+                                        className="w-28"
+                                        value={item.amount}
+                                        onChange={(e) => handleBillItemChange(index, 'amount', e.target.value)}
+                                    />
+                                    <Button variant="ghost" size="icon" onClick={() => removeBillItem(index)} disabled={billItems.length === 1}>
+                                        <Trash2 className="w-4 h-4 text-destructive" />
+                                    </Button>
+                                </div>
+                            ))}
+                        </div>
+                        <Button variant="outline" size="sm" onClick={addBillItem} className="w-full">
+                            <PlusCircle className="w-4 h-4 mr-2" /> Add Line Item
+                        </Button>
+                         <div className="flex justify-between items-center font-bold text-lg pt-2 border-t">
+                            <span>Total Amount:</span>
+                            <span>₹{totalAmount.toFixed(2)}</span>
+                        </div>
+                        <Button className="w-full" size="lg" onClick={completeJob}>Submit Job Card for Approval</Button>
+                    </div>
+                )}
+                {jobStatus === 'payment' && (
+                     <div className="text-center space-y-4 p-4 bg-muted rounded-lg">
+                        <p className="font-semibold">Waiting for Payment</p>
+                        <p className="text-sm text-muted-foreground">The bill has been sent to the user for approval and payment.</p>
+                        <p className="text-3xl font-bold">₹{totalAmount.toFixed(2)}</p>
+                    </div>
+                )}
+            </CardContent>
+        </Card>
     );
   };
 
@@ -476,7 +479,7 @@ export default function ResQDashboard() {
                         </CardContent>
                     ) : (
                         <CardContent className="text-center py-12">
-                            <CardTitle>You Are Offline</CardTitle>
+                            <CardTitle>You are Offline</CardTitle>
                             <CardDescription>Go online to receive service requests.</CardDescription>
                         </CardContent>
                     )}
@@ -529,7 +532,7 @@ export default function ResQDashboard() {
                 {requestTimeout}
               </div>
               <div className="flex items-center gap-4">
-                <Avatar className="w-12 h-12"><AvatarImage src={'https://placehold.co/100x100.png'} alt={jobRequest.userName} data-ai-hint="user portrait" /><AvatarFallback>{jobRequest?.userName?.[0] || 'U'}</AvatarFallback></Avatar>
+                  <Avatar className="w-12 h-12"><AvatarImage src={'https://placehold.co/100x100.png'} alt={jobRequest.userName} data-ai-hint="user portrait" /><AvatarFallback>{jobRequest?.userName?.[0] || 'U'}</AvatarFallback></Avatar>
                  <div>
                    <p className="font-bold">{jobRequest?.userName}</p>
                     <Button variant="link" size="sm" className="h-auto p-0" asChild>
@@ -593,4 +596,3 @@ export default function ResQDashboard() {
   )
 }
 
-    
