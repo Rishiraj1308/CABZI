@@ -73,7 +73,7 @@ const StatCard = ({ title, value, icon: Icon, isLoading, onValueClick }: { title
       <Icon className="h-4 w-4 text-muted-foreground" />
     </CardHeader>
     <CardContent>
-      {isPartnerDataLoading ? (
+      {isLoading ? (
         <Skeleton className="h-8 w-20" />
       ) : (
         <div className="text-2xl font-bold cursor-pointer" onClick={onValueClick}>
