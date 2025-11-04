@@ -1,5 +1,4 @@
 
-
 import type { GeoPoint } from 'firebase/firestore';
 
 export interface ClientSession {
@@ -64,30 +63,53 @@ export interface AmbulanceCase {
 
 export interface GarageRequest {
     id: string;
-    status: 'pending' | 'accepted' | 'in_progress' | 'completed' | 'cancelled_by_driver' | 'cancelled_by_mechanic' | 'bill_sent' | 'payment_pending';
+    status: 'pending' | 'accepted' | 'in_progress' | 'completed' | 'cancelled_by_driver' | 'cancelled_by_mechanic' | 'bill_sent' | 'payment_pending' | 'cancelled_by_user';
     mechanicName?: string;
     mechanicPhone?: string;
     eta?: number;
     partnerLocation?: GeoPoint | null;
     billItems?: { description: string; amount: number }[];
     totalAmount?: number;
+    userName: string;
+    location: GeoPoint;
+    issue: string;
+    otp?: string;
 }
 
 
-export interface JobRequest extends Omit<RideData, 'pickup' | 'destination'> {
-    riderName?: string;
-    riderGender?: string;
-    rideType?: string;
-    pickupDistance?: number;
-    pickupEta?: number;
-    pickup: { address: string; location: GeoPoint; };
-    destination: { address: string; location: GeoPoint; };
-    pickupAddress: string;
-    destinationAddress: string;
-    createdAt: any;
-    rejectedBy?: string[];
-    eta?: number;
-    distance?: number;
-    dropDistance?: number;
-    dropEta?: number;
+export interface JobRequest {
+  id: string;
+
+  userId: string;
+  userName: string;
+  userPhone: string;
+
+  issue: string;
+  otp: string;
+
+  // GeoPoint (Firebase)
+  location: {
+    latitude: number;
+    longitude: number;
+    _lat?: number;
+    _long?: number;
+  };
+
+  // EXTRA FIELDS (popup ke liye)
+  locationAddress?: string;
+  distance?: number;
+  eta?: number;
+
+  status:
+    | "pending"
+    | "accepted"
+    | "in_progress"
+    | "billing"
+    | "payment"
+    | "completed"
+    | "cancelled_by_user"
+    | "cancelled_by_driver"
+    | "cancelled_by_mechanic";
+
+  createdAt: any;
 }

@@ -18,7 +18,12 @@ import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert'
 import { cn } from '@/lib/utils'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 import BrandLogo from '@/components/brand-logo'
 import SearchingIndicator from '@/components/ui/searching-indicator'
 import { useFirebase } from '@/firebase/client-provider'
@@ -39,6 +44,21 @@ const QrScanner = dynamic(() => import('@/components/ui/qr-scanner'), {
   loading: () => <div className="flex items-center justify-center w-full h-full bg-muted"><p>Loading Scanner...</p></div>
 })
 
+
+interface MechanicData {
+    id: string;
+    name: string;
+    phone: string;
+    services: string[];
+    isOnline: boolean;
+    currentLocation?: GeoPoint;
+    qrCodeUrl?: string;
+    upiId?: string;
+    rating?: number;
+    acceptanceRate?: number;
+    jobsToday?: number;
+    todaysEarnings?: number;
+}
 
 interface BillItem {
     description: string;
@@ -157,7 +177,7 @@ export default function ResQDashboard() {
     if (requests.length > 0 && !jobRequest && !acceptedJob) {
         const nextRequest = requests.find(req => !processedRequestIds.has(req.id));
         if (nextRequest) {
-            setJobRequest(nextRequest);
+            setJobRequest(nextRequest as JobRequest);
             notificationSoundRef.current?.play().catch(e => console.error("Audio play failed:", e));
         }
     }
@@ -223,7 +243,7 @@ export default function ResQDashboard() {
   
       toast({
         title: 'Job Accepted!',
-        description: `Navigate to ${jobRequest.riderName}'s location.`,
+        description: `Navigate to ${jobRequest.userName}'s location.`,
       });
     } catch (err: any) {
       console.error("Error accepting job:", err);
@@ -373,7 +393,7 @@ export default function ResQDashboard() {
               totalAmount: totalAmount,
               invoiceId: invoiceId,
               billDate: serverTimestamp(),
-              billedTo: acceptedJob.riderName
+              billedTo: acceptedJob.userName
           });
           
           setJobStatus('payment'); // Local state update for UI
@@ -425,6 +445,7 @@ export default function ResQDashboard() {
     ? { lat: acceptedJob.location.latitude, lon: acceptedJob.location.longitude }
     : undefined;
 
+  
   const renderActiveJob = () => {
     if (!acceptedJob) return null;
     
@@ -432,7 +453,7 @@ export default function ResQDashboard() {
         <Card className="shadow-lg animate-fade-in w-full">
             <CardHeader>
                 <CardTitle>Ongoing Job</CardTitle>
-                <CardDescription>User: {acceptedJob.riderName} - Issue: {acceptedJob.issue}</CardDescription>
+                <CardDescription>User: {acceptedJob.userName} - Issue: {acceptedJob.issue}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
                 {jobStatus === 'navigating' && (
@@ -590,27 +611,27 @@ export default function ResQDashboard() {
                 {requestTimeout}
               </div>
                <div className="flex items-center gap-4">
-                  <Avatar className="w-12 h-12"><AvatarImage src={'https://placehold.co/100x100.png'} alt={jobRequest.riderName} data-ai-hint="user portrait" /><AvatarFallback>{jobRequest?.riderName?.[0] || 'U'}</AvatarFallback></Avatar>
+                  <Avatar className="w-12 h-12"><AvatarImage src={'https://placehold.co/100x100.png'} alt={jobRequest.userName} data-ai-hint="user portrait" /><AvatarFallback>{jobRequest?.userName?.[0] || 'U'}</AvatarFallback></Avatar>
                  <div>
-                   <p className="font-bold">{jobRequest?.riderName}</p>
+                   <p className="font-bold">{jobRequest?.userName}</p>
                     <Button variant="link" size="sm" className="h-auto p-0" asChild>
                         <a href={`tel:${jobRequest.userPhone}`}><Phone className="w-3 h-3 mr-1"/>Call User</a>
                     </Button>
                  </div>
                </div>
                 <div className="space-y-2 text-sm">
-                   {jobRequest.pickupAddress && (
+                   {jobRequest.locationAddress && (
                     <div className="flex items-start gap-2">
                         <MapPin className="w-4 h-4 mt-1 text-green-500" />
-                        <p><span className="font-semibold">LOCATION:</span> {jobRequest.pickupAddress}</p>
+                        <p><span className="font-semibold">LOCATION:</span> {jobRequest.locationAddress}</p>
                     </div>
-                )}
-                <div className="flex items-start gap-2">
-                  <Wrench className="w-4 h-4 mt-1 text-red-500" />
-                  <p><span className="font-semibold">ISSUE:</span> {jobRequest.issue}</p>
-                </div>
-              </div>
-              <div className="h-40 w-full rounded-md overflow-hidden my-3 border">
+                   )}
+                   <div className="flex items-start gap-2">
+                       <Wrench className="w-4 h-4 mt-1 text-red-500" />
+                       <p><span className="font-semibold">ISSUE:</span> {jobRequest.issue}</p>
+                   </div>
+               </div>
+               <div className="h-40 w-full rounded-md overflow-hidden my-3 border">
                 <LiveMap
                   riderLocation={userLocation}
                   driverLocation={ mechanicData?.currentLocation ? { lat: mechanicData.currentLocation.latitude, lon: mechanicData.currentLocation.longitude } : undefined }
@@ -622,7 +643,7 @@ export default function ResQDashboard() {
                   <p className="font-bold text-lg">{jobRequest.distance ? `~${jobRequest.distance.toFixed(1)} km` : '~ km'}</p>
                 </div>
                 <div className="p-2 bg-muted rounded-md">
-                  <p className="text-xs text-muted-foreground">ETA</p>
+                  <p className="text-xs text-muted-foreground">Est. Arrival</p>
                   <p className="font-bold text-lg">{jobRequest.eta ? `~${Math.ceil(jobRequest.eta)} min` : '~ min'}</p>
                 </div>
               </div>
