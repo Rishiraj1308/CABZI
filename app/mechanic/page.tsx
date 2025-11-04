@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
@@ -11,13 +12,9 @@ import {
   Star, CheckCircle, Navigation, Trash2, PlusCircle, MapPin, Wrench
 } from 'lucide-react';
 import {
-  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
+  AlertDialog, AlertDialogContent, AlertDialogDescription,
   AlertDialogFooter, AlertDialogHeader, AlertDialogTitle
 } from '@/components/ui/alert-dialog';
-import {
-  Dialog, DialogContent, DialogHeader, DialogTitle
-} from '@/components/ui/dialog';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import dynamic from 'next/dynamic';
@@ -26,7 +23,6 @@ import {
 } from 'firebase/firestore';
 import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import BrandLogo from '@/components/brand-logo';
 import SearchingIndicator from '@/components/ui/searching-indicator';
 import { useFirebase } from '@/firebase/client-provider';
 import { format } from 'date-fns';
@@ -34,8 +30,8 @@ import type { JobRequest } from '@/lib/types';
 import { Input } from '@/components/ui/input';
 import { usePartnerData } from './layout';
 import { Switch } from '@/components/ui/switch';
+import { IndianRupee, History, Power } from 'lucide-react';
 
-// Lazy components
 const LiveMap = dynamic(() => import('@/components/live-map'), {
   ssr: false,
   loading: () => (
@@ -45,23 +41,26 @@ const LiveMap = dynamic(() => import('@/components/live-map'), {
   ),
 });
 
-// ---------- helpers ----------
-const getLat = (loc: any) => loc?.latitude ?? loc?._lat ?? null;
-const getLng = (loc: any) => loc?.longitude ?? loc?._long ?? null;
+const getLat = (loc: any) => loc?.latitude ?? loc?._lat;
+const getLng = (loc: any) => loc?.longitude ?? loc?._long;
 
-// Haversine (km)
-const haversineKm = (lat1: number, lon1: number, lat2: number, lon2: number) => {
-  const R = 6371;
-  const dLat = ((lat2 - lat1) * Math.PI) / 180;
-  const dLon = ((lon2 - lon1) * Math.PI) / 180;
-  const a =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos((lat1 * Math.PI) / 180) *
-      Math.cos((lat2 * Math.PI) / 180) *
-      Math.sin(dLon / 2) ** 2;
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return R * c;
-};
+const StatCard = ({ title, value, icon: Icon, isLoading, onValueClick }: { title: string, value: string, icon: React.ElementType, isLoading?: boolean, onValueClick?: () => void }) => (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <CardTitle className="text-sm font-medium">{title}</CardTitle>
+        <Icon className="h-4 w-4 text-muted-foreground" />
+      </CardHeader>
+      <CardContent>
+        {isLoading ? (
+          <Skeleton className="h-8 w-20" />
+        ) : (
+          <div className="text-2xl font-bold cursor-pointer" onClick={onValueClick}>
+            {value}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  )
 
 export default function ResQDashboard() {
   const [isMounted, setIsMounted] = useState(false);
@@ -99,29 +98,20 @@ export default function ResQDashboard() {
   // Pick next pending request and enrich
   useEffect(() => {
     if (requests.length > 0 && !jobRequest && !acceptedJob) {
-      const next = requests.find((r: any) => !processedRequestIds.has(r.id));
-      if (!next) return;
+      const nextRequest = requests.find((r: any) => !processedRequestIds.has(r.id));
+      if (!nextRequest) return;
 
-      // If backend sent stringified GeoPoint (via FCM), parse; Firestore listener gives object already.
-      try {
-        if (typeof next.location === 'string') next.location = JSON.parse(next.location);
-      } catch {}
-
-      // Fallback calculate distance/eta on client if not present in doc yet
-      if (mechanicData?.currentLocation && next.location) {
-        const mLat = mechanicData.currentLocation.latitude;
-        const mLng = mechanicData.currentLocation.longitude;
-        const uLat = getLat(next.location);
-        const uLng = getLng(next.location);
-        if (typeof uLat === 'number' && typeof uLng === 'number') {
-          const dKm = haversineKm(mLat, mLng, uLat, uLng);
-          const eta = (dKm / 20) * 60; // 20 km/h avg
-          next.distance ??= dKm;
-          next.eta ??= eta;
+      if (nextRequest.location) {
+        try {
+            if (typeof nextRequest.location === "string") {
+                nextRequest.location = JSON.parse(nextRequest.location);
+            }
+        } catch (e) {
+            console.error("Failed to parse location string:", e);
         }
       }
 
-      setJobRequest({ ...next });
+      setJobRequest(nextRequest as JobRequest);
       notificationSoundRef.current?.play().catch(() => {});
     }
   }, [requests, jobRequest, acceptedJob, processedRequestIds, mechanicData]);
@@ -261,12 +251,12 @@ export default function ResQDashboard() {
           {/* Map strip */}
           <div className="h-44 w-full rounded-md overflow-hidden border">
             <LiveMap
-              userLocation={
+              riderLocation={
                 typeof uLat === 'number' && typeof uLng === 'number'
                   ? { lat: uLat, lon: uLng }
                   : undefined
               }
-              mechanicLocation={
+              driverLocation={
                 mechanicData?.currentLocation
                   ? {
                       lat: mechanicData.currentLocation.latitude,
@@ -340,7 +330,7 @@ export default function ResQDashboard() {
                       value={it.amount}
                       onChange={(e) => handleBillItemChange(i, 'amount', e.target.value)}
                     />
-                    <Button variant="ghost" size="icon" onClick={() => removeBillItem(i)}>
+                    <Button variant="ghost" size="icon" onClick={() => removeBillItem(i)} disabled={billItems.length === 1}>
                       <Trash2 className="w-4 h-4 text-destructive" />
                     </Button>
                   </div>
@@ -380,148 +370,121 @@ export default function ResQDashboard() {
 
   return (
     <div className="space-y-6">
-      {acceptedJob ? (
-        renderActiveJob()
-      ) : (
-        <>
-          <Card className="shadow-lg">
-            <CardHeader>
-              <div className="flex justify-between items-center">
-                <div>
-                  <CardTitle>Your Dashboard</CardTitle>
-                  <CardDescription className="text-xs">
-                    {format(currentTime, 'EEEE, d MMM yyyy')}
-                  </CardDescription>
-                </div>
-                <div className="text-right">
-                  <p className="font-bold text-2xl font-mono">{format(currentTime, 'h:mm:ss a')}</p>
-                  <div className="flex items-center gap-2 justify-end mt-1">
-                    <Switch
-                      id="online-status"
-                      checked={isOnline}
-                      onCheckedChange={handleAvailabilityChange}
-                    />
-                    <Label
-                      htmlFor="online-status"
-                      className={cn('font-semibold', isOnline ? 'text-green-600' : 'text-muted-foreground')}
-                    >
-                      {isOnline ? 'ONLINE' : 'OFFLINE'}
-                    </Label>
-                  </div>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent className="text-center py-12">
-              {isOnline ? (
-                <>
-                  <SearchingIndicator partnerType="resq" className="w-32 h-32" />
-                  <h3 className="text-3xl font-bold mt-4">Waiting for Jobs...</h3>
-                </>
-              ) : (
-                <>
-                  <CardTitle>You Are Offline</CardTitle>
-                  <CardDescription>Go online to receive jobs.</CardDescription>
-                </>
-              )}
-            </CardContent>
-          </Card>
-        </>
-      )}
+        {acceptedJob ? renderActiveJob() : (
+            <>
+                <Card className="shadow-lg">
+                    <CardHeader>
+                        <div className="flex justify-between items-center">
+                            <div>
+                                <CardTitle>Your Dashboard</CardTitle>
+                                <CardDescription className="text-xs">{format(currentTime, 'EEEE, d MMMM yyyy')}</CardDescription>
+                            </div>
+                            <div className="text-right">
+                                <p className="font-bold text-2xl font-mono">{format(currentTime, 'h:mm:ss a')}</p>
+                                 <div className="flex items-center space-x-2 justify-end mt-1">
+                                    <Switch id="online-status" checked={isOnline} onCheckedChange={handleAvailabilityChange} />
+                                    <Label htmlFor="online-status" className={cn('font-semibold', isOnline ? 'text-green-600' : 'text-muted-foreground')}>
+                                        {isOnline ? "ONLINE" : "OFFLINE"}
+                                    </Label>
+                                </div>
+                            </div>
+                        </div>
+                    </CardHeader>
+                    {isOnline ? (
+                        <CardContent className="text-center py-12">
+                            <SearchingIndicator partnerType="resq" className="w-32 h-32" />
+                            <h3 className="text-3xl font-bold mt-4">Waiting for Jobs...</h3>
+                            <p className="text-muted-foreground">You are online and ready to accept jobs.</p>
+                        </CardContent>
+                    ) : (
+                        <CardContent className="text-center py-12">
+                            <CardTitle>You Are Offline</CardTitle>
+                            <CardDescription>Go online to receive jobs.</CardDescription>
+                        </CardContent>
+                    )}
+                </Card>
+                <Tabs defaultValue="stats" className="w-full">
+                    <TabsList className="grid w-full grid-cols-2">
+                        <TabsTrigger value="stats">Today's Stats</TabsTrigger>
+                        <TabsTrigger value="history">Recent Activity</TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="stats" className="mt-4">
+                        <div className="grid gap-4 grid-cols-2 lg:grid-cols-2">
+                            <StatCard title="Today's Earnings" value={'₹ ****'} icon={IndianRupee} isLoading={isPartnerDataLoading} onValueClick={() => {}} />
+                            <StatCard title="Today's Jobs" value={mechanicData?.jobsToday?.toString() || '0'} icon={History} isLoading={isPartnerDataLoading} />
+                            <StatCard title="Acceptance Rate" value={`${mechanicData?.acceptanceRate || '95'}%`} icon={Power} isLoading={isPartnerDataLoading} />
+                            <StatCard title="Rating" value={mechanicData?.rating?.toString() || '4.8'} icon={Star} isLoading={isPartnerDataLoading} />
+                        </div>
+                    </TabsContent>
+                    <TabsContent value="history" className="mt-4 flex-1 space-y-2 max-h-48 overflow-y-auto">
+                        {isHistoryLoading ? (
+                            Array.from({length: 2}).map((_, i) => <Skeleton key={i} className="h-16 w-full" />)
+                        ) : recentJobs.length > 0 ? (
+                            recentJobs.map(job => (
+                                <Card key={job.id}>
+                                    <CardContent className="p-2 flex items-center justify-between">
+                                        <div className="text-sm">
+                                            <p className="font-semibold line-clamp-1">{job.issue}</p>
+                                            <p className="text-xs text-muted-foreground">{job.createdAt ? new Date(job.createdAt.seconds * 1000).toLocaleString() : 'N/A'}</p>
+                                        </div>
+                                        <p className="font-bold text-lg">₹{(job as any).totalAmount || 0}</p>
+                                    </CardContent>
+                                </Card>
+                            ))
+                        ) : (
+                            <div className="text-center py-10 text-muted-foreground">No recent jobs found.</div>
+                        )}
+                    </TabsContent>
+                </Tabs>
+            </>
+        )}
 
       {/* New Service Request Popup */}
       <AlertDialog open={!!jobRequest}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>New Service Request!</AlertDialogTitle>
-            <AlertDialogDescription>Review and accept within {requestTimeout} seconds.</AlertDialogDescription>
+              <AlertDialogTitle>New Service Request!</AlertDialogTitle>
+              <AlertDialogDescription>Review and accept within {requestTimeout} seconds.</AlertDialogDescription>
           </AlertDialogHeader>
-
           {jobRequest && (
             <>
-              {/* countdown */}
               <div className="absolute top-4 right-4 w-12 h-12 flex items-center justify-center rounded-full border-4 border-primary text-primary font-bold text-2xl">
                 {requestTimeout}
               </div>
-
-              {/* user header */}
               <div className="flex items-center gap-4">
-                <Avatar className="w-12 h-12">
-                  <AvatarImage src="https://placehold.co/100x100" />
-                  <AvatarFallback>{jobRequest.userName?.[0] || 'U'}</AvatarFallback>
-                </Avatar>
-                <div>
-                  <p className="font-bold">{jobRequest.userName}</p>
-                </div>
-              </div>
-
-              {/* info */}
-              <div className="space-y-2 text-sm">
-                <div className="flex items-start gap-2">
-                  <MapPin className="w-4 h-4 mt-1 text-green-500" />
-                  <p>
-                    <span className="font-semibold">LOCATION:</span>{' '}
-                    {jobRequest.locationAddress || 'Calculating…'}
-                  </p>
-                </div>
-                <div className="flex items-start gap-2">
-                  <Wrench className="w-4 h-4 mt-1 text-red-500" />
-                  <p>
-                    <span className="font-semibold">ISSUE:</span> {jobRequest.issue}
-                  </p>
-                </div>
-              </div>
-
-              {/* map */}
-              <div className="h-40 w-full rounded-md overflow-hidden my-3 border">
-                <LiveMap
-                  userLocation={
-                    typeof getLat(jobRequest.location) === 'number' &&
-                    typeof getLng(jobRequest.location) === 'number'
-                      ? {
-                          lat: getLat(jobRequest.location) as number,
-                          lon: getLng(jobRequest.location) as number,
-                        }
-                      : undefined
-                  }
-                  mechanicLocation={
-                    mechanicData?.currentLocation
-                      ? {
-                          lat: mechanicData.currentLocation.latitude,
-                          lon: mechanicData.currentLocation.longitude,
-                        }
-                      : undefined
-                  }
-                />
-              </div>
-
-              {/* distance + eta */}
-              <div className="grid grid-cols-2 gap-2 text-center mt-3">
-                <div className="p-2 bg-muted rounded-md">
-                  <p className="text-xs text-muted-foreground">To User</p>
-                  <p className="font-bold text-lg">
-                    {typeof jobRequest.distance === 'number'
-                      ? `~${jobRequest.distance.toFixed(1)} km`
-                      : '~ km'}
-                  </p>
-                </div>
-                <div className="p-2 bg-muted rounded-md">
-                  <p className="text-xs text-muted-foreground">ETA</p>
-                  <p className="font-bold text-lg">
-                    {typeof jobRequest.eta === 'number' ? `~${Math.ceil(jobRequest.eta)} min` : '~ min'}
-                  </p>
-                </div>
-              </div>
+                <Avatar className="w-12 h-12"><AvatarImage src={'https://placehold.co/100x100.png'} alt={jobRequest.userName} data-ai-hint="user portrait" /><AvatarFallback>{jobRequest?.userName?.[0] || 'U'}</AvatarFallback></Avatar>
+                 <div>
+                   <p className="font-bold">{jobRequest?.userName}</p>
+                 </div>
+               </div>
+                <div className="space-y-2 text-sm">
+                   <div className="flex items-start gap-2">
+                       <MapPin className="w-4 h-4 mt-1 text-green-500 flex-shrink-0" />
+                       <p><span className="font-semibold">LOCATION:</span> {jobRequest.locationAddress || 'Calculating...'}</p>
+                   </div>
+                   <div className="flex items-start gap-2">
+                       <Wrench className="w-4 h-4 mt-1 text-red-500 flex-shrink-0" />
+                       <p><span className="font-semibold">ISSUE:</span> {jobRequest.issue}</p>
+                   </div>
+               </div>
+               <div className="grid grid-cols-2 gap-2 text-center mt-3">
+                 <div className="p-2 bg-muted rounded-md">
+                     <p className="text-xs text-muted-foreground">To User</p>
+                     <p className="font-bold text-lg">{jobRequest.distance ? `~${jobRequest.distance.toFixed(1)} km` : '~ km'}</p>
+                 </div>
+                 <div className="p-2 bg-muted rounded-md">
+                     <p className="text-xs text-muted-foreground">ETA</p>
+                     <p className="font-bold text-lg">{jobRequest.eta ? `~${Math.ceil(jobRequest.eta)} min` : '~ min'}</p>
+                 </div>
+               </div>
             </>
           )}
-
           <AlertDialogFooter className="grid grid-cols-2 gap-2">
-            <Button variant="destructive" onClick={() => handleDeclineJob()}>
-              Decline
-            </Button>
+            <Button variant="destructive" onClick={() => handleDeclineJob()}>Decline</Button>
             <Button onClick={handleAcceptJob}>Accept Job</Button>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
     </div>
-  );
+  )
 }

@@ -1,4 +1,5 @@
 
+
 'use server';
 /**
  * @fileOverview This file contains server-side Cloud Functions for dispatching
@@ -179,10 +180,11 @@ const handleGarageRequestDispatch = async (requestData: any, requestId: string) 
         return;
     }
     
-    // Save location/eta data once before the loop
     const firstMechanic = nearbyMechanics[0];
     const distanceToUser = firstMechanic.distanceToUser || 0;
     const eta = distanceToUser * 3;
+
+    // Persist calculated data to the Firestore document
     await db.doc(`garageRequests/${requestId}`).update({
         distance: distanceToUser,
         eta: eta,
@@ -195,14 +197,14 @@ const handleGarageRequestDispatch = async (requestData: any, requestId: string) 
                 type: 'new_garage_request',
                 requestId: requestId,
                 userId: requestData.driverId,
-                riderName: requestData.driverName,
+                userName: requestData.driverName,
                 userPhone: requestData.driverPhone,
                 issue: requestData.issue,
-                pickupAddress: locationAddress,
                 location: JSON.stringify(requestData.location),
                 status: requestData.status,
                 otp: requestData.otp,
                 createdAt: requestData.createdAt.toMillis().toString(),
+                locationAddress,
                 distance: String(distanceToUser),
                 eta: String(eta),
             };

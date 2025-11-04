@@ -1,4 +1,5 @@
 
+
 import type { GeoPoint } from 'firebase/firestore';
 
 export interface ClientSession {
@@ -87,29 +88,30 @@ export interface JobRequest {
   issue: string;
   otp: string;
 
-  // GeoPoint (Firebase)
+  // Firestore GeoPoint—support both SDK shapes
   location: {
-    latitude: number;
-    longitude: number;
+    latitude?: number;
+    longitude?: number;
     _lat?: number;
     _long?: number;
   };
 
-  // EXTRA FIELDS (popup ke liye)
-  locationAddress?: string;
-  distance?: number;
-  eta?: number;
+  // For the mechanic popup
+  locationAddress?: string;   // set by backend
+  distance?: number;          // in km (set by backend)
+  eta?: number;               // in minutes (set by backend)
 
   status:
-    | "pending"
-    | "accepted"
-    | "in_progress"
-    | "billing"
-    | "payment"
-    | "completed"
-    | "cancelled_by_user"
-    | "cancelled_by_driver"
-    | "cancelled_by_mechanic";
+    | 'pending'
+    | 'accepted'
+    | 'in_progress'
+    | 'billing'
+    | 'payment'
+    | 'completed'
+    | 'cancelled_by_user'
+    | 'cancelled_by_driver'
+    | 'cancelled_by_mechanic'
+    | 'no_mechanics_available';
 
   createdAt: any;
 }
