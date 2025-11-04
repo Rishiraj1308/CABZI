@@ -32,6 +32,7 @@ import { format } from 'date-fns'
 import type { JobRequest } from '@/lib/types'
 import { Input } from '@/components/ui/input'
 import { usePartnerData } from './layout'
+import { Switch } from '@/components/ui/switch'
 
 
 const LiveMap = dynamic(() => import('@/components/live-map'), { 
@@ -95,6 +96,8 @@ export default function ResQDashboard() {
   const [routeGeometry, setRouteGeometry] = useState<any>(null); // State for the route
   const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
+  const [processedRequestIds, setProcessedRequestIds] = useState<Set<string>>(new Set());
+
   
   const notificationSoundRef = useRef<HTMLAudioElement | null>(null);
   const earningsTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -132,6 +135,7 @@ export default function ResQDashboard() {
   const handleDeclineJob = useCallback(async (isTimeout = false) => {
     if (!jobRequest || !mechanicData?.id || !db) return
     if (requestTimerRef.current) clearInterval(requestTimerRef.current)
+    setProcessedRequestIds(prev => new Set(prev).add(jobRequest.id));
     
     const jobRef = doc(db, 'garageRequests', jobRequest.id);
     await updateDoc(jobRef, {
@@ -154,11 +158,13 @@ export default function ResQDashboard() {
   
   useEffect(() => {
     if (requests.length > 0 && !jobRequest && !acceptedJob) {
-        const nextRequest = requests[0];
-        setJobRequest(nextRequest);
-        notificationSoundRef.current?.play().catch(e => console.error("Audio play failed:", e));
+        const nextRequest = requests.find(req => !processedRequestIds.has(req.id));
+        if (nextRequest) {
+            setJobRequest(nextRequest);
+            notificationSoundRef.current?.play().catch(e => console.error("Audio play failed:", e));
+        }
     }
-  }, [requests, jobRequest, acceptedJob]);
+  }, [requests, jobRequest, acceptedJob, processedRequestIds]);
 
 
    // Countdown timer for job request
@@ -182,7 +188,6 @@ export default function ResQDashboard() {
     return () => {
         if (timer) clearInterval(timer);
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [jobRequest, handleDeclineJob]);
   
   const handleAcceptJob = async () => {
@@ -215,6 +220,7 @@ export default function ResQDashboard() {
   
       setAcceptedJob({ ...jobRequest, status: 'accepted' });
       setJobRequest(null);
+      setProcessedRequestIds(prev => new Set(prev).add(jobRequest.id));
       localStorage.setItem('activeJobId', jobRequest.id);
   
       toast({
@@ -641,3 +647,5 @@ export default function ResQDashboard() {
     </div>
   )
 }
+
+    
