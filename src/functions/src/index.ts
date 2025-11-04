@@ -13,525 +13,463 @@ import { initializeApp, getApps } from 'firebase-admin/app';
 import { HttpsError, onCall } from "firebase-functions/v2/https";
 import fetch from 'node-fetch';
 
-// Initialize Firebase Admin SDK if not already initialized
-if (!getApps().length) {
-  initializeApp();
-}
+// ✅ Initialize Firebase Admin
+if (!getApps().length) initializeApp();
 
 const db = getFirestore();
 const messaging = getMessaging();
 
-// Define a type for our partner data to satisfy TypeScript
 interface Partner {
-    id: string;
-    currentLocation?: GeoPoint;
-    fcmToken?: string;
-    [key: string]: any; // Allow other properties
+  id: string;
+  currentLocation?: GeoPoint;
+  fcmToken?: string;
+  [key: string]: any; // Allow other properties
 }
 
-// Calculate distance between two geopoints in km
+/* --------------------------------------------------
+   ✅ Utility: Distance (Haversine)
+-------------------------------------------------- */
 function getDistance(lat1: number, lon1: number, lat2: number, lon2: number) {
-    const R = 6371; // Radius of the earth in km
-    const dLat = (lat2 - lat1) * Math.PI / 180;
-    const dLon = (lon2 - lon1) * Math.PI / 180;
-    const a = 
-        Math.sin(dLat/2) * Math.sin(dLat/2) +
-        Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
-        Math.sin(dLon/2) * Math.sin(dLon/2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-    const d = R * c; // Distance in km
-    return d;
+  const R = 6371;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(lat1 * Math.PI / 180) *
+    Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLon / 2) ** 2;
+
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-// Reverse geocode coordinates to an address
+/* --------------------------------------------------
+   ✅ Reverse Geocoding
+-------------------------------------------------- */
 async function getAddressFromCoords(lat: number, lon: number): Promise<string> {
-    try {
-        const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`);
-        const data: any = await response.json();
-        return data.display_name || 'Unknown Location';
-    } catch (error) {
-        console.error("Reverse geocoding error:", error);
-        return 'Location address not available';
-    }
-}
-
-
-const handleRideDispatch = async (initialRideData: any, rideId: string) => {
-    // CRITICAL FIX: Re-fetch the document to get the latest status
-    const rideRef = db.doc(`rides/${rideId}`);
-    const rideDoc = await rideRef.get();
-
-    if (!rideDoc.exists || rideDoc.data()?.status !== 'searching') {
-        console.log(`Ride ${rideId} is no longer valid for dispatch (status is not 'searching' or doc deleted). Halting dispatch.`);
-        return;
-    }
-    const rideData = rideDoc.data();
-
-    // Correctly get the base vehicle type (e.g., "Cab" from "Cab (Lite)")
-    const rideTypeBase = rideData.rideType.split(' ')[0].trim();
-
-    let partnersQuery = db.collection('partners')
-        .where('isOnline', '==', true)
-        .where('status', '==', 'online'); 
-    
-    // If ride type is "Curocity Pink", add specific filters.
-    if (rideData.rideType === 'Curocity Pink') {
-        partnersQuery = partnersQuery.where('isCabziPinkPartner', '==', true)
-                                   .where('gender', '==', 'female');
-    }
-
-    const partnersSnapshot = await partnersQuery.get();
-    
-    if (partnersSnapshot.empty) {
-        console.log(`No online partners found for ride type: ${rideData.rideType} (Base: ${rideTypeBase}).`);
-        await db.doc(`rides/${rideId}`).update({ status: 'no_drivers_available' });
-        return;
-    }
-
-    const rideLocation = rideData.pickup.location as GeoPoint;
-    const rejectedBy = rideData.rejectedBy || [];
-    
-    const nearbyPartners = partnersSnapshot.docs
-        .map(doc => ({ id: doc.id, ...doc.data() } as Partner))
-        .filter(partner => {
-            if (!partner.currentLocation || !partner.vehicleType.startsWith(rideTypeBase) || rejectedBy.includes(partner.id)) {
-                 return false;
-            }
-            
-            const distance = getDistance(rideLocation.latitude, rideLocation.longitude, partner.currentLocation.latitude, partner.currentLocation.longitude);
-            partner.distanceToRider = distance; 
-            return distance < 10; // 10km radius
-        });
-    
-    if (nearbyPartners.length === 0) {
-        console.log('No partners found within the 10km radius for the ride.');
-        await db.doc(`rides/${rideId}`).update({ status: 'no_drivers_available' });
-        return;
-    }
-
-    // Send personalized notifications with ETA and distance
-    for (const partner of nearbyPartners) {
-        if (partner.fcmToken) {
-            const distanceToRider = partner.distanceToRider || 0;
-            const eta = distanceToRider * 2; // Simple ETA calculation (e.g., 2 mins per km)
-
-            const payloadData = {
-                type: 'new_ride_request',
-                rideId: rideId,
-                pickupAddress: rideData.pickup.address,
-                destinationAddress: rideData.destination.address,
-                pickupLocation: JSON.stringify(rideData.pickup.location),
-                destinationLocation: JSON.stringify(rideData.destination.location),
-                createdAt: rideData.createdAt.toMillis().toString(),
-                fare: String(rideData.fare),
-                rideType: rideData.rideType,
-                status: rideData.status,
-                riderName: rideData.riderName,
-                riderId: rideData.riderId,
-                riderGender: rideData.riderGender,
-                otp: rideData.otp,
-                distance: String(distanceToRider), // Specific distance for this driver
-                eta: String(eta), // Specific ETA for this driver
-                vehicleNumber: partner.vehicleNumber || 'N/A',
-            };
-            
-            const message = {
-                data: payloadData,
-                token: partner.fcmToken,
-            };
-
-            try {
-                await messaging.send(message);
-                console.log(`Ride request ${rideId} sent to partner ${partner.id}.`);
-            } catch (error) {
-                console.error(`Failed to send notification to partner ${partner.id}:`, error);
-            }
-        }
-    }
-}
-
-const handleGarageRequestDispatch = async (requestData: any, requestId: string) => {
-    const mechanicsQuery = db.collection('mechanics').where('isOnline', '==', true);
-    const mechanicsSnapshot = await mechanicsQuery.get();
-    
-    if (mechanicsSnapshot.empty) {
-        console.log('No available ResQ partners found.');
-        await db.doc(`garageRequests/${requestId}`).update({ status: 'no_mechanics_available' });
-        return;
-    }
-    
-    const userLocation = requestData.location as GeoPoint;
-    const locationAddress = await getAddressFromCoords(userLocation.latitude, userLocation.longitude);
-    const rejectedBy = requestData.rejectedBy || []; // Get the list of mechanics who have rejected
-
-    const nearbyMechanics = mechanicsSnapshot.docs
-        .map(doc => ({ id: doc.id, ...doc.data() } as Partner))
-        .filter(mechanic => {
-            // FIX: Check if mechanic has already rejected this request
-            if (!mechanic.currentLocation || rejectedBy.includes(mechanic.id)) return false;
-            
-            const mechanicLocation = mechanic.currentLocation as GeoPoint;
-            const distance = getDistance(userLocation.latitude, userLocation.longitude, mechanicLocation.latitude, mechanicLocation.longitude);
-            mechanic.distanceToUser = distance;
-            return distance < 15; // 15km radius for mechanics
-        });
-
-    if (nearbyMechanics.length === 0) {
-        console.log('No available ResQ partners found within the 15km radius.');
-        await db.doc(`garageRequests/${requestId}`).update({ status: 'no_mechanics_available' });
-        return;
-    }
-    
-    // Use the first mechanic for ETA/distance calculation to save to DB.
-    // All mechanics will receive their own personalized ETA in the notification.
-    const firstMechanic = nearbyMechanics[0];
-    const distanceToUser = firstMechanic.distanceToUser || 0;
-    const eta = distanceToUser * 3;
-
-    // Persist calculated data to the Firestore document
-    await db.doc(`garageRequests/${requestId}`).update({
-        distance: distanceToUser,
-        eta: eta,
-        locationAddress: locationAddress
-    });
-
-    for (const mechanic of nearbyMechanics) {
-        if (mechanic.fcmToken) {
-            // Recalculate ETA for each specific mechanic for the notification
-            const specificEta = (mechanic.distanceToUser || 0) * 3;
-
-            const payloadData = {
-                type: 'new_garage_request',
-                requestId: requestId,
-                userId: requestData.driverId, // Ensure correct ID field
-                userName: requestData.driverName, // Ensure correct name field
-                userPhone: requestData.driverPhone,
-                issue: requestData.issue,
-                location: JSON.stringify(requestData.location),
-                status: requestData.status,
-                otp: requestData.otp,
-                createdAt: requestData.createdAt.toMillis().toString(),
-                locationAddress,
-                distance: String(mechanic.distanceToUser),
-                eta: String(specificEta),
-            };
-
-            const message = {
-                data: payloadData,
-                token: mechanic.fcmToken,
-            };
-            
-            try {
-                await messaging.send(message);
-                console.log(`Garage request ${requestId} sent to mechanic ${mechanic.id}.`);
-            } catch (error) {
-                console.error(`Failed to send garage request to mechanic ${mechanic.id}:`, error);
-            }
-        }
-    }
-}
-
-const handleEmergencyDispatch = async (caseData: any, caseId: string) => {
-    const hospitalsQuery = db.collection('ambulances').where('isOnline', '==', true);
-    const hospitalsSnapshot = await hospitalsQuery.get();
-
-    if (hospitalsSnapshot.empty) {
-        console.log('No online hospitals found for emergency case.');
-        await db.doc(`emergencyCases/${caseId}`).update({ status: 'no_partners_available' });
-        return;
-    }
-
-    const patientLocation = caseData.location as GeoPoint;
-    const rejectedBy = caseData.rejectedBy || [];
-
-    const availableHospitals = hospitalsSnapshot.docs
-        .map(doc => ({ id: doc.id, ...doc.data() } as Partner))
-        .filter(hospital => !rejectedBy.includes(hospital.id))
-        .map(hospital => {
-            const hospitalLocation = hospital.location as GeoPoint;
-            const distance = getDistance(patientLocation.latitude, patientLocation.longitude, hospitalLocation.latitude, hospitalLocation.longitude);
-            return { ...hospital, distance };
-        })
-        .sort((a, b) => a.distance - b.distance);
-
-    if (availableHospitals.length === 0) {
-        console.log('No available hospitals found for the emergency case.');
-        await db.doc(`emergencyCases/${caseId}`).update({ status: 'all_partners_busy' });
-        return;
-    }
-
-    const targetHospital = availableHospitals[0];
-    const hospitalFCMToken = targetHospital.fcmToken;
-
-    if (hospitalFCMToken) {
-        const message = {
-            data: { type: 'new_emergency_request', caseId: caseId, ...caseData },
-            token: hospitalFCMToken,
-        };
-        await messaging.send(message);
-        console.log(`Emergency request ${caseId} dispatched to hospital ${targetHospital.id}.`);
-    } else {
-        console.log(`Hospital ${targetHospital.id} has no FCM token. Cascading to next...`);
-        await db.doc(`emergencyCases/${caseId}`).update({ rejectedBy: FieldValue.arrayUnion(targetHospital.id) });
-    }
-}
-
-
-// ============== Cloud Function Triggers ==============
-
-export const dispatchRideRequest = onDocumentCreated('rides/{rideId}', async (event) => {
-    const { rideId } = event.params;
-    const snapshot = event.data;
-    if (!snapshot) return;
-    const data = snapshot.data();
-
-    if (data.status === 'searching') {
-        console.log(`Dispatching ride: ${rideId}`);
-        await handleRideDispatch(data, rideId);
-    }
-});
-
-export const dispatchGarageRequest = onDocumentCreated('garageRequests/{requestId}', async (event) => {
-    const { requestId } = event.params;
-    const snapshot = event.data;
-    if (!snapshot) return;
-    const data = snapshot.data();
-    
-    if(data.status === 'pending') {
-        console.log(`Dispatching garage request: ${requestId}`);
-        await handleGarageRequestDispatch(data, requestId);
-    }
-});
-
-export const dispatchEmergencyCase = onDocumentCreated('emergencyCases/{caseId}', async (event) => {
-    const { caseId } = event.params;
-    const snapshot = event.data;
-    if (!snapshot) return;
-    const data = snapshot.data();
-
-    if (data.status === 'pending') {
-        console.log(`Dispatching emergency case: ${caseId}`);
-        await handleEmergencyDispatch(data, caseId);
-    }
-});
-
-
-export const emergencyCaseUpdater = onDocumentUpdated('emergencyCases/{caseId}', async (event) => {
-    const snapshot = event.data;
-    if (!snapshot) return;
-
-    const dataBefore = snapshot.before.data();
-    const dataAfter = snapshot.after.data();
-    const caseId = event.params.caseId;
-    
-    const logRef = db.collection('emergencyCases').doc(caseId).collection('logs');
-    let logMessage = '';
-
-    // Logic for Status Change Logging
-    if (dataBefore.status !== dataAfter.status) {
-        const actor = dataAfter.status.includes('_by_') ? dataAfter.status.split('_by_')[1] : 'system';
-        logMessage = `Status changed from ${dataBefore.status} to ${dataAfter.status} by ${actor}.`;
-    }
-
-    // Logic for Rejection Logging
-    const rejectedBefore = dataBefore.rejectedBy || [];
-    const rejectedAfter = dataAfter.rejectedBy || [];
-    if (rejectedAfter.length > rejectedBefore.length) {
-        const newRejectorId = rejectedAfter.find((id: string) => !rejectedBefore.includes(id));
-        logMessage = `Case rejected by partner ${newRejectorId}. Re-dispatching.`;
-    }
-    
-    if (logMessage) {
-        await logRef.add({
-            timestamp: serverTimestamp(),
-            message: logMessage,
-            dataBefore,
-            dataAfter
-        });
-    }
-
-
-    // Logic for Re-dispatching
-    if (dataAfter.status === 'pending' && rejectedAfter.length > rejectedBefore.length) {
-        console.log(`Re-dispatching emergency case: ${caseId} due to rejection.`);
-        await handleEmergencyDispatch(dataAfter, caseId);
-    }
-});
-
-
-/**
- * A scheduled Cloud Function that runs every minute to clean up stale online statuses.
- * This is the definitive server-side solution to the "ghost user" problem.
- */
-export const statusCleanup = onSchedule("every 1 minutes", async (event) => {
-  console.log("Running scheduled status cleanup...");
-
-  const now = Timestamp.now();
-  const staleThreshold = new Timestamp(now.seconds - 120, now.nanoseconds); // 2 minutes ago
-
-  const processStaleEntities = async (collectionName: string, statusField: string) => {
-    const staleQuery = db.collection(collectionName)
-      .where(statusField, '==', true)
-      .where('lastSeen', '<', staleThreshold);
-      
-    const snapshot = await staleQuery.get();
-    
-    if (snapshot.empty) {
-      console.log(`No stale entities found in ${collectionName}.`);
-      return;
-    }
-
-    const batch = db.batch();
-    snapshot.docs.forEach(doc => {
-      console.log(`Marking ${doc.id} in ${collectionName} as offline.`);
-      batch.update(doc.ref, { [statusField]: false, currentLocation: null });
-    });
-
-    await batch.commit();
-    console.log(`Cleaned up ${snapshot.size} stale entities from ${collectionName}.`);
-  };
-
   try {
-    // Process all three types of active entities
-    await processStaleEntities('users', 'isOnline');
-    await processStaleEntities('partners', 'isOnline');
-    await processStaleEntities('mechanics', 'isOnline');
-    await processStaleEntities('ambulances', 'isOnline');
-  } catch (error) {
-    console.error("Error during scheduled status cleanup:", error);
+    const response = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`
+    );
+    const data: any = await response.json();
+    return data.display_name || 'Unknown Location';
+  } catch (e) {
+    console.error("Reverse geocode error:", e);
+    return "Location address not available";
   }
-});
+}
 
-// New scheduled function to handle timeouts for emergency cases
-export const emergencyCaseTimeout = onSchedule("every 1 minutes", async (event) => {
-    console.log("Running scheduled emergency case timeout check...");
+/* --------------------------------------------------
+   ✅ RIDE DISPATCH
+-------------------------------------------------- */
+const handleRideDispatch = async (initialRideData: any, rideId: string) => {
 
-    const now = Timestamp.now();
-    // A case is considered timed out if it's pending for more than 2 minutes
-    const timeoutThreshold = new Timestamp(now.seconds - 120, now.nanoseconds); 
-    
-    const pendingCasesQuery = db.collection('emergencyCases')
-        .where('status', '==', 'pending')
-        .where('createdAt', '<', timeoutThreshold);
+  const rideRef = db.doc(`rides/${rideId}`);
+  const rideDoc = await rideRef.get();
 
-    const snapshot = await pendingCasesQuery.get();
+  if (!rideDoc.exists) return;
 
-    if (snapshot.empty) {
-        console.log("No timed-out emergency cases found.");
-        return;
-    }
+  const rideData = rideDoc.data()!;
+  if (rideData.status !== "searching") return;
 
-    for (const doc of snapshot.docs) {
-        const caseData = doc.data();
-        const caseId = doc.id;
+  const rideTypeBase = rideData.rideType?.split(" ")[0]?.trim() ?? "";
 
-        const dispatchedHospitals = await db.collection('ambulances')
-            .where('fcmToken', '!=', null) // Crude way to check who it could have been sent to
-            .get();
-        
-        // This is a simplified logic. A more robust system would log which hospital the request was sent to.
-        // For now, we assume it was sent to the first available one that hasn't rejected it.
-        const allHospitals = (await db.collection('ambulances').get()).docs.map(d => d.id);
-        const rejectedBy = caseData.rejectedBy || [];
-        const potentialTargets = allHospitals.filter(id => !rejectedBy.includes(id));
-        
-        if(potentialTargets.length > 0) {
-            const timedOutHospitalId = potentialTargets[0]; 
-            console.log(`Case ${caseId} timed out for hospital ${timedOutHospitalId}. Cascading...`);
-            
-            // Mark the hospital as having rejected (timed out) and trigger the update function
-            await db.doc(`emergencyCases/${caseId}`).update({
-                rejectedBy: FieldValue.arrayUnion(timedOutHospitalId)
-            });
-        }
-    }
-});
+  let partnersQuery = db
+    .collection("partners")
+    .where("isOnline", "==", true)
+    .where("status", "==", "online");
 
+  if (rideData.rideType === "Curocity Pink") {
+    partnersQuery = partnersQuery
+      .where("isCabziPinkPartner", "==", true)
+      .where("gender", "==", "female");
+  }
 
-
-// ============== AUTOMATION TRIGGERS ==============
-
-const callAutomationWebhook = async (payload: any, partnerType: string) => {
-  const webhookUrl = process.env.AUTOMATION_WEBHOOK_URL; 
-  if (!webhookUrl) {
-    console.log(`AUTOMATION_WEBHOOK_URL not set. Skipping alert for new ${partnerType}. Payload:`, payload);
+  const partnersSnapshot = await partnersQuery.get();
+  if (partnersSnapshot.empty) {
+    await rideRef.update({ status: "no_drivers_available" });
     return;
   }
 
-  try {
-    const response = await fetch(webhookUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-          event: `new_${partnerType}_partner`,
-          data: payload
-      }),
+  const rideLoc = rideData.pickup?.location as GeoPoint;
+  const rejectedBy = rideData.rejectedBy || [];
+
+  const nearbyPartners = partnersSnapshot.docs
+    .map(doc => ({ id: doc.id, ...doc.data() } as Partner))
+    .filter(p => {
+      if (!p.currentLocation) return false;
+      if (!p.vehicleType?.startsWith(rideTypeBase)) return false;
+      if (rejectedBy.includes(p.id)) return false;
+
+      const dist = getDistance(
+        rideLoc.latitude,
+        rideLoc.longitude,
+        p.currentLocation.latitude,
+        p.currentLocation.longitude
+      );
+
+      p.distanceToRider = dist;
+      return dist < 10;
     });
-     if (response.ok) {
-        console.log(`Sent new ${partnerType} partner alert to webhook for ${payload.name}`);
-    } else {
-        console.error(`Webhook failed with status: ${response.status}`);
-    }
-  } catch (error) {
-    console.error('Error calling automation webhook:', error);
+
+  if (nearbyPartners.length === 0) {
+    await rideRef.update({ status: "no_drivers_available" });
+    return;
   }
-}
 
-// Trigger for new Path Partners (Drivers)
-export const onNewPathPartner = onDocumentCreated('partners/{partnerId}', (event) => {
-  const data = event.data?.data();
-  if (data) {
-    callAutomationWebhook({ id: event.params.partnerId, ...data, type: 'Path' }, 'path');
-  }
-});
+  for (const partner of nearbyPartners) {
+    if (!partner.fcmToken) continue;
 
-// Trigger for new ResQ Partners (Mechanics)
-export const onNewResQPartner = onDocumentCreated('mechanics/{mechanicId}', (event) => {
-  const data = event.data?.data();
-  if (data) {
-    callAutomationWebhook({ id: event.params.mechanicId, ...data, type: 'ResQ' }, 'resq');
-  }
-});
+    const dist = partner.distanceToRider || 0;
+    const eta = dist * 2;
 
-// Trigger for new Cure Partners (Hospitals)
-export const onNewCurePartner = onDocumentCreated('ambulances/{ambulanceId}', (event) => {
-  const data = event.data?.data();
-  if (data) {
-    callAutomationWebhook({ id: event.params.ambulanceId, ...data, type: 'Cure' }, 'cure');
-  }
-});
-
-
-// This is a simple, callable function for the admin panel to use.
-export const simulateHighDemand = onCall(async (request) => {
-    const zoneName = request.data.zoneName;
-    if (!zoneName) {
-        throw new HttpsError('invalid-argument', 'The function must be called with one argument "zoneName".');
-    }
-
-    console.log(`High demand simulated in: ${zoneName}.`);
-    
-    const alertPayload = {
-        event: 'high_demand_alert',
-        data: {
-            zone: zoneName,
-            incentive: 50, // Example incentive
-            timestamp: new Date().toISOString()
-        }
+    const payloadData = {
+      type: "new_ride_request",
+      rideId,
+      pickupAddress: rideData.pickup?.address ?? "",
+      destinationAddress: rideData.destination?.address ?? "",
+      pickupLocation: JSON.stringify(rideData.pickup?.location),
+      destinationLocation: JSON.stringify(rideData.destination?.location),
+      createdAt: rideData.createdAt?.toMillis?.().toString?.() ?? "",
+      fare: String(rideData.fare ?? ""),
+      rideType: rideData.rideType ?? "",
+      status: rideData.status ?? "searching",
+      riderName: rideData.riderName ?? "",
+      riderId: rideData.riderId ?? "",
+      riderGender: rideData.riderGender ?? "",
+      otp: rideData.otp ?? "",
+      distance: String(dist),
+      eta: String(eta),
+      vehicleNumber: partner.vehicleNumber ?? "N/A",
     };
 
-    const webhookUrl = process.env.AUTOMATION_WEBHOOK_URL;
-    if (webhookUrl) {
-         try {
-            await fetch(webhookUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(alertPayload),
-            });
-         } catch (error) {
-            console.error('Error sending high demand alert to webhook:', error);
-         }
+    await messaging.send({ data: payloadData, token: partner.fcmToken });
+  }
+};
+
+/* --------------------------------------------------
+   ✅ GARAGE DISPATCH (ResQ) - REWRITTEN
+-------------------------------------------------- */
+const handleGarageRequestDispatch = async (requestData: any, requestId: string) => {
+    const mechanicsSnapshot = await db
+      .collection("mechanics")
+      .where("isOnline", "==", true)
+      .get();
+  
+    if (mechanicsSnapshot.empty) {
+      await db.doc(`garageRequests/${requestId}`).update({ status: "no_mechanics_available" });
+      return;
+    }
+  
+    const userLoc = requestData.location as GeoPoint;
+    const locationAddress = await getAddressFromCoords(userLoc.latitude, userLoc.longitude);
+    const rejectedBy = requestData.rejectedBy || [];
+  
+    const nearbyMechanics = mechanicsSnapshot.docs
+      .map(doc => ({ id: doc.id, ...doc.data() } as Partner))
+      .filter(m => {
+        if (!m.currentLocation || rejectedBy.includes(m.id)) return false;
+        const dist = getDistance(
+          userLoc.latitude,
+          userLoc.longitude,
+          m.currentLocation.latitude,
+          m.currentLocation.longitude
+        );
+        m.distanceToUser = dist;
+        return dist < 15; // 15km radius
+      })
+      .sort((a, b) => (a.distanceToUser || 99) - (b.distanceToUser || 99));
+  
+    if (nearbyMechanics.length === 0) {
+      await db.doc(`garageRequests/${requestId}`).update({ status: "no_mechanics_available" });
+      return;
+    }
+  
+    const targetMechanic = nearbyMechanics[0];
+  
+    if (!targetMechanic.fcmToken) {
+        console.log(`Mechanic ${targetMechanic.id} has no FCM token. Cascading...`);
+        await db.doc(`garageRequests/${requestId}`).update({
+            rejectedBy: FieldValue.arrayUnion(targetMechanic.id),
+        });
+        return;
+    }
+    
+    const distanceToUser = targetMechanic.distanceToUser || 0;
+    const eta = distanceToUser * 3;
+
+    // ✅ SAVE IN FIRESTORE (IMPORTANT FIX)
+    await db.doc(`garageRequests/${requestId}`).update({
+      distance: distanceToUser,
+      eta: eta,
+      locationAddress: locationAddress
+    });
+
+    const payload = {
+        type: "new_garage_request",
+        requestId,
+        userId: requestData.driverId, // Ensure correct ID field
+        userName: requestData.driverName, // Ensure correct name field
+        userPhone: requestData.driverPhone,
+        issue: requestData.issue,
+        location: JSON.stringify(requestData.location),
+        locationAddress,
+        status: requestData.status,
+        otp: requestData.otp,
+        createdAt: requestData.createdAt?.toMillis?.().toString() ?? "",
+        distance: String(distanceToUser),
+        eta: String(eta),
+    };
+
+    try {
+        await messaging.send({ data: payload, token: targetMechanic.fcmToken });
+        console.log(`Garage request ${requestId} sent to mechanic ${targetMechanic.id}.`);
+    } catch (error) {
+        console.error(`Failed to send garage request to mechanic ${targetMechanic.id}:`, error);
+        // If sending fails, treat as a rejection to cascade to the next one.
+        await db.doc(`garageRequests/${requestId}`).update({
+            rejectedBy: FieldValue.arrayUnion(targetMechanic.id),
+        });
+    }
+};
+
+/* --------------------------------------------------
+   ✅ EMERGENCY DISPATCH
+-------------------------------------------------- */
+const handleEmergencyDispatch = async (caseData: any, caseId: string) => {
+
+  const hospitalsSnapshot = await db
+    .collection("ambulances")
+    .where("isOnline", "==", true)
+    .get();
+
+  if (hospitalsSnapshot.empty) {
+    await db.doc(`emergencyCases/${caseId}`).update({
+      status: "no_partners_available"
+    });
+    return;
+  }
+
+  const patientLoc = caseData.location as GeoPoint;
+  const rejected = caseData.rejectedBy || [];
+
+  const available = hospitalsSnapshot.docs
+    .map(doc => ({ id: doc.id, ...doc.data() } as Partner))
+    .filter(h => !rejected.includes(h.id))
+    .map(h => {
+      const dist = getDistance(
+        patientLoc.latitude,
+        patientLoc.longitude,
+        (h.location as GeoPoint).latitude,
+        (h.location as GeoPoint).longitude
+      );
+      return { ...h, distance: dist };
+    })
+    .sort((a, b) => a.distance - b.distance);
+
+  if (available.length === 0) {
+    await db.doc(`emergencyCases/${caseId}`).update({
+      status: "all_partners_busy"
+    });
+    return;
+  }
+
+  const target = available[0];
+
+  if (!target.fcmToken) {
+    await db.doc(`emergencyCases/${caseId}`).update({
+      rejectedBy: FieldValue.arrayUnion(target.id)
+    });
+    return;
+  }
+
+  await messaging.send({
+    data: { type: "new_emergency_request", caseId, ...caseData },
+    token: target.fcmToken
+  });
+};
+
+/* --------------------------------------------------
+   ✅ TRIGGERS
+-------------------------------------------------- */
+export const dispatchRideRequest = onDocumentCreated(
+  "rides/{rideId}",
+  async (event) => {
+    const data = event.data?.data();
+    if (data?.status === "searching") {
+      await handleRideDispatch(data, event.params.rideId);
+    }
+  }
+);
+
+export const dispatchGarageRequest = onDocumentCreated(
+  "garageRequests/{requestId}",
+  async (event) => {
+    const data = event.data?.data();
+    if (data?.status === "pending") {
+      await handleGarageRequestDispatch(data, event.params.requestId);
+    }
+  }
+);
+
+// New trigger to handle garage request re-dispatch
+export const garageRequestUpdater = onDocumentUpdated('garageRequests/{requestId}', async (event) => {
+    const beforeData = event.data?.before.data();
+    const afterData = event.data?.after.data();
+    if (!beforeData || !afterData) return;
+
+    const rejectedBefore = beforeData.rejectedBy || [];
+    const rejectedAfter = afterData.rejectedBy || [];
+
+    if (afterData.status === 'pending' && rejectedAfter.length > rejectedBefore.length) {
+        console.log(`Re-dispatching garage request: ${event.params.requestId} due to rejection.`);
+        await handleGarageRequestDispatch(afterData, event.params.requestId);
+    }
+});
+
+
+export const dispatchEmergencyCase = onDocumentCreated(
+  "emergencyCases/{caseId}",
+  async (event) => {
+    const data = event.data?.data();
+    if (data?.status === "pending") {
+      await handleEmergencyDispatch(data, event.params.caseId);
+    }
+  }
+);
+
+/* --------------------------------------------------
+   ✅ EMERGENCY LOGGING + REDISPATCH
+-------------------------------------------------- */
+export const emergencyCaseUpdater = onDocumentUpdated(
+  "emergencyCases/{caseId}",
+  async (event) => {
+
+    const before = event.data?.before?.data();
+    const after = event.data?.after?.data();
+    if (!before || !after) return;
+
+    const caseId = event.params.caseId;
+    const logRef = db.collection("emergencyCases").doc(caseId).collection("logs");
+
+    let message = "";
+
+    if (before.status !== after.status) {
+      const actor = after.status.includes("_by_")
+        ? after.status.split("_by_")[1]
+        : "system";
+
+      message = `Status changed from ${before.status} to ${after.status} by ${actor}.`;
     }
 
-    return { success: true, message: `High demand alert triggered for ${zoneName}.` };
+    const rb = before.rejectedBy || [];
+    const ra = after.rejectedBy || [];
+
+    if (ra.length > rb.length) {
+      const who = ra.find((id: string) => !rb.includes(id));
+      message = `Case rejected by partner ${who}. Re-dispatching.`;
+    }
+
+    if (message) {
+      await logRef.add({
+        timestamp: serverTimestamp(),
+        message,
+        before,
+        after
+      });
+    }
+
+    if (ra.length > rb.length && after.status === "pending") {
+      await handleEmergencyDispatch(after, caseId);
+    }
+  }
+);
+
+/* --------------------------------------------------
+   ✅ STATUS CLEANUP — Fix ghost users
+-------------------------------------------------- */
+export const statusCleanup = onSchedule("every 1 minutes", async () => {
+  const now = Timestamp.now();
+  const cutoff = new Timestamp(now.seconds - 120, now.nanoseconds);
+
+  async function clean(col: string, status: string) {
+    const q = db.collection(col)
+      .where(status, "==", true)
+      .where("lastSeen", "<", cutoff);
+
+    const snap = await q.get();
+    if (snap.empty) return;
+
+    const batch = db.batch();
+    snap.docs.forEach(doc => {
+      batch.update(doc.ref, { [status]: false, currentLocation: null });
+    });
+
+    await batch.commit();
+  }
+
+  await clean("users", "isOnline");
+  await clean("partners", "isOnline");
+  await clean("mechanics", "isOnline");
+  await clean("ambulances", "isOnline");
+});
+
+/* --------------------------------------------------
+   ✅ AUTOMATION WEBHOOK
+-------------------------------------------------- */
+const callAutomationWebhook = async (payload: any, type: string) => {
+  const url = process.env.AUTOMATION_WEBHOOK_URL;
+  if (!url) return;
+
+  await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ event: `new_${type}_partner`, data: payload })
+  });
+};
+
+export const onNewPathPartner = onDocumentCreated(
+  "partners/{id}",
+  (event) => {
+    const data = event.data?.data();
+    if (data) callAutomationWebhook({ id: event.params.id, ...data, type: 'Path' }, "path");
+  }
+);
+
+export const onNewResQPartner = onDocumentCreated(
+  "mechanics/{id}",
+  (event) => {
+    const data = event.data?.data();
+    if (data) callAutomationWebhook({ id: event.params.id, ...data, type: 'ResQ' }, "resq");
+  }
+);
+
+export const onNewCurePartner = onDocumentCreated(
+  "ambulances/{id}",
+  (event) => {
+    const data = event.data?.data();
+    if (data) callAutomationWebhook({ id: event.params.id, ...data, type: 'Cure' }, "cure");
+  }
+);
+
+/* --------------------------------------------------
+   ✅ MANUAL HIGH DEMAND TRIGGER
+-------------------------------------------------- */
+export const simulateHighDemand = onCall(async (req) => {
+  const zone = req.data.zoneName;
+  if (!zone) throw new HttpsError("invalid-argument", "zoneName required");
+
+  const url = process.env.AUTOMATION_WEBHOOK_URL;
+  if (url) {
+    await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        event: "high_demand_alert",
+        data: { zone, incentive: 50, timestamp: new Date().toISOString() }
+      })
+    });
+  }
+
+  return { success: true };
 });
