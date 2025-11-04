@@ -43,6 +43,19 @@ function getDistance(lat1: number, lon1: number, lat2: number, lon2: number) {
     return d;
 }
 
+// Reverse geocode coordinates to an address
+async function getAddressFromCoords(lat: number, lon: number): Promise<string> {
+    try {
+        const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`);
+        const data: any = await response.json();
+        return data.display_name || 'Unknown Location';
+    } catch (error) {
+        console.error("Reverse geocoding error:", error);
+        return 'Location address not available';
+    }
+}
+
+
 const handleRideDispatch = async (initialRideData: any, rideId: string) => {
     // CRITICAL FIX: Re-fetch the document to get the latest status
     const rideRef = db.doc(`rides/${rideId}`);
@@ -148,6 +161,9 @@ const handleGarageRequestDispatch = async (requestData: any, requestId: string) 
     }
     
     const userLocation = requestData.location as GeoPoint;
+    // Reverse geocode the location to get an address
+    const locationAddress = await getAddressFromCoords(userLocation.latitude, userLocation.longitude);
+
     const nearbyMechanics = mechanicsSnapshot.docs
         .map(doc => ({ id: doc.id, ...doc.data() } as Partner))
         .filter(mechanic => {
@@ -175,6 +191,7 @@ const handleGarageRequestDispatch = async (requestData: any, requestId: string) 
                 userName: requestData.userName,
                 userPhone: requestData.userPhone,
                 issue: requestData.issue,
+                locationAddress: locationAddress, // Use the human-readable address
                 location: JSON.stringify(requestData.location),
                 status: requestData.status,
                 otp: requestData.otp,
@@ -502,5 +519,3 @@ export const simulateHighDemand = onCall(async (request) => {
 
     return { success: true, message: `High demand alert triggered for ${zoneName}.` };
 });
-
-    

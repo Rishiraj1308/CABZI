@@ -73,7 +73,7 @@ const StatCard = ({ title, value, icon: Icon, isLoading, onValueClick }: { title
       <Icon className="h-4 w-4 text-muted-foreground" />
     </CardHeader>
     <CardContent>
-      {isLoading ? (
+      {isPartnerDataLoading ? (
         <Skeleton className="h-8 w-20" />
       ) : (
         <div className="text-2xl font-bold cursor-pointer" onClick={onValueClick}>
@@ -156,13 +156,13 @@ export default function ResQDashboard() {
   }, [mechanicData, db]);
 
   
-    useEffect(() => {
+  useEffect(() => {
     if (requests.length > 0 && !jobRequest && !acceptedJob) {
-      const nextRequest = requests.find(req => !processedRequestIds.has(req.id));
-      if (nextRequest) {
-        setJobRequest(nextRequest);
-        notificationSoundRef.current?.play().catch(e => console.error("Audio play failed:", e));
-      }
+        const nextRequest = requests.find(req => !processedRequestIds.has(req.id));
+        if (nextRequest) {
+            setJobRequest(nextRequest);
+            notificationSoundRef.current?.play().catch(e => console.error("Audio play failed:", e));
+        }
     }
   }, [requests, jobRequest, acceptedJob, processedRequestIds]);
 
@@ -599,7 +599,7 @@ export default function ResQDashboard() {
                 <div className="space-y-2 text-sm">
                    <div className="flex items-start gap-2">
                        <MapPin className="w-4 h-4 mt-1 text-green-500 flex-shrink-0" />
-                       <p><span className="font-semibold">LOCATION:</span> {jobRequest.location.latitude.toFixed(4)}, {jobRequest.location.longitude.toFixed(4)}</p>
+                       <p><span className="font-semibold">LOCATION:</span> {jobRequest.locationAddress}</p>
                    </div>
                    <div className="flex items-start gap-2">
                        <Wrench className="w-4 h-4 mt-1 text-red-500 flex-shrink-0" />
@@ -647,5 +647,3 @@ export default function ResQDashboard() {
     </div>
   )
 }
-
-    
