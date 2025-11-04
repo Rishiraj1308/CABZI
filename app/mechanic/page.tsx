@@ -50,22 +50,22 @@ interface BillItem {
 }
 
 const StatCard = ({ title, value, icon: Icon, isLoading, onValueClick }: { title: string, value: string, icon: React.ElementType, isLoading?: boolean, onValueClick?: () => void }) => (
-  <Card>
-    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-      <CardTitle className="text-sm font-medium">{title}</CardTitle>
-      <Icon className="h-4 w-4 text-muted-foreground" />
-    </CardHeader>
-    <CardContent>
-      {isLoading ? (
-        <Skeleton className="h-8 w-20" />
-      ) : (
-        <div className="text-2xl font-bold cursor-pointer" onClick={onValueClick}>
-          {value}
-        </div>
-      )}
-    </CardContent>
-  </Card>
-)
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <CardTitle className="text-sm font-medium">{title}</CardTitle>
+        <Icon className="h-4 w-4 text-muted-foreground" />
+      </CardHeader>
+      <CardContent>
+        {isLoading ? (
+          <Skeleton className="h-8 w-20" />
+        ) : (
+          <div className="text-2xl font-bold cursor-pointer" onClick={onValueClick}>
+            {value}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  )
 
 
 export default function ResQDashboard() {
@@ -203,6 +203,7 @@ export default function ResQDashboard() {
       });
   
       setAcceptedJob({ ...jobRequest, status: 'accepted' });
+      setJobStatus('navigating'); // Set initial status for accepted job
       setJobRequest(null);
       setProcessedRequestIds(prev => new Set(prev).add(jobRequest.id));
       localStorage.setItem('activeJobId', jobRequest.id);
@@ -410,8 +411,13 @@ export default function ResQDashboard() {
     ? { lat: acceptedJob.location.latitude, lon: acceptedJob.location.longitude }
     : undefined;
 
+  if (isPartnerDataLoading || !isMounted) {
+    return <div className="flex items-center justify-center h-full"><Skeleton className="w-full h-96" /></div>
+  }
+
   const renderActiveJob = () => {
     if (!acceptedJob) return null;
+    
     return (
         <Card className="shadow-lg animate-fade-in w-full">
             <CardHeader>
@@ -487,45 +493,6 @@ export default function ResQDashboard() {
     );
   }
 
-  useEffect(() => {
-    const fetchRecentJobs = async () => {
-        setIsHistoryLoading(true);
-        if (!db || !mechanicData?.id) {
-            setIsHistoryLoading(false);
-            return;
-        }
-        try {
-            const q = query(
-                collection(db, 'garageRequests'),
-                where('mechanicId', '==', mechanicData.id),
-                where('status', '==', 'completed'),
-                orderBy('billDate', 'desc'),
-                limit(5)
-            );
-
-            const unsubscribe = onSnapshot(q, (querySnapshot) => {
-                const jobs: JobRequest[] = [];
-                querySnapshot.forEach((doc) => {
-                    jobs.push(doc.data() as JobRequest);
-                });
-                setRecentJobs(jobs);
-                setIsHistoryLoading(false);
-            });
-
-            return () => unsubscribe();
-        } catch (error) {
-            console.error("Error fetching recent jobs:", error);
-            setIsHistoryLoading(false);
-        }
-    };
-
-    fetchRecentJobs();
-}, [db, mechanicData?.id]);
-
-  if (isPartnerDataLoading || !isMounted) {
-    return <div className="flex items-center justify-center h-full"><Skeleton className="w-full h-96" /></div>
-  }
-
   return (
     <div className="space-y-6">
 
@@ -538,7 +505,7 @@ export default function ResQDashboard() {
                 <div>
                   <CardTitle>Your Dashboard</CardTitle>
                   <CardDescription className="text-xs">
-                    {format(currentTime, 'EEEE, d MMM yyyy')}
+                    {format(currentTime, 'EEEE, d MMMM yyyy')}
                   </CardDescription>
                 </div>
 
@@ -632,10 +599,12 @@ export default function ResQDashboard() {
                 <p className="font-bold">{jobRequest.userName}</p>
               </div>
               <div className="space-y-2 text-sm">
-                <div className="flex items-start gap-2">
-                  <MapPin className="w-4 h-4 mt-1 text-green-500" />
-                  <p><span className="font-semibold">LOCATION:</span> {jobRequest.locationAddress}</p>
-                </div>
+                {jobRequest.locationAddress && (
+                  <div className="flex items-start gap-2">
+                    <MapPin className="w-4 h-4 mt-1 text-green-500" />
+                    <p><span className="font-semibold">LOCATION:</span> {jobRequest.locationAddress}</p>
+                  </div>
+                )}
                 <div className="flex items-start gap-2">
                   <Wrench className="w-4 h-4 mt-1 text-red-500" />
                   <p><span className="font-semibold">ISSUE:</span> {jobRequest.issue}</p>
@@ -643,7 +612,7 @@ export default function ResQDashboard() {
               </div>
               <div className="h-40 w-full rounded-md overflow-hidden my-3 border">
                 <LiveMap
-                  riderLocation={{ lat: getLat(jobRequest.location), lon: getLng(jobRequest.location) }}
+                  riderLocation={userLocation}
                   driverLocation={ mechanicData?.currentLocation ? { lat: mechanicData.currentLocation.latitude, lon: mechanicData.currentLocation.longitude } : undefined }
                 />
               </div>
@@ -684,5 +653,3 @@ export default function ResQDashboard() {
     </div>
   )
 }
-
-    
