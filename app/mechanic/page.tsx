@@ -108,6 +108,7 @@ export default function ResQDashboard() {
     return () => {
         clearInterval(timer);
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleDeclineJob = useCallback(async (isTimeout = false) => {
@@ -204,7 +205,7 @@ export default function ResQDashboard() {
   
       toast({
         title: 'Job Accepted!',
-        description: `Navigate to ${jobRequest.userName}'s location.`,
+        description: `Navigate to ${jobRequest.riderName}'s location.`,
       });
     } catch (err: any) {
       console.error("Error accepting job:", err);
@@ -354,7 +355,7 @@ export default function ResQDashboard() {
               totalAmount: totalAmount,
               invoiceId: invoiceId,
               billDate: serverTimestamp(),
-              billedTo: acceptedJob.userName
+              billedTo: acceptedJob.riderName
           });
           
           setJobStatus('payment'); // Local state update for UI
@@ -413,7 +414,7 @@ export default function ResQDashboard() {
         <Card className="shadow-lg animate-fade-in w-full">
             <CardHeader>
                 <CardTitle>Ongoing Job</CardTitle>
-                <CardDescription>User: {acceptedJob.userName} - Issue: {acceptedJob.issue}</CardDescription>
+                <CardDescription>User: {acceptedJob.riderName} - Issue: {acceptedJob.issue}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
                 {jobStatus === 'navigating' && (
@@ -490,95 +491,80 @@ export default function ResQDashboard() {
 
   return (
     <div className="space-y-6">
-      {acceptedJob ? renderActiveJob() : (
-        <>
-          <Card className="shadow-lg">
-            <CardHeader>
-              <div className="flex justify-between items-center">
-                <div>
-                  <CardTitle>Your Dashboard</CardTitle>
-                  <CardDescription className="text-xs">
-                    {format(currentTime, 'EEEE, d MMMM yyyy')}
-                  </CardDescription>
-                </div>
-
-                <div className="text-right">
-                  <p className="font-bold text-2xl font-mono">
-                    {format(currentTime, 'h:mm:ss a')}
-                  </p>
-
-                  <div className="flex items-center space-x-2 justify-end mt-1">
-                    <Switch
-                      id="online-status"
-                      checked={isOnline}
-                      onCheckedChange={handleAvailabilityChange}
-                    />
-
-                    <Label
-                      htmlFor="online-status"
-                      className={cn("font-semibold", isOnline ? "text-green-600" : "text-muted-foreground")}
-                    >
-                      {isOnline ? "ONLINE" : "OFFLINE"}
-                    </Label>
-                  </div>
-                </div>
-              </div>
-            </CardHeader>
-            {isOnline ? (
-              <CardContent className="text-center py-12">
-                <SearchingIndicator partnerType="resq" className="w-32 h-32" />
-                <h3 className="text-3xl font-bold mt-4">Waiting for Jobs...</h3>
-              </CardContent>
-            ) : (
-              <CardContent className="text-center py-12">
-                <CardTitle>You Are Offline</CardTitle>
-                <CardDescription>Go online to receive jobs.</CardDescription>
-              </CardContent>
-            )}
-          </Card>
-           <Tabs defaultValue="stats" className="w-full">
-              <TabsList className="grid w-full grid-cols-2">
-                  <TabsTrigger value="stats">Today's Stats</TabsTrigger>
-                  <TabsTrigger value="history">Recent Activity</TabsTrigger>
-              </TabsList>
-              <TabsContent value="stats" className="mt-4">
-                  <div className="grid gap-4 grid-cols-2 lg:grid-cols-2">
-                      <StatCard title="Today's Earnings" value={isEarningsVisible ? `₹${(mechanicData?.todaysEarnings || 0).toLocaleString()}` : '₹ ****'} icon={IndianRupee} isLoading={isPartnerDataLoading} onValueClick={() => !isEarningsVisible && setIsPinDialogOpen(true)} />
-                      <StatCard title="Today's Jobs" value={mechanicData?.jobsToday?.toString() || '0'} icon={History} isLoading={isPartnerDataLoading} />
-                      <StatCard title="Acceptance Rate" value={`${mechanicData?.acceptanceRate || '95'}%`} icon={Power} isLoading={isPartnerDataLoading} />
-                      <StatCard title="Rating" value={mechanicData?.rating?.toString() || '4.8'} icon={Star} isLoading={isPartnerDataLoading} />
-                  </div>
-              </TabsContent>
-              <TabsContent value="history" className="mt-4 flex-1 space-y-2 max-h-48 overflow-y-auto">
-                  {isHistoryLoading ? (
-                      Array.from({length: 2}).map((_, i) => <Skeleton key={i} className="h-16 w-full" />)
-                  ) : recentJobs.length > 0 ? (
-                      recentJobs.map(job => (
-                          <Card key={job.id}>
-                              <CardContent className="p-2 flex items-center justify-between">
-                                  <div className="text-sm">
-                                      <p className="font-semibold line-clamp-1">{job.issue}</p>
-                                      <p className="text-xs text-muted-foreground">{job.createdAt ? new Date(job.createdAt.seconds * 1000).toLocaleString() : 'N/A'}</p>
-                                  </div>
-                                  <p className="font-bold text-lg">₹{(job as any).totalAmount || 0}</p>
-                              </CardContent>
-                          </Card>
-                      ))
-                  ) : (
-                      <div className="text-center py-10 text-muted-foreground">No recent jobs found.</div>
-                  )}
-              </TabsContent>
-          </Tabs>
-        </>
-      )}
+        {acceptedJob ? renderActiveJob() : (
+            <>
+                <Card className="shadow-lg">
+                    <CardHeader>
+                        <div className="flex justify-between items-center">
+                            <div>
+                                <CardTitle>Your Dashboard</CardTitle>
+                                <CardDescription className="text-xs">{format(currentTime, 'EEEE, d MMMM yyyy')}</CardDescription>
+                            </div>
+                            <div className="text-right">
+                                <p className="font-bold text-2xl font-mono">{format(currentTime, 'h:mm:ss a')}</p>
+                                 <div className="flex items-center space-x-2 justify-end">
+                                    <Switch id="online-status" checked={isOnline} onCheckedChange={handleAvailabilityChange} />
+                                    <Label htmlFor="online-status" className={cn("font-semibold", isOnline ? "text-green-600" : "text-muted-foreground")}>
+                                        {isOnline ? "ONLINE" : "OFFLINE"}
+                                    </Label>
+                                </div>
+                            </div>
+                        </div>
+                    </CardHeader>
+                    {isOnline ? (
+                        <CardContent className="text-center py-12">
+                            <SearchingIndicator partnerType="resq" className="w-32 h-32" />
+                            <h3 className="text-3xl font-bold mt-4">Waiting for Jobs...</h3>
+                            <p className="text-muted-foreground">You are online and ready to accept jobs.</p>
+                        </CardContent>
+                    ) : (
+                        <CardContent className="text-center py-12">
+                            <CardTitle>You are Offline</CardTitle>
+                            <CardDescription>Go online to receive service requests.</CardDescription>
+                        </CardContent>
+                    )}
+                </Card>
+                <Tabs defaultValue="stats" className="w-full">
+                    <TabsList className="grid w-full grid-cols-2">
+                        <TabsTrigger value="stats">Today's Stats</TabsTrigger>
+                        <TabsTrigger value="history">Recent Activity</TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="stats" className="mt-4">
+                        <div className="grid gap-4 grid-cols-2 lg:grid-cols-2">
+                            <StatCard title="Today's Earnings" value={isEarningsVisible ? `₹${(mechanicData?.todaysEarnings || 0).toLocaleString()}` : '₹ ****'} icon={IndianRupee} isLoading={isPartnerDataLoading} onValueClick={() => !isEarningsVisible && setIsPinDialogOpen(true)} />
+                            <StatCard title="Today's Jobs" value={mechanicData?.jobsToday?.toString() || '0'} icon={History} isLoading={isPartnerDataLoading} />
+                            <StatCard title="Acceptance Rate" value={`${mechanicData?.acceptanceRate || '95'}%`} icon={Power} isLoading={isPartnerDataLoading} />
+                            <StatCard title="Rating" value={mechanicData?.rating?.toString() || '4.8'} icon={Star} isLoading={isPartnerDataLoading} />
+                        </div>
+                    </TabsContent>
+                    <TabsContent value="history" className="mt-4 flex-1 space-y-2 max-h-48 overflow-y-auto">
+                        {isHistoryLoading ? (
+                            Array.from({length: 2}).map((_, i) => <Skeleton key={i} className="h-16 w-full" />)
+                        ) : recentJobs.length > 0 ? (
+                            recentJobs.map(job => (
+                                <Card key={job.id}>
+                                    <CardContent className="p-2 flex items-center justify-between">
+                                        <div className="text-sm">
+                                            <p className="font-semibold line-clamp-1">{job.issue}</p>
+                                            <p className="text-xs text-muted-foreground">{job.createdAt ? new Date(job.createdAt.seconds * 1000).toLocaleString() : 'N/A'}</p>
+                                        </div>
+                                        <p className="font-bold text-lg">₹{(job as any).totalAmount || 0}</p>
+                                    </CardContent>
+                                </Card>
+                            ))
+                        ) : (
+                            <div className="text-center py-10 text-muted-foreground">No recent jobs found.</div>
+                        )}
+                    </TabsContent>
+                </Tabs>
+            </>
+        )}
 
       <AlertDialog open={!!jobRequest}>
         <AlertDialogContent>
           <AlertDialogHeader>
               <AlertDialogTitle>New Service Request!</AlertDialogTitle>
-              <AlertDialogDescription>
-                A new job is available. Please review and respond quickly.
-              </AlertDialogDescription>
+              <AlertDialogDescription>A new job is available. Please review and respond quickly.</AlertDialogDescription>
           </AlertDialogHeader>
           {jobRequest && (
             <>
@@ -586,21 +572,21 @@ export default function ResQDashboard() {
                 {requestTimeout}
               </div>
               <div className="flex items-center gap-4">
-                <Avatar className="w-12 h-12" data-ai-hint="mechanic portrait"><AvatarImage src="https://i.pravatar.cc/150?u=mechanic" /><AvatarFallback>{jobRequest.userName?.[0] || 'U'}</AvatarFallback></Avatar>
+                <Avatar className="w-12 h-12"><AvatarImage src={'https://placehold.co/100x100.png'} alt={jobRequest.riderName} data-ai-hint="user portrait" /><AvatarFallback>{jobRequest?.riderName?.[0] || 'U'}</AvatarFallback></Avatar>
                 <div>
-                  <p className="font-bold">{jobRequest.userName}</p>
-                  <Button variant="link" size="sm" className="h-auto p-0" asChild>
+                  <p className="font-bold">{jobRequest?.riderName}</p>
+                   <Button variant="link" size="sm" className="h-auto p-0" asChild>
                     <a href={`tel:${jobRequest.userPhone}`}><Phone className="w-3 h-3 mr-1"/>Call User</a>
                   </Button>
                 </div>
               </div>
               <div className="space-y-2 text-sm">
-                {jobRequest.locationAddress && 
-                  <div className="flex items-start gap-2">
-                    <MapPin className="w-4 h-4 mt-1 text-green-500" />
-                    <p><span className="font-semibold">LOCATION:</span> {jobRequest.locationAddress}</p>
-                  </div>
-                }
+                 {jobRequest.pickupAddress && (
+                    <div className="flex items-start gap-2">
+                        <MapPin className="w-4 h-4 mt-1 text-green-500" />
+                        <p><span className="font-semibold">LOCATION:</span> {jobRequest.pickupAddress}</p>
+                    </div>
+                )}
                 <div className="flex items-start gap-2">
                   <Wrench className="w-4 h-4 mt-1 text-red-500" />
                   <p><span className="font-semibold">ISSUE:</span> {jobRequest.issue}</p>
@@ -649,5 +635,3 @@ export default function ResQDashboard() {
     </div>
   )
 }
-
-    

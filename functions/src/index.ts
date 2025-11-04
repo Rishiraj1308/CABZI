@@ -188,10 +188,10 @@ const handleGarageRequestDispatch = async (requestData: any, requestId: string) 
                 type: 'new_garage_request',
                 requestId: requestId,
                 userId: requestData.userId,
-                userName: requestData.userName,
+                riderName: requestData.userName,
                 userPhone: requestData.userPhone,
                 issue: requestData.issue,
-                locationAddress: locationAddress, // Use the human-readable address
+                pickupAddress: locationAddress,
                 location: JSON.stringify(requestData.location),
                 status: requestData.status,
                 otp: requestData.otp,
