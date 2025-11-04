@@ -34,11 +34,10 @@ import { Input } from '@/components/ui/input'
 import { usePartnerData } from './layout'
 import { Switch } from '@/components/ui/switch'
 
-
-const LiveMap = dynamic(() => import('@/components/live-map'), { 
-    ssr: false,
-    loading: () => <div className="w-full h-full bg-muted flex items-center justify-center"><p>Loading Map...</p></div>
-});
+const LiveMap = dynamic(() => import('@/components/live-map'), {
+  ssr: false,
+  loading: () => <div className="w-full h-full bg-muted flex items-center justify-center"><p>Loading Map...</p></div>
+})
 
 const QrScanner = dynamic(() => import('@/components/ui/qr-scanner'), {
   ssr: false,
@@ -131,6 +130,24 @@ export default function ResQDashboard() {
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+  
+  useEffect(() => {
+    if (!mechanicData?.id || !db) return;
+    setIsHistoryLoading(true);
+    const q = query(
+      collection(db, "garageRequests"),
+      where("mechanicId", "==", mechanicData.id),
+      orderBy("createdAt", "desc"),
+      limit(5)
+    );
+    const unsub = onSnapshot(q, (snapshot) => {
+      const jobs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as JobRequest));
+      setRecentJobs(jobs);
+      setIsHistoryLoading(false);
+    });
+    return () => unsub();
+  }, [mechanicData?.id, db]);
+
 
   const handleDeclineJob = useCallback(async (isTimeout = false) => {
     if (!jobRequest || !mechanicData?.id || !db) return
@@ -160,7 +177,17 @@ export default function ResQDashboard() {
     if (requests.length > 0 && !jobRequest && !acceptedJob) {
         const nextRequest = requests.find(req => !processedRequestIds.has(req.id));
         if (nextRequest) {
-            setJobRequest(nextRequest);
+            // Safely parse location if it's a string
+            if (nextRequest.location) {
+                try {
+                    if (typeof nextRequest.location === "string") {
+                        nextRequest.location = JSON.parse(nextRequest.location);
+                    }
+                } catch (e) {
+                    console.error("Failed to parse location string:", e);
+                }
+            }
+            setJobRequest(nextRequest as JobRequest);
             notificationSoundRef.current?.play().catch(e => console.error("Audio play failed:", e));
         }
     }
@@ -343,11 +370,11 @@ export default function ResQDashboard() {
     const newItems = [...billItems];
     newItems[index][field] = value;
     setBillItems(newItems);
-  }
+  };
 
   const addBillItem = () => {
     setBillItems([...billItems, { description: '', amount: '' }]);
-  }
+  };
   
   const removeBillItem = (index: number) => {
       const newItems = billItems.filter((_, i) => i !== index);
@@ -387,6 +414,7 @@ export default function ResQDashboard() {
       }
   }
 
+
    const handlePinSubmit = () => {
       const storedPin = localStorage.getItem('curocity-user-pin');
       if (!storedPin) {
@@ -418,18 +446,18 @@ export default function ResQDashboard() {
     };
   }, []);
   
+  const getLat = (loc: any) => loc?.latitude ?? loc?._lat;
+  const getLng = (loc: any) => loc?.longitude ?? loc?._long;
+
   const mechanicLiveLocation = mechanicData?.currentLocation 
-    ? { lat: mechanicData.currentLocation.latitude, lon: mechanicData.currentLocation.longitude }
+    ? { lat: getLat(mechanicData.currentLocation), lon: getLng(mechanicData.currentLocation) }
     : undefined;
     
   const userLocation = acceptedJob
-    ? { lat: acceptedJob.location.latitude, lon: acceptedJob.location.longitude }
+    ? { lat: getLat(acceptedJob.location), lon: getLng(acceptedJob.location) }
     : undefined;
 
-  if (isPartnerDataLoading || !isMounted) {
-    return <div className="flex items-center justify-center h-full"><Skeleton className="w-full h-96" /></div>
-  }
-
+  
   const renderActiveJob = () => {
     if (!acceptedJob) return null;
     
@@ -443,7 +471,7 @@ export default function ResQDashboard() {
                 {jobStatus === 'navigating' && (
                     <div className="grid grid-cols-1 gap-2">
                         <Button className="w-full" size="lg" onClick={() => setJobStatus('arrived')}>Arrived at Location</Button>
-                        <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white" size="lg" onClick={() => window.open(`https://www.google.com/maps/dir/?api=1&destination=${acceptedJob.location.latitude},${acceptedJob.location.longitude}`, '_blank')}>
+                        <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white" size="lg" onClick={() => window.open(`https://www.google.com/maps/dir/?api=1&destination=${getLat(acceptedJob.location)},${getLng(acceptedJob.location)}`, '_blank')}>
                             <Navigation className="mr-2 h-4 h-4" />
                             Navigate with Google Maps
                         </Button>
@@ -457,7 +485,7 @@ export default function ResQDashboard() {
                     </div>
                 )}
                 {jobStatus === 'in_progress' && (
-                    <div className="text-center space-y-4 p-4 bg-muted rounded-lg">
+                    <div className="text-center p-4 bg-muted rounded-lg space-y-4">
                         <p className="font-semibold">Service Ongoing...</p>
                         <Button className="w-full" size="lg" onClick={() => setJobStatus('billing')}>Complete Service & Generate Bill</Button>
                     </div>
@@ -506,6 +534,10 @@ export default function ResQDashboard() {
             </CardContent>
         </Card>
     );
+  }
+  
+  if (isPartnerDataLoading || !isMounted) {
+    return <div className="flex items-center justify-center h-full"><Skeleton className="w-full h-96" /></div>
   }
 
   return (
@@ -594,32 +626,39 @@ export default function ResQDashboard() {
                   <Avatar className="w-12 h-12"><AvatarImage src={'https://placehold.co/100x100.png'} alt={jobRequest.userName} data-ai-hint="user portrait" /><AvatarFallback>{jobRequest?.userName?.[0] || 'U'}</AvatarFallback></Avatar>
                  <div>
                    <p className="font-bold">{jobRequest?.userName}</p>
+                    <Button variant="link" size="sm" className="h-auto p-0" asChild>
+                        <a href={`tel:${jobRequest.userPhone}`}><Phone className="w-3 h-3 mr-1"/>Call User</a>
+                    </Button>
                  </div>
                </div>
                 <div className="space-y-2 text-sm">
-                   <div className="flex items-start gap-2">
-                       <MapPin className="w-4 h-4 mt-1 text-green-500 flex-shrink-0" />
-                       <p><span className="font-semibold">LOCATION:</span> {jobRequest.location.latitude.toFixed(4)}, {jobRequest.location.longitude.toFixed(4)}</p>
-                   </div>
+                   {jobRequest.locationAddress && (
+                    <div className="flex items-start gap-2">
+                        <MapPin className="w-4 h-4 mt-1 text-green-500 flex-shrink-0" />
+                        <p><span className="font-semibold">LOCATION:</span> {jobRequest.locationAddress}</p>
+                    </div>
+                   )}
                    <div className="flex items-start gap-2">
                        <Wrench className="w-4 h-4 mt-1 text-red-500 flex-shrink-0" />
                        <p><span className="font-semibold">ISSUE:</span> {jobRequest.issue}</p>
                    </div>
                </div>
-               <div className="grid grid-cols-2 gap-2 text-center mt-3">
-                 <div className="p-2 bg-muted rounded-md">
-                     <p className="text-xs text-muted-foreground">To User</p>
-                     <p className="font-bold text-lg">
-                       {jobRequest.distance ? `~${jobRequest.distance.toFixed(1)} km` : '~ km'}
-                     </p>
-                 </div>
-                 <div className="p-2 bg-muted rounded-md">
-                     <p className="text-xs text-muted-foreground">Est. Arrival</p>
-                     <p className="font-bold text-lg">
-                       {jobRequest.eta ? `~${Math.ceil(jobRequest.eta)} min` : '~ min'}
-                     </p>
-                 </div>
-               </div>
+               <div className="h-40 w-full rounded-md overflow-hidden my-3 border">
+                <LiveMap
+                  riderLocation={userLocation}
+                  driverLocation={mechanicLiveLocation}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-2 text-center mt-3">
+                <div className="p-2 bg-muted rounded-md">
+                  <p className="text-xs text-muted-foreground">To User</p>
+                  <p className="font-bold text-lg">{jobRequest.distance ? `~${jobRequest.distance.toFixed(1)} km` : '~ km'}</p>
+                </div>
+                <div className="p-2 bg-muted rounded-md">
+                  <p className="text-xs text-muted-foreground">Est. Arrival</p>
+                  <p className="font-bold text-lg">{jobRequest.eta ? `~${Math.ceil(jobRequest.eta)} min` : '~ min'}</p>
+                </div>
+              </div>
             </>
           )}
           <AlertDialogFooter className="grid grid-cols-2 gap-2">

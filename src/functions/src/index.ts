@@ -161,7 +161,6 @@ const handleGarageRequestDispatch = async (requestData: any, requestId: string) 
     }
     
     const userLocation = requestData.location as GeoPoint;
-    // Reverse geocode the location to get an address
     const locationAddress = await getAddressFromCoords(userLocation.latitude, userLocation.longitude);
 
     const nearbyMechanics = mechanicsSnapshot.docs
@@ -180,27 +179,27 @@ const handleGarageRequestDispatch = async (requestData: any, requestId: string) 
         return;
     }
     
+    // Save location/eta data once before the loop
+    const firstMechanic = nearbyMechanics[0];
+    const distanceToUser = firstMechanic.distanceToUser || 0;
+    const eta = distanceToUser * 3;
+    await db.doc(`garageRequests/${requestId}`).update({
+        distance: distanceToUser,
+        eta: eta,
+        locationAddress: locationAddress
+    });
+
     for (const mechanic of nearbyMechanics) {
         if (mechanic.fcmToken) {
-            const distanceToUser = mechanic.distanceToUser || 0;
-            const eta = distanceToUser * 3; // ETA for mechanics might be slower
-
-            // ✅ SAVE IN FIRESTORE (IMPORTANT FIX)
-            await db.doc(`garageRequests/${requestId}`).update({
-              distance: distanceToUser,
-              eta: eta,
-              locationAddress: locationAddress
-            });
-            
             const payloadData = {
                 type: 'new_garage_request',
                 requestId: requestId,
-                userId: requestData.userId,
-                riderName: requestData.userName,
-                userPhone: requestData.userPhone,
+                userId: requestData.driverId,
+                riderName: requestData.driverName,
+                userPhone: requestData.driverPhone,
                 issue: requestData.issue,
-                location: JSON.stringify(requestData.location),
                 pickupAddress: locationAddress,
+                location: JSON.stringify(requestData.location),
                 status: requestData.status,
                 otp: requestData.otp,
                 createdAt: requestData.createdAt.toMillis().toString(),
