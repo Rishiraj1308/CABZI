@@ -196,14 +196,7 @@ const handleGarageRequestDispatch = async (requestData: any, requestId: string) 
     }
     
     const distanceToUser = targetMechanic.distanceToUser || 0;
-    const eta = distanceToUser * 3;
-
-    // ✅ SAVE IN FIRESTORE (IMPORTANT FIX)
-    await db.doc(`garageRequests/${requestId}`).update({
-      distance: distanceToUser,
-      eta: eta,
-      locationAddress: locationAddress
-    });
+    const eta = distanceToUser * 3; // 3 mins per km for a mechanic
 
     const payload = {
         type: "new_garage_request",
@@ -213,7 +206,7 @@ const handleGarageRequestDispatch = async (requestData: any, requestId: string) 
         userPhone: requestData.driverPhone,
         issue: requestData.issue,
         location: JSON.stringify(requestData.location),
-        locationAddress,
+        locationAddress, // Include the human-readable address
         status: requestData.status,
         otp: requestData.otp,
         createdAt: requestData.createdAt?.toMillis?.().toString() ?? "",
