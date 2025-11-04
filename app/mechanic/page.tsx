@@ -50,26 +50,25 @@ interface BillItem {
 }
 
 const StatCard = ({ title, value, icon: Icon, isLoading, onValueClick }: { title: string, value: string, icon: React.ElementType, isLoading?: boolean, onValueClick?: () => void }) => (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-sm font-medium">{title}</CardTitle>
-        <Icon className="h-4 w-4 text-muted-foreground" />
-      </CardHeader>
-      <CardContent>
-        {isLoading ? (
-          <Skeleton className="h-8 w-20" />
-        ) : (
-          <div className="text-2xl font-bold cursor-pointer" onClick={onValueClick}>
-            {value}
-          </div>
-        )}
-      </CardContent>
-    </Card>
-  )
+  <Card>
+    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+      <CardTitle className="text-sm font-medium">{title}</CardTitle>
+      <Icon className="h-4 w-4 text-muted-foreground" />
+    </CardHeader>
+    <CardContent>
+      {isLoading ? (
+        <Skeleton className="h-8 w-20" />
+      ) : (
+        <div className="text-2xl font-bold cursor-pointer" onClick={onValueClick}>
+          {value}
+        </div>
+      )}
+    </CardContent>
+  </Card>
+)
 
 
 export default function ResQDashboard() {
-
   const [isMounted, setIsMounted] = useState(false);
   const [jobRequest, setJobRequest] = useState<JobRequest | null>(null);
   const [acceptedJob, setAcceptedJob] = useState<JobRequest | null>(null);
@@ -313,14 +312,15 @@ export default function ResQDashboard() {
   }
 
   const handleVerifyOtp = async () => {
-    if (enteredOtp === acceptedJob?.otp && acceptedJob && db) {
-      const jobRef = doc(db, 'garageRequests', acceptedJob.id);
-      await updateDoc(jobRef, { status: 'in_progress' });
-      setJobStatus('in_progress');
-      toast({ title: "OTP Verified", description: "You can now start the service." });
-    } else {
-      toast({ variant: 'destructive', title: "Invalid OTP", description: "Please ask the driver for the correct OTP." });
-    }
+      if (enteredOtp === acceptedJob?.otp && acceptedJob && db) {
+          const jobRef = doc(db, 'garageRequests', acceptedJob.id);
+          await updateDoc(jobRef, { status: 'in_progress' });
+          localStorage.setItem('activeJobId', acceptedJob.id);
+          setJobStatus('in_progress');
+          toast({ title: "OTP Verified!", description: "You can now start the service." });
+      } else {
+          toast({ variant: 'destructive', title: "Invalid OTP", description: "Please ask the driver for the correct OTP." });
+      }
   }
   
   const handleBillItemChange = (index: number, field: 'description' | 'amount', value: string) => {
@@ -332,14 +332,14 @@ export default function ResQDashboard() {
   const addBillItem = () => {
     setBillItems([...billItems, { description: '', amount: '' }]);
   };
-
+  
   const removeBillItem = (index: number) => {
       const newItems = billItems.filter((_, i) => i !== index);
       setBillItems(newItems);
   }
   
   const totalAmount = billItems.reduce((sum, item) => sum + (parseFloat(item.amount) || 0), 0);
-  
+
   const completeJob = async () => {
       if (!acceptedJob || !mechanicData || !db) return;
       
@@ -438,7 +438,7 @@ export default function ResQDashboard() {
                     <div className="space-y-4">
                         <Label>Enter OTP from user to start service</Label>
                         <Input className="text-center text-xl tracking-[0.5em]" maxLength={4} value={enteredOtp} onChange={(e) => setEnteredOtp(e.target.value)} />
-                        <Button className="w-full" onClick={handleVerifyOtp}>Verify OTP & Start Service</Button>
+                        <Button className="w-full" onClick={handleVerifyOtp}>Verify & Start Service</Button>
                     </div>
                 )}
                 {jobStatus === 'in_progress' && (
@@ -567,7 +567,7 @@ export default function ResQDashboard() {
                                     <CardContent className="p-2 flex items-center justify-between">
                                         <div className="text-sm">
                                             <p className="font-semibold line-clamp-1">{job.issue}</p>
-                                            <p className="text-xs text-muted-foreground">{job.createdAt ? new Date((job.createdAt as any).seconds * 1000).toLocaleString() : 'N/A'}</p>
+                                            <p className="text-xs text-muted-foreground">{job.createdAt ? new Date(job.createdAt.seconds * 1000).toLocaleString() : 'N/A'}</p>
                                         </div>
                                         <p className="font-bold text-lg">₹{(job as any).totalAmount || 0}</p>
                                     </CardContent>
@@ -595,8 +595,13 @@ export default function ResQDashboard() {
                 {requestTimeout}
               </div>
               <div className="flex items-center gap-4">
-                <Avatar className="w-12 h-12"><AvatarImage src="https://placehold.co/100x100" data-ai-hint="mechanic portrait" /><AvatarFallback>{jobRequest.userName?.[0] || 'U'}</AvatarFallback></Avatar>
-                <p className="font-bold">{jobRequest.userName}</p>
+                <Avatar className="w-12 h-12" data-ai-hint="mechanic portrait"><AvatarImage src="https://i.pravatar.cc/150?u=mechanic" /><AvatarFallback>{jobRequest.userName?.[0] || 'U'}</AvatarFallback></Avatar>
+                <div>
+                  <p className="font-bold">{jobRequest.userName}</p>
+                  <Button variant="link" size="sm" className="h-auto p-0" asChild>
+                    <a href={`tel:${jobRequest.userPhone}`}><Phone className="w-3 h-3 mr-1"/>Call User</a>
+                  </Button>
+                </div>
               </div>
               <div className="space-y-2 text-sm">
                 {jobRequest.locationAddress && (
@@ -653,3 +658,6 @@ export default function ResQDashboard() {
     </div>
   )
 }
+
+    
+```
