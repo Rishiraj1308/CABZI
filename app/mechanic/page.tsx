@@ -177,6 +177,16 @@ export default function ResQDashboard() {
     if (requests.length > 0 && !jobRequest && !acceptedJob) {
         const nextRequest = requests.find(req => !processedRequestIds.has(req.id));
         if (nextRequest) {
+            // Safely parse location if it's a string
+            if (nextRequest.location) {
+                try {
+                    if (typeof nextRequest.location === "string") {
+                        nextRequest.location = JSON.parse(nextRequest.location);
+                    }
+                } catch (e) {
+                    console.error("Failed to parse location string:", e);
+                }
+            }
             setJobRequest(nextRequest as JobRequest);
             notificationSoundRef.current?.play().catch(e => console.error("Audio play failed:", e));
         }
@@ -236,7 +246,6 @@ export default function ResQDashboard() {
       });
   
       setAcceptedJob({ ...jobRequest, status: 'accepted' });
-      setJobStatus('navigating');
       setJobRequest(null);
       setProcessedRequestIds(prev => new Set(prev).add(jobRequest.id));
       localStorage.setItem('activeJobId', jobRequest.id);
