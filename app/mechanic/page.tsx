@@ -104,7 +104,7 @@ export default function ResQDashboard() {
   
   const { toast } = useToast();
   const { messaging, db } = useFirebase();
-  const { partner: mechanicData, isLoading: isPartnerDataLoading, handleAvailabilityChange, isOnline } = usePartnerData();
+  const { partner: mechanicData, isLoading: isPartnerDataLoading, handleAvailabilityChange, requests } = usePartnerData();
   
   // PIN lock state
   const [isEarningsVisible, setIsEarningsVisible] = useState(false);
@@ -112,6 +112,8 @@ export default function ResQDashboard() {
   const [pin, setPin] = useState('');
   const [recentJobs, setRecentJobs] = useState<JobRequest[]>([]);
   const [isHistoryLoading, setIsHistoryLoading] = useState(true);
+
+  const isOnline = mechanicData?.isOnline ?? false;
 
 
   useEffect(() => {
@@ -151,38 +153,14 @@ export default function ResQDashboard() {
   }, [mechanicData, db]);
 
   
-  // Listen for new garage requests via FCM
   useEffect(() => {
-      if (!messaging || !isOnline || !mechanicData?.id || acceptedJob || jobRequest) return;
-      
-      const unsubscribe = onMessage(messaging, (payload) => {
-          console.log('FCM Message received for ResQ.', payload);
-          const { type, requestId, ...jobData } = payload.data || {};
+    if (requests.length > 0 && !jobRequest && !acceptedJob) {
+        const nextRequest = requests[0];
+        setJobRequest(nextRequest);
+        notificationSoundRef.current?.play().catch(e => console.error("Audio play failed:", e));
+    }
+  }, [requests, jobRequest, acceptedJob]);
 
-          if(type === 'new_garage_request' && requestId) {
-               const newJobRequest: JobRequest = {
-                  id: requestId,
-                  userId: jobData.userId,
-                  userName: jobData.userName,
-                  userPhone: jobData.userPhone,
-                  issue: jobData.issue,
-                  location: JSON.parse(jobData.location || '{}'),
-                  status: jobData.status,
-                  otp: jobData.otp,
-                  createdAt: new Timestamp(parseInt(jobData.createdAt) / 1000, 0),
-                  distance: parseFloat(jobData.distance),
-                  eta: parseFloat(jobData.eta),
-              } as JobRequest;
-
-              if (!acceptedJob && !jobRequest) { // Ensure we're not already in a job
-                  setJobRequest(newJobRequest);
-                  notificationSoundRef.current?.play().catch(e => console.error("Audio play failed:", e));
-              }
-          }
-      });
-
-      return () => unsubscribe();
-  }, [messaging, isOnline, mechanicData, acceptedJob, jobRequest]);
 
    // Countdown timer for job request
    useEffect(() => {
@@ -205,8 +183,7 @@ export default function ResQDashboard() {
     return () => {
         if (timer) clearInterval(timer);
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [jobRequest]);
+  }, [jobRequest, handleDeclineJob]);
   
   const handleAcceptJob = async () => {
     if (!jobRequest || !mechanicData || !db) return;
@@ -443,7 +420,7 @@ export default function ResQDashboard() {
     ? { lat: acceptedJob.location.latitude, lon: acceptedJob.location.longitude }
     : undefined;
 
-  if (isLoading || !isMounted) {
+  if (isPartnerDataLoading || !isMounted) {
     return <div className="flex items-center justify-center h-full"><Skeleton className="w-full h-96" /></div>
   }
 
