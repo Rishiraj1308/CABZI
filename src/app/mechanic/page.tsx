@@ -129,16 +129,20 @@ export default function ResQDashboard() {
     async (isTimeout = false) => {
       if (!jobRequest || !mechanicData?.id || !db) return;
       if (requestTimerRef.current) clearInterval(requestTimerRef.current);
-
-      setProcessedRequestIds((prev) => new Set(prev).add(jobRequest.id));
-      await updateDoc(doc(db, 'garageRequests', jobRequest.id), {
-        rejectedBy: arrayUnion(mechanicData.id),
-      });
+      
+      const declinedJobId = jobRequest.id;
+      setProcessedRequestIds((prev) => new Set(prev).add(declinedJobId));
       setJobRequest(null);
-      toast({
-        variant: isTimeout ? 'destructive' : 'default',
-        title: isTimeout ? 'Request Timed Out' : 'Job Declined',
-      });
+
+      // Only update firestore if it's a manual decline
+      if (!isTimeout) {
+          await updateDoc(doc(db, 'garageRequests', declinedJobId), {
+            rejectedBy: arrayUnion(mechanicData.id),
+          });
+          toast({ title: 'Job Declined' });
+      } else {
+        toast({ variant: 'destructive', title: 'Request Timed Out' });
+      }
     },
     [jobRequest, mechanicData, db, toast]
   );
@@ -194,7 +198,10 @@ export default function ResQDashboard() {
     if (!jobRequest || !mechanicData || !db) return;
     if (requestTimerRef.current) clearInterval(requestTimerRef.current);
   
-    const jobRef = doc(db, 'garageRequests', jobRequest.id);
+    const acceptedJobId = jobRequest.id;
+    setProcessedRequestIds(prev => new Set(prev).add(acceptedJobId));
+
+    const jobRef = doc(db, 'garageRequests', acceptedJobId);
     try {
       await runTransaction(db, async (trx) => {
         const snap = await trx.get(jobRef);
@@ -212,9 +219,8 @@ export default function ResQDashboard() {
   
       setAcceptedJob({ ...jobRequest, status: 'accepted' } as JobRequest);
       setJobRequest(null);
-      setProcessedRequestIds(prev => new Set(prev).add(jobRequest.id));
       setJobStatus('navigating');
-      localStorage.setItem('activeJobId', jobRequest.id);
+      localStorage.setItem('activeJobId', acceptedJobId);
   
       toast({ title: 'Job Accepted', description: 'Navigate to the user.' });
     } catch (err: any) {
@@ -501,7 +507,7 @@ export default function ResQDashboard() {
                                     <CardContent className="p-2 flex items-center justify-between">
                                         <div className="text-sm">
                                             <p className="font-semibold line-clamp-1">{job.issue}</p>
-                                            <p className="text-xs text-muted-foreground">{job.createdAt ? new Date(job.createdAt.seconds * 1000).toLocaleString() : 'N/A'}</p>
+                                            <p className="text-xs text-muted-foreground">{job.createdAt ? new Date((job.createdAt as any).seconds * 1000).toLocaleString() : 'N/A'}</p>
                                         </div>
                                         <p className="font-bold text-lg">₹{(job as any).totalAmount || 0}</p>
                                     </CardContent>
@@ -536,10 +542,12 @@ export default function ResQDashboard() {
                  </div>
                </div>
                 <div className="space-y-2 text-sm">
-                   <div className="flex items-start gap-2">
+                   {jobRequest.locationAddress && (
+                    <div className="flex items-start gap-2">
                         <MapPin className="w-4 h-4 mt-1 text-green-500 flex-shrink-0" />
                         <p><span className="font-semibold">LOCATION:</span> {jobRequest.locationAddress}</p>
                     </div>
+                   )}
                    <div className="flex items-start gap-2">
                        <Wrench className="w-4 h-4 mt-1 text-red-500 flex-shrink-0" />
                        <p><span className="font-semibold">ISSUE:</span> {jobRequest.issue}</p>
@@ -588,5 +596,3 @@ export default function ResQDashboard() {
     </div>
   )
 }
-
-    
