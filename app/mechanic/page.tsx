@@ -3,12 +3,10 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 import Image from 'next/image'
-import { Button, buttonVariants } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card'
-import { Switch } from '@/components/ui/switch'
+import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
-import { Input } from '@/components/ui/input'
-import { Star, CheckCircle, Car, Route, Shield, LifeBuoy, Phone, Sparkles, KeyRound, Clock, Pin, User as UserIcon, Send, ScanLine, Wallet, BarChart, Settings, Power, CircleDot, CreditCard, Bot, ChevronsUpDown, AlertCircle, Hand, History, IndianRupee, Eye, Navigation, LocateFixed, HeartHandshake, MessageSquare, Wrench, Ambulance, FileText, PlusCircle, Trash2 } from 'lucide-react'
+import { Star, CheckCircle, Car, Route, Shield, LifeBuoy, Phone, Sparkles, KeyRound, Clock, Pin, User as UserIcon, Send, ScanLine, Wallet, BarChart, Settings, Power, CircleDot, CreditCard, Bot, ChevronsUpDown, AlertCircle, Hand, History, IndianRupee, Eye, Navigation, LocateFixed, HeartHandshake, MessageSquare, Wrench, Ambulance, FileText, PlusCircle, Trash2, MapPin } from 'lucide-react'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger, } from "@/components/ui/alert-dialog"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription, DialogFooter } from '@/components/ui/dialog'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -32,6 +30,7 @@ import { useFirebase } from '@/firebase/client-provider'
 import { onMessage } from 'firebase/messaging'
 import { format } from 'date-fns'
 import type { JobRequest } from '@/lib/types'
+import { Input } from '@/components/ui/input'
 import { usePartnerData } from './layout'
 
 
