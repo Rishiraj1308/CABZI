@@ -1,5 +1,4 @@
 
-
 'use server';
 /**
  * @fileOverview This file contains server-side Cloud Functions for dispatching
@@ -8,7 +7,7 @@
 
 import { onDocumentCreated, onDocumentUpdated } from 'firebase-functions/v2/firestore';
 import { onSchedule } from "firebase-functions/v2/scheduler";
-import { getFirestore, GeoPoint, Timestamp, FieldValue } from 'firebase-admin/firestore';
+import { getFirestore, GeoPoint, Timestamp, FieldValue, serverTimestamp } from 'firebase-admin/firestore';
 import { getMessaging } from 'firebase-admin/messaging';
 import { initializeApp, getApps } from 'firebase-admin/app';
 import { HttpsError, onCall } from "firebase-functions/v2/https";
@@ -204,8 +203,8 @@ const handleGarageRequestDispatch = async (requestData: any, requestId: string) 
             const payloadData = {
                 type: 'new_garage_request',
                 requestId: requestId,
-                userId: requestData.driverId,
-                userName: requestData.driverName,
+                userId: requestData.driverId, // Ensure correct ID field
+                userName: requestData.driverName, // Ensure correct name field
                 userPhone: requestData.driverPhone,
                 issue: requestData.issue,
                 location: JSON.stringify(requestData.location),
