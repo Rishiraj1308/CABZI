@@ -1,177 +1,161 @@
 
 'use client'
 
-import React, { useState, useEffect, useRef, useCallback, createContext, useContext, useMemo } from 'react'
-import Link from 'next/link'
-import { usePathname, useRouter } from 'next/navigation'
-import { LayoutDashboard, Landmark, History, User, PanelLeft, LogOut, Sun, Moon } from 'lucide-react'
-import { cn } from '@/lib/utils'
-import { Button } from '@/components/ui/button'
-import { Toaster } from '@/components/ui/toaster'
-import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
-import { useToast } from '@/hooks/use-toast'
-import BrandLogo from '@/components/brand-logo'
-import { useTheme } from 'next-themes'
-import { useFirebase } from '@/firebase/client-provider'
-import { MotionDiv } from '@/components/ui/motion-div'
-import { Skeleton } from '@/components/ui/skeleton'
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { doc, onSnapshot, updateDoc, serverTimestamp, collection, query, where } from "firebase/firestore";
+import React, { useState, useEffect, useCallback, useMemo, createContext, useContext } from "react";
+import Link from "next/link";
+import { useRouter, usePathname } from "next/navigation";
+import { collection, doc, onSnapshot, query, updateDoc, where, serverTimestamp } from "firebase/firestore";
+import { LayoutDashboard, History, User, Landmark, PanelLeft, Sun, Moon, LogOut } from "lucide-react";
+import { useTheme } from "next-themes";
 
-// ------------------ Partner Context ------------------
-interface PartnerDataContextType {
-  partnerData: any;
+import { Button } from "@/components/ui/button";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Toaster } from "@/components/ui/toaster";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from "@/components/ui/alert-dialog";
+import { MotionDiv } from "@/components/ui/motion-div";
+import { Skeleton } from "@/components/ui/skeleton";
+
+import BrandLogo from "@/components/brand-logo";
+import { cn } from "@/lib/utils";
+import { useFirebase } from "@/firebase/client-provider";
+import { useToast } from "@/hooks/use-toast";
+
+
+// ----------------------------------------------------------------
+// ✅ 1. PARTNER CONTEXT
+// ----------------------------------------------------------------
+interface MechanicData {
+  id: string;
+  name: string;
+  isOnline: boolean;
+  // Add other fields you expect to receive from Firestore
+  [key: string]: any; 
+}
+
+interface MechanicContextType {
+  partner: MechanicData | null;
   isLoading: boolean;
   requests: any[];
 }
 
-const PartnerDataContext = createContext<PartnerDataContextType | null>(null);
+
+const MechanicContext = createContext<MechanicContextType | null>(null);
 
 export const usePartnerData = () => {
-  const context = useContext(PartnerDataContext);
-  if (!context) {
-    throw new Error('usePartnerData must be used within a PartnerProvider');
-  }
-  return context;
+  const ctx = useContext(MechanicContext);
+  if (!ctx) throw new Error("usePartnerData must be inside provider");
+  return ctx;
 };
 
-function PartnerProvider({ children, partnerType }: { children: React.ReactNode, partnerType: 'driver' | 'mechanic' }) {
-  const [partnerData, setPartnerData] = useState<any>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [requests, setRequests] = useState<any[]>([]);
+
+// ----------------------------------------------------------------
+// ✅ 2. PROVIDER (REAL-TIME LISTENERS FIXED)
+// ----------------------------------------------------------------
+function MechanicProvider({ children }: { children: React.ReactNode }) {
   const { db, user, isUserLoading } = useFirebase();
   const router = useRouter();
   const pathname = usePathname();
+  const { toast } = useToast();
 
-  const handleLogout = useCallback(() => {
-    try {
-      const sessionKey = `curocity-${partnerType === 'driver' ? 'session' : 'resq-session'}`;
-      const session = localStorage.getItem(sessionKey);
-      if (db && session) {
-        const sessionData = JSON.parse(session);
-        const collectionName = partnerType === 'driver' ? 'partners' : 'mechanics';
-        updateDoc(doc(db, collectionName, sessionData.partnerId), {
-          isOnline: false,
-          isAvailable: false,
-          lastSeen: serverTimestamp(),
-        }).catch(e => console.warn("Failed to update status on logout:", e));
-      }
-    } catch (err) {
-      console.warn('Logout error:', err);
-    }
-    localStorage.removeItem(`curocity-${partnerType === 'driver' ? 'session' : 'resq-session'}`);
-    router.push('/');
-  }, [db, partnerType, router]);
+  const [partner, setPartner] = useState<MechanicData | null>(null);
+  const [requests, setRequests] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // ✅ Logout handler
+  const logout = useCallback(() => {
+    localStorage.removeItem("curocity-resq-session");
+    router.push("/login?role=mechanic");
+  }, [router]);
 
   useEffect(() => {
     if (isUserLoading || !db) return;
 
-    const isOnboarding = pathname.includes('onboarding');
-    if (!user) {
-      if (!isOnboarding) router.replace('/login?role=driver');
-      setIsLoading(false);
-      return;
-    }
-
-    const sessionKey = `curocity-resq-session`;
-    const session = localStorage.getItem(sessionKey);
-
+    const session = localStorage.getItem("curocity-resq-session");
     if (!session) {
-      if (!isOnboarding) handleLogout();
-      setIsLoading(false);
+      logout();
       return;
     }
 
-    let unsubscribeMechanic: (() => void) | undefined;
-    let unsubscribeRequests: (() => void) | undefined;
+    const { partnerId } = JSON.parse(session);
+    const mechRef = doc(db, "mechanics", partnerId);
 
-    try {
-      const sessionData = JSON.parse(session);
-      const partnerDocRef = doc(db, 'mechanics', sessionData.partnerId);
+    let unsubMech = () => {};
+    let unsubReq = () => {};
 
-      unsubscribeMechanic = onSnapshot(partnerDocRef, (docSnap) => {
-        if (docSnap.exists()) {
-          const mechanic = { id: docSnap.id, ...docSnap.data() };
-          setPartnerData(mechanic);
+    // ✅ Mechanic real-time listener
+    unsubMech = onSnapshot(mechRef, (snap) => {
+      if (!snap.exists()) {
+        logout();
+        return;
+      }
 
-          if (mechanic.isOnline) {
-            // Listen for new, unassigned garage requests
-            const reqQuery = query(
-              collection(db, "garageRequests"),
-              where("status", "==", "pending")
-            );
-            unsubscribeRequests = onSnapshot(reqQuery, (snap) => {
-              const reqs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-              setRequests(reqs);
-            });
-          } else {
-            setRequests([]); // Clear requests if offline
-            if (unsubscribeRequests) unsubscribeRequests();
-          }
+      const data = { id: snap.id, ...snap.data() } as MechanicData;
+      setPartner(data);
 
-        } else {
-          if (!isOnboarding) handleLogout();
-        }
-        setIsLoading(false);
-      }, (error) => {
-        console.error("Snapshot error:", error);
-        if (!isOnboarding) handleLogout();
-        setIsLoading(false);
-      });
-    } catch (e) {
-      if (!isOnboarding) handleLogout();
+      // ✅ Listen to pending requests ONLY WHEN ONLINE
+      if (data.isOnline === true) {
+        const q = query(
+          collection(db, "garageRequests"),
+          where("status", "==", "pending")
+        );
+
+        unsubReq = onSnapshot(q, (reqSnap) => {
+          const list = reqSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
+          setRequests(list);
+        });
+      } else {
+        setRequests([]);
+        unsubReq();
+      }
+
       setIsLoading(false);
-    }
+    });
 
     return () => {
-      if (unsubscribeMechanic) unsubscribeMechanic();
-      if (unsubscribeRequests) unsubscribeRequests();
+      unsubMech();
+      unsubReq();
     };
-  }, [isUserLoading, user, db, handleLogout, partnerType, pathname, router]);
+  }, [isUserLoading, db, logout]);
 
-  const value = useMemo(() => ({ partnerData, isLoading, requests }), [partnerData, isLoading, requests]);
+
+  const value = useMemo(() => ({
+    partner,
+    isLoading,
+    requests
+  }), [partner, isLoading, requests]);
 
   return (
-    <PartnerDataContext.Provider value={value}>
+    <MechanicContext.Provider value={value}>
       {children}
-    </PartnerDataContext.Provider>
+    </MechanicContext.Provider>
   );
 }
 
-// ------------------ Navigation ------------------
+
+// ----------------------------------------------------------------
+// ✅ 3. NAV ITEMS
+// ----------------------------------------------------------------
 const navItems = [
-  { href: '/mechanic', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/mechanic/jobs', label: 'My Jobs', icon: History },
-  { href: '/mechanic/wallet', label: 'Curocity Bank', icon: Landmark },
-  { href: '/mechanic/profile', label: 'Profile', icon: User },
+  { label: "Dashboard", href: "/mechanic", icon: LayoutDashboard },
+  { label: "My Jobs", href: "/mechanic/jobs", icon: History },
+  { label: "Curocity Bank", href: "/mechanic/wallet", icon: Landmark },
+  { label: "Profile", href: "/mechanic/profile", icon: User },
 ];
 
 function MechanicNav() {
   const pathname = usePathname();
+
   return (
-    <nav className="grid items-start gap-1 px-4 text-sm font-medium md:flex md:flex-row md:items-center md:gap-5 md:px-0">
+    <nav className="flex flex-col gap-2 md:flex-row md:gap-6">
       {navItems.map((item) => (
-        <Link
-          key={item.href}
-          href={item.href}
+        <Link key={item.href} href={item.href}
           className={cn(
-            'flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:bg-muted hover:text-primary md:p-0 md:hover:bg-transparent',
-            pathname === item.href && 'font-semibold text-primary'
-          )}
-        >
-          <item.icon className="h-4 w-4 md:hidden" />
+            "flex items-center gap-2 px-3 py-2 rounded-md text-sm text-muted-foreground hover:text-primary transition",
+            pathname === item.href && "font-semibold text-primary"
+          )}>
+          <item.icon className="h-4 w-4" />
           {item.label}
         </Link>
       ))}
@@ -179,156 +163,116 @@ function MechanicNav() {
   );
 }
 
+
+// ----------------------------------------------------------------
+// ✅ 4. THEME TOGGLE
+// ----------------------------------------------------------------
 function ThemeToggle() {
   const { setTheme } = useTheme();
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="outline" size="icon">
-          <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-          <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-          <span className="sr-only">Toggle theme</span>
+          <Sun className="h-4 w-4 rotate-0 dark:-rotate-90" />
+          <Moon className="h-4 w-4 absolute rotate-90 dark:rotate-0" />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
-        <DropdownMenuItem onClick={() => setTheme('light')}>Light</DropdownMenuItem>
-        <DropdownMenuItem onClick={() => setTheme('dark')}>Dark</DropdownMenuItem>
-        <DropdownMenuItem onClick={() => setTheme('system')}>System</DropdownMenuItem>
+        <DropdownMenuItem onClick={() => setTheme("light")}>Light</DropdownMenuItem>
+        <DropdownMenuItem onClick={() => setTheme("dark")}>Dark</DropdownMenuItem>
+        <DropdownMenuItem onClick={() => setTheme("system")}>System</DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );
 }
 
-// ------------------ Layout ------------------
+
+// ----------------------------------------------------------------
+// ✅ 5. LAYOUT CONTENT
+// ----------------------------------------------------------------
 function MechanicLayoutContent({ children }: { children: React.ReactNode }) {
-  const pathname = usePathname();
   const router = useRouter();
+  const pathname = usePathname();
+  const { partner, isLoading } = usePartnerData();
   const { toast } = useToast();
-  const { auth } = useFirebase();
-  const { partnerData, isLoading: isSessionLoading } = usePartnerData();
 
-  const handleLogout = useCallback(() => {
-    if (auth) auth.signOut();
-    localStorage.removeItem('curocity-resq-session');
-    localStorage.removeItem('curocity-session');
-    toast({ title: 'Logged Out', description: 'You have been successfully logged out.' });
-    router.push('/');
-  }, [auth, router, toast]);
+  const doLogout = () => {
+    localStorage.removeItem("curocity-resq-session");
+    toast({ title: "Logged out" });
+    router.push("/");
+  };
 
-  if (pathname.includes('/onboarding')) {
-    return <>{children}<Toaster /></>;
-  }
-
-  if (isSessionLoading) {
+  if (isLoading) {
     return (
-      <div className="flex h-screen w-full flex-col">
-        <header className="flex h-16 items-center gap-4 border-b bg-background px-4 md:px-6">
-          <Skeleton className="h-10 w-28" />
-          <div className="ml-auto flex items-center gap-4">
-            <Skeleton className="h-10 w-10 rounded-full" />
-            <Skeleton className="h-10 w-10 rounded-full" />
-          </div>
-        </header>
-        <main className="flex-1 p-6">
-          <Skeleton className="h-full w-full" />
-        </main>
+      <div className="p-10">
+        <Skeleton className="h-10 w-40" />
+        <Skeleton className="h-96 w-full mt-4" />
       </div>
     );
   }
 
   return (
-    <div className="flex min-h-screen w-full flex-col">
-      <header className="sticky top-0 z-50 flex h-16 items-center gap-4 border-b bg-background/95 px-4 backdrop-blur-sm md:px-6">
-        <nav className="hidden flex-col gap-6 text-lg font-medium md:flex md:flex-row md:items-center md:gap-5 lg:gap-6">
-          <Link href="/" className="flex items-center gap-2 text-lg font-semibold md:text-base">
+    <div className="min-h-screen flex flex-col">
+
+      {/* HEADER */}
+      <header className="flex items-center justify-between px-4 h-16 border-b bg-background/90 backdrop-blur-md">
+        <div className="flex items-center gap-4">
+          <Link href="/" className="flex items-center gap-2">
             <BrandLogo />
-            <span className="ml-2 text-xs font-semibold px-2 py-1 rounded-full bg-orange-500/20 text-orange-600">ResQ</span>
+            <span className="text-xs bg-orange-500/20 px-2 py-1 rounded text-orange-600">ResQ</span>
           </Link>
-          <div className="w-px bg-border h-6 mx-2"></div>
           <MechanicNav />
-        </nav>
-        <Sheet>
-          <SheetTrigger asChild>
-            <Button variant="outline" size="icon" className="shrink-0 md:hidden">
-              <PanelLeft className="h-5 w-5" />
-              <span className="sr-only">Toggle navigation menu</span>
-            </Button>
-          </SheetTrigger>
-          <SheetContent side="left" className="p-0">
-            <div className="flex h-16 items-center border-b px-6">
-              <Link href="/" className="flex items-center gap-2 font-semibold">
-                <BrandLogo />
-                <span className="ml-2 text-xs font-semibold px-2 py-1 rounded-full bg-orange-500/20 text-orange-600">ResQ</span>
-              </Link>
-            </div>
-            <MechanicNav />
-          </SheetContent>
-        </Sheet>
-        <div className="ml-auto flex items-center gap-4">
+        </div>
+
+        <div className="flex items-center gap-4">
           <ThemeToggle />
+
+          {/* User Avatar */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="secondary" size="icon" className="rounded-full">
+              <Button size="icon" variant="secondary" className="rounded-full">
                 <Avatar className="h-8 w-8">
-                  <AvatarImage src="https://i.pravatar.cc/40?u=mechanic" alt={partnerData?.name} />
-                  <AvatarFallback>{(partnerData?.name?.[0] ?? 'R').toUpperCase()}</AvatarFallback>
+                  <AvatarImage src="https://i.pravatar.cc/150?u=mech" />
+                  <AvatarFallback>M</AvatarFallback>
                 </Avatar>
-                <span className="sr-only">Toggle user menu</span>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuLabel>My Account</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onSelect={() => router.push('/mechanic/profile')}>Profile</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => router.push("/mechanic/profile")}>Profile</DropdownMenuItem>
               <DropdownMenuSeparator />
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:text-destructive">
-                    Logout
-                  </DropdownMenuItem>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Are you sure you want to log out?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      You will need to sign in again to access your ResQ dashboard.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction onClick={handleLogout} className="bg-destructive hover:bg-destructive/90">
-                      Logout
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
+              <DropdownMenuItem className="text-red-500" onClick={doLogout}>
+                Logout
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
       </header>
 
-      <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
-        <MotionDiv
-          key={pathname}
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, ease: 'easeInOut' }}
-          className="h-full"
-        >
+      {/* CONTENT */}
+      <main className="p-6 flex-1">
+        <MotionDiv initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
           {children}
         </MotionDiv>
       </main>
+
       <Toaster />
     </div>
   );
 }
 
+
+// ----------------------------------------------------------------
+// ✅ 6. EXPORT DEFAULT LAYOUT
+// ----------------------------------------------------------------
 export default function MechanicLayout({ children }: { children: React.ReactNode }) {
   return (
-    <PartnerProvider partnerType="mechanic">
+    <MechanicProvider>
       <MechanicLayoutContent>
         {children}
       </MechanicLayoutContent>
-    </PartnerProvider>
+    </MechanicProvider>
   );
 }

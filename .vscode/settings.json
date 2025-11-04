@@ -1,8 +1,8 @@
 
 {
-    "IDX.aI.enableInlineCompletion": true,
+    "IDX.aI.enableInlineCompletion": false,
     "IDX.aI.enableCodebaseIndexing": true,
     "IDX.agenticWorkspace": true,
-    "IDX.corgiMode": true,
+    "IDX.corgiMode": false,
     "IDX.aI.showChatInEditorTab": true
 }
