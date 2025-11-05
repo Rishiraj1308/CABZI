@@ -158,7 +158,7 @@ export default function ClinicOnboardingPage() {
             return;
         }
         
-        const q = query(collection(db, "ambulances"), where("phone", "==", restOfData.phone), limit(1));
+        const q = query(collection(db, "curePartners"), where("phone", "==", restOfData.phone), limit(1));
         const querySnapshot = await getDocs(q);
         if (!querySnapshot.empty) {
             toast({ variant: 'destructive', title: "Already Registered", description: `A facility with this phone number is already registered.` });
@@ -168,7 +168,7 @@ export default function ClinicOnboardingPage() {
 
         try {
             const partnerId = `CZ-CLINIC-${restOfData.phone.slice(-4)}`;
-            await addDoc(collection(db, "ambulances"), {
+            await addDoc(collection(db, "curePartners"), {
                 ...restOfData,
                 partnerId: partnerId,
                 name: restOfData.clinicName,

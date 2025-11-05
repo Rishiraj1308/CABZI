@@ -161,7 +161,7 @@ export default function HospitalOnboardingPage() {
 
         try {
             const { agreedToTerms, otp, ...restOfData } = formData;
-            const q = query(collection(db, "ambulances"), where("phone", "==", formData.phone), limit(1));
+            const q = query(collection(db, "curePartners"), where("phone", "==", formData.phone), limit(1));
             const querySnapshot = await getDocs(q);
             if (!querySnapshot.empty) {
                 toast({ variant: 'destructive', title: "Already Registered", description: `A facility with this phone number is already registered.` });
@@ -171,7 +171,7 @@ export default function HospitalOnboardingPage() {
             
             const partnerId = `CZ-HOSP-${formData.phone.slice(-4)}`;
 
-            await addDoc(collection(db, "ambulances"), {
+            await addDoc(collection(db, "curePartners"), {
                 ...restOfData,
                 partnerId: partnerId,
                 name: formData.hospitalName,

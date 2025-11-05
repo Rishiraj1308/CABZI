@@ -41,14 +41,14 @@ export default function PartnerDetails({ partnerId, initialPartnerType, hospital
                 switch(initialPartnerType) {
                     case 'driver': return `partners/${partnerId}`;
                     case 'mechanic': return `mechanics/${partnerId}`;
-                    case 'cure': return `ambulances/${partnerId}`; // Also used for clinics for now
-                    case 'clinic': return `ambulances/${partnerId}`; 
+                    case 'cure': return `curePartners/${partnerId}`;
+                    case 'clinic': return `curePartners/${partnerId}`; 
                     case 'doctor':
                         if (!hospitalId) {
                             console.error("Hospital ID is required for doctor details.");
                             return null;
                         }
-                        return `ambulances/${hospitalId}/doctors/${partnerId}`;
+                        return `curePartners/${hospitalId}/doctors/${partnerId}`;
                     default: return null;
                 }
             }
