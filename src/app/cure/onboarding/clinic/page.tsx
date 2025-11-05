@@ -50,12 +50,13 @@ export default function ClinicOnboardingPage() {
         // Step 1: Phone
         phone: '',
         otp: '',
-        // Step 2: Owner
-        ownerName: '',
+        // Step 2: Owner -> Now Contact Person
+        contactPerson: '',
         ownerEmail: '',
         // Step 3: Clinic
         clinicName: '',
         clinicType: '',
+        registrationNumber: '', // Added this field
         doctorName: '',
         doctorRegNo: '',
         specialization: '',
@@ -171,7 +172,7 @@ export default function ClinicOnboardingPage() {
             await addDoc(collection(db, "curePartners"), {
                 ...restOfData,
                 partnerId: partnerId,
-                name: restOfData.clinicName,
+                name: restOfData.clinicName, // The main name is the clinic's name
                 businessType: 'Clinic',
                 location: formData.location ? new GeoPoint(formData.location.lat, formData.location.lon) : null,
                 type: 'cure',
@@ -219,9 +220,9 @@ export default function ClinicOnboardingPage() {
             case 3:
                 return (
                     <div className="space-y-6">
-                        <h3 className="font-semibold text-lg border-b pb-2">Owner / Doctor's Details</h3>
+                        <h3 className="font-semibold text-lg border-b pb-2">Owner / Contact Person's Details</h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div className="space-y-2"><Label htmlFor="ownerName">Your Full Name*</Label><Input id="ownerName" name="ownerName" value={formData.ownerName} onChange={(e) => handleInputChange('ownerName', e.target.value)} required /></div>
+                            <div className="space-y-2"><Label htmlFor="contactPerson">Your Full Name*</Label><Input id="contactPerson" name="contactPerson" value={formData.contactPerson} onChange={(e) => handleInputChange('contactPerson', e.target.value)} required /></div>
                             <div className="space-y-2"><Label htmlFor="ownerEmail">Email ID*</Label><Input id="ownerEmail" name="ownerEmail" type="email" value={formData.ownerEmail} onChange={(e) => handleInputChange('ownerEmail', e.target.value)} required /></div>
                         </div>
                     </div>
@@ -254,9 +255,13 @@ export default function ClinicOnboardingPage() {
                                 <Label htmlFor="specialization">Specialization</Label>
                                 <Input id="specialization" name="specialization" placeholder="e.g., General Physician" value={formData.specialization} onChange={(e) => handleInputChange('specialization', e.target.value)}/>
                             </div>
-                            <div className="space-y-2 md:col-span-2">
+                             <div className="space-y-2">
                                 <Label htmlFor="doctorRegNo">Medical Registration No.*</Label>
                                 <Input id="doctorRegNo" name="doctorRegNo" value={formData.doctorRegNo} onChange={(e) => handleInputChange('doctorRegNo', e.target.value)} required />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="registrationNumber">Clinic Registration No. (Optional)</Label>
+                                <Input id="registrationNumber" name="registrationNumber" value={formData.registrationNumber} onChange={(e) => handleInputChange('registrationNumber', e.target.value)} />
                             </div>
                         </div>
                     </div>
@@ -323,7 +328,7 @@ export default function ClinicOnboardingPage() {
          }
     }
 
-    const stepTitles = ["Verify Phone", "Verify OTP", "Owner Details", "Facility Details", "Services", "Documents", "Location & Submit"];
+    const stepTitles = ["Verify Phone", "Verify OTP", "Contact Details", "Facility Details", "Services", "Documents", "Location & Submit"];
 
 
     return (
