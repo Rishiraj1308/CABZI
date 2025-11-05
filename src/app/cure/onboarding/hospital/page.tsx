@@ -12,7 +12,7 @@ import Link from 'next/link'
 import BrandLogo from '@/components/brand-logo'
 import { useFirebase } from '@/firebase/client-provider'
 import { collection, addDoc, serverTimestamp, GeoPoint, query, where, getDocs, limit } from "firebase/firestore";
-import { ArrowLeft, Building2, BedDouble, Stethoscope, Ambulance as AmbulanceIcon, Heart, Shield } from 'lucide-react'
+import { ArrowLeft, Building2, BedDouble, Stethoscope, Ambulance as AmbulanceIcon, Heart, Shield, UploadCloud } from 'lucide-react'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Progress } from '@/components/ui/progress'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -36,20 +36,18 @@ const hospitalDepartments = [
     { id: 'maternity', label: 'Maternity / Gynecology' },
 ]
 
-
 export default function HospitalOnboardingPage() {
     const { toast } = useToast()
     const router = useRouter()
     const { db, auth } = useFirebase();
     const [isLoading, setIsLoading] = useState(false)
     const [currentStep, setCurrentStep] = useState(1);
-    const totalSteps = 6;
+    const totalSteps = 7;
     const mapRef = useRef<any>(null);
     
     const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
     const recaptchaVerifierRef = useRef<RecaptchaVerifier | null>(null);
     const recaptchaContainerRef = useRef<HTMLDivElement>(null);
-
 
     const [formData, setFormData] = useState({
         // Step 1: Phone
@@ -64,15 +62,17 @@ export default function HospitalOnboardingPage() {
         hospitalType: '',
         totalBeds: '',
         bedsOccupied: '',
-        // Step 4: Services & Fleet
+        hasEmergency: false,
+        // Step 4: Services
         departments: [] as string[],
         blsAmbulances: '0',
         alsAmbulances: '0',
         cardiacAmbulances: '0',
-        // Step 5: Location
+        // Step 5: Document Upload
+        // Step 6: Location
         address: '',
         location: null as { lat: number, lon: number } | null,
-        // Step 6: Final
+        // Step 7: Final
         agreedToTerms: false,
     });
 
@@ -178,7 +178,7 @@ export default function HospitalOnboardingPage() {
                 businessType: 'Hospital',
                 totalBeds: Number(formData.totalBeds) || 0,
                 bedsOccupied: Number(formData.bedsOccupied) || 0,
-                location: new GeoPoint(formData.location!.lat, formData.location!.lon),
+                location: formData.location ? new GeoPoint(formData.location.lat, formData.location.lon) : null,
                 type: 'cure',
                 status: 'pending_verification',
                 isOnline: false,
@@ -260,6 +260,12 @@ export default function HospitalOnboardingPage() {
                                 <Label htmlFor="bedsOccupied">Currently Occupied Beds*</Label>
                                 <Input id="bedsOccupied" name="bedsOccupied" type="number" value={formData.bedsOccupied} onChange={(e) => handleInputChange('bedsOccupied', e.target.value)} required />
                             </div>
+                             <div className="flex items-center space-x-2 md:col-span-2 pt-4">
+                                <Checkbox id="hasEmergency" name="hasEmergency" checked={formData.hasEmergency} onCheckedChange={(checked) => handleInputChange('hasEmergency', !!checked)}/>
+                                <label htmlFor="hasEmergency" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                                    We have a 24/7 Emergency Department
+                                </label>
+                            </div>
                         </div>
                     </div>
                 );
@@ -298,12 +304,27 @@ export default function HospitalOnboardingPage() {
                         </div>
                     </div>
                 );
-            case 6:
+             case 6:
                 return (
+                    <div className="space-y-4">
+                        <h3 className="font-semibold text-lg border-b pb-2">Document Upload</h3>
+                        <CardDescription>Please upload all required documents for verification.</CardDescription>
+                        <div className="space-y-4 pt-2">
+                            <div className="space-y-2"><Label htmlFor="doc-reg">Hospital Registration Certificate*</Label><Input id="doc-reg" type="file" /></div>
+                            <div className="space-y-2"><Label htmlFor="doc-fire">Fire Safety Certificate (with expiry date)*</Label><Input id="doc-fire" type="file" /></div>
+                            <div className="space-y-2"><Label htmlFor="doc-pan">Business PAN Card*</Label><Input id="doc-pan" type="file" /></div>
+                            <div className="space-y-2"><Label htmlFor="doc-gst">GST Certificate (Optional)</Label><Input id="doc-gst" type="file" /></div>
+                            <div className="space-y-2"><Label htmlFor="doc-photo">Hospital Exterior Photo*</Label><Input id="doc-photo" type="file" /></div>
+                            <div className="space-y-2"><Label htmlFor="doc-ambulance">Ambulance RC Books* (multiple files allowed)</Label><Input id="doc-ambulance" type="file" multiple /></div>
+                        </div>
+                    </div>
+                );
+            case 7:
+                 return (
                      <div className="space-y-6">
                          <div className="space-y-2">
                             <Label className="font-semibold text-lg">Set Hospital Location*</Label>
-                            <CardDescription>Drag the map to pin your exact location.</CardDescription>
+                            <CardDescription>Drag the map to pin your exact entrance location.</CardDescription>
                             <div className="h-48 w-full rounded-md overflow-hidden border">
                                 <LiveMap ref={mapRef} onLocationFound={(addr, coords) => {
                                     handleInputChange('address', addr);
@@ -324,14 +345,15 @@ export default function HospitalOnboardingPage() {
         }
     }
 
-    const stepTitles = ["Verify Phone", "Verify OTP", "Owner Details", "Facility Details", "Services & Fleet", "Location & Submit"];
+    const stepTitles = ["Verify Phone", "Verify OTP", "Owner Details", "Facility Details", "Services & Fleet", "Document Upload", "Location & Submit"];
+
 
     return (
         <div className="flex min-h-screen items-center justify-center p-4 bg-muted/40">
             <div id="recaptcha-container" ref={recaptchaContainerRef}></div>
             <Card className="w-full max-w-2xl">
                 <CardHeader className="text-center">
-                    <div className="mx-auto"><BrandLogo className="text-5xl justify-center" /></div>
+                    <div className="mx-auto"><Link href="/"><BrandLogo className="text-5xl justify-center" /></Link></div>
                     <CardTitle className="text-3xl mt-4">Hospital Onboarding</CardTitle>
                     <CardDescription>
                        Step {currentStep} of {totalSteps}: {stepTitles[currentStep - 1]}

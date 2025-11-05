@@ -12,7 +12,7 @@ import Link from 'next/link'
 import BrandLogo from '@/components/brand-logo'
 import { useFirebase } from '@/firebase/client-provider'
 import { collection, addDoc, serverTimestamp, query, where, getDocs, limit, GeoPoint } from "firebase/firestore";
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, UploadCloud } from 'lucide-react'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Progress } from '@/components/ui/progress'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -39,7 +39,7 @@ export default function ClinicOnboardingPage() {
     const { db, auth } = useFirebase();
     const [isLoading, setIsLoading] = useState(false)
     const [currentStep, setCurrentStep] = useState(1);
-    const totalSteps = 6;
+    const totalSteps = 7;
     const mapRef = useRef<any>(null);
     
     const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
@@ -61,10 +61,11 @@ export default function ClinicOnboardingPage() {
         specialization: '',
         // Step 4: Services
         services: [] as string[],
-        // Step 5: Location
+        // Step 5: Document Upload
+        // Step 6: Location
         address: '',
         location: null as { lat: number, lon: number } | null,
-        // Step 6: Final
+        // Step 7: Final
         agreedToTerms: false,
     });
 
@@ -285,6 +286,18 @@ export default function ClinicOnboardingPage() {
                     </div>
                 );
             case 6:
+                return (
+                    <div className="space-y-4">
+                        <h3 className="font-semibold text-lg border-b pb-2">Document Upload</h3>
+                        <CardDescription>Please upload the following for verification.</CardDescription>
+                        <div className="space-y-4 pt-2">
+                            <div className="space-y-2"><Label htmlFor="doc-owner-pan">Owner's PAN Card*</Label><Input id="doc-owner-pan" type="file" required /></div>
+                            <div className="space-y-2"><Label htmlFor="doc-reg">Clinic Registration (if applicable)</Label><Input id="doc-reg" type="file" /></div>
+                            <div className="space-y-2"><Label htmlFor="doc-photo">Clinic Exterior Photo*</Label><Input id="doc-photo" type="file" required /></div>
+                        </div>
+                    </div>
+                );
+            case 7:
                  return (
                      <div className="space-y-6">
                          <div className="space-y-2">
@@ -310,7 +323,7 @@ export default function ClinicOnboardingPage() {
          }
     }
 
-    const stepTitles = ["Verify Phone", "Verify OTP", "Owner Details", "Facility Details", "Services", "Location & Submit"];
+    const stepTitles = ["Verify Phone", "Verify OTP", "Owner Details", "Facility Details", "Services", "Documents", "Location & Submit"];
 
 
     return (
@@ -318,7 +331,7 @@ export default function ClinicOnboardingPage() {
              <div id="recaptcha-container" ref={recaptchaContainerRef}></div>
             <Card className="w-full max-w-2xl">
                 <CardHeader className="text-center">
-                    <div className="mx-auto"><BrandLogo className="text-5xl justify-center" /></div>
+                    <div className="mx-auto"><Link href="/"><BrandLogo className="text-5xl justify-center" /></Link></div>
                     <CardTitle className="text-3xl mt-4">Clinic / Center Onboarding</CardTitle>
                      <CardDescription>
                        Step {currentStep} of {totalSteps}: {stepTitles[currentStep - 1]}
