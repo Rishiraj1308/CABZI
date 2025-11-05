@@ -47,32 +47,33 @@ export function FirebaseProviderClient({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (typeof window !== 'undefined') {
         const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+        setFirebaseApp(app);
         
         const authInstance = getAuth(app);
-        const functionsInstance = getFunctions(app);
-        const dbInstance = getFirestore(app);
-
-        if (!persistenceEnabled) {
-          enableIndexedDbPersistence(dbInstance)
-            .then(() => {
-              setPersistenceEnabled(true);
-              setDb(dbInstance);
-            })
-            .catch((err) => {
-              if (err.code === 'failed-precondition') {
-                console.warn("Multiple tabs open, persistence already enabled in another tab.");
-                setPersistenceEnabled(true); 
-                setDb(dbInstance);
-              } else if (err.code === 'unimplemented') {
-                console.log("Persistence is not supported in this browser. App will work online only.");
-                setDb(dbInstance); // Still provide db instance for online mode
-              }
-            });
-        }
-
-        setFirebaseApp(app);
         setAuth(authInstance);
+
+        const functionsInstance = getFunctions(app);
         setFunctions(functionsInstance);
+        
+        // Firestore setup with persistence
+        if (!persistenceEnabled) {
+            const dbInstance = getFirestore(app);
+            enableIndexedDbPersistence(dbInstance)
+              .then(() => {
+                  console.log("Firestore persistence enabled.");
+                  setPersistenceEnabled(true);
+              })
+              .catch((err) => {
+                  if (err.code === 'failed-precondition') {
+                      console.warn("Persistence failed: Multiple tabs open?");
+                  } else if (err.code === 'unimplemented') {
+                      console.warn("Persistence not available in this browser.");
+                  }
+              }).finally(() => {
+                  // Set db instance regardless of persistence success
+                  setDb(dbInstance);
+              });
+        }
         
         let msgInstance: Messaging | null = null;
         if ('Notification' in window && 'serviceWorker' in navigator && 'PushManager' in window) {
@@ -89,7 +90,9 @@ export function FirebaseProviderClient({ children }: { children: ReactNode }) {
     } else {
       setIsUserLoading(false);
     }
-  }, [persistenceEnabled]);
+  // This effect should only run once on mount.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const memoizedValue = useMemo(() => ({
     firebaseApp,
