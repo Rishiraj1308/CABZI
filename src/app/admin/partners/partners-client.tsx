@@ -7,7 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { useToast } from '@/hooks/use-toast'
-import { Car, Wrench, MoreHorizontal, Trash2, Search, Check, X, Ban, Ambulance, Stethoscope, Clock, BadgeCheck, Handshake, CheckCircle, CircleHelp, AlertTriangle } from 'lucide-react'
+import { Car, Wrench, MoreHorizontal, Trash2, Search, Check, X, Ban, Stethoscope, Clock, BadgeCheck, Handshake, CheckCircle, CircleHelp, AlertTriangle, Building, Hospital } from 'lucide-react'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -42,6 +42,7 @@ interface PartnerData {
   status?: string;
   docStatus?: 'Verified' | 'Pending' | 'Awaiting Final Approval' | 'Rejected';
   type: 'driver' | 'mechanic' | 'cure' | 'doctor';
+  businessType?: 'Hospital' | 'Clinic'; // Added to differentiate
   createdAt: Timestamp;
   specialization?: string;
   hospitalName?: string;
@@ -83,7 +84,7 @@ export default function PartnersClient() {
     const collectionsToFetch = [
         { name: 'partners', type: 'driver' },
         { name: 'mechanics', type: 'mechanic' },
-        { name: 'ambulances', type: 'cure' }
+        { name: 'curePartners', type: 'cure' }
     ];
     
     let allPartnersData: PartnerData[] = [];
@@ -135,7 +136,7 @@ export default function PartnersClient() {
         const hospitalIds = allPartnersData.filter(p => p.type === 'doctor' && p.hospitalId).map(p => p.hospitalId!);
         if (hospitalIds.length > 0) {
             const uniqueHospitalIds = [...new Set(hospitalIds)];
-            const hospitalsQuery = query(collection(db, 'ambulances'), where('__name__', 'in', uniqueHospitalIds));
+            const hospitalsQuery = query(collection(db, 'curePartners'), where('__name__', 'in', uniqueHospitalIds));
             const hospitalsSnap = await getDocs(hospitalsQuery);
             const hospitalNames: Record<string, string> = {};
             hospitalsSnap.forEach(doc => {
@@ -188,8 +189,8 @@ export default function PartnersClient() {
     switch (type) {
       case 'driver': return 'partners';
       case 'mechanic': return 'mechanics';
-      case 'cure': return 'ambulances';
-      case 'doctor': return `ambulances/${hospitalId}/doctors`;
+      case 'cure': return 'curePartners';
+      case 'doctor': return `curePartners/${hospitalId}/doctors`;
       default: return null;
     }
   };
@@ -261,7 +262,13 @@ export default function PartnersClient() {
           case 'mechanic':
               return <div className="flex items-center gap-2"><Wrench className="h-4 w-4 text-amber-600"/><span>ResQ Partner</span></div>;
           case 'cure':
-              return <div className="flex items-center gap-2"><Ambulance className="h-4 w-4 text-red-600"/><span>Cure Partner</span></div>;
+              const isClinic = partner.businessType?.toLowerCase().includes('clinic');
+              return (
+                  <div className="flex items-center gap-2">
+                      {isClinic ? <Building className="h-4 w-4 text-purple-600"/> : <Hospital className="h-4 w-4 text-red-600"/>}
+                      <span>{isClinic ? 'Clinic' : 'Hospital'}</span>
+                  </div>
+              );
           case 'doctor':
               return <div className="flex items-center gap-2"><Stethoscope className="h-4 w-4 text-blue-600"/><span>Doctor</span></div>;
           case 'driver':
@@ -270,14 +277,21 @@ export default function PartnersClient() {
       }
   }
 
-  const renderTable = (partnerType: 'driver' | 'mechanic' | 'cure' | 'doctor') => {
-      const data = filteredPartners.filter(p => p.type === partnerType);
+  const renderTable = (partnerTypes: Array<'driver' | 'mechanic' | 'hospital' | 'clinic' | 'doctor'>) => {
+      const data = filteredPartners.filter(p => {
+          if (partnerTypes.includes('hospital') && p.type === 'cure' && p.businessType === 'Hospital') return true;
+          if (partnerTypes.includes('clinic') && p.type === 'cure' && p.businessType === 'Clinic') return true;
+          return partnerTypes.includes(p.type);
+      });
+      
+      const isDoctorTab = partnerTypes.includes('doctor');
+      
       return (
         <Table>
           <TableHeader>
             <TableRow>
               <TableHead>Partner</TableHead>
-              {partnerType === 'doctor' && <TableHead>Hospital</TableHead>}
+              {isDoctorTab && <TableHead>Associated Facility</TableHead>}
               <TableHead>Contact</TableHead>
               <TableHead>Status</TableHead>
               <TableHead className="text-right">Actions</TableHead>
@@ -288,7 +302,7 @@ export default function PartnersClient() {
                Array.from({ length: 3 }).map((_, i) => (
                   <TableRow key={i}>
                     <TableCell><Skeleton className="h-5 w-32" /></TableCell>
-                    {partnerType === 'doctor' && <TableCell><Skeleton className="h-5 w-40" /></TableCell>}
+                    {isDoctorTab && <TableCell><Skeleton className="h-5 w-40" /></TableCell>}
                     <TableCell><Skeleton className="h-5 w-28" /></TableCell>
                     <TableCell><Skeleton className="h-6 w-20 rounded-full" /></TableCell>
                     <TableCell className="text-right"><Skeleton className="h-8 w-8 ml-auto rounded-full" /></TableCell>
@@ -305,7 +319,7 @@ export default function PartnersClient() {
                     </Link>
                     <p className="text-xs text-muted-foreground font-mono">{partner.partnerId || 'N/A'}</p>
                   </TableCell>
-                  {partnerType === 'doctor' && (
+                  {isDoctorTab && (
                     <TableCell className="text-xs text-muted-foreground">{partner.hospitalName || 'N/A'}</TableCell>
                   )}
                   <TableCell>+91 {partner.phone}</TableCell>
@@ -364,7 +378,7 @@ export default function PartnersClient() {
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={5} className="h-24 text-center">
+                <TableCell colSpan={isDoctorTab ? 5 : 4} className="h-24 text-center">
                   No partners of this type found.
                 </TableCell>
               </TableRow>
@@ -403,23 +417,27 @@ export default function PartnersClient() {
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="path">
-              <TabsList className="grid w-full grid-cols-4">
+              <TabsList className="grid w-full grid-cols-5">
                   <TabsTrigger value="path">Path (Drivers)</TabsTrigger>
                   <TabsTrigger value="resq">ResQ (Mechanics)</TabsTrigger>
-                  <TabsTrigger value="cure">Cure (Hospitals)</TabsTrigger>
+                  <TabsTrigger value="hospitals">Cure (Hospitals)</TabsTrigger>
+                  <TabsTrigger value="clinics">Cure (Clinics)</TabsTrigger>
                   <TabsTrigger value="doctors">Doctor Approvals</TabsTrigger>
               </TabsList>
               <TabsContent value="path" className="mt-4">
-                {renderTable('driver')}
+                {renderTable(['driver'])}
               </TabsContent>
               <TabsContent value="resq" className="mt-4">
-                {renderTable('mechanic')}
+                {renderTable(['mechanic'])}
               </TabsContent>
-              <TabsContent value="cure" className="mt-4">
-                {renderTable('cure')}
+              <TabsContent value="hospitals" className="mt-4">
+                {renderTable(['hospital'])}
+              </TabsContent>
+               <TabsContent value="clinics" className="mt-4">
+                {renderTable(['clinic'])}
               </TabsContent>
                <TabsContent value="doctors" className="mt-4">
-                {renderTable('doctor')}
+                {renderTable(['doctor'])}
               </TabsContent>
           </Tabs>
         </CardContent>
@@ -427,5 +445,3 @@ export default function PartnersClient() {
     </>
   )
 }
-
-    
