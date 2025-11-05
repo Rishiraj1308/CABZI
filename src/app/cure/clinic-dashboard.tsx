@@ -39,6 +39,7 @@ import { Switch } from '@/components/ui/switch';
 import { cn } from '@/lib/utils';
 import { useCurePartner } from './layout';
 import { RecaptchaVerifier, signInWithPhoneNumber, type ConfirmationResult } from 'firebase/auth'
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Checkbox } from '@/components/ui/checkbox';
 
 
@@ -216,107 +217,125 @@ const ClinicDashboard = () => {
             return;
         }
         
-        if (currentFormStep < totalSteps -1) { // -1 because the last step is submission
-            if (currentFormStep === 1) {
-                if (newDoctorData.fullName.length < 3 || !newDoctorData.specialization) {
-                    toast({ variant: 'destructive', title: 'Incomplete', description: 'Please enter a valid name and select a specialization.' });
-                    return;
-                }
+        if (currentFormStep === 1) {
+            if (newDoctorData.fullName.length < 3 || !newDoctorData.specialization) {
+                toast({ variant: 'destructive', title: 'Incomplete', description: 'Please enter a valid name and select a specialization.' });
+                return;
             }
-            if (currentFormStep === 2) {
-                 if (!auth) return;
-                setIsSubmitting(true);
-                try {
-                    const fullPhoneNumber = `+91${newDoctorData.contactNumber}`;
-                    // @ts-ignore
-                    const confirmation = await signInWithPhoneNumber(auth, fullPhoneNumber, window.recaptchaVerifier);
-                    setConfirmationResult(confirmation);
-                    toast({ title: 'OTP Sent!', description: `An OTP has been sent to ${fullPhoneNumber}.` });
-                    setCurrentFormStep(p => p + 1);
-                } catch (error) {
-                    toast({ variant: 'destructive', title: 'Failed to Send OTP' });
-                    setIsSubmitting(false);
-                    return;
-                }
+             setCurrentFormStep(p => p + 1);
+            return;
+        }
+        
+        if (currentFormStep === 2) {
+             if (!auth) return;
+            setIsSubmitting(true);
+            try {
+                const fullPhoneNumber = `+91${newDoctorData.contactNumber}`;
+                // @ts-ignore
+                const confirmation = await signInWithPhoneNumber(auth, fullPhoneNumber, window.recaptchaVerifier);
+                setConfirmationResult(confirmation);
+                toast({ title: 'OTP Sent!', description: `An OTP has been sent to ${fullPhoneNumber}.` });
+                setCurrentFormStep(p => p + 1);
+            } catch (error) {
+                toast({ variant: 'destructive', title: 'Failed to Send OTP' });
+            } finally {
                 setIsSubmitting(false);
-                 return;
             }
-            if (currentFormStep === 3) {
-                 // KYC step has no validation here, just moves to next
+            return;
+        }
+        
+        if (currentFormStep === 3) {
+            if (!confirmationResult || newDoctorData.otp.length !== 6) {
+                toast({ variant: 'destructive', title: 'Invalid OTP' });
+                return;
             }
+            setIsSubmitting(true);
+            try {
+                await confirmationResult.confirm(newDoctorData.otp);
+                toast({ title: 'Phone Verified!', className: 'bg-green-600 text-white border-green-600'});
+                setCurrentFormStep(p => p + 1);
+            } catch (error) {
+                toast({ variant: 'destructive', title: 'OTP Verification Failed' });
+            } finally {
+                setIsSubmitting(false);
+            }
+            return;
+        }
+
+        if (currentFormStep === 4) {
             setCurrentFormStep(p => p + 1);
             return;
         }
         
-        setIsSubmitting(true);
+        if (currentFormStep === 5) {
+            setIsSubmitting(true);
       
-        const { otp, ...restOfData } = newDoctorData;
-        const { fullName: name, contactNumber: phone, emailAddress: email } = restOfData;
-      
-        if (!name || !phone || !email || !restOfData.specialization) {
-            toast({ variant: 'destructive', title: 'Missing Required Fields', description: 'Please complete all required fields.' });
-            setIsSubmitting(false);
-            return;
-        }
-        
-        const globalDoctorsRef = collectionGroup(db, 'doctors');
-
-        try {
-            const q = query(globalDoctorsRef, where("phone", "==", phone), limit(1));
-            const phoneCheckSnapshot = await getDocs(q);
-
-            if (!phoneCheckSnapshot.empty) {
-                throw new Error("A doctor with this phone number is already registered across the platform.");
+            const { otp, ...restOfData } = newDoctorData;
+            const { fullName: name, contactNumber: phone, emailAddress: email } = restOfData;
+          
+            if (!name || !phone || !email || !restOfData.specialization) {
+                toast({ variant: 'destructive', title: 'Missing Required Fields', description: 'Please complete all required fields.' });
+                setIsSubmitting(false);
+                return;
             }
-
-            const partnerId = `CZD-${phone.slice(-4)}${name.split(' ')[0].slice(0, 2).toUpperCase()}`;
-            const password = `cAbZ@${Math.floor(1000 + Math.random() * 9000)}`;
             
-            const batch = writeBatch(db);
-            
-            const hospitalDoctorsRef = collection(db, `curePartners/${partnerData.id}/doctors`);
-            const newDoctorDocRefInHospital = doc(hospitalDoctorsRef);
-            
-            const doctorData = { 
-                id: newDoctorDocRefInHospital.id, 
-                name, phone, email, 
-                ...restOfData,
-                partnerId, 
-                createdAt: serverTimestamp(), 
-                docStatus: 'kyc_pending', 
-                hospitalId: partnerData.id, hospitalName: partnerData.name, 
-                isAvailable: false,
-                weeklyAvailability: availability,
-                maxPatientsPerDay: Number(maxPatients)
-            };
-            
-            batch.set(newDoctorDocRefInHospital, doctorData);
+            const globalDoctorsRef = collectionGroup(db, 'doctors');
 
-            // Also create a global doctor record for login purposes.
-            // This collection would be secured with different rules in production.
-            const newDoctorDocRefGlobal = doc(collection(db, 'doctors'), newDoctorDocRefInHospital.id);
-            batch.set(newDoctorDocRefGlobal, {
-                 id: newDoctorDocRefInHospital.id, 
-                 name, phone, email, partnerId, password,
-                 hospitalId: partnerData.id, hospitalName: partnerData.name,
-                 createdAt: serverTimestamp(),
-                 status: 'pending_verification' // Global status for admin panel
-            });
+            try {
+                const q = query(globalDoctorsRef, where("phone", "==", phone), limit(1));
+                const phoneCheckSnapshot = await getDocs(q);
 
-            await batch.commit();
+                if (!phoneCheckSnapshot.empty) {
+                    throw new Error("A doctor with this phone number is already registered across the platform.");
+                }
 
-            setGeneratedCreds({ id: partnerId, pass: password, role: 'Doctor' });
-            setIsAddDoctorDialogOpen(false);
-            setCurrentFormStep(1);
-            setIsCredsDialogOpen(true);
-            toast({ title: 'Doctor Record Created!', description: `Dr. ${name}'s record has been submitted for verification.` });
-            setNewDoctorData(initialDoctorState);
-      
-        } catch (error: any) {
-            console.error('Error adding doctor:', error);
-            toast({ variant: 'destructive', title: 'Error Adding Doctor', description: error.message || 'An unexpected error occurred.' });
-        } finally {
-            setIsSubmitting(false);
+                const partnerId = `CZD-${phone.slice(-4)}${name.split(' ')[0].slice(0, 2).toUpperCase()}`;
+                const password = `cAbZ@${Math.floor(1000 + Math.random() * 9000)}`;
+                
+                const batch = writeBatch(db);
+                
+                const hospitalDoctorsRef = collection(db, `curePartners/${partnerData.id}/doctors`);
+                const newDoctorDocRefInHospital = doc(hospitalDoctorsRef);
+                
+                const doctorData = { 
+                    id: newDoctorDocRefInHospital.id, 
+                    name, phone, email, 
+                    ...restOfData,
+                    partnerId, 
+                    createdAt: serverTimestamp(), 
+                    docStatus: 'kyc_pending', 
+                    hospitalId: partnerData.id, hospitalName: partnerData.name, 
+                    isAvailable: false,
+                    weeklyAvailability: availability,
+                    maxPatientsPerDay: Number(maxPatients)
+                };
+                
+                batch.set(newDoctorDocRefInHospital, doctorData);
+
+                const newDoctorDocRefGlobal = doc(collection(db, 'doctors'), newDoctorDocRefInHospital.id);
+                batch.set(newDoctorDocRefGlobal, {
+                     id: newDoctorDocRefInHospital.id, 
+                     name, phone, email, partnerId, password,
+                     hospitalId: partnerData.id, hospitalName: partnerData.name,
+                     createdAt: serverTimestamp(),
+                     status: 'pending_verification'
+                });
+
+                await batch.commit();
+
+                setGeneratedCreds({ id: partnerId, pass: password, role: 'Doctor' });
+                setIsAddDoctorDialogOpen(false);
+                setCurrentFormStep(1);
+                setIsCredsDialogOpen(true);
+                toast({ title: 'Doctor Record Created!', description: `Dr. ${name}'s record has been submitted for verification.` });
+                setNewDoctorData(initialDoctorState);
+          
+            } catch (error: any) {
+                console.error('Error adding doctor:', error);
+                toast({ variant: 'destructive', title: 'Error Adding Doctor', description: error.message || 'An unexpected error occurred.' });
+            } finally {
+                setIsSubmitting(false);
+            }
         }
     };
     
@@ -407,8 +426,18 @@ const ClinicDashboard = () => {
                  );
             case 3:
                 return (
-                     <div className="space-y-4">
-                        <h3 className="text-lg font-semibold border-b pb-2">Step 3: Medical KYC</h3>
+                    <div className="space-y-4">
+                        <h3 className="text-lg font-semibold border-b pb-2">Step 3: Verify Phone Number</h3>
+                        <div className="space-y-2">
+                            <Label>Enter OTP sent to +91 {newDoctorData.contactNumber}</Label>
+                            <Input name="otp" type="tel" maxLength={6} required value={newDoctorData.otp} onChange={e => handleFormChange('otp', e.target.value)} />
+                        </div>
+                    </div>
+                );
+            case 4:
+                return (
+                    <div className="space-y-4">
+                        <h3 className="text-lg font-semibold border-b pb-2">Step 4: Medical KYC</h3>
                         <CardDescription>Upload clear photos of the documents.</CardDescription>
                         <div className="space-y-4 pt-2">
                              <div className="space-y-2"><Label htmlFor="doc-reg">Medical Registration Certificate* (e.g., from MCI)</Label><Input id="doc-reg" type="file" required /></div>
@@ -417,40 +446,19 @@ const ClinicDashboard = () => {
                         </div>
                     </div>
                 );
-            case 4:
+            case 5:
                 return (
                     <div className="space-y-4">
-                        <h3 className="text-lg font-semibold border-b pb-2">Step 4: Availability Setup</h3>
-                        <div className="space-y-4">
-                             {Object.keys(availability).map(day => (
-                                <div key={day} className="flex flex-col md:flex-row md:items-center gap-2 p-2 border rounded-md">
-                                    <div className="flex items-center gap-3 w-full md:w-36">
-                                        <Checkbox
-                                            id={`avail-${day}`}
-                                            checked={availability[day].available}
-                                            onCheckedChange={(checked) => handleAvailabilityDayChange(day, 'available', !!checked)}
-                                        />
-                                        <Label htmlFor={`avail-${day}`} className="font-semibold">{day}</Label>
-                                    </div>
-                                    <div className="flex-1 grid grid-cols-2 gap-2">
-                                        <div className="space-y-1">
-                                            <Label htmlFor={`start-${day}`} className="text-xs">Start Time</Label>
-                                            <Input type="time" id={`start-${day}`} value={availability[day].start} onChange={e => handleAvailabilityDayChange(day, 'start', e.target.value)} disabled={!availability[day].available}/>
-                                        </div>
-                                        <div className="space-y-1">
-                                            <Label htmlFor={`end-${day}`} className="text-xs">End Time</Label>
-                                            <Input type="time" id={`end-${day}`} value={availability[day].end} onChange={e => handleAvailabilityDayChange(day, 'end', e.target.value)} disabled={!availability[day].available}/>
-                                        </div>
-                                    </div>
-                                </div>
-                            ))}
-                            <div className="space-y-2">
-                                <Label htmlFor="max-patients">Max Patients per Day (Optional)</Label>
-                                <Input id="max-patients" type="number" value={maxPatients} onChange={e => setMaxPatients(e.target.value)} placeholder="e.g., 20" />
-                            </div>
+                        <h3 className="text-lg font-semibold border-b pb-2">Step 5: Final Submission</h3>
+                        <p className="text-sm text-muted-foreground">Please review all the information before submitting. Once submitted, the profile will be sent for verification.</p>
+                         <div className="flex items-start space-x-2 pt-4">
+                            <Checkbox id="terms" required />
+                            <Label htmlFor="terms" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                                I confirm that all the information provided is accurate and I agree to Curocity's terms and conditions for partner doctors.
+                            </Label>
                         </div>
                     </div>
-                )
+                );
             default:
                 return null;
         }
@@ -529,7 +537,7 @@ const ClinicDashboard = () => {
                                 <DialogContent className="max-w-4xl">
                                 <DialogHeader>
                                     <DialogTitle>Add New Doctor</DialogTitle>
-                                    <DialogDescription>Enter the details for the new doctor to add them to your roster.</DialogDescription>
+                                    <DialogDescription>Step {currentFormStep} of {totalSteps}: Enter doctor's details for verification.</DialogDescription>
                                      <Progress value={(currentFormStep / totalSteps) * 100} className="w-full mt-2" />
                                 </DialogHeader>
                                 <form onSubmit={handleAddDoctor}>
@@ -538,7 +546,13 @@ const ClinicDashboard = () => {
                                     </div>
                                     <DialogFooter className="pt-6">
                                       {currentFormStep > 1 && <Button type="button" variant="outline" onClick={() => setCurrentFormStep(p => p - 1)}><ArrowLeft className="w-4 h-4 mr-2"/>Previous</Button>}
-                                      <Button type="submit" disabled={isSubmitting}>{isSubmitting ? "Adding..." : (currentFormStep < totalSteps ? 'Next Step' : "Add Doctor & Generate Credentials")}</Button>
+                                      <Button type="submit" disabled={isSubmitting}>
+                                        {isSubmitting ? "Submitting..." : 
+                                         currentFormStep === 2 ? 'Send OTP' : 
+                                         currentFormStep === 3 ? 'Verify OTP' :
+                                         currentFormStep < totalSteps ? 'Next Step' : "Add Doctor & Generate Credentials"
+                                        }
+                                      </Button>
                                     </DialogFooter>
                                 </form>
                                 </DialogContent>
@@ -551,6 +565,7 @@ const ClinicDashboard = () => {
                                         <TableHead>Doctor</TableHead>
                                         <TableHead>Specialization</TableHead>
                                         <TableHead>Contact</TableHead>
+                                        <TableHead>Availability</TableHead>
                                         <TableHead className="text-right">Actions</TableHead>
                                     </TableRow>
                                 </TableHeader>
@@ -561,6 +576,7 @@ const ClinicDashboard = () => {
                                             <TableCell><Skeleton className="h-5 w-32" /></TableCell>
                                             <TableCell><Skeleton className="h-5 w-24" /></TableCell>
                                             <TableCell><Skeleton className="h-5 w-28" /></TableCell>
+                                            <TableCell><Skeleton className="h-6 w-20" /></TableCell>
                                             <TableCell className="text-right"><Skeleton className="h-8 w-8 rounded-full ml-auto" /></TableCell>
                                         </TableRow>
                                     ))
@@ -570,6 +586,12 @@ const ClinicDashboard = () => {
                                             <TableCell className="font-medium">Dr. {doctor.name}</TableCell>
                                             <TableCell><Badge variant="secondary">{doctor.specialization}</Badge></TableCell>
                                             <TableCell>{doctor.phone}</TableCell>
+                                            <TableCell>
+                                                <div className="flex items-center gap-2">
+                                                    <Switch checked={doctor.isAvailable} onCheckedChange={(c) => handleToggleAvailability(doctor.id, c)} />
+                                                    <span className={cn('text-xs font-semibold', doctor.isAvailable ? 'text-green-600' : 'text-muted-foreground')}>{doctor.isAvailable ? 'Online' : 'Offline'}</span>
+                                                </div>
+                                            </TableCell>
                                             <TableCell className="text-right">
                                                  <AlertDialog>
                                                      <DropdownMenu>
@@ -598,7 +620,7 @@ const ClinicDashboard = () => {
                                      ))
                                    ) : (
                                     <TableRow>
-                                        <TableCell colSpan={4} className="text-center h-24">No doctors on roster.</TableCell>
+                                        <TableCell colSpan={5} className="text-center h-24">No doctors on roster.</TableCell>
                                     </TableRow>
                                    )}
                                 </TableBody>
@@ -623,4 +645,4 @@ const ClinicDashboard = () => {
 
 export default ClinicDashboard;
 
-```
+    
