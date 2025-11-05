@@ -190,8 +190,8 @@ const ClinicDashboard = () => {
       
         const { fullName: name, contactNumber: phone, emailAddress: email, ...restOfData } = newDoctorData;
       
-        if (!name || !phone || !email || !restOfData.specialization) {
-            toast({ variant: 'destructive', title: 'Missing Required Fields' });
+        if (!name || !phone || !email || !restOfData.specialization || !restOfData.medicalRegNo || !restOfData.regCouncil || !restOfData.regYear) {
+            toast({ variant: 'destructive', title: 'Missing Required Fields', description: 'Please complete all form steps.' });
             setIsSubmitting(false);
             return;
         }
@@ -218,7 +218,7 @@ const ClinicDashboard = () => {
                 name, phone, email, ...restOfData, 
                 partnerId, 
                 createdAt: serverTimestamp(), 
-                docStatus: 'Pending', 
+                docStatus: 'Awaiting Final Approval', 
                 hospitalId: partnerData.id, hospitalName: partnerData.name, 
                 isAvailable: false 
             };
@@ -240,7 +240,7 @@ const ClinicDashboard = () => {
             setIsAddDoctorDialogOpen(false);
             setCurrentFormStep(1);
             setIsCredsDialogOpen(true);
-            toast({ title: 'Doctor Record Created!', description: `Dr. ${name}'s credentials are now available.` });
+            toast({ title: 'Doctor Record Created!', description: `Dr. ${name}'s record has been submitted for verification.` });
             setNewDoctorData(initialDoctorState);
       
         } catch (error: any) {
@@ -302,7 +302,7 @@ const ClinicDashboard = () => {
                             <div className="space-y-2"><Label>Email Address</Label><Input name="emailAddress" type="email" required value={newDoctorData.emailAddress} onChange={e => handleFormChange('emailAddress', e.target.value)} /></div>
                         </div>
                     </div>
-                )
+                );
             case 2:
                  return (
                     <div className="space-y-4">
@@ -314,7 +314,20 @@ const ClinicDashboard = () => {
                             <div className="space-y-2"><Label>Consultation Fee (INR)</Label><Input name="consultationFee" type="number" placeholder="e.g., 800" required value={newDoctorData.consultationFee} onChange={e => handleFormChange('consultationFee', e.target.value)} /></div>
                         </div>
                     </div>
-                 )
+                 );
+            case 3:
+                return (
+                    <div className="space-y-4">
+                        <h3 className="text-lg font-semibold border-b pb-2">Licenses & Verification</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+                             <div className="space-y-2 md:col-span-2"><Label>Medical Registration Number</Label><Input name="medicalRegNo" required value={newDoctorData.medicalRegNo} onChange={e => handleFormChange('medicalRegNo', e.target.value)} /></div>
+                            <div className="space-y-2"><Label>Registration Council</Label><Input name="regCouncil" placeholder="e.g., Medical Council of India" required value={newDoctorData.regCouncil} onChange={e => handleFormChange('regCouncil', e.target.value)} /></div>
+                            <div className="space-y-2"><Label>Registration Year</Label><Input name="regYear" type="number" placeholder="e.g., 2010" required value={newDoctorData.regYear} onChange={e => handleFormChange('regYear', e.target.value)} /></div>
+                        </div>
+                    </div>
+                );
+            default:
+                return null;
         }
     }
 
@@ -443,15 +456,15 @@ const ClinicDashboard = () => {
                                 <DialogHeader>
                                     <DialogTitle>Add New Doctor</DialogTitle>
                                     <DialogDescription>Enter the details for the new doctor to add them to your hospital's roster.</DialogDescription>
-                                     <Progress value={(currentFormStep / 2) * 100} className="w-full mt-2" />
+                                     <Progress value={(currentFormStep / 3) * 100} className="w-full mt-2" />
                                 </DialogHeader>
                                 <form onSubmit={handleAddDoctor} className="max-h-[80vh] overflow-y-auto pr-6">
                                     <div className="py-4">
                                        {renderAddDoctorForm()}
                                     </div>
                                     <DialogFooter className="pt-6">
-                                      {currentFormStep > 1 && <Button type="button" variant="outline" onClick={() => setCurrentFormStep(1)}><ArrowLeft className="w-4 h-4 mr-2"/>Previous</Button>}
-                                      {currentFormStep < 2 ? <Button type="button" onClick={() => setCurrentFormStep(2)}>Next Step</Button> : <Button type="submit" disabled={isSubmitting}>{isSubmitting ? "Adding..." : "Add Doctor & Generate Credentials"}</Button>}
+                                      {currentFormStep > 1 && <Button type="button" variant="outline" onClick={() => setCurrentFormStep(p => p - 1)}><ArrowLeft className="w-4 h-4 mr-2"/>Previous</Button>}
+                                      {currentFormStep < 3 ? <Button type="button" onClick={() => setCurrentFormStep(p => p + 1)}>Next Step</Button> : <Button type="submit" disabled={isSubmitting}>{isSubmitting ? "Adding..." : "Add Doctor & Generate Credentials"}</Button>}
                                     </DialogFooter>
                                 </form>
                                 </DialogContent>
