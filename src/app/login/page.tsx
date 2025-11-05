@@ -142,7 +142,7 @@ export default function LoginPage() {
     const partnerCollections = [
         { name: 'partners', role: 'driver', identifierField: 'phone' },
         { name: 'mechanics', role: 'mechanic', identifierField: 'phone' },
-        { name: 'ambulances', role: 'cure', identifierField: 'phone' },
+        { name: 'curePartners', role: 'cure', identifierField: 'phone' },
         { name: 'ambulanceDrivers', role: 'ambulance', identifierField: 'partnerId' },
         { name: 'doctors', role: 'doctor', identifierField: 'partnerId' },
     ];
