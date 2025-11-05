@@ -1,3 +1,4 @@
+
 'use client'
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
@@ -140,7 +141,7 @@ const ClinicDashboard = () => {
             }
         });
         
-        const doctorsQuery = query(collection(db, `ambulances/${partnerData.id}/doctors`));
+        const doctorsQuery = query(collection(db, `curePartners/${partnerData.id}/doctors`));
         const unsubDoctors = onSnapshot(doctorsQuery, (snapshot) => {
             if (isSubscribed) {
                 const doctorsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Doctor));
@@ -210,7 +211,7 @@ const ClinicDashboard = () => {
             
             const batch = writeBatch(db);
             
-            const hospitalDoctorsRef = collection(db, `ambulances/${partnerData.id}/doctors`);
+            const hospitalDoctorsRef = collection(db, `curePartners/${partnerData.id}/doctors`);
             const newDoctorDocRefInHospital = doc(hospitalDoctorsRef);
             const doctorData = { 
                 id: newDoctorDocRefInHospital.id, 
@@ -255,7 +256,7 @@ const ClinicDashboard = () => {
         
         const batch = writeBatch(db);
 
-        const hospitalDoctorRef = doc(db, `ambulances/${partnerData.id}/doctors`, doctorId);
+        const hospitalDoctorRef = doc(db, `curePartners/${partnerData.id}/doctors`, doctorId);
         batch.delete(hospitalDoctorRef);
 
         const globalDoctorRef = doc(db, 'doctors', doctorId);
@@ -271,7 +272,7 @@ const ClinicDashboard = () => {
 
     const handleToggleAvailability = async (doctorId: string, isAvailable: boolean) => {
         if (!db || !partnerData) return;
-        const doctorRef = doc(db, `ambulances/${partnerData.id}/doctors`, doctorId);
+        const doctorRef = doc(db, `curePartners/${partnerData.id}/doctors`, doctorId);
         try {
             await updateDoc(doctorRef, { isAvailable });
         } catch (error) {
