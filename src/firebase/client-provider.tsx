@@ -34,42 +34,53 @@ interface FirebaseContextValue {
 const FirebaseContext = createContext<FirebaseContextValue | undefined>(undefined);
 
 export function FirebaseProviderClient({ children }: { children: ReactNode }) {
-  const [firebaseServices, setFirebaseServices] = useState<{
-    app: FirebaseApp | null;
-    auth: Auth | null;
-    db: Firestore | null;
-    functions: Functions | null;
-    messaging: Messaging | null;
-  }>({ app: null, auth: null, db: null, functions: null, messaging: null });
+  const [firebaseApp, setFirebaseApp] = useState<FirebaseApp | null>(null);
+  const [auth, setAuth] = useState<Auth | null>(null);
+  const [db, setDb] = useState<Firestore | null>(null);
+  const [functions, setFunctions] = useState<Functions | null>(null);
+  const [messaging, setMessaging] = useState<Messaging | null>(null);
   
   const [user, setUser] = useState<User | null>(null);
   const [isUserLoading, setIsUserLoading] = useState(true);
+  const [persistenceEnabled, setPersistenceEnabled] = useState(false);
 
   useEffect(() => {
-    let app: FirebaseApp;
     if (typeof window !== 'undefined') {
-        app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+        const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
         
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-        
-        enableIndexedDbPersistence(db).catch((err) => {
-          if (err.code == 'failed-precondition') {
-            console.warn("Multiple tabs open, persistence can only be enabled in one. Offline features might be limited.");
-          } else if (err.code == 'unimplemented') {
-            console.log("The current browser does not support all of the features required to enable persistence.");
-          }
-        });
+        const authInstance = getAuth(app);
+        const functionsInstance = getFunctions(app);
+        const dbInstance = getFirestore(app);
 
-        const functions = getFunctions(app);
-        let messaging: Messaging | null = null;
-        if ('Notification' in window && 'serviceWorker' in navigator && 'PushManager' in window) {
-            messaging = getMessaging(app);
+        if (!persistenceEnabled) {
+          enableIndexedDbPersistence(dbInstance)
+            .then(() => {
+              setPersistenceEnabled(true);
+              setDb(dbInstance);
+            })
+            .catch((err) => {
+              if (err.code === 'failed-precondition') {
+                console.warn("Multiple tabs open, persistence already enabled in another tab.");
+                setPersistenceEnabled(true); 
+                setDb(dbInstance);
+              } else if (err.code === 'unimplemented') {
+                console.log("Persistence is not supported in this browser. App will work online only.");
+                setDb(dbInstance); // Still provide db instance for online mode
+              }
+            });
         }
 
-        setFirebaseServices({ app, auth, db, functions, messaging });
+        setFirebaseApp(app);
+        setAuth(authInstance);
+        setFunctions(functionsInstance);
+        
+        let msgInstance: Messaging | null = null;
+        if ('Notification' in window && 'serviceWorker' in navigator && 'PushManager' in window) {
+            msgInstance = getMessaging(app);
+            setMessaging(msgInstance);
+        }
 
-        const unsubscribe = onAuthStateChanged(auth, (user) => {
+        const unsubscribe = onAuthStateChanged(authInstance, (user) => {
           setUser(user);
           setIsUserLoading(false);
         });
@@ -78,17 +89,17 @@ export function FirebaseProviderClient({ children }: { children: ReactNode }) {
     } else {
       setIsUserLoading(false);
     }
-  }, []);
+  }, [persistenceEnabled]);
 
   const memoizedValue = useMemo(() => ({
-    firebaseApp: firebaseServices.app,
-    auth: firebaseServices.auth,
-    db: firebaseServices.db,
-    functions: firebaseServices.functions,
-    messaging: firebaseServices.messaging,
+    firebaseApp,
+    auth,
+    db,
+    functions,
+    messaging,
     user,
     isUserLoading,
-  }), [firebaseServices, user, isUserLoading]);
+  }), [firebaseApp, auth, db, functions, messaging, user, isUserLoading]);
 
   return (
     <FirebaseContext.Provider value={memoizedValue}>
