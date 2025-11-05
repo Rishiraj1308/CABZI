@@ -142,7 +142,7 @@ export default function CureLayout({ children }: { children: React.ReactNode }) 
         return;
       }
 
-      const partnerRef = doc(db, 'ambulances', sessionData.partnerId);
+      const partnerRef = doc(db, 'curePartners', sessionData.partnerId);
       unsubPartner = onSnapshot(partnerRef, (docSnap) => {
         if (!isSubscribed) return;
         if (docSnap.exists()) {
