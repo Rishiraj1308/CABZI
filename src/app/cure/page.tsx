@@ -28,7 +28,8 @@ export default function CureDashboardPage() {
         )
     }
 
-    const facilityType = partnerData?.clinicType?.toLowerCase().includes('clinic') ? 'clinic' : 'hospital';
+    // Check the 'businessType' field to determine which dashboard to render.
+    const facilityType = partnerData?.businessType === 'Clinic' ? 'clinic' : 'hospital';
 
     if (facilityType === 'hospital') {
         return (
