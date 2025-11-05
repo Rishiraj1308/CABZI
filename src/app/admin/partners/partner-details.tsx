@@ -7,14 +7,14 @@ import { useDb } from '@/firebase/client-provider';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Car, Wrench, Ambulance, Stethoscope, Briefcase, GraduationCap, FileText, IndianRupee, Building } from 'lucide-react';
+import { Car, Wrench, Ambulance, Stethoscope, Briefcase, GraduationCap, FileText, IndianRupee, Building, User, Phone, MapPin, BedDouble } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Label } from '@/components/ui/label';
 
 interface PartnerDetailsProps {
     partnerId: string;
-    initialPartnerType: 'driver' | 'mechanic' | 'cure' | 'doctor' | null;
+    initialPartnerType: 'driver' | 'mechanic' | 'cure' | 'doctor' | 'clinic' | null;
     hospitalId?: string | null;
 }
 
@@ -41,7 +41,8 @@ export default function PartnerDetails({ partnerId, initialPartnerType, hospital
                 switch(initialPartnerType) {
                     case 'driver': return `partners/${partnerId}`;
                     case 'mechanic': return `mechanics/${partnerId}`;
-                    case 'cure': return `ambulances/${partnerId}`;
+                    case 'cure': return `ambulances/${partnerId}`; // Also used for clinics for now
+                    case 'clinic': return `ambulances/${partnerId}`; 
                     case 'doctor':
                         if (!hospitalId) {
                             console.error("Hospital ID is required for doctor details.");
@@ -69,7 +70,6 @@ export default function PartnerDetails({ partnerId, initialPartnerType, hospital
                         ...docSnap.data()
                     });
 
-                    // Fetch transactions if applicable (for non-Cure/Doctor partners)
                     if (initialPartnerType === 'driver' || initialPartnerType === 'mechanic') {
                         const collectionName = initialPartnerType === 'driver' ? 'partners' : 'mechanics';
                         const transQuery = query(collection(db, `${collectionName}/${partnerId}/transactions`), orderBy('date', 'desc'));
@@ -113,11 +113,102 @@ export default function PartnerDetails({ partnerId, initialPartnerType, hospital
             case 'driver': return <Car className="w-4 h-4 mr-2"/>;
             case 'mechanic': return <Wrench className="w-4 h-4 mr-2"/>;
             case 'cure': return <Ambulance className="w-4 h-4 mr-2"/>;
+            case 'clinic': return <Building className="w-4 h-4 mr-2"/>;
             case 'doctor': return <Stethoscope className="w-4 h-4 mr-2"/>;
             default: return null;
         }
     }
+
+    const DetailItem = ({ label, value }: { label: string, value: string | undefined | null }) => (
+        <div className="p-3 bg-muted rounded-lg">
+            <p className="text-xs text-muted-foreground">{label}</p>
+            <p className="font-semibold text-sm">{value || 'N/A'}</p>
+        </div>
+    );
     
+    const renderDriverDetails = () => (
+        <Card>
+            <CardHeader><CardTitle>Vehicle &amp; License</CardTitle></CardHeader>
+            <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <DetailItem label="Vehicle Type" value={partner.vehicleType} />
+                <DetailItem label="Vehicle Brand" value={partner.vehicleBrand} />
+                <DetailItem label="Vehicle Model" value={partner.vehicleName} />
+                <DetailItem label="Vehicle Number" value={partner.vehicleNumber} />
+                <DetailItem label="Driving Licence" value={partner.drivingLicence} />
+            </CardContent>
+        </Card>
+    );
+    
+    const renderCureDetails = (isClinic = false) => (
+        <>
+            <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                        {isClinic ? <Building className="w-5 h-5 text-primary"/> : <Hospital className="w-5 h-5 text-primary"/>}
+                        Facility Details
+                    </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <DetailItem label="Official Name" value={partner.name} />
+                        <DetailItem label="Owner/Contact Name" value={partner.ownerName} />
+                        <DetailItem label="Contact Email" value={partner.ownerEmail} />
+                        <DetailItem label="Facility Type" value={isClinic ? partner.clinicType : partner.hospitalType} />
+                        <DetailItem label="Registration No." value={partner.registrationNumber} />
+                        <DetailItem label="Lead Doctor" value={partner.doctorName} />
+                        <DetailItem label="Medical Reg. No." value={partner.doctorRegNo} />
+                        {!isClinic && <DetailItem label="Total Beds" value={partner.totalBeds} />}
+                        {!isClinic && <DetailItem label="Beds Occupied" value={partner.bedsOccupied} />}
+                    </div>
+                     <div className="p-3 bg-muted rounded-lg">
+                        <p className="text-xs text-muted-foreground">Address</p>
+                        <p className="font-semibold text-sm flex items-start gap-2 pt-1"><MapPin className="w-4 h-4 mt-0.5 shrink-0"/>{partner.address || 'N/A'}</p>
+                    </div>
+                </CardContent>
+            </Card>
+
+            <Card>
+                <CardHeader>
+                    <CardTitle>Services &amp; Departments</CardTitle>
+                </CardHeader>
+                <CardContent>
+                     {partner.services && partner.services.length > 0 ? (
+                        <div className="flex flex-wrap gap-2">
+                            {partner.services.map((s: string) => <Badge key={s} variant="secondary">{s}</Badge>)}
+                        </div>
+                    ) : (
+                        <p className="text-sm text-muted-foreground">No services listed for this facility.</p>
+                    )}
+                    {!isClinic && (
+                        <div className="mt-4">
+                            <h4 className="font-semibold mb-2">Ambulance Fleet</h4>
+                            <div className="grid grid-cols-3 gap-2 text-center">
+                                <div className="p-2 rounded-md bg-muted"><p className="text-xs">BLS</p><p className="font-bold text-lg">{partner.blsAmbulances || 0}</p></div>
+                                <div className="p-2 rounded-md bg-muted"><p className="text-xs">ALS</p><p className="font-bold text-lg">{partner.alsAmbulances || 0}</p></div>
+                                <div className="p-2 rounded-md bg-muted"><p className="text-xs">Cardiac</p><p className="font-bold text-lg">{partner.cardiacAmbulances || 0}</p></div>
+                            </div>
+                        </div>
+                    )}
+                </CardContent>
+            </Card>
+        </>
+    );
+
+    const renderMechanicDetails = () => (
+        <Card>
+            <CardHeader><CardTitle>Service Details</CardTitle></CardHeader>
+            <CardContent>
+                {partner.services && partner.services.length > 0 ? (
+                    <div className="flex flex-wrap gap-2">
+                        {partner.services.map((s: string) => <Badge key={s} variant="secondary">{s}</Badge>)}
+                    </div>
+                ) : (
+                    <p className="text-sm text-muted-foreground">No services listed.</p>
+                )}
+            </CardContent>
+        </Card>
+    );
+
     const renderDoctorDetails = () => (
         <>
             <Card>
@@ -125,26 +216,11 @@ export default function PartnerDetails({ partnerId, initialPartnerType, hospital
                     <CardTitle className="flex items-center gap-2"><Briefcase className="w-5 h-5 text-primary"/> Professional Details</CardTitle>
                 </CardHeader>
                 <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                    <div className="p-3 bg-muted rounded-lg">
-                        <p className="text-muted-foreground">Specialization</p>
-                        <p className="font-semibold text-base">{partner.specialization || 'N/A'}</p>
-                    </div>
-                    <div className="p-3 bg-muted rounded-lg">
-                        <p className="text-muted-foreground">Department</p>
-                        <p className="font-semibold text-base">{partner.department || 'N/A'}</p>
-                    </div>
-                     <div className="p-3 bg-muted rounded-lg md:col-span-2">
-                        <p className="text-muted-foreground">Qualifications</p>
-                        <p className="font-semibold text-base">{partner.qualifications || 'N/A'}</p>
-                    </div>
-                    <div className="p-3 bg-muted rounded-lg">
-                        <p className="text-muted-foreground">Experience</p>
-                        <p className="font-semibold text-base">{partner.experience ? `${partner.experience} years` : 'N/A'}</p>
-                    </div>
-                    <div className="p-3 bg-muted rounded-lg">
-                        <p className="text-muted-foreground">Consultation Fee</p>
-                        <p className="font-semibold text-base text-green-600">₹{partner.consultationFee?.toLocaleString() || 'N/A'}</p>
-                    </div>
+                    <DetailItem label="Specialization" value={partner.specialization} />
+                    <DetailItem label="Department" value={partner.department} />
+                    <div className="md:col-span-2"><DetailItem label="Qualifications" value={partner.qualifications} /></div>
+                    <DetailItem label="Experience" value={`${partner.experience || 'N/A'} years`} />
+                    <DetailItem label="Consultation Fee" value={`₹${partner.consultationFee?.toLocaleString() || 'N/A'}`} />
                 </CardContent>
             </Card>
              <Card>
@@ -152,88 +228,39 @@ export default function PartnerDetails({ partnerId, initialPartnerType, hospital
                     <CardTitle className="flex items-center gap-2"><FileText className="w-5 h-5 text-primary"/> Documents & Verification</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                    <div className="p-3 rounded-lg border flex justify-between items-center">
-                        <Label>Medical Registration No.</Label>
-                        <span className="font-mono text-sm">{partner.medicalRegNo || 'Not Provided'}</span>
-                    </div>
-                     <div className="p-3 rounded-lg border flex justify-between items-center">
-                        <Label>Registration Council</Label>
-                        <span className="font-semibold text-sm">{partner.regCouncil || 'Not Provided'}</span>
-                    </div>
-                     <div className="p-3 rounded-lg border flex justify-between items-center">
-                        <Label>Registration Year</Label>
-                        <span className="font-semibold text-sm">{partner.regYear || 'Not Provided'}</span>
-                    </div>
+                    <DetailItem label="Medical Registration No." value={partner.medicalRegNo} />
+                    <DetailItem label="Registration Council" value={partner.regCouncil} />
+                    <DetailItem label="Registration Year" value={partner.regYear} />
                 </CardContent>
             </Card>
         </>
     );
-
-    const renderDefaultPartnerDetails = () => (
-        <>
-             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                <div className="p-4 bg-muted rounded-lg">
-                    <p className="text-muted-foreground">Vehicle/Firm</p>
-                    <p className="font-semibold">{partner.vehicleName || partner.firmName || partner.name}</p>
-                </div>
-                <div className="p-4 bg-muted rounded-lg">
-                    <p className="text-muted-foreground">Registration No.</p>
-                    <p className="font-semibold">{partner.vehicleNumber || partner.registrationNumber || 'N/A'}</p>
-                </div>
-                 <div className="p-4 bg-muted rounded-lg">
-                    <p className="text-muted-foreground">Wallet Balance</p>
-                    <p className="font-semibold text-lg text-primary">₹{(partner.walletBalance || 0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
-                </div>
-                 {(partner.type === 'mechanic' || partner.type === 'cure') && partner.services && (
-                    <div className="p-4 bg-muted rounded-lg md:col-span-3">
-                        <p className="text-muted-foreground mb-2">Services Offered</p>
-                        <div className="flex flex-wrap gap-2">
-                            {partner.services.map((s: string) => <Badge key={s} variant="secondary">{s}</Badge>)}
-                        </div>
-                    </div>
-                )}
-            </div>
-             <Card>
-                <CardHeader>
-                    <CardTitle>Documents for Verification</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                    <div className="p-3 rounded-lg border flex justify-between items-center">
-                        <Label>Driving Licence</Label>
-                        <span className="font-mono text-sm">{partner.drivingLicence || 'Not Provided'}</span>
-                    </div>
-                     <div className="p-3 rounded-lg border flex justify-between items-center">
-                        <Label>Aadhaar Number</Label>
-                        <span className="font-mono text-sm">{partner.aadhaarNumber || 'Not Provided'}</span>
-                    </div>
-                     <div className="p-3 rounded-lg border flex justify-between items-center">
-                        <Label>PAN Card</Label>
-                        <span className="font-mono text-sm">{partner.panCard || 'Not Provided'}</span>
-                    </div>
-                </CardContent>
-            </Card>
-        </>
-    );
+    
+    const partnerIsCure = partner.type === 'cure' || partner.type === 'clinic';
 
     return (
         <div className="space-y-6 max-h-[70vh] overflow-y-auto p-1 pr-4">
             <Card>
                 <CardHeader>
-                    <div className="flex items-start gap-6">
+                    <div className="flex flex-col sm:flex-row items-start gap-6">
                         <Avatar className="w-16 h-16 border">
-                            <AvatarImage src={partner.photoUrl || undefined} alt={partner.name} data-ai-hint="driver portrait" />
+                            <AvatarImage src={partner.photoUrl || undefined} alt={partner.name} data-ai-hint="partner portrait" />
                             <AvatarFallback>{getInitials(partner.name).toUpperCase()}</AvatarFallback>
                         </Avatar>
                         <div className="flex-1">
                             <div className="flex justify-between items-start">
                                 <div>
                                     <CardTitle className="text-2xl">{partner.name}</CardTitle>
-                                    <CardDescription>{partner.phone} {partner.email && `• ${partner.email}`}</CardDescription>
+                                    <CardDescription>
+                                        <span className="flex items-center gap-2"><User className="w-3 h-3"/>{partner.ownerName || partner.name}</span>
+                                        <span className="flex items-center gap-2"><Phone className="w-3 h-3"/>{partner.phone}</span>
+                                        {partner.email && `• ${partner.email}`}
+                                    </CardDescription>
                                 </div>
                                 <div className="flex items-center gap-2">
                                     <Badge variant="outline" className="capitalize">
                                         {getPartnerIcon()}
-                                        {partner.businessType || partner.type}
+                                        {partner.type === 'cure' ? partner.hospitalType || 'Hospital' : partner.type}
                                     </Badge>
                                 </div>
                             </div>
@@ -247,11 +274,16 @@ export default function PartnerDetails({ partnerId, initialPartnerType, hospital
                     </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                   {partner.type === 'doctor' ? renderDoctorDetails() : renderDefaultPartnerDetails()}
+                   {partner.type === 'doctor' ? renderDoctorDetails() 
+                    : partnerIsCure ? renderCureDetails(partner.type === 'clinic') 
+                    : partner.type === 'driver' ? renderDriverDetails() 
+                    : partner.type === 'mechanic' ? renderMechanicDetails() 
+                    : null
+                   }
                 </CardContent>
             </Card>
 
-           {partner.type !== 'doctor' && partner.type !== 'cure' && (
+           {!partnerIsCure && partner.type !== 'doctor' && (
                 <Card>
                     <CardHeader>
                         <CardTitle>Financial Ledger</CardTitle>
@@ -292,5 +324,3 @@ export default function PartnerDetails({ partnerId, initialPartnerType, hospital
         </div>
     );
 }
-
-    
