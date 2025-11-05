@@ -182,6 +182,11 @@ export default function LoginPage() {
                 toast({ variant: 'destructive', title: 'Incorrect Password' });
                 return false;
             }
+
+            if (role === 'doctor' && userData.docStatus !== 'Verified') {
+                toast({ variant: 'destructive', title: 'Account Not Active', description: 'Your profile is still under review by the admin. Please wait for approval.'});
+                return false;
+            }
             
             const sessionData: any = { 
                 role: role,
@@ -577,3 +582,5 @@ export default function LoginPage() {
       </div>
   );
 }
+
+    

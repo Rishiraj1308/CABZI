@@ -247,20 +247,7 @@ const ClinicDashboard = () => {
         }
         
         if (currentFormStep === 3) {
-            if (!confirmationResult || newDoctorData.otp.length !== 6) {
-                toast({ variant: 'destructive', title: 'Invalid OTP' });
-                return;
-            }
-            setIsSubmitting(true);
-            try {
-                await confirmationResult.confirm(newDoctorData.otp);
-                toast({ title: 'Phone Verified!', className: 'bg-green-600 text-white border-green-600'});
-                setCurrentFormStep(p => p + 1);
-            } catch (error) {
-                toast({ variant: 'destructive', title: 'OTP Verification Failed' });
-            } finally {
-                setIsSubmitting(false);
-            }
+            setCurrentFormStep(p => p + 1);
             return;
         }
 
@@ -270,15 +257,15 @@ const ClinicDashboard = () => {
         }
         
         if (currentFormStep === 5) {
-             setCurrentFormStep(p => p + 1);
+            if (!newDoctorData.agreedToTerms) {
+                toast({ variant: 'destructive', title: 'Agreement Required', description: 'Please agree to the terms to proceed.' });
+                return;
+            }
+            setCurrentFormStep(p => p + 1);
             return;
         }
 
         if (currentFormStep === 6) {
-             if (!newDoctorData.agreedToTerms) {
-                toast({ variant: 'destructive', title: 'Agreement Required', description: 'Please agree to the terms to proceed.' });
-                return;
-            }
             setIsSubmitting(true);
       
             const { otp, agreedToTerms, ...restOfData } = newDoctorData;
