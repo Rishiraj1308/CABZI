@@ -2,7 +2,7 @@
 'use client'
 
 import * as React from "react"
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useToast } from '@/hooks/use-toast'
@@ -32,6 +32,7 @@ interface DoctorProfileData {
     qualifications: string;
     experience: string;
     isAvailable: boolean;
+    photoUrl?: string;
     weeklyAvailability?: Record<string, { available: boolean, start: string, end: string }>;
     dateOverrides?: Record<string, { available: boolean, start?: string, end?: string }>;
 }
@@ -53,47 +54,50 @@ export default function DoctorProfilePage() {
     const db = useDb();
     
     useEffect(() => {
-        if (!db) return;
-        const session = localStorage.getItem('curocity-doctor-session');
-        if (session) {
-            const { partnerId, hospitalId } = JSON.parse(session);
-
-            if (!hospitalId || !partnerId) {
-                toast({ variant: 'destructive', title: 'Error', description: 'Session is invalid.' });
-                setIsLoading(false);
-                return;
-            }
-
-            const doctorsCollectionRef = collection(db, `ambulances/${hospitalId}/doctors`);
-            const q = query(doctorsCollectionRef, where("partnerId", "==", partnerId));
-            
-            const unsubscribe = onSnapshot(q, (querySnapshot) => {
-                if (!querySnapshot.empty) {
-                    const docSnap = querySnapshot.docs[0];
-                    const data = docSnap.data() as DoctorProfileData
-                     setProfile({ id: docSnap.id, ...data });
-
-                     // Initialize availability state
-                    const initialAvailability: Record<string, { available: boolean, start: string, end: string }> = {};
-                    daysOfWeek.forEach(day => {
-                        initialAvailability[day] = data.weeklyAvailability?.[day] || { available: true, start: '09:00', end: '17:00' };
-                    });
-                    setAvailability(initialAvailability);
-                    setDateOverrides(data.dateOverrides || {});
-
-                } else {
-                    toast({ variant: 'destructive', title: 'Error', description: 'Could not find your profile.' });
-                }
-                setIsLoading(false);
-            }, (error) => {
-                 console.error("Error fetching doctor profile:", error);
-                 setIsLoading(false);
-            });
-
-            return () => unsubscribe();
-        } else {
+        if (!db) {
             setIsLoading(false);
+            return;
         }
+
+        const sessionString = localStorage.getItem('curocity-doctor-session');
+        if (!sessionString) {
+            toast({ variant: 'destructive', title: 'Session expired', description: 'Please log in again.' });
+            setIsLoading(false);
+            return;
+        }
+
+        const { id, hospitalId } = JSON.parse(sessionString);
+
+        if (!id || !hospitalId) {
+            toast({ variant: 'destructive', title: 'Invalid Session', description: 'Your session data is incomplete.' });
+            setIsLoading(false);
+            return;
+        }
+        
+        // Correct path: curePartners/{hospitalId}/doctors/{doctorId}
+        const doctorRef = doc(db, `curePartners/${hospitalId}/doctors`, id);
+        const unsubscribe = onSnapshot(doctorRef, (docSnap) => {
+            if (docSnap.exists()) {
+                const data = docSnap.data() as DoctorProfileData;
+                setProfile({ id: docSnap.id, ...data });
+
+                const initialAvailability: Record<string, { available: boolean, start: string, end: string }> = {};
+                daysOfWeek.forEach(day => {
+                    initialAvailability[day] = data.weeklyAvailability?.[day] || { available: true, start: '09:00', end: '17:00' };
+                });
+                setAvailability(initialAvailability);
+                setDateOverrides(data.dateOverrides || {});
+            } else {
+                toast({ variant: 'destructive', title: 'Error', description: 'Could not find your profile data.' });
+            }
+            setIsLoading(false);
+        }, (error) => {
+            console.error("Error fetching doctor profile:", error);
+            toast({ variant: 'destructive', title: 'Error', description: 'An error occurred while fetching your profile.' });
+            setIsLoading(false);
+        });
+
+        return () => unsubscribe();
     }, [toast, db]);
 
     const handleAvailabilityChange = (day: string, field: 'available' | 'start' | 'end', value: boolean | string) => {
@@ -112,7 +116,7 @@ export default function DoctorProfilePage() {
         if (!session) return;
         const { hospitalId } = JSON.parse(session);
 
-        const doctorRef = doc(db, `ambulances/${hospitalId}/doctors`, profile.id);
+        const doctorRef = doc(db, `curePartners/${hospitalId}/doctors`, profile.id);
         try {
             await updateDoc(doctorRef, { weeklyAvailability: availability, dateOverrides });
             toast({ title: "Availability Saved", description: "Your schedule has been updated successfully." });
