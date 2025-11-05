@@ -42,9 +42,9 @@ export function FirebaseProviderClient({ children }: { children: ReactNode }) {
   
   const [user, setUser] = useState<User | null>(null);
   const [isUserLoading, setIsUserLoading] = useState(true);
-  const [persistenceEnabled, setPersistenceEnabled] = useState(false);
 
   useEffect(() => {
+    // This effect runs only once on component mount to initialize Firebase services.
     if (typeof window !== 'undefined') {
         const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
         setFirebaseApp(app);
@@ -55,32 +55,35 @@ export function FirebaseProviderClient({ children }: { children: ReactNode }) {
         const functionsInstance = getFunctions(app);
         setFunctions(functionsInstance);
         
-        // Firestore setup with persistence
-        if (!persistenceEnabled) {
-            const dbInstance = getFirestore(app);
-            enableIndexedDbPersistence(dbInstance)
-              .then(() => {
-                  console.log("Firestore persistence enabled.");
-                  setPersistenceEnabled(true);
-              })
-              .catch((err) => {
-                  if (err.code === 'failed-precondition') {
-                      console.warn("Persistence failed: Multiple tabs open?");
-                  } else if (err.code === 'unimplemented') {
-                      console.warn("Persistence not available in this browser.");
-                  }
-              }).finally(() => {
-                  // Set db instance regardless of persistence success
-                  setDb(dbInstance);
-              });
-        }
+        // This is the critical part. We initialize Firestore and immediately
+        // try to enable persistence. The `db` state is only set *after* this
+        // async operation completes, preventing any other component from
+        // using an un-configured instance.
+        const dbInstance = getFirestore(app);
+        enableIndexedDbPersistence(dbInstance)
+          .then(() => {
+              console.log("Firestore persistence enabled.");
+          })
+          .catch((err) => {
+              if (err.code === 'failed-precondition') {
+                  console.warn("Persistence failed: This can happen if you have multiple tabs open. App will still work online.");
+              } else if (err.code === 'unimplemented') {
+                  console.warn("Persistence not available in this browser.");
+              }
+          })
+          .finally(() => {
+              // Only set the db instance after persistence has been attempted.
+              setDb(dbInstance);
+          });
         
+        // Initialize Messaging if supported
         let msgInstance: Messaging | null = null;
         if ('Notification' in window && 'serviceWorker' in navigator && 'PushManager' in window) {
             msgInstance = getMessaging(app);
             setMessaging(msgInstance);
         }
 
+        // Auth state listener
         const unsubscribe = onAuthStateChanged(authInstance, (user) => {
           setUser(user);
           setIsUserLoading(false);
@@ -90,7 +93,7 @@ export function FirebaseProviderClient({ children }: { children: ReactNode }) {
     } else {
       setIsUserLoading(false);
     }
-  // This effect should only run once on mount.
+  // This effect should only run once.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
