@@ -9,7 +9,7 @@ import { Wallet, PlusCircle, IndianRupee, ShieldCheck, TrendingUp, PiggyBank, Ci
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { useToast } from '@/hooks/use-toast'
-import { useFirestore } from '@/firebase/client-provider'
+import { useDb } from '@/firebase/client-provider'
 import { collection, query, where, getDocs, doc, updateDoc, Timestamp, orderBy } from 'firebase/firestore'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
@@ -47,7 +47,7 @@ export default function ResQWalletPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [isBankDetailsDialogOpen, setIsBankDetailsDialogOpen] = useState(false);
     const { toast } = useToast();
-    const db = useFirestore();
+    const db = useDb();
 
     // PIN Management State
     const [isPinSet, setIsPinSet] = useState(false);
@@ -56,7 +56,11 @@ export default function ResQWalletPage() {
     const [pinStep, setPinStep] = useState(1); // 1: Enter new, 2: Confirm new
     const [newPin, setNewPin] = useState('');
     const [confirmPin, setConfirmPin] = useState('');
-
+    
+    // Loan State
+    const [isLoanConfirmOpen, setIsLoanConfirmOpen] = useState(false);
+    const loanOffer = { amount: 8000, interestRate: 15, durationMonths: 6, processingFee: 160 };
+    const emi = (loanOffer.amount * (1 + (loanOffer.interestRate/100))) / loanOffer.durationMonths;
 
     useEffect(() => {
         // This effect only checks if a PIN exists in localStorage.
@@ -66,6 +70,7 @@ export default function ResQWalletPage() {
             setIsPinSet(true);
         }
     }, []);
+
 
     useEffect(() => {
         // This effect fetches data only if the wallet is visible (i.e., PIN is entered).
@@ -149,7 +154,7 @@ export default function ResQWalletPage() {
 
     const handleBankDetailsSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        if (!mechanic) return;
+        if (!mechanic || !db) return;
         
         const formData = new FormData(e.currentTarget);
         const accountHolderName = formData.get('holderName') as string;
@@ -172,6 +177,56 @@ export default function ResQWalletPage() {
         } catch (error) {
             toast({ variant: 'destructive', title: 'Update Failed', description: 'Could not save bank details.' });
         }
+    }
+
+    const handleLoanDisbursement = async () => {
+        // This is a placeholder for a future Cloud Function call
+        toast({
+            title: 'Loan Disbursement!',
+            description: `₹${loanOffer.amount.toLocaleString()} has been credited to your wallet (simulation).`,
+            className: 'bg-green-600 text-white border-green-600'
+        });
+        setIsLoanConfirmOpen(false);
+    };
+
+    const handleDownloadStatement = () => {
+        if (!mechanic || transactions.length === 0) {
+            toast({ variant: 'destructive', title: 'No Data', description: 'No transactions to download.' });
+            return;
+        }
+
+        let statementContent = `Curocity Bank Statement for ${mechanic.name}\n`;
+        statementContent += `Partner ID: ${mechanic.id}\n`;
+        statementContent += `Date Generated: ${new Date().toLocaleDateString()}\n\n`;
+        statementContent += '-------------------------------------------------\n';
+        statementContent += 'Date\t\tType\t\t\tAmount (INR)\n';
+        statementContent += '-------------------------------------------------\n';
+
+        transactions.forEach(tx => {
+            const date = tx.date.toDate().toLocaleDateString();
+            const type = tx.type.padEnd(20, ' ');
+            const amount = `${tx.status === 'Debit' ? '-' : '+'}${Math.abs(tx.amount).toFixed(2)}`.padStart(10, ' ');
+            statementContent += `${date}\t${type}\t${amount}\n`;
+        });
+        
+        statementContent += '-------------------------------------------------\n';
+        statementContent += `Closing Balance: ₹${mechanic.walletBalance.toFixed(2)}\n`;
+
+
+        const blob = new Blob([statementContent], { type: 'text/plain;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `Curocity_Statement_${mechanic.phone}_${new Date().toISOString().split('T')[0]}.txt`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        toast({
+            title: 'Download Started',
+            description: 'Your wallet statement has been downloaded.',
+        });
     }
 
     if (!isPinSet) {
@@ -275,28 +330,28 @@ export default function ResQWalletPage() {
     }
 
     return (
-        <div className="grid gap-6">
+        <div className="grid gap-6 animate-fade-in">
             <h2 className="text-3xl font-bold tracking-tight">Curocity Bank</h2>
-
-             <Card>
+            <Card>
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2"><Landmark /> Your Financial Hub</CardTitle>
-                  <CardDescription>
+                <CardTitle className="flex items-center gap-2"><Landmark /> Your Financial Hub</CardTitle>
+                <CardDescription>
                     Your free bank account to manage your earnings, watch them grow with interest, and utilize them within the Curocity ecosystem.
-                  </CardDescription>
+                </CardDescription>
                 </CardHeader>
                 <CardContent className="grid md:grid-cols-2 gap-6">
-                  <div className="rounded-lg bg-primary text-primary-foreground p-6 flex flex-col justify-between">
+                <div className="rounded-lg bg-primary text-primary-foreground p-6 flex flex-col justify-between">
                     <div>
-                      <p className="text-sm">Available Balance</p>
-                      <p className="text-4xl font-bold">₹{(mechanic?.walletBalance || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                    <p className="text-sm">Available Balance</p>
+                    <p className="text-4xl font-bold">₹{(mechanic?.walletBalance || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                    <p className="text-xs text-primary-foreground/80 mt-1">No minimum balance required</p>
                     </div>
-                     <Button size="lg" className="w-full bg-accent text-accent-foreground hover:bg-accent/90 mt-4">
+                    <Button size="lg" className="w-full bg-accent text-accent-foreground hover:bg-accent/90 mt-4">
                         Withdraw Money
                     </Button>
-                  </div>
-                  <div className="space-y-4">
-                     <Card className="bg-green-100 dark:bg-green-900/40 border-green-500">
+                </div>
+                <div className="space-y-4">
+                    <Card className="bg-green-100 dark:bg-green-900/40 border-green-500">
                         <CardHeader className="pb-2 flex flex-row items-center justify-between">
                             <div>
                                 <CardDescription className="text-green-700 dark:text-green-300">Interest Rate</CardDescription>
@@ -304,30 +359,30 @@ export default function ResQWalletPage() {
                             </div>
                             <TrendingUp className="h-8 w-8 text-green-600"/>
                         </CardHeader>
-                     </Card>
-                      <Card>
+                    </Card>
+                    <Card>
                         <CardHeader className="pb-2">
                             <CardDescription>Interest Earned (This Month)</CardDescription>
                             <CardTitle className="text-3xl">₹0.00</CardTitle>
                         </CardHeader>
-                     </Card>
-                  </div>
+                    </Card>
+                </div>
                 </CardContent>
-              </Card>
+            </Card>
 
-             <Card>
-                 <CardHeader>
+            <Card>
+                <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                         Quick Payments
                     </CardTitle>
                     <CardDescription>Pay for supplies or send money to any UPI ID instantly from your wallet.</CardDescription>
-                 </CardHeader>
-                 <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                     <Button variant="outline" className="flex-col h-24">
+                </CardHeader>
+                <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <Button variant="outline" className="flex-col h-24">
                         <Send className="w-8 h-8 mb-2 text-primary" />
                         Pay UPI ID
                     </Button>
-                     <Button variant="outline" className="flex-col h-24">
+                    <Button variant="outline" className="flex-col h-24">
                         <IndianRupee className="w-8 h-8 mb-2 text-primary" />
                         Pay Number
                     </Button>
@@ -339,7 +394,7 @@ export default function ResQWalletPage() {
                             </Button>
                         </DialogTrigger>
                         <DialogContent className="max-w-xs">
-                            <DialogHeader><DialogTitle className="text-center">Scan UPI QR to Pay</DialogTitle></DialogHeader>
+                            <DialogHeader><DialogTitle className="text-center">My Curocity UPI QR Code</DialogTitle></DialogHeader>
                             <div className="flex flex-col items-center gap-4 py-4">
                                 <div className="p-4 bg-white rounded-lg border">
                                     <Image 
@@ -349,10 +404,11 @@ export default function ResQWalletPage() {
                                         height={200}
                                     />
                                 </div>
+                                <p className="font-semibold text-lg text-center">{mechanic?.upiId || '...'}</p>
                             </div>
                         </DialogContent>
                     </Dialog>
-                      <Dialog open={isBankDetailsDialogOpen} onOpenChange={setIsBankDetailsDialogOpen}>
+                    <Dialog open={isBankDetailsDialogOpen} onOpenChange={setIsBankDetailsDialogOpen}>
                         <DialogTrigger asChild>
                             <Button variant="outline" className="flex-col h-24 border-dashed">
                                 <Building className="w-8 h-8 mb-2 text-primary" />
@@ -370,7 +426,7 @@ export default function ResQWalletPage() {
                                         <Label htmlFor="holderName">Account Holder Name</Label>
                                         <Input id="holderName" name="holderName" required defaultValue={mechanic?.bankDetails?.accountHolderName || ''}/>
                                     </div>
-                                     <div className="space-y-2">
+                                    <div className="space-y-2">
                                         <Label htmlFor="accountNumber">Bank Account Number</Label>
                                         <Input id="accountNumber" name="accountNumber" type="number" required />
                                     </div>
@@ -389,33 +445,57 @@ export default function ResQWalletPage() {
                             </form>
                         </DialogContent>
                     </Dialog>
-                 </CardContent>
-              </Card>
-              
-              <div className="grid md:grid-cols-2 gap-6">
-                  <Card>
-                     <CardHeader>
+                </CardContent>
+            </Card>
+            
+            <div className="grid md:grid-cols-2 gap-6">
+                <Card>
+                    <CardHeader>
                         <CardTitle className="flex items-center gap-2">
                             <CircleHelp className="text-primary"/> Instant Loans
                         </CardTitle>
-                         <CardDescription>Emergency funds for tools, fuel, or personal needs, instantly.</CardDescription>
-                     </CardHeader>
-                     <CardContent>
-                        <div className="p-4 rounded-lg bg-muted/50 text-center">
-                            <p className="font-semibold">Pre-approved Loan Offer</p>
-                            <p className="text-3xl font-bold my-2 text-primary">₹8,000</p>
-                            <Button className="w-full">Get Instant Credit</Button>
-                        </div>
-                     </CardContent>
-                  </Card>
-                   <Card>
-                     <CardHeader>
+                        <CardDescription>Emergency funds for tools, fuel, or personal needs, instantly.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <AlertDialog open={isLoanConfirmOpen} onOpenChange={setIsLoanConfirmOpen}>
+                            <DialogTrigger asChild>
+                                <div className="p-4 rounded-lg bg-muted/50 text-center cursor-pointer hover:bg-muted">
+                                    <p className="font-semibold">Pre-approved Loan Offer</p>
+                                    <p className="text-3xl font-bold my-2 text-primary">₹{loanOffer.amount.toLocaleString()}</p>
+                                    <Button className="w-full">Get Instant Credit</Button>
+                                </div>
+                            </DialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle>Confirm Instant Loan</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                        Please review the loan details below. The amount will be credited to your wallet instantly.
+                                    </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <div className="text-sm space-y-2 my-4">
+                                    <div className="flex justify-between"><span>Loan Amount:</span> <span className="font-semibold">₹{loanOffer.amount.toLocaleString()}</span></div>
+                                    <div className="flex justify-between"><span>Interest Rate:</span> <span className="font-semibold">{loanOffer.interestRate}% p.a.</span></div>
+                                    <div className="flex justify-between"><span>Processing Fee:</span> <span className="font-semibold">₹{loanOffer.processingFee.toLocaleString()}</span></div>
+                                    <div className="flex justify-between"><span>Tenure:</span> <span className="font-semibold">{loanOffer.durationMonths} Months</span></div>
+                                    <div className="flex justify-between font-bold border-t pt-2 mt-2"><span>Monthly EMI:</span> <span>~₹{emi.toFixed(2)}</span></div>
+                                    <div className="flex justify-between font-bold"><span>Total Repayable:</span> <span>₹{(loanOffer.amount + (loanOffer.amount * loanOffer.interestRate/100)).toLocaleString()}</span></div>
+                                </div>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction onClick={handleLoanDisbursement}>Confirm &amp; Get Money</AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardHeader>
                         <CardTitle className="flex items-center gap-2">
                             <PiggyBank className="text-primary"/> AI Goal Planner
                         </CardTitle>
-                         <CardDescription>Save for your goals and get smart tips from our AI planner.</CardDescription>
-                     </CardHeader>
-                     <CardContent>
+                        <CardDescription>Save for your goals and get smart tips from our AI planner.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
                         <div className="space-y-4">
                             <div>
                                 <div className="flex justify-between items-end mb-1">
@@ -423,62 +503,55 @@ export default function ResQWalletPage() {
                                     <p className="text-sm text-muted-foreground">₹0 / ₹10,000</p>
                                 </div>
                                 <Progress value={0} />
-                            </div>
-                             <div>
-                                <div className="flex justify-between items-end mb-1">
-                                    <p className="font-semibold">Garage Upgrade</p>
-                                    <p className="text-sm text-muted-foreground">₹0 / ₹50,000</p>
+                                <div className="flex gap-2 items-start mt-2 text-xs text-muted-foreground p-2 rounded-lg bg-muted">
+                                    <Sparkles className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+                                    <span>To meet your goal, you need to save about **₹85 per day**. Start saving today!</span>
                                 </div>
-                                <Progress value={0} />
                             </div>
                             <Button variant="outline" className="w-full">+ Create New Goal</Button>
                         </div>
-                     </CardContent>
-                  </Card>
-              </div>
+                    </CardContent>
+                </Card>
+            </div>
 
             <Card>
                 <CardHeader className="flex flex-row items-center justify-between">
                     <div>
-                        <CardTitle>Transaction History</CardTitle>
-                        <CardDescription>A log of your recent jobs and payouts.</CardDescription>
+                    <CardTitle>Transaction History</CardTitle>
+                    <CardDescription>A record of all your earnings and payments.</CardDescription>
                     </div>
-                    <Button variant="outline" size="sm" onClick={() => toast({ title: 'Download will be available soon.' })}>
-                        <Download className="mr-2 h-4 w-4"/>Download Statement
-                    </Button>
+                    <Button variant="outline" size="sm" onClick={handleDownloadStatement}><Download className="mr-2 h-4 w-4"/>Download Statement</Button>
                 </CardHeader>
                 <CardContent>
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Date</TableHead>
-                                <TableHead>Description</TableHead>
-                                <TableHead className="text-right">Amount</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {transactions.length > 0 ? (
-                                transactions.map(tx => (
-                                    <TableRow key={tx.id}>
-                                        <TableCell className="text-muted-foreground text-xs">{tx.date.toDate().toLocaleDateString()}</TableCell>
-                                        <TableCell>
-                                            <div className="font-medium">{tx.type}</div>
-                                        </TableCell>
-                                        <TableCell className={`text-right font-bold ${tx.status === 'Debit' ? 'text-destructive' : 'text-green-600'}`}>
-                                            {tx.status === 'Debit' ? '-' : '+'}₹{Math.abs(tx.amount).toFixed(2)}
-                                        </TableCell>
-                                    </TableRow>
-                                ))
-                            ) : (
-                                <TableRow>
-                                    <TableCell colSpan={3} className="text-center h-24">No transactions recorded yet.</TableCell>
-                                </TableRow>
-                            )}
-                        </TableBody>
-                    </Table>
+                <Table>
+                    <TableHeader>
+                    <TableRow>
+                        <TableHead>Date</TableHead>
+                        <TableHead>Description</TableHead>
+                        <TableHead className="text-right">Amount</TableHead>
+                    </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                    {transactions.length > 0 ? (
+                        transactions.map(t => (
+                        <TableRow key={t.id}>
+                            <TableCell>{t.date.toDate().toLocaleDateString()}</TableCell>
+                            <TableCell>{t.type}</TableCell>
+                            <TableCell className={`text-right font-medium ${t.status === 'Debit' ? 'text-destructive' : 'text-green-600'}`}>
+                                {t.status === 'Debit' ? '-' : '+'}₹{Math.abs(t.amount).toFixed(2)}
+                            </TableCell>
+                        </TableRow>
+                        ))
+                    ) : (
+                        <TableRow>
+                            <TableCell colSpan={3} className="text-center h-24">No transactions yet.</TableCell>
+                        </TableRow>
+                    )}
+                    </TableBody>
+                </Table>
                 </CardContent>
             </Card>
-
         </div>
     )
-}
+
+    
