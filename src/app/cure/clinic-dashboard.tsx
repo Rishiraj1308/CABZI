@@ -186,6 +186,18 @@ const ClinicDashboard = () => {
             toast({ variant: 'destructive', title: 'Error', description: 'Database or hospital information is missing.' });
             return;
         }
+        
+        if (currentFormStep < 3) {
+            if (currentFormStep === 1) {
+                if (newDoctorData.fullName.length < 3 || !newDoctorData.specialization) {
+                    toast({ variant: 'destructive', title: 'Incomplete', description: 'Please enter a valid name and select a specialization.' });
+                    return;
+                }
+            }
+            setCurrentFormStep(p => p + 1);
+            return;
+        }
+        
         setIsSubmitting(true);
       
         const { fullName: name, contactNumber: phone, emailAddress: email, ...restOfData } = newDoctorData;
@@ -294,35 +306,56 @@ const ClinicDashboard = () => {
             case 1:
                 return (
                     <div className="space-y-4">
-                        <h3 className="text-lg font-semibold border-b pb-2">Basic Information</h3>
+                        <h3 className="text-lg font-semibold border-b pb-2">Step 1: Basic Details</h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
-                            <div className="space-y-2"><Label>Full Name</Label><Input name="fullName" required value={newDoctorData.fullName} onChange={e => handleFormChange('fullName', e.target.value)} /></div>
-                            <div className="space-y-2"><Label>Gender</Label><Select name="gender" required onValueChange={v => handleFormChange('gender', v)} value={newDoctorData.gender}><SelectTrigger><SelectValue placeholder="Select Gender"/></SelectTrigger><SelectContent><SelectItem value="male">Male</SelectItem><SelectItem value="female">Female</SelectItem><SelectItem value="other">Other</SelectItem></SelectContent></Select></div>
-                            <div className="space-y-2"><Label>Contact Number</Label><div className="flex items-center gap-0 rounded-md border border-input focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2"><span className="pl-3 text-muted-foreground text-sm">+91</span><Input id="contactNumber" name="contactNumber" type="tel" maxLength={10} placeholder="12345 67890" required value={newDoctorData.contactNumber} onChange={e => handleFormChange('contactNumber', e.target.value)} className="border-0 h-9 focus-visible:ring-0 focus-visible:ring-offset-0 flex-1"/></div></div>
-                            <div className="space-y-2"><Label>Email Address</Label><Input name="emailAddress" type="email" required value={newDoctorData.emailAddress} onChange={e => handleFormChange('emailAddress', e.target.value)} /></div>
+                            <div className="space-y-2">
+                                <Label>Full Name*</Label>
+                                <Input name="fullName" required value={newDoctorData.fullName} onChange={e => handleFormChange('fullName', e.target.value)} />
+                            </div>
+                            <div className="space-y-2">
+                                <Label>Specialization*</Label>
+                                <Select name="specialization" required onValueChange={v => handleFormChange('specialization', v)} value={newDoctorData.specialization}>
+                                    <SelectTrigger><SelectValue placeholder="Select Specialization"/></SelectTrigger>
+                                    <SelectContent>{doctorSpecializations.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+                                </Select>
+                            </div>
+                             <div className="space-y-2">
+                                <Label>Gender</Label>
+                                <Select name="gender" onValueChange={v => handleFormChange('gender', v)} value={newDoctorData.gender}>
+                                    <SelectTrigger><SelectValue placeholder="Select Gender"/></SelectTrigger>
+                                    <SelectContent><SelectItem value="male">Male</SelectItem><SelectItem value="female">Female</SelectItem><SelectItem value="other">Other</SelectItem></SelectContent>
+                                </Select>
+                            </div>
+                            <div className="space-y-2">
+                                <Label>Experience (years)</Label>
+                                <Input name="experience" type="number" value={newDoctorData.experience} onChange={e => handleFormChange('experience', e.target.value)} />
+                            </div>
+                            <div className="space-y-2 md:col-span-2">
+                                <Label>Consultation Fee (INR, optional)</Label>
+                                <Input name="consultationFee" type="number" placeholder="e.g., 800" value={newDoctorData.consultationFee} onChange={e => handleFormChange('consultationFee', e.target.value)} />
+                            </div>
                         </div>
                     </div>
                 );
             case 2:
                  return (
                     <div className="space-y-4">
-                        <h3 className="text-lg font-semibold border-b pb-2">Professional Details</h3>
+                        <h3 className="text-lg font-semibold border-b pb-2">Step 2: Professional Details</h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
-                            <div className="space-y-2"><Label>Specialization</Label><Select name="specialization" required onValueChange={v => handleFormChange('specialization', v)} value={newDoctorData.specialization}><SelectTrigger><SelectValue placeholder="Select Specialization"/></SelectTrigger><SelectContent>{doctorSpecializations.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent></Select></div>
-                            <div className="space-y-2"><Label>Qualifications</Label><Input name="qualifications" placeholder="MBBS, MD" required value={newDoctorData.qualifications} onChange={e => handleFormChange('qualifications', e.target.value)} /></div>
-                            <div className="space-y-2"><Label>Experience (years)</Label><Input name="experience" type="number" required value={newDoctorData.experience} onChange={e => handleFormChange('experience', e.target.value)} /></div>
-                            <div className="space-y-2"><Label>Consultation Fee (INR)</Label><Input name="consultationFee" type="number" placeholder="e.g., 800" required value={newDoctorData.consultationFee} onChange={e => handleFormChange('consultationFee', e.target.value)} /></div>
+                             <div className="space-y-2 md:col-span-2"><Label>Qualifications</Label><Input name="qualifications" placeholder="MBBS, MD" value={newDoctorData.qualifications} onChange={e => handleFormChange('qualifications', e.target.value)} /></div>
+                            <div className="space-y-2"><Label>Department</Label><Input name="department" value={newDoctorData.department} onChange={e => handleFormChange('department', e.target.value)} /></div>
+                            <div className="space-y-2"><Label>Designation</Label><Input name="designation" placeholder="e.g., Senior Consultant" value={newDoctorData.designation} onChange={e => handleFormChange('designation', e.target.value)} /></div>
                         </div>
                     </div>
                  );
             case 3:
                 return (
                     <div className="space-y-4">
-                        <h3 className="text-lg font-semibold border-b pb-2">Licenses & Verification</h3>
+                        <h3 className="text-lg font-semibold border-b pb-2">Step 3: Licenses & Verification</h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
-                             <div className="space-y-2 md:col-span-2"><Label>Medical Registration Number</Label><Input name="medicalRegNo" required value={newDoctorData.medicalRegNo} onChange={e => handleFormChange('medicalRegNo', e.target.value)} /></div>
-                            <div className="space-y-2"><Label>Registration Council</Label><Input name="regCouncil" placeholder="e.g., Medical Council of India" required value={newDoctorData.regCouncil} onChange={e => handleFormChange('regCouncil', e.target.value)} /></div>
-                            <div className="space-y-2"><Label>Registration Year</Label><Input name="regYear" type="number" placeholder="e.g., 2010" required value={newDoctorData.regYear} onChange={e => handleFormChange('regYear', e.target.value)} /></div>
+                             <div className="space-y-2 md:col-span-2"><Label>Medical Registration Number*</Label><Input name="medicalRegNo" required value={newDoctorData.medicalRegNo} onChange={e => handleFormChange('medicalRegNo', e.target.value)} /></div>
+                            <div className="space-y-2"><Label>Registration Council*</Label><Input name="regCouncil" placeholder="e.g., Medical Council of India" required value={newDoctorData.regCouncil} onChange={e => handleFormChange('regCouncil', e.target.value)} /></div>
+                            <div className="space-y-2"><Label>Registration Year*</Label><Input name="regYear" type="number" placeholder="e.g., 2010" required value={newDoctorData.regYear} onChange={e => handleFormChange('regYear', e.target.value)} /></div>
                         </div>
                     </div>
                 );
@@ -458,13 +491,13 @@ const ClinicDashboard = () => {
                                     <DialogDescription>Enter the details for the new doctor to add them to your hospital's roster.</DialogDescription>
                                      <Progress value={(currentFormStep / 3) * 100} className="w-full mt-2" />
                                 </DialogHeader>
-                                <form onSubmit={handleAddDoctor} className="max-h-[80vh] overflow-y-auto pr-6">
-                                    <div className="py-4">
+                                <form onSubmit={handleAddDoctor}>
+                                    <div className="py-4 max-h-[70vh] overflow-y-auto pr-6">
                                        {renderAddDoctorForm()}
                                     </div>
                                     <DialogFooter className="pt-6">
                                       {currentFormStep > 1 && <Button type="button" variant="outline" onClick={() => setCurrentFormStep(p => p - 1)}><ArrowLeft className="w-4 h-4 mr-2"/>Previous</Button>}
-                                      {currentFormStep < 3 ? <Button type="button" onClick={() => setCurrentFormStep(p => p + 1)}>Next Step</Button> : <Button type="submit" disabled={isSubmitting}>{isSubmitting ? "Adding..." : "Add Doctor & Generate Credentials"}</Button>}
+                                      <Button type="submit" disabled={isSubmitting}>{isSubmitting ? "Adding..." : (currentFormStep < 3 ? 'Next Step' : "Add Doctor & Generate Credentials")}</Button>
                                     </DialogFooter>
                                 </form>
                                 </DialogContent>
@@ -548,3 +581,6 @@ const ClinicDashboard = () => {
 };
 
 export default ClinicDashboard;
+
+
+    
