@@ -1,335 +1,262 @@
 {
   "entities": {
     "User": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "User",
       "type": "object",
-      "description": "Represents a user (either a Rider or Driver) in the Cabzi application.",
+      "description": "Represents a base user who can be a Rider or a Partner.",
       "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the user."
-        },
-        "userType": {
-          "type": "string",
-          "description": "The type of user: 'Rider' or 'Driver'."
-        },
-        "phoneNumber": {
-          "type": "string",
-          "description": "User's phone number, used for OTP login.",
-          "format": "string"
-        },
-        "createdAt": {
-          "type": "string",
-          "description": "Timestamp indicating when the user account was created.",
-          "format": "date-time"
-        }
+        "name": { "type": "string" },
+        "phone": { "type": "string", "description": "10-digit mobile number, unique identifier." },
+        "email": { "type": "string", "format": "email" },
+        "photoURL": { "type": "string", "format": "uri" },
+        "role": { "type": "string", "enum": ["user", "driver", "mechanic", "cure", "doctor", "ambulance_driver", "admin"] },
+        "gender": { "type": "string", "enum": ["male", "female", "other"] },
+        "isOnline": { "type": "boolean", "default": false },
+        "currentLocation": { "$ref": "#/entities/GeoPoint" },
+        "lastSeen": { "type": "string", "format": "date-time" },
+        "createdAt": { "type": "string", "format": "date-time" }
       },
-      "required": [
-        "id",
-        "userType",
-        "phoneNumber",
-        "createdAt"
-      ]
+      "required": ["name", "phone", "role", "createdAt"]
     },
-    "Rider": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Rider",
+    "Partner": {
+      "title": "Partner",
       "type": "object",
-      "description": "Represents a rider in the Cabzi application.",
+      "description": "Represents a Path (Driver) Partner.",
       "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the Rider entity."
-        },
-        "userId": {
-          "type": "string",
-          "description": "Reference to User. (Relationship: User 1:1 Rider)"
-        },
-        "name": {
-          "type": "string",
-          "description": "Rider's name."
-        },
-        "email": {
-          "type": "string",
-          "description": "Rider's email address.",
-          "format": "email"
-        }
+        "partnerId": { "type": "string", "description": "Unique human-readable ID, e.g., CZP-1234." },
+        "name": { "type": "string" },
+        "phone": { "type": "string" },
+        "gender": { "type": "string" },
+        "dob": { "type": "string", "format": "date" },
+        "panCard": { "type": "string" },
+        "aadhaarNumber": { "type": "string" },
+        "drivingLicence": { "type": "string" },
+        "vehicleType": { "type": "string" },
+        "vehicleBrand": { "type": "string" },
+        "vehicleName": { "type": "string" },
+        "vehicleNumber": { "type": "string" },
+        "isCurocityPink": { "type": "boolean", "default": false },
+        "status": { "type": "string", "enum": ["pending_verification", "verified", "rejected", "suspended"] },
+        "isOnline": { "type": "boolean", "default": false },
+        "walletBalance": { "type": "number", "default": 0 },
+        "currentLocation": { "$ref": "#/entities/GeoPoint" },
+        "createdAt": { "type": "string", "format": "date-time" }
       },
-      "required": [
-        "id",
-        "userId",
-        "name"
-      ]
+      "required": ["partnerId", "name", "phone", "status", "createdAt"]
     },
-    "Driver": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Driver",
+    "Mechanic": {
+      "title": "Mechanic",
       "type": "object",
-      "description": "Represents a driver in the Cabzi application.",
+      "description": "Represents a ResQ (Mechanic/Garage) Partner.",
       "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the Driver entity."
-        },
-        "userId": {
-          "type": "string",
-          "description": "Reference to User. (Relationship: User 1:1 Driver)"
-        },
-        "licenseImageURL": {
-          "type": "string",
-          "description": "URL of the driver's license image."
-        },
-        "aadhaarImageURL": {
-          "type": "string",
-          "description": "URL of the driver's Aadhaar image."
-        },
-        "vehicleRCImageURL": {
-          "type": "string",
-          "description": "URL of the driver's vehicle registration certificate image."
-        },
-        "vehicleType": {
-          "type": "string",
-          "description": "The type of vehicle the driver uses (e.g., Bike, Auto, Cab, Toto)."
-        },
-        "subscriptionId": {
-          "type": "string",
-          "description": "Reference to Subscription. (Relationship: Subscription 1:1 Driver)"
-        },
-        "insuranceStatus": {
-          "type": "string",
-          "description": "Status of the driver's insurance (Active, Pending)."
-        }
+        "partnerId": { "type": "string" },
+        "name": { "type": "string", "description": "Owner's Name" },
+        "firmName": { "type": "string", "description": "Garage/Firm Name" },
+        "phone": { "type": "string" },
+        "businessType": { "type": "string", "enum": ["Individual", "Garage"] },
+        "panCard": { "type": "string" },
+        "gstNumber": { "type": "string" },
+        "services": { "type": "array", "items": { "type": "string" } },
+        "location": { "$ref": "#/entities/GeoPoint", "description": "Fixed location for Garages" },
+        "address": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending_verification", "verified", "rejected"] },
+        "isAvailable": { "type": "boolean", "default": false },
+        "currentLocation": { "$ref": "#/entities/GeoPoint", "description": "Live location for individuals" },
+        "createdAt": { "type": "string", "format": "date-time" }
       },
-      "required": [
-        "id",
-        "userId",
-        "vehicleType",
-        "subscriptionId",
-        "insuranceStatus"
-      ]
+      "required": ["partnerId", "name", "phone", "status", "createdAt"]
+    },
+    "CurePartner": {
+      "title": "CurePartner",
+      "type": "object",
+      "description": "Represents a Cure (Hospital/Clinic) Partner.",
+      "properties": {
+        "partnerId": { "type": "string" },
+        "name": { "type": "string", "description": "Facility Name (Hospital/Clinic)" },
+        "phone": { "type": "string", "description": "Official contact number" },
+        "businessType": { "type": "string", "enum": ["Hospital", "Clinic"] },
+        "registrationNumber": { "type": "string" },
+        "totalBeds": { "type": "number" },
+        "bedsOccupied": { "type": "number" },
+        "departments": { "type": "array", "items": { "type": "string" } },
+        "services": { "type": "array", "items": { "type": "string" } },
+        "location": { "$ref": "#/entities/GeoPoint" },
+        "address": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending_verification", "verified", "rejected"] },
+        "isOnline": { "type": "boolean", "default": false },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["partnerId", "name", "phone", "businessType", "status", "createdAt"]
+    },
+    "Doctor": {
+      "title": "Doctor",
+      "type": "object",
+      "description": "Represents a doctor associated with a Cure partner.",
+      "properties": {
+        "partnerId": { "type": "string" },
+        "name": { "type": "string" },
+        "phone": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "specialization": { "type": "string" },
+        "qualifications": { "type": "string" },
+        "experience": { "type": "string" },
+        "consultationFee": { "type": "number" },
+        "medicalRegNo": { "type": "string" },
+        "docStatus": { "type": "string", "enum": ["Awaiting Final Approval", "Verified", "Rejected"] },
+        "isAvailable": { "type": "boolean", "default": false }
+      },
+      "required": ["partnerId", "name", "phone", "specialization", "docStatus"]
+    },
+    "AmbulanceDriver": {
+      "title": "AmbulanceDriver",
+      "type": "object",
+      "description": "Represents an ambulance driver for a hospital.",
+      "properties": {
+        "partnerId": { "type": "string" },
+        "name": { "type": "string" },
+        "phone": { "type": "string" },
+        "drivingLicence": { "type": "string" },
+        "age": { "type": "number" },
+        "gender": { "type": "string" }
+      },
+      "required": ["partnerId", "name", "phone"]
     },
     "Ride": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Ride",
       "type": "object",
-      "description": "Represents a ride request and its details.",
+      "description": "Represents a single ride request.",
       "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the Ride entity."
-        },
-        "riderId": {
-          "type": "string",
-          "description": "Reference to Rider. (Relationship: Rider 1:N Ride)"
-        },
-        "driverId": {
-          "type": "string",
-          "description": "Reference to Driver. (Relationship: Driver 1:N Ride).  Null if ride is not yet accepted."
-        },
-        "pickupLocation": {
-          "type": "string",
-          "description": "Pickup location (e.g., as a string)."
-        },
-        "dropLocation": {
-          "type": "string",
-          "description": "Drop location (e.g., as a string)."
-        },
-        "fareEstimate": {
-          "type": "number",
-          "description": "Estimated fare for the ride."
-        },
-        "status": {
-          "type": "string",
-          "description": "Status of the ride (e.g., Requested, Accepted, Started, Completed, Cancelled)."
-        },
-        "paymentMethod": {
-          "type": "string",
-          "description": "Payment method used for the ride (Cash, UPI, Wallet)."
-        }
+        "riderId": { "type": "string" },
+        "driverId": { "type": "string" },
+        "pickup": { "$ref": "#/entities/Location" },
+        "destination": { "$ref": "#/entities/Location" },
+        "status": { "type": "string", "enum": ["searching", "accepted", "arrived", "in-progress", "payment_pending", "completed", "cancelled_by_rider", "cancelled_by_driver", "no_drivers_available"] },
+        "fare": { "type": "number" },
+        "otp": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
       },
-      "required": [
-        "id",
-        "riderId",
-        "pickupLocation",
-        "dropLocation",
-        "fareEstimate",
-        "status",
-        "paymentMethod"
-      ]
+      "required": ["riderId", "pickup", "destination", "status", "fare", "otp", "createdAt"]
     },
-    "Subscription": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Subscription",
-      "type": "object",
-      "description": "Represents a subscription plan for drivers.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the Subscription entity."
+    "GarageRequest": {
+        "title": "GarageRequest",
+        "type": "object",
+        "description": "Represents a request for roadside assistance.",
+        "properties": {
+            "userId": { "type": "string" },
+            "mechanicId": { "type": "string" },
+            "issue": { "type": "string" },
+            "location": { "$ref": "#/entities/GeoPoint" },
+            "status": { "type": "string", "enum": ["pending", "accepted", "in_progress", "bill_sent", "completed", "cancelled"] },
+            "otp": { "type": "string" },
+            "totalAmount": { "type": "number" },
+            "createdAt": { "type": "string", "format": "date-time" }
         },
-        "name": {
-          "type": "string",
-          "description": "Name of the subscription plan (e.g., Free, ₹1999, ₹2999, ₹4999)."
-        },
-        "price": {
-          "type": "number",
-          "description": "Price of the subscription plan."
-        },
-        "benefits": {
-          "type": "string",
-          "description": "Description of the benefits included in the subscription plan (Insurance, Garage, Support)."
-        }
-      },
-      "required": [
-        "id",
-        "name",
-        "price",
-        "benefits"
-      ]
+        "required": ["userId", "issue", "location", "status", "otp", "createdAt"]
     },
-    "WalletTransaction": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "WalletTransaction",
+    "EmergencyCase": {
+      "title": "EmergencyCase",
       "type": "object",
-      "description": "Represents a wallet transaction for a driver.",
+      "description": "Represents an emergency SOS request.",
       "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the WalletTransaction entity."
-        },
-        "driverId": {
-          "type": "string",
-          "description": "Reference to Driver. (Relationship: Driver 1:N WalletTransaction)"
-        },
-        "amount": {
-          "type": "number",
-          "description": "Amount of the transaction."
-        },
-        "type": {
-          "type": "string",
-          "description": "Type of transaction (e.g., Credit, Debit, Subscription Payment)."
-        },
-        "timestamp": {
-          "type": "string",
-          "description": "Timestamp of the transaction.",
-          "format": "date-time"
-        }
+        "caseId": { "type": "string" },
+        "riderId": { "type": "string" },
+        "location": { "$ref": "#/entities/GeoPoint" },
+        "severity": { "type": "string", "enum": ["Critical", "Serious", "Non-Critical"] },
+        "assignedPartner": { "type": "object", "properties": { "id": { "type": "string" }, "name": { "type": "string" } } },
+        "assignedAmbulanceId": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "accepted", "onTheWay", "inTransit", "completed", "cancelled"] },
+        "createdAt": { "type": "string", "format": "date-time" }
       },
-      "required": [
-        "id",
-        "driverId",
-        "amount",
-        "type",
-        "timestamp"
-      ]
+      "required": ["caseId", "riderId", "location", "severity", "status", "createdAt"]
+    },
+    "Appointment": {
+      "title": "Appointment",
+      "type": "object",
+      "description": "Represents a doctor's appointment booking.",
+      "properties": {
+        "patientId": { "type": "string" },
+        "doctorId": { "type": "string" },
+        "hospitalId": { "type": "string" },
+        "appointmentDate": { "type": "string", "format": "date-time" },
+        "appointmentTime": { "type": "string" },
+        "consultationType": { "type": "string", "enum": ["in-clinic", "video"] },
+        "status": { "type": "string", "enum": ["Pending", "Confirmed", "Completed", "Cancelled"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["patientId", "doctorId", "hospitalId", "appointmentDate", "status", "createdAt"]
+    },
+    "GeoPoint": {
+      "title": "GeoPoint",
+      "type": "object",
+      "description": "Represents a geographical point with latitude and longitude.",
+      "properties": {
+        "latitude": { "type": "number" },
+        "longitude": { "type": "number" }
+      },
+      "required": ["latitude", "longitude"]
+    },
+    "Location": {
+      "title": "Location",
+      "type": "object",
+      "description": "Represents a location with an address and GeoPoint.",
+      "properties": {
+        "address": { "type": "string" },
+        "location": { "$ref": "#/entities/GeoPoint" }
+      },
+      "required": ["address", "location"]
     }
   },
   "auth": {
-    "providers": [
-      "password",
-      "anonymous"
-    ]
+    "providers": ["password", "anonymous", "phone"]
   },
   "firestore": {
-    "structure": [
-      {
-        "path": "/users/{userId}",
-        "definition": {
-          "entityName": "user",
-          "schema": {
-            "$ref": "#/backend/entities/User"
+    "collections": {
+      "/users/{userId}": {
+        "schema": { "$ref": "#/entities/User" },
+        "description": "Stores individual user accounts."
+      },
+      "/partners/{partnerId}": {
+        "schema": { "$ref": "#/entities/Partner" },
+        "description": "Stores profiles for Path (Driver) partners."
+      },
+      "/mechanics/{mechanicId}": {
+        "schema": { "$ref": "#/entities/Mechanic" },
+        "description": "Stores profiles for ResQ (Mechanic/Garage) partners."
+      },
+      "/ambulances/{hospitalId}": {
+        "schema": { "$ref": "#/entities/CurePartner" },
+        "description": "Stores profiles for Cure (Hospital/Clinic) partners.",
+        "collections": {
+          "/drivers/{driverId}": {
+            "schema": { "$ref": "#/entities/AmbulanceDriver" },
+            "description": "Subcollection for ambulance drivers of a specific hospital."
           },
-          "description": "Stores user data.  This structure provides path based ownership of the user. Only the user can read/write to their own document.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "The unique identifier for the user."
-            }
-          ]
+          "/doctors/{doctorId}": {
+            "schema": { "$ref": "#/entities/Doctor" },
+            "description": "Subcollection for doctors of a specific hospital/clinic."
+          }
         }
       },
-      {
-        "path": "/users/{userId}/rider",
-        "definition": {
-          "entityName": "rider",
-          "schema": {
-            "$ref": "#/backend/entities/Rider"
-          },
-          "description": "Stores rider profile data, linked to the user. Path-based ownership; only the user can access their own rider profile.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "The unique identifier for the user."
-            }
-          ]
-        }
+      "/doctors": {
+        "schema": { "$ref": "#/entities/Doctor" },
+        "description": "Global collection for all doctors for easier querying and verification. Data is duplicated from the subcollection."
       },
-      {
-        "path": "/users/{userId}/driver",
-        "definition": {
-          "entityName": "driver",
-          "schema": {
-            "$ref": "#/backend/entities/Driver"
-          },
-          "description": "Stores driver profile data, linked to the user. Path-based ownership; only the user can access their own driver profile.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "The unique identifier for the user."
-            }
-          ]
-        }
+      "/rides/{rideId}": {
+        "schema": { "$ref": "#/entities/Ride" },
+        "description": "Stores all ride requests and their statuses."
       },
-      {
-        "path": "/rides/{rideId}",
-        "definition": {
-          "entityName": "ride",
-          "schema": {
-            "$ref": "#/backend/entities/Ride"
-          },
-          "description": "Stores ride data. Access control is managed via the riderId and driverId fields in the document.",
-          "params": [
-            {
-              "name": "rideId",
-              "description": "The unique identifier for the ride."
-            }
-          ]
-        }
+      "/garageRequests/{requestId}": {
+        "schema": { "$ref": "#/entities/GarageRequest" },
+        "description": "Stores all roadside assistance requests."
       },
-      {
-        "path": "/subscriptions/{subscriptionId}",
-        "definition": {
-          "entityName": "subscription",
-          "schema": {
-            "$ref": "#/backend/entities/Subscription"
-          },
-          "description": "Stores subscription plan data. Publicly readable; drivers subscribe through their driver profile.",
-          "params": [
-            {
-              "name": "subscriptionId",
-              "description": "The unique identifier for the subscription plan."
-            }
-          ]
-        }
+      "/emergencyCases/{caseId}": {
+        "schema": { "$ref": "#/entities/EmergencyCase" },
+        "description": "Stores all emergency SOS requests."
       },
-      {
-        "path": "/wallet_transactions/{transactionId}",
-        "definition": {
-          "entityName": "walletTransaction",
-          "schema": {
-            "$ref": "#/backend/entities/WalletTransaction"
-          },
-          "description": "Stores wallet transaction data for drivers. Access control is managed via the driverId field in the document.",
-          "params": [
-            {
-              "name": "transactionId",
-              "description": "The unique identifier for the wallet transaction."
-            }
-          ]
-        }
+      "/appointments/{appointmentId}": {
+        "schema": { "$ref": "#/entities/Appointment" },
+        "description": "Stores all doctor appointment bookings."
       }
-    ],
-    "reasoning": "The Firestore structure is designed to be secure, scalable, and easily debuggable, following the core design principles and strategy mandates. The structure prioritizes Authorization Independence by denormalizing authorization data where needed, enabling simpler and more robust security rules.  It avoids hierarchical authorization dependencies (`get()` calls) to maintain atomic operations and ease debugging.  Structural Segregation is applied by keeping data with different security postures in separate collections.  Access modeling utilizes path-based ownership for private data and membership maps for collaborative data. The structure enforces invariants related to ownership, timestamps, and denormalized data.\n\nSpecifically, authorization independence is achieved by avoiding `get()` calls in the rules.  User access to their own Rider or Driver documents is path-based, located under `/users/{userId}/rider` and `/users/{userId}/driver` respectively.  Ride access is controlled via the `riderId` field within the `/rides` collection, and the `driverId` fields, ensuring only associated users can access specific ride data. Subscription access is tied to the driver documents ensuring that a driver document is required to obtain a subscription.\n\nThe structure supports the required QAPs through segregation and the use of appropriate access models. Private user data (Rider and Driver profiles) is stored under `/users/{userId}`, allowing for secure list operations based on user ID.  The rides collection stores ride data and uses the `riderId` and `driverId` fields to support listing rides associated with a specific rider or driver. Subscription plans are publicly accessible for viewing but creating a subscription is linked to a specific driver id, preventing unauthorized modification or creation."
+    }
   }
 }
