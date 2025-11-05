@@ -292,3 +292,5 @@ export default function PartnerDetails({ partnerId, initialPartnerType, hospital
         </div>
     );
 }
+
+    

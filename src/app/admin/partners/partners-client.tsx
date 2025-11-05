@@ -96,7 +96,8 @@ export default function PartnersClient() {
                 const docData = doc.data();
                 return {
                     id: doc.id,
-                    ...docData
+                    ...docData,
+                    type: type,
                 } as PartnerData;
             });
         } catch (error) {
@@ -426,3 +427,5 @@ export default function PartnersClient() {
     </>
   )
 }
+
+    
