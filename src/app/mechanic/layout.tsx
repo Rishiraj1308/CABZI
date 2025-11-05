@@ -98,45 +98,46 @@ function MechanicProvider({ children }: { children: React.ReactNode }) {
     }
     const mechRef = doc(db, "mechanics", partnerId);
 
-    let unsubMech = () => {};
-    let unsubReq = () => {};
-
-    // ✅ Mechanic real-time listener
-    unsubMech = onSnapshot(mechRef, (snap) => {
+    const unsubMech = onSnapshot(mechRef, (snap) => {
       if (!snap.exists()) {
         logout();
         return;
       }
-
       const data = { id: snap.id, ...snap.data() } as MechanicData;
       setPartner(data);
-
-      // ✅ Listen to pending requests ONLY WHEN ONLINE
-      if (data.isOnline === true) {
-        const q = query(
-          collection(db, "garageRequests"),
-          where("status", "==", "pending")
-        );
-
-        unsubReq = onSnapshot(q, (reqSnap) => {
-          const list = reqSnap.docs
-            .map((d) => ({ id: d.id, ...d.data() }))
-            .filter(job => !job.rejectedBy || !job.rejectedBy.includes(partnerId)); // Filter out rejected jobs
-          setRequests(list);
-        });
-      } else {
-        setRequests([]);
-        if (unsubReq) unsubReq();
-      }
-
       setIsLoading(false);
-    }, logout); // On error, logout
+    }, logout);
 
     return () => {
       unsubMech();
-      if (unsubReq) unsubReq();
     };
   }, [isUserLoading, db, logout]);
+
+  useEffect(() => {
+    if (!partner || !db) return;
+    
+    let unsubReq: () => void = () => {};
+
+    if (partner.isOnline) {
+      const q = query(
+        collection(db, "garageRequests"),
+        where("status", "==", "pending")
+      );
+
+      unsubReq = onSnapshot(q, (reqSnap) => {
+        const list = reqSnap.docs
+          .map((d) => ({ id: d.id, ...d.data() }))
+          .filter(job => !job.rejectedBy || !job.rejectedBy.includes(partner.id));
+        setRequests(list);
+      });
+    } else {
+      setRequests([]);
+    }
+
+    return () => {
+      unsubReq();
+    }
+  }, [partner, db]);
 
 
   const value = useMemo(() => ({

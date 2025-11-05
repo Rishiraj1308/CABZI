@@ -91,11 +91,13 @@ export default function LoginPage() {
   const [adminPassword, setAdminPassword] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [isMounted, setIsMounted] = useState(false);
-  const recaptchaContainerRef = useRef<HTMLDivElement>(null);
   
+  const recaptchaContainerRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     setIsMounted(true);
   }, []);
+
 
   useEffect(() => {
     if (identifier.includes('@')) {
@@ -258,6 +260,7 @@ export default function LoginPage() {
     
     try {
         const fullPhoneNumber = `+91${identifier}`;
+        // Use a new verifier each time, ensuring the container is ready.
         const verifier = new RecaptchaVerifier(auth, recaptchaContainerRef.current, { size: 'invisible' });
         const confirmation = await signInWithPhoneNumber(auth, fullPhoneNumber, verifier);
         setConfirmationResult(confirmation);
@@ -265,6 +268,7 @@ export default function LoginPage() {
         toast({ title: 'OTP Sent!', description: `An OTP has been sent to ${fullPhoneNumber}.` });
     } catch (error: any) {
         toast({ variant: 'destructive', title: 'Failed to Send OTP', description: error.message });
+        console.error("Phone Auth Error:", error);
     }
   }
   
@@ -522,7 +526,7 @@ export default function LoginPage() {
 
   return (
       <div className="flex min-h-screen items-center justify-center p-4 bg-muted/40">
-          <div id="recaptcha-container" ref={recaptchaContainerRef}></div>
+          <div id="recaptcha-container" ref={recaptchaContainerRef} />
           <div className="absolute top-4 right-4 flex items-center gap-2">
               <LanguageToggle />
               <ThemeToggle />
@@ -535,7 +539,6 @@ export default function LoginPage() {
                 </Link>
               </div>
               <CardTitle className="text-2xl mt-4">{getPageTitle()}</CardTitle>
-              <CardDescription>
                 <AnimatePresence mode="wait">
                     <motion.p
                         key={step + roleFromQuery}
@@ -543,11 +546,11 @@ export default function LoginPage() {
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: 10 }}
                         transition={{ duration: 0.2 }}
+                        className="text-sm text-muted-foreground"
                     >
                        {getPageDescription()}
                     </motion.p>
                 </AnimatePresence>
-              </CardDescription>
             </CardHeader>
             <CardContent>
               <AnimatePresence mode="wait">

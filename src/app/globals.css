@@ -117,7 +117,7 @@
         z-index: -1;
         background-image: 
             radial-gradient(ellipse at 50% 0%, hsla(180, 80%, 30%, 0.1), transparent 70%),
-            radial-gradient(ellipse at 80% 100%, hsla(30, 80%, 50%, 0.1), transparent 70%);
+            radial-gradient(ellipse at 80% 100%, hsla(190, 80%, 50%, 0.1), transparent 70%);
         background-size: 150% 150%;
         animation: aurora-glow 15s linear infinite alternate;
         will-change: background-position;
@@ -133,7 +133,7 @@
         z-index: -1;
         background-image: 
             radial-gradient(at 20% 20%, hsla(180, 50%, 80%, 0.2), transparent 50%),
-            radial-gradient(at 80% 80%, hsla(30, 80%, 85%, 0.2), transparent 50%);
+            radial-gradient(at 80% 80%, hsla(200, 80%, 85%, 0.2), transparent 50%);
         background-size: 150% 150%;
         animation: aurora-glow 20s linear infinite alternate;
         will-change: background-position;

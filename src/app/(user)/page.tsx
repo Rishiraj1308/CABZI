@@ -1,200 +1,257 @@
 
 'use client'
 
-import React, { useState, useEffect, useRef, useCallback } from 'react'
-import { useRouter } from 'next/navigation'
-import { Button, buttonVariants } from '@/components/ui/button'
-import {
-  Car, Wrench, Ambulance, Calendar, TestTube, Search, X, Mic, AlertTriangle, Phone, History, MapPin, ArrowUpRight, Clock, MessageCircle, Shield, Home
-} from 'lucide-react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { cn } from '@/lib/utils'
-import { useLanguage } from '@/hooks/use-language'
-import { Input } from '@/components/ui/input'
-import { AlertDialog, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogCancel, AlertDialogAction } from '@/components/ui/alert-dialog'
-import { useToast } from '@/hooks/use-toast'
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Car, Wrench, Ambulance, Calendar, FlaskConical, Search, MapPin, ArrowRight, History, MoreHorizontal } from 'lucide-react';
+import Link from 'next/link';
+import { useToast } from '@/hooks/use-toast';
+import { AnimatePresence } from 'framer-motion';
+import { MotionDiv } from '@/components/ui/motion-div';
+import { useFirebase } from '@/firebase/client-provider';
+import { getDoc, doc, onSnapshot, query, collection, where } from 'firebase/firestore';
+import type { RideData, AmbulanceCase, GarageRequest, ClientSession } from '@/lib/types';
+import RideStatus from '@/components/ride-status';
+import { useRouter } from 'next/navigation';
+import dynamic from 'next/dynamic';
 
-const ServiceCard = ({
-  service,
-  onClick,
-}: {
-  service: any
-  onClick: () => void
-}) => (
-  <button
-    className="serviceCard group flex items-center justify-between rounded-2xl border border-border bg-card p-5 sm:p-6 hover:bg-accent/10 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
-    role="button"
-    tabIndex={0}
-    title={service.title}
-    onClick={onClick}
-    data-label={service.label}
-  >
-    <div className="flex items-center gap-4 text-left">
-      <span className={cn("inline-flex h-10 w-10 items-center justify-center rounded-full ring-1", service.iconBg, service.iconRing, service.iconColor)}>
-        <service.icon className="h-5 w-5" />
-      </span>
-      <div>
-        <p className="text-[15px] sm:text-base font-semibold tracking-tight text-foreground">{service.title}</p>
-        <p className="text-xs text-muted-foreground mt-0.5">{service.description}</p>
-      </div>
-    </div>
-    <div className="flex items-center gap-2">
-      {service.tag && (
-        <span className={cn("inline-flex items-center gap-1 rounded-full border px-2 py-1 text-[11px]", service.tagBg, service.tagBorder, service.tagColor)}>
-          <service.tagIcon className="h-3 w-3" />
-          {service.tag}
-        </span>
-      )}
-      <ArrowUpRight className="h-5 w-5 text-muted-foreground group-hover:text-foreground" />
-    </div>
-  </button>
-)
+const LiveMap = dynamic(() => import('@/components/live-map'), {
+    ssr: false,
+    loading: () => <div className="w-full h-full bg-muted flex items-center justify-center"><p>Loading Map...</p></div>
+});
 
-export default function ServicePortalPage() {
-  const router = useRouter()
-  const { t } = useLanguage()
-  const { toast } = useToast()
-  
-  const [searchQuery, setSearchQuery] = useState('');
-  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-  const [isSosModalOpen, setIsSosModalOpen] = useState(false);
-  const [services, setServices] = useState<any[]>([]);
 
-  const serviceData = [
-    { id: 'ride', href: '/user/book', icon: Car, title: 'Ride', description: 'On-demand transport to clinics', tag: '5–10m', tagIcon: Clock, iconBg: 'bg-emerald-400/15', iconRing: 'ring-emerald-400/30', iconColor: 'text-emerald-500', tagBg: 'bg-emerald-400/10', tagBorder: 'border-emerald-400/30', tagColor: 'text-emerald-600', label: 'ride transport car taxi clinic mobility hospital cab' },
-    { id: 'resq', href: '/user/resq', icon: Wrench, title: 'ResQ', description: 'On-site assistance for minor issues', tag: 'On-Demand', tagIcon: Wrench, iconBg: 'bg-amber-400/15', iconRing: 'ring-amber-400/30', iconColor: 'text-amber-500', tagBg: 'bg-amber-400/10', tagBorder: 'border-amber-400/30', tagColor: 'text-amber-600', label: 'resq on-site assistance home help nurse minor issues support' },
-    { id: 'sos', onClick: () => setIsSosModalOpen(true), icon: Ambulance, title: 'Emergency SOS', description: 'Connect to 24/7 emergency line', tag: '24/7', tagIcon: AlertTriangle, iconBg: 'bg-red-500/20', iconRing: 'ring-red-500/40', iconColor: 'text-red-500', tagBg: 'bg-red-400/10', tagBorder: 'border-red-400/40', tagColor: 'text-red-600', label: 'sos emergency ambulance urgent help police fire medical' },
-    { id: 'appointment', href: '/user/appointments', icon: Calendar, title: 'Book Appointment', description: 'Clinics, specialists, telehealth', tag: 'Next: 1–2d', tagIcon: Clock, iconBg: 'bg-sky-400/15', iconRing: 'ring-sky-400/30', iconColor: 'text-sky-500', tagBg: 'bg-sky-400/10', tagBorder: 'border-sky-400/30', tagColor: 'text-sky-600', label: 'book appointment doctor specialist telehealth clinic schedule calendar' },
-    { id: 'lab_tests', href: '/user/lab-tests', icon: TestTube, title: 'Lab Tests', description: 'Home sample pickup available', tag: 'Home pickup', tagIcon: Home, iconBg: 'bg-fuchsia-400/15', iconRing: 'ring-fuchsia-400/30', iconColor: 'text-fuchsia-500', tagBg: 'bg-fuchsia-400/10', tagBorder: 'border-fuchsia-400/30', tagColor: 'text-fuchsia-600', label: 'lab tests diagnostics blood test home pickup reports' }
-  ];
-  
-  useEffect(() => {
-    setServices(serviceData);
-  }, []);
+const serviceCards = [
+    {
+        title: 'Ride',
+        description: 'Fair fares for your daily commute.',
+        icon: Car,
+        href: '/user/book',
+        color: 'text-emerald-300',
+        iconBg: 'bg-[hsl(180,35%,18%)]',
+        category: 'Mobility & Transport',
+    },
+     {
+        title: 'ResQ',
+        description: 'Get help for vehicle breakdowns.',
+        icon: Wrench,
+        href: '/user/resq',
+        color: 'text-amber-300',
+        iconBg: 'bg-[hsl(45,95%,20%)]',
+        category: 'Mobility & Transport',
+    },
+    {
+        title: 'Emergency SOS',
+        description: 'Dispatch the nearest ambulance.',
+        icon: Ambulance,
+        href: '/user/book?sos=true',
+        color: 'text-red-300',
+        iconBg: 'bg-[hsl(0,84%,30%)]',
+        category: 'Health & Safety',
+    },
+     {
+        title: 'Book Appointment',
+        description: 'Consult with doctors at partner hospitals.',
+        icon: Calendar,
+        href: '/user/appointments',
+        color: 'text-sky-300',
+        iconBg: 'bg-[hsl(200,80%,30%)]',
+        category: 'Health & Safety',
+    },
+    {
+        title: 'Lab Tests',
+        description: 'Book tests from certified labs.',
+        icon: FlaskConical,
+        href: '/user/lab-tests',
+        color: 'text-fuchsia-300',
+        iconBg: 'bg-[hsl(290,80%,30%)]',
+        category: 'Health & Safety',
+    },
+];
 
-  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const query = e.target.value.toLowerCase();
-    setSearchQuery(query);
-    if (!query) {
-      setServices(serviceData);
-      return;
+export default function UserDashboard() {
+    const { toast } = useToast();
+    const router = useRouter();
+    const { user, db } = useFirebase();
+
+    const [activeRide, setActiveRide] = useState<RideData | null>(null);
+    const [activeAmbulanceCase, setActiveAmbulanceCase] = useState<AmbulanceCase | null>(null);
+    const [activeGarageRequest, setActiveGarageRequest] = useState<GarageRequest | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
+    const [session, setSession] = useState<ClientSession | null>(null);
+    const liveMapRef = useRef<any>(null);
+
+     useEffect(() => {
+        if (user && db) {
+            const userDocRef = doc(db, 'users', user.uid);
+            const unsub = onSnapshot(userDocRef, (docSnap) => {
+                if (docSnap.exists()) {
+                    const userData = docSnap.data();
+                    setSession({
+                        userId: user.uid,
+                        name: userData.name,
+                        phone: userData.phone,
+                        gender: userData.gender
+                    });
+                }
+                 setIsLoading(false); // Set loading to false after session is fetched or fails
+            }, () => setIsLoading(false)); // Also set loading to false on error
+            return () => unsub();
+        } else if (!user) {
+            setIsLoading(false); // If there's no user, we're not loading
+        }
+    }, [user, db]);
+
+    const resetFlow = useCallback(() => {
+        setActiveRide(null);
+        setActiveAmbulanceCase(null);
+        setActiveGarageRequest(null);
+        localStorage.removeItem('activeRideId');
+        localStorage.removeItem('activeGarageRequestId');
+    }, []);
+
+    // Effect to check for any active service on load and listen for updates
+    useEffect(() => {
+        if (!db || !session) {
+            return;
+        };
+
+        let unsubscribe: (() => void) | null = null;
+        
+        const checkAndSubscribe = () => {
+            // Check for active ride
+            const rideId = localStorage.getItem('activeRideId');
+            if (rideId) {
+                const rideRef = doc(db, 'rides', rideId);
+                unsubscribe = onSnapshot(rideRef, (docSnap) => {
+                    if (docSnap.exists() && !['completed', 'cancelled_by_driver', 'cancelled_by_rider'].includes(docSnap.data().status)) {
+                        setActiveRide({ id: docSnap.id, ...docSnap.data() } as RideData);
+                    } else {
+                       resetFlow();
+                    }
+                });
+                return;
+            }
+            
+            // Check for active emergency case
+            const qCure = query(collection(db, "emergencyCases"), where("riderId", "==", session.userId), where("status", "in", ["pending", "accepted", "onTheWay", "arrived", "inTransit"]));
+            unsubscribe = onSnapshot(qCure, (snapshot) => {
+                if (!snapshot.empty) {
+                    const caseDoc = snapshot.docs[0];
+                    setActiveAmbulanceCase({ id: caseDoc.id, ...caseDoc.data() } as AmbulanceCase);
+                } else if (activeAmbulanceCase) {
+                    resetFlow();
+                }
+            });
+            
+             // Check for active ResQ request
+            const qResq = query(collection(db, "garageRequests"), where("driverId", "==", session.userId), where("status", "not-in", ["completed", "cancelled_by_driver", "cancelled_by_mechanic"]));
+             unsubscribe = onSnapshot(qResq, (snapshot) => {
+                if (!snapshot.empty) {
+                    const reqDoc = snapshot.docs[0];
+                    setActiveGarageRequest({ id: reqDoc.id, ...reqDoc.data() } as GarageRequest);
+                } else if (activeGarageRequest) {
+                    resetFlow();
+                }
+            });
+        }
+        
+        checkAndSubscribe();
+        return () => {
+            if (unsubscribe) unsubscribe();
+        };
+
+    }, [db, session, resetFlow, activeAmbulanceCase, activeGarageRequest]);
+
+    const servicesByCat = serviceCards.reduce((acc, service) => {
+        if (!acc[service.category]) {
+            acc[service.category] = [];
+        }
+        acc[service.category].push(service);
+        return acc;
+    }, {} as Record<string, typeof serviceCards>);
+
+    const containerVariants = {
+        hidden: { opacity: 0 },
+        visible: { opacity: 1, transition: { staggerChildren: 0.08, delayChildren: 0.1 } },
+    };
+
+    const itemVariants = {
+        hidden: { opacity: 0, y: 15 },
+        visible: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 100 } },
+    };
+    
+    if (isLoading) {
+        return null;
     }
-    const filtered = serviceData.filter(service => 
-      service.label.toLowerCase().includes(query) ||
-      service.title.toLowerCase().includes(query)
+    
+    const activeService = activeRide || activeAmbulanceCase || activeGarageRequest;
+
+    return (
+        <div className="h-full w-full flex flex-col">
+            <div className="flex-1 relative">
+                <div className="absolute inset-0 z-0">
+                    <LiveMap
+                        ref={liveMapRef}
+                        driverLocation={activeRide?.driverDetails?.location as any}
+                        riderLocation={activeRide?.pickup?.location as any}
+                        routeGeometry={activeRide?.routeGeometry}
+                        isTripInProgress={activeRide?.status === 'in-progress'}
+                    />
+                </div>
+            </div>
+            <div className="z-10 p-4">
+                <AnimatePresence mode="wait">
+                    {activeService ? (
+                        <RideStatus 
+                            key="ride-status"
+                            ride={activeService} 
+                            isGarageRequest={!!activeGarageRequest}
+                            onCancel={resetFlow} 
+                            onDone={resetFlow}
+                        />
+                    ) : (
+                        <MotionDiv 
+                            key="selection"
+                            className="space-y-8"
+                            initial={{y: 200, opacity: 0}}
+                            animate={{y: 0, opacity: 1}}
+                            exit={{y: 200, opacity: 0}}
+                            transition={{type: 'spring', stiffness: 100, damping: 20}}
+                        >
+                            <Card className="shadow-2xl">
+                                <CardHeader className="text-center">
+                                    <CardTitle>How can we help you today?</CardTitle>
+                                    <CardDescription>Choose a service to get started.</CardDescription>
+                                </CardHeader>
+                                <CardContent>
+                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                        {serviceCards.map((service, index) => (
+                                             <Link key={service.title} href={service.href} legacyBehavior>
+                                                <a onClick={(e) => {
+                                                    if (service.href === '#') {
+                                                        e.preventDefault();
+                                                        toast({ title: 'Coming Soon!', description: 'This feature is under development.' });
+                                                    }
+                                                }}>
+                                                    <Card className="h-full transition-all text-center bg-background/80 backdrop-blur-sm hover:shadow-lg hover:border-primary/50">
+                                                        <CardContent className="p-4 flex flex-col items-center justify-center gap-2">
+                                                            <div className={`p-3 rounded-full ${service.iconBg}`}>
+                                                                <service.icon className={`w-6 h-6 ${service.color}`} />
+                                                            </div>
+                                                            <p className="font-semibold text-sm">{service.title}</p>
+                                                        </CardContent>
+                                                    </Card>
+                                                </a>
+                                            </Link>
+                                        ))}
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        </MotionDiv>
+                    )}
+                </AnimatePresence>
+            </div>
+        </div>
     );
-    setServices(filtered);
-  };
-  
-  const handleServiceClick = (service: any) => {
-    if (service.onClick) {
-      service.onClick();
-    } else if (service.href) {
-      router.push(service.href);
-    }
-  };
-
-  return (
-    <>
-      <main id="main" className="relative z-10 p-4">
-        <section className="mx-auto max-w-7xl">
-          <div className="rounded-3xl border border-border bg-card/50 p-5 sm:p-8 md:p-10 shadow-xl backdrop-blur-sm">
-            <div className="text-center">
-              <h1 className="text-3xl sm:text-4xl md:text-5xl tracking-tight font-semibold">
-                How can we help you today?
-              </h1>
-              <p className="mt-2 text-base sm:text-lg text-muted-foreground font-normal">
-                Choose a service to get started.
-              </p>
-
-              <div className="mt-6 relative max-w-xl mx-auto">
-                <label htmlFor="serviceSearch" className="sr-only">Search services</label>
-                <div className="pointer-events-none absolute inset-y-0 left-0 pl-3 flex items-center">
-                  <Search className="h-4 w-4 text-muted-foreground" />
-                </div>
-                <Input
-                  id="serviceSearch"
-                  type="text"
-                  autoComplete="off"
-                  className="w-full rounded-xl border-border bg-background pl-9 pr-24 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary"
-                  placeholder="Search services (e.g., ride, lab, appointment)"
-                  value={searchQuery}
-                  onChange={handleSearch}
-                />
-                <div className="absolute inset-y-0 right-0 mr-1.5 my-1.5 flex items-center gap-1.5">
-                  <Button variant="ghost" size="icon" className="h-8 w-8" title="Voice search">
-                    <Mic className="h-4 w-4" />
-                  </Button>
-                  {searchQuery && (
-                    <Button variant="ghost" size="icon" className="h-8 w-8" title="Clear search" onClick={() => { setSearchQuery(''); setServices(serviceData);}}>
-                      <X className="h-4 w-4" />
-                    </Button>
-                  )}
-                </div>
-              </div>
-
-              <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
-                <Button variant="ghost" className="rounded-full px-3 py-1.5 text-xs font-medium">
-                  <MapPin className="h-3.5 w-3.5 mr-1.5" /> Nearest clinic
-                </Button>
-                <Button variant="ghost" className="rounded-full px-3 py-1.5 text-xs font-medium">
-                  <History className="h-3.5 w-3.5 mr-1.5" /> Recently used
-                </Button>
-              </div>
-            </div>
-
-            <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
-              {services.map(service => (
-                <ServiceCard key={service.id} service={service} onClick={() => handleServiceClick(service)} />
-              ))}
-            </div>
-
-            {services.length === 0 && searchQuery && (
-                 <div className="mt-4 rounded-xl border border-border bg-muted/50 p-5 text-center">
-                    <div className="mx-auto inline-flex h-10 w-10 items-center justify-center rounded-full bg-background border">
-                        <Search className="h-4 w-4 text-muted-foreground"/>
-                    </div>
-                    <p className="mt-2 text-sm text-muted-foreground">No services match your search.</p>
-                </div>
-            )}
-
-            <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
-              <Button variant="outline" className="backdrop-blur">
-                <MessageCircle className="h-4 w-4 mr-2" /> Start a conversation
-              </Button>
-              <Button className="bg-emerald-500 text-black hover:bg-emerald-400">
-                <Phone className="h-4 w-4 mr-2" /> Request a callback
-              </Button>
-            </div>
-          </div>
-        </section>
-
-        <AlertDialog open={isSosModalOpen} onOpenChange={setIsSosModalOpen}>
-            <AlertDialogContent>
-                <AlertDialogHeader>
-                    <div className="flex items-start gap-3">
-                        <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-red-500/20 ring-1 ring-red-500/50 text-red-600">
-                            <AlertTriangle className="h-5 w-5" />
-                        </span>
-                        <div>
-                        <AlertDialogTitle>Confirm Emergency SOS</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            We will connect you to emergency services and share your contact details.
-                        </AlertDialogDescription>
-                        </div>
-                    </div>
-                </AlertDialogHeader>
-                <AlertDialogFooter className="mt-5 grid grid-cols-2 gap-3">
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction asChild>
-                        <a href="tel:112" className={cn(buttonVariants({variant: "destructive"}), "bg-red-600 hover:bg-red-700")}>
-                           <Phone className="h-4 w-4 mr-2" /> Call now
-                        </a>
-                    </AlertDialogAction>
-                </AlertDialogFooter>
-            </AlertDialogContent>
-        </AlertDialog>
-      </main>
-    </>
-  )
 }

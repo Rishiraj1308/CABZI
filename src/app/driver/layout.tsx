@@ -1,4 +1,5 @@
 
+
 'use client'
 
 import React, { useState, useEffect, useRef, useCallback, createContext, useContext } from 'react'
@@ -260,7 +261,7 @@ function DriverLayoutContent({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     // This effect will redirect the user away from any page in the /driver route
     // except for the onboarding page.
-    if (!pathname.includes('/driver/onboarding')) {
+    if (pathname !== '/driver/onboarding') {
       toast({
         title: "Driver Dashboard Disabled",
         description: "This feature is temporarily unavailable while we work on other parts of the app.",

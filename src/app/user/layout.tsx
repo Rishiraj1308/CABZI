@@ -50,45 +50,6 @@ function LanguageToggle() {
     )
 }
 
-function LocationDisplay() {
-  const [locationAddress, setLocationAddress] = useState('Locating...');
-
-  useEffect(() => {
-    let isMounted = true;
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        async (position) => {
-          if (!isMounted) return;
-          const { latitude, longitude } = position.coords;
-          try {
-            const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=14`);
-            if (!response.ok || !isMounted) return;
-            const data = await response.json();
-            const address = data.address;
-            const primaryLocation = address.suburb || address.neighbourhood || address.city || address.town || address.village;
-             if (isMounted) setLocationAddress(primaryLocation || data.display_name.split(',')[0]);
-          } catch (error) {
-             if (isMounted) setLocationAddress('Location details unavailable');
-          }
-        },
-        () => {
-           if (isMounted) setLocationAddress('Location access denied');
-        }
-      );
-    } else {
-       if (isMounted) setLocationAddress('Geolocation not supported');
-    }
-    return () => { isMounted = false; };
-  }, []);
-
-  return (
-    <div className="hidden md:flex items-center gap-2 rounded-full border border-border bg-card/50 px-3 py-2 text-sm backdrop-blur">
-      <MapPin className="h-4 w-4 text-muted-foreground" />
-      <span className="font-medium text-foreground truncate">{locationAddress}</span>
-    </div>
-  );
-}
-
 
 function ThemeToggle() {
     const { theme, setTheme } = useTheme()
@@ -186,7 +147,9 @@ export default function UserLayout({
                             </Button>
                         </SheetTrigger>
                         
-                        <LocationDisplay />
+                        <Link href="/user" className="hidden md:inline-flex items-center gap-2 rounded-full border border-border bg-card/50 px-3 py-2 backdrop-blur hover:bg-accent/80 focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-white/30" aria-label="Home">
+                            <BrandLogo iconClassName='w-8 h-8' />
+                        </Link>
 
                         <div className="flex items-center gap-2">
                             <ThemeToggle />

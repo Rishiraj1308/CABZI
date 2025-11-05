@@ -185,7 +185,7 @@ export default function SupportPage() {
                       <DialogContent>
                           <DialogHeader>
                               <DialogTitle>Request Roadside Assistance</DialogTitle>
-                              <DialogDescription>Tell us what's wrong, and we'll find a nearby mechanic for you. A fixed visit charge may apply.</DialogDescription>
+                              <DialogDescription>Tell us what&apos;s wrong, and we&apos;ll find a nearby mechanic for you. A fixed visit charge may apply.</DialogDescription>
                           </DialogHeader>
                           <div className="py-4">
                             <RadioGroup onValueChange={setSelectedIssue} value={selectedIssue}>

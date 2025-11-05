@@ -4,7 +4,7 @@
 import React, { createContext, useContext, useEffect, useState, useMemo, type ReactNode } from 'react';
 import { initializeApp, getApps, getApp, type FirebaseApp } from 'firebase/app';
 import { getAuth, type Auth, onAuthStateChanged, type User } from 'firebase/auth';
-import { getFirestore, type Firestore, enableIndexedDbPersistence, initializeFirestore, memoryLocalCache } from 'firebase/firestore';
+import { getFirestore, type Firestore, enableIndexedDbPersistence } from 'firebase/firestore';
 import { getFunctions, type Functions } from 'firebase/functions';
 import { getMessaging, type Messaging } from 'firebase/messaging';
 import { FirebaseErrorListener } from '@/components/FirebaseErrorListener';
@@ -51,9 +51,16 @@ export function FirebaseProviderClient({ children }: { children: ReactNode }) {
         app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
         
         const auth = getAuth(app);
-        const db = initializeFirestore(app, {
-            localCache: memoryLocalCache(),
+        const db = getFirestore(app);
+        
+        enableIndexedDbPersistence(db).catch((err) => {
+          if (err.code == 'failed-precondition') {
+            console.warn("Multiple tabs open, persistence can only be enabled in one. Offline features might be limited.");
+          } else if (err.code == 'unimplemented') {
+            console.log("The current browser does not support all of the features required to enable persistence.");
+          }
         });
+
         const functions = getFunctions(app);
         let messaging: Messaging | null = null;
         if ('Notification' in window && 'serviceWorker' in navigator && 'PushManager' in window) {

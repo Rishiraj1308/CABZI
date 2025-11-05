@@ -5,7 +5,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import BrandLogo, { NewLogoIcon } from '@/components/brand-logo'
-import { ArrowRight, Car, Wrench, Ambulance, Landmark, CheckCircle, Shield, IndianRupee, Signal, Wifi, Battery, Sun, Moon, Globe, User, LogIn, Star, MapPin, Clock, Bike, Phone, Share2, Siren, Send, ScanLine, NotebookText, Banknote, Sparkles, PiggyBank, HeartHandshake, CircleHelp, Hand, Briefcase, Home, MessageSquare, Calendar, Building, BrainCircuit, AppWindow } from 'lucide-react'
+import { ArrowRight, Car, Wrench, Ambulance, Landmark, CheckCircle, Shield, IndianRupee, Signal, Wifi, Battery, Sun, Moon, Globe, User, LogIn, Star, MapPin, Clock, Bike, Phone, Share2, Siren, Send, ScanLine, NotebookText, Banknote, Sparkles, PiggyBank, HeartHandshake, CircleHelp, Hand, Briefcase, Home, MessageSquare, Calendar, Building, BrainCircuit, AppWindow, Menu } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
@@ -18,6 +18,9 @@ import { BikeIcon, AutoIcon, CabIcon } from '@/components/icons'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import dynamic from 'next/dynamic'
 import { Progress } from '@/components/ui/progress'
+import CuroMindReveal from '@/components/CuroMindReveal'
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
+import { Separator } from '@/components/ui/separator'
 
 
 const LiveMap = dynamic(() => import('@/components/live-map'), {
@@ -285,34 +288,40 @@ export default function HomePage() {
   ];
 
   return (
-      <div className="flex flex-col min-h-screen bg-background">
+      <div className={cn("flex flex-col min-h-screen bg-background aurora-background")}>
           <header className="sticky top-0 z-50 w-full border-b bg-background/80 backdrop-blur-sm">
-            <div className="container flex h-14 items-center">
-                <Link href="/" className="mr-6 flex items-center gap-2">
+            <div className="container flex h-14 items-center justify-between">
+                <Link href="/" className="flex items-center gap-2">
                     <BrandLogo hideText={false} iconClassName="w-8 h-8" />
                 </Link>
-              <div className="flex flex-1 items-center justify-end gap-2">
-                <LanguageToggle />
-                <ThemeToggle />
-                 <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                        <Button variant="outline">
-                            <User className="mr-2 h-4 w-4"/> Login / Signup
-                        </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                        <DropdownMenuItem asChild><Link href="/login?role=user">Login as User</Link></DropdownMenuItem>
-                        <DropdownMenuItem asChild><Link href="/login?role=driver">Login as Partner</Link></DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem asChild><Link href="/admin" className="text-xs">Admin Panel</Link></DropdownMenuItem>
-                    </DropdownMenuContent>
-                 </DropdownMenu>
-              </div>
+                <div className="flex items-center gap-1 sm:gap-2">
+                    <LanguageToggle />
+                    <ThemeToggle />
+                    <Sheet>
+                        <SheetTrigger asChild>
+                           <Button variant="outline" size="sm" className="h-9">
+                                <Menu className="w-4 h-4 sm:hidden"/>
+                                <span className="hidden sm:inline">Login / Signup</span>
+                            </Button>
+                        </SheetTrigger>
+                        <SheetContent>
+                            <SheetHeader>
+                                <SheetTitle className="text-left"><BrandLogo/></SheetTitle>
+                            </SheetHeader>
+                            <div className="grid gap-4 py-4">
+                                <Button asChild variant="secondary"><Link href="/login?role=user">Login as User</Link></Button>
+                                <Button asChild variant="outline"><Link href="/login?role=driver">Login as Partner</Link></Button>
+                                <Separator className="my-2"/>
+                                <Button asChild variant="ghost" className="text-xs text-muted-foreground"><Link href="/admin">Admin Panel</Link></Button>
+                            </div>
+                        </SheetContent>
+                    </Sheet>
+                </div>
             </div>
           </header>
           <main className="flex-1">
             {/* Hero Section */}
-            <section className="relative py-24 md:py-32 lg:py-32 overflow-hidden">
+            <section className="relative py-20 md:py-28 lg:py-32 overflow-hidden">
                 <div className="absolute inset-0 -z-10 animate-text-gradient bg-gradient-to-br from-primary/10 via-red-500/10 to-amber-500/10"></div>
                 <div className="container grid lg:grid-cols-2 gap-10 items-center">
                     <motion.div 
@@ -323,19 +332,19 @@ export default function HomePage() {
                     >
                         <motion.h1 
                             variants={itemVariants}
-                            className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold tracking-tighter bg-clip-text text-transparent bg-gradient-to-b from-foreground to-foreground/70 font-headline"
+                            className="text-3xl sm:text-5xl md:text-6xl font-extrabold tracking-tighter bg-clip-text text-transparent bg-gradient-to-b from-foreground to-foreground/70 font-headline"
                         >
                            Your Partner On The Road. Fair for Everyone.
                         </motion.h1>
                         <motion.p 
                            variants={itemVariants}
-                           className="mt-4 text-lg font-semibold text-destructive"
+                           className="mt-4 text-base sm:text-lg font-semibold text-destructive"
                         >
                            Psst... other apps take 30% of your earnings. Just saying.
                         </motion.p>
                          <motion.p 
                             variants={itemVariants}
-                            className="mx-auto lg:mx-0 mt-6 max-w-xl text-lg text-muted-foreground"
+                            className="mx-auto lg:mx-0 mt-6 max-w-xl text-base sm:text-lg text-muted-foreground"
                         >
                             Curocity is more than a ride. It's a promise of fair fares for riders, 0% commission for partners, and an integrated safety network that looks out for you on every trip.
                         </motion.p>
@@ -533,6 +542,8 @@ export default function HomePage() {
                     </div>
                 </div>
             </section>
+            
+            <CuroMindReveal />
 
              {/* Partner CTA Section */}
             <section className="py-20 md:py-24">

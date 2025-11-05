@@ -299,24 +299,14 @@ export default function RideStatus({
                 return (
                      <div className="space-y-4 animate-fade-in">
                         <CardHeader className="p-0 text-center">
-                            <CardTitle>Mechanic is on the way!</CardTitle>
+                            <CardTitle>Mechanic is on the way</CardTitle>
                             <CardDescription>{ride.mechanicName}</CardDescription>
                         </CardHeader>
-                        <div className="p-3 rounded-lg bg-muted flex items-center gap-3">
-                            <Avatar className="w-12 h-12">
-                                <AvatarImage src={ride.mechanicPhotoUrl} alt={ride.mechanicName} />
-                                <AvatarFallback>{ride.mechanicName?.substring(0,1)}</AvatarFallback>
-                            </Avatar>
-                            <div className="flex-1">
-                                <p className="font-bold">{ride.mechanicName}</p>
-                                <p className="text-sm text-muted-foreground">{ride.mechanicRating || '4.8'} <Star className="w-3 h-3 inline-block -mt-1 ml-0.5" /></p>
-                            </div>
-                            <p className="font-bold text-lg">OTP: {ride.otp}</p>
-                        </div>
                          <div className="p-4 rounded-lg bg-muted text-center">
                             <p className="text-sm text-muted-foreground">Estimated Arrival Time</p>
                             <p className="text-4xl font-bold text-primary">{ride.eta ? `${Math.ceil(ride.eta)} min` : '...'}</p>
                         </div>
+                         <Button className="w-full" asChild><a href={`tel:${ride.mechanicPhone}`}><Phone className="mr-2 h-4 w-4"/> Call Mechanic</a></Button>
                      </div>
                 );
             case 'bill_sent':
@@ -596,4 +586,3 @@ export default function RideStatus({
     </motion.div>
   );
 }
-

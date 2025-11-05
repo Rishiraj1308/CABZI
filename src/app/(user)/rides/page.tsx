@@ -8,8 +8,6 @@ import { useFirebase } from '@/firebase/client-provider'
 import { collection, query, where, orderBy, onSnapshot, Timestamp } from 'firebase/firestore'
 import { useToast } from '@/hooks/use-toast'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Badge } from '@/components/ui/badge'
-
 
 type ActivityStatus = 'Completed' | 'Cancelled' | 'Pending' | 'Confirmed' | string;
 

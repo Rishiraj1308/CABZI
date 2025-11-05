@@ -5,7 +5,7 @@ import React, { useEffect, ReactNode } from 'react';
 import { errorEmitter, FirestorePermissionError } from '@/lib/error-handling';
 import { useToast } from '@/hooks/use-toast';
 import { CodeBlock } from '@/components/code-block';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
 
 export function FirebaseErrorListener() {
@@ -19,7 +19,7 @@ export function FirebaseErrorListener() {
       toast({
         variant: 'destructive',
         duration: 20000,
-        title: 'Firestore: Missing or Insufficient Permissions',
+        title: "Firestore: Missing or Insufficient Permissions",
         description: (
           <div className="space-y-4 pt-2">
             <AlertDescription>

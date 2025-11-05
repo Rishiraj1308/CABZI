@@ -1,136 +1,18 @@
-rules_version = '2';
+rules_version='2'
 
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    // Helper functions
-    function isSignedIn() {
-      return request.auth != null;
+    match /{document=**} {
+      // This rule allows anyone with your database reference to view, edit,
+      // and delete all data in your database. It is useful for getting
+      // started, but it is configured to expire after 30 days because it
+      // leaves your app open to attackers. At that time, all client
+      // requests to your database will be denied.
+      //
+      // Make sure to write security rules for your app before that time, or
+      // else all client requests to your database will be denied until you
+      // update your rules.
+      allow read, write: if request.time < timestamp.date(2025, 12, 5);
     }
-
-    function isUser(userId) {
-      return isSignedIn() && request.auth.uid == userId;
-    }
-
-    // Users can only read/write their own data
-    match /users/{userId} {
-      allow read, update: if isUser(userId);
-      allow create: if isSignedIn();
-    }
-
-    // Partners (drivers) can only read/write their own data.
-    // Admins can read/update all partners.
-    match /partners/{partnerId} {
-        // A user can create their own partner profile
-        allow create: if isSignedIn();
-        // A partner can read their own data and update specific fields like location/status
-        allow read: if isSignedIn();
-        allow update: if isUser(get(/databases/$(database)/documents/partners/$(partnerId)).data.userId);
-    }
-    
-    // Mechanics can only read/write their own data
-     match /mechanics/{mechanicId} {
-        allow create: if isSignedIn();
-        allow read, update: if isUser(get(/databases/$(database)/documents/mechanics/$(mechanicId)).data.userId);
-    }
-
-    // Hospitals (Cure partners) can only read/write their own data
-    // This also covers their subcollections like 'fleet' and 'drivers'
-    match /ambulances/{hospitalId} {
-        allow create: if isSignedIn();
-        allow read, update: if isUser(get(/databases/$(database)/documents/ambulances/$(hospitalId)).data.userId);
-        
-        match /fleet/{ambulanceId} {
-            allow read, create, update, delete: if isUser(get(/databases/$(database)/documents/ambulances/$(hospitalId)).data.userId);
-        }
-        
-        match /drivers/{driverId} {
-            allow read, create, update, delete: if isUser(get(/databases/$(database)/documents/ambulances/$(hospitalId)).data.userId);
-        }
-    }
-    
-    // Doctors can only be managed by their assigned hospital admin
-    match /ambulances/{hospitalId}/doctors/{doctorId} {
-       allow read, create, update, delete: if isUser(get(/databases/$(database)/documents/ambulances/$(hospitalId)).data.userId);
-    }
-    
-    // Global doctors collection for login verification
-    match /doctors/{doctorId} {
-        allow read: if isSignedIn();
-        allow create, update: if isUser(get(/databases/$(database)/documents/ambulances/$(request.resource.data.hospitalId)).data.userId);
-    }
-    
-    // Ambulance drivers collection for login verification
-    match /ambulanceDrivers/{driverId} {
-         allow read: if isSignedIn();
-         allow create, update: if isUser(get(/databases/$(database)/documents/ambulances/$(request.resource.data.hospitalId)).data.userId);
-    }
-
-    // Rides can be created by any signed-in user.
-    // They can only be read/updated by the rider or the assigned driver.
-    match /rides/{rideId} {
-      allow create: if isSignedIn();
-      allow read, update: if isSignedIn() && (
-        request.auth.uid == resource.data.riderId || 
-        (resource.data.driverId != null && request.auth.uid == resource.data.driverId)
-      );
-      
-      // Chat messages within a ride
-      match /messages/{messageId} {
-          allow read, create: if isSignedIn() && (
-            request.auth.uid == get(/databases/$(database)/documents/rides/$(rideId)).data.riderId ||
-            request.auth.uid == get(/databases/$(database)/documents/rides/$(rideId)).data.driverId
-          );
-      }
-    }
-
-    // Garage requests (ResQ) follow similar logic to rides
-    match /garageRequests/{reqId} {
-      allow create: if isSignedIn();
-      allow read, update: if isSignedIn() && (
-        request.auth.uid == resource.data.driverId || 
-        (resource.data.mechanicId != null && request.auth.uid == resource.data.mechanicId)
-      );
-    }
-
-    // Emergency cases (Cure) are more complex
-    match /emergencyCases/{caseId} {
-      allow create: if isSignedIn();
-      // Rider who created it can read/update it (e.g., cancel)
-      // Assigned hospital can read/update it
-      allow read, update: if isSignedIn() && (
-            request.auth.uid == resource.data.riderId || 
-            (resource.data.assignedPartner != null && request.auth.uid == get(/databases/$(database)/documents/ambulances/$(resource.data.assignedPartner.id)).data.userId)
-        );
-    }
-    
-    // Appointments can be created by a user, and read/updated by the user or the hospital involved.
-    match /appointments/{apptId} {
-        allow create: if isSignedIn();
-        allow read, update: if isSignedIn() && (
-            request.auth.uid == resource.data.patientId ||
-            request.auth.uid == get(/databases/$(database)/documents/ambulances/$(resource.data.hospitalId)).data.userId
-        );
-    }
-    
-    // Support queries can be created by any user, but only read/updated by admins (future scope)
-    // or the user who created it.
-    match /supportQueries/{queryId} {
-        allow create: if isSignedIn();
-        allow read: if isUser(resource.data.userId); // userId should be stored on the ticket
-        // allow read, update: if isAdmin(); // Future admin rule
-    }
-    
-    // Company settings are read-only for authenticated users, writable only by admins (future).
-    match /company/settings {
-      allow read: if isSignedIn();
-      // allow write: if isAdmin();
-    }
-    
-    // Expenses can only be written by admins (future).
-    match /expenses/{expenseId} {
-      // allow read, write: if isAdmin();
-    }
-
   }
 }

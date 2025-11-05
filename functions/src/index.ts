@@ -7,7 +7,7 @@
 
 import { onDocumentCreated, onDocumentUpdated } from 'firebase-functions/v2/firestore';
 import { onSchedule } from "firebase-functions/v2/scheduler";
-import { getFirestore, GeoPoint, Timestamp, FieldValue, serverTimestamp } from 'firebase-admin/firestore';
+import { getFirestore, GeoPoint, Timestamp, FieldValue } from 'firebase-admin/firestore';
 import { getMessaging } from 'firebase-admin/messaging';
 import { initializeApp, getApps } from 'firebase-admin/app';
 import { HttpsError, onCall } from "firebase-functions/v2/https";
@@ -153,9 +153,9 @@ const handleRideDispatch = async (initialRideData: any, rideId: string) => {
 const handleGarageRequestDispatch = async (requestData: any, requestId: string) => {
     const requestRef = db.doc(`garageRequests/${requestId}`);
     const userLoc = requestData.location as GeoPoint;
-    const locationAddress = await getAddressFromCoords(userLoc.latitude, userLoc.longitude);
     
-    // Enrich the document with the address first
+    // First, enrich the document with the address
+    const locationAddress = await getAddressFromCoords(userLoc.latitude, userLoc.longitude);
     await requestRef.update({ locationAddress });
     
     const mechanicsSnapshot = await db
@@ -201,17 +201,17 @@ const handleGarageRequestDispatch = async (requestData: any, requestId: string) 
     }
     
     const distanceToUser = targetMechanic.distanceToUser || 0;
-    const eta = distanceToUser * 3; // 3 mins per km for a mechanic
+    const eta = distanceToUser * 3;
 
     const payload = {
         type: "new_garage_request",
         requestId,
-        userId: requestData.userId, 
+        userId: requestData.userId,
         userName: requestData.userName,
         userPhone: requestData.userPhone,
         issue: requestData.issue,
         location: JSON.stringify(requestData.location),
-        locationAddress,
+        locationAddress, // Include the human-readable address
         status: requestData.status,
         otp: requestData.otp,
         createdAt: requestData.createdAt?.toMillis?.().toString() ?? "",
@@ -369,7 +369,7 @@ export const emergencyCaseUpdater = onDocumentUpdated(
 
     if (message) {
       await logRef.add({
-        timestamp: serverTimestamp(),
+        timestamp: FieldValue.serverTimestamp(),
         message,
         before,
         after

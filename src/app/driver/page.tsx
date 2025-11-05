@@ -1,5 +1,4 @@
 
-
 'use client'
 
 import React, { useState, useEffect, useRef, useCallback } from 'react'
@@ -240,7 +239,30 @@ export default function DriverDashboardPage() {
       });
       setJobRequest(null);
     }
-  };  
+  };
+  
+  const handleRideStatusUpdate = async (newStatus: RideData['status']) => {
+    if (!db || !activeRide) return;
+    const rideRef = doc(db, 'rides', activeRide.id);
+    try {
+        await updateDoc(rideRef, { status: newStatus });
+        toast({ title: "Status Updated", description: `Ride is now ${newStatus}`});
+    } catch (error) {
+        toast({ variant: "destructive", title: "Update Failed", description: "Could not update ride status."})
+    }
+  }
+
+  const handleVerifyOtp = async () => {
+    if (enteredOtp !== activeRide?.otp) {
+        toast({ variant: 'destructive', title: 'Invalid OTP' });
+        return;
+    }
+    await handleRideStatusUpdate('in-progress');
+  }
+
+  const handleEndRide = async () => {
+      await handleRideStatusUpdate('payment_pending');
+  }
 
   const renderActiveRide = () => {
         if (!activeRide) return null;
@@ -269,7 +291,7 @@ export default function DriverDashboardPage() {
                            <Label htmlFor="otp">Enter Rider's OTP</Label>
                            <div className="flex gap-2">
                               <Input id="otp" value={enteredOtp} onChange={(e) => setEnteredOtp(e.target.value)} placeholder="4-Digit OTP" maxLength={4}/>
-                              <Button><CheckCircle className="w-4 h-4 mr-2"/>Verify & Start</Button>
+                              <Button onClick={handleVerifyOtp}><CheckCircle className="w-4 h-4 mr-2"/>Verify & Start</Button>
                            </div>
                         </div>
                      )}
@@ -282,10 +304,10 @@ export default function DriverDashboardPage() {
                 </CardContent>
                 <CardFooter>
                     {activeRide.status === 'accepted' && (
-                        <Button className="w-full" size="lg">Arrived at Pickup</Button>
+                        <Button className="w-full" size="lg" onClick={() => handleRideStatusUpdate('arrived')}>Arrived at Pickup</Button>
                     )}
                     {activeRide.status === 'in-progress' && (
-                        <Button className="w-full bg-destructive hover:bg-destructive/80" size="lg">End Trip</Button>
+                        <Button className="w-full bg-destructive hover:bg-destructive/80" size="lg" onClick={handleEndRide}>End Trip</Button>
                     )}
                 </CardFooter>
             </Card>
@@ -300,14 +322,14 @@ export default function DriverDashboardPage() {
                     <CardHeader>
                         <div className="flex justify-between items-center">
                             <div>
-                                <CardTitle>Your Dashboard</CardTitle>
-                                <CardDescription className="text-xs">{format(currentTime, 'EEEE, d MMMM yyyy')}</CardDescription>
+                                <CardTitle className="text-xl md:text-2xl">Your Dashboard</CardTitle>
+                                <CardDescription className="text-xs">{format(currentTime, 'EEEE, d MMMM')}</CardDescription>
                             </div>
                             <div className="text-right">
-                                <p className="font-bold text-2xl font-mono">{format(currentTime, 'h:mm:ss a')}</p>
+                                <p className="font-bold text-lg md:text-2xl font-mono">{format(currentTime, 'h:mm a')}</p>
                                  <div className="flex items-center space-x-2 justify-end">
                                     <Switch id="online-status" checked={isOnline} onCheckedChange={handleAvailabilityChange} />
-                                    <Label htmlFor="online-status" className={cn("font-semibold", isOnline ? "text-green-600" : "text-muted-foreground")}>
+                                    <Label htmlFor="online-status" className={cn("font-semibold text-xs", isOnline ? "text-green-600" : "text-muted-foreground")}>
                                         {isOnline ? "ONLINE" : "OFFLINE"}
                                     </Label>
                                 </div>
@@ -315,10 +337,10 @@ export default function DriverDashboardPage() {
                         </div>
                     </CardHeader>
                     {isOnline ? (
-                        <CardContent className="text-center py-12">
-                            <SearchingIndicator partnerType="path" className="w-32 h-32" />
-                            <h3 className="text-3xl font-bold mt-4">Waiting for Rides...</h3>
-                            <p className="text-muted-foreground">You are online and ready to accept jobs.</p>
+                        <CardContent className="text-center py-8 md:py-12">
+                            <SearchingIndicator partnerType="path" className="w-24 h-24 md:w-32 md:h-32" />
+                            <h3 className="text-xl md:text-3xl font-bold mt-4">Waiting for Rides...</h3>
+                            <p className="text-muted-foreground text-sm">You are online and ready to accept jobs.</p>
                         </CardContent>
                     ) : (
                         <CardContent className="text-center py-12">

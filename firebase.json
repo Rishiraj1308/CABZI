@@ -1,19 +1,21 @@
 {
   "firestore": {
     "database": "(default)",
-    "location": "us-central1",
+    "location": "nam5",
     "rules": "firestore.rules",
     "indexes": "firestore.indexes.json"
   },
   "functions": {
-    "predeploy": ["npm --prefix functions run build"],
+    "predeploy": [
+      "npm --prefix functions run build"
+    ],
     "source": "functions"
   },
   "storage": {
     "rules": "storage.rules"
   },
   "hosting": {
-    "public": "out", 
+    "public": "out",
     "ignore": [
       "firebase.json",
       "**/.*",

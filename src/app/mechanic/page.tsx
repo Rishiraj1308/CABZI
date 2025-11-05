@@ -31,7 +31,7 @@ import { Input } from '@/components/ui/input'
 import { usePartnerData } from './layout'
 import { Switch } from '@/components/ui/switch'
 import { IndianRupee, History, Power, Phone } from 'lucide-react'
-import { collection, query, where, onSnapshot, limit, orderBy, Timestamp, FieldValue, serverTimestamp } from 'firebase/firestore'
+import { collection, query, where, onSnapshot, limit, orderBy, Timestamp, FieldValue } from 'firebase/firestore'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 
@@ -129,20 +129,20 @@ export default function ResQDashboard() {
     async (isTimeout = false) => {
       if (!jobRequest || !mechanicData?.id || !db) return;
       if (requestTimerRef.current) clearInterval(requestTimerRef.current);
+
+      setProcessedRequestIds((prev) => new Set(prev).add(jobRequest.id));
       
-      const declinedJobId = jobRequest.id;
-      setProcessedRequestIds((prev) => new Set(prev).add(declinedJobId));
-      setJobRequest(null);
-
-      await updateDoc(doc(db, 'garageRequests', declinedJobId), {
-        rejectedBy: arrayUnion(mechanicData.id),
-      });
-
-      if (isTimeout) {
-        toast({ variant: 'destructive', title: 'Request Timed Out' });
+      // Only update firestore if it's a manual decline, not a timeout
+      if (!isTimeout) {
+          await updateDoc(doc(db, 'garageRequests', jobRequest.id), {
+            rejectedBy: arrayUnion(mechanicData.id),
+          });
+          toast({ title: 'Job Declined' });
       } else {
-        toast({ title: 'Job Declined' });
+        toast({ variant: 'destructive', title: 'Request Timed Out' });
       }
+
+      setJobRequest(null);
     },
     [jobRequest, mechanicData, db, toast]
   );
@@ -183,7 +183,8 @@ export default function ResQDashboard() {
       setRequestTimeout((p) => {
         if (p <= 1) {
           clearInterval(t);
-          handleDeclineJob(true);
+          setJobRequest(null); // Just close the dialog on timeout
+          toast({ variant: 'destructive', title: "Request Timed Out" });
           return 0;
         }
         return p - 1;
@@ -191,16 +192,14 @@ export default function ResQDashboard() {
     }, 1000);
     requestTimerRef.current = t;
     return () => clearInterval(t);
-  }, [jobRequest, handleDeclineJob]);
+  }, [jobRequest, toast]);
 
   // Accept job
   const handleAcceptJob = async () => {
     if (!jobRequest || !mechanicData || !db) return;
     if (requestTimerRef.current) clearInterval(requestTimerRef.current);
   
-    const acceptedJobId = jobRequest.id;
-    const jobRef = doc(db, 'garageRequests', acceptedJobId);
-
+    const jobRef = doc(db, 'garageRequests', jobRequest.id);
     try {
       await runTransaction(db, async (trx) => {
         const snap = await trx.get(jobRef);
@@ -218,9 +217,9 @@ export default function ResQDashboard() {
   
       setAcceptedJob({ ...jobRequest, status: 'accepted' } as JobRequest);
       setJobRequest(null);
-      setProcessedRequestIds(prev => new Set(prev).add(acceptedJobId));
+      setProcessedRequestIds(prev => new Set(prev).add(jobRequest.id));
       setJobStatus('navigating');
-      localStorage.setItem('activeJobId', acceptedJobId);
+      localStorage.setItem('activeJobId', jobRequest.id);
   
       toast({ title: 'Job Accepted', description: 'Navigate to the user.' });
     } catch (err: any) {
@@ -596,3 +595,4 @@ export default function ResQDashboard() {
     </div>
   )
 }
+
