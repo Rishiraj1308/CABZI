@@ -7,7 +7,7 @@ import { useDb } from '@/firebase/client-provider';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Car, Wrench, Ambulance, Stethoscope, Briefcase, GraduationCap, FileText, IndianRupee, Building, User, Phone, MapPin, BedDouble, Hospital } from 'lucide-react';
+import { Car, Wrench, Ambulance, Stethoscope, Briefcase, GraduationCap, FileText, IndianRupee, Building, User, Phone, MapPin, BedDouble, Hospital, Calendar, Cake } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Label } from '@/components/ui/label';
@@ -231,6 +231,16 @@ export default function PartnerDetails({ partnerId, initialPartnerType, hospital
     const renderDoctorDetails = () => (
         <>
             <Card>
+                <CardHeader><CardTitle className="flex items-center gap-2"><User className="w-5 h-5 text-primary"/> Personal Details</CardTitle></CardHeader>
+                <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                   <DetailItem label="Full Name" value={partner.name} />
+                   <DetailItem label="Gender" value={partner.gender} />
+                   <DetailItem label="Date of Birth" value={partner.dob} />
+                   <DetailItem label="Contact Number" value={partner.phone} />
+                   <div className="md:col-span-2"><DetailItem label="Email Address" value={partner.email} /></div>
+                </CardContent>
+            </Card>
+            <Card>
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2"><Briefcase className="w-5 h-5 text-primary"/> Professional Details</CardTitle>
                 </CardHeader>
@@ -239,14 +249,15 @@ export default function PartnerDetails({ partnerId, initialPartnerType, hospital
                     <DetailItem label="Department" value={partner.department} />
                     <div className="md:col-span-2"><DetailItem label="Qualifications" value={partner.qualifications} /></div>
                     <DetailItem label="Experience" value={`${partner.experience || 'N/A'} years`} />
+                    <DetailItem label="Designation" value={partner.designation} />
                     <DetailItem label="Consultation Fee" value={`₹${partner.consultationFee?.toLocaleString() || 'N/A'}`} />
                 </CardContent>
             </Card>
              <Card>
                 <CardHeader>
-                    <CardTitle className="flex items-center gap-2"><FileText className="w-5 h-5 text-primary"/> Documents & Verification</CardTitle>
+                    <CardTitle className="flex items-center gap-2"><FileText className="w-5 h-5 text-primary"/> Medical Council Verification</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-3">
+                <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
                     <DetailItem label="Medical Registration No." value={partner.medicalRegNo} />
                     <DetailItem label="Registration Council" value={partner.regCouncil} />
                     <DetailItem label="Registration Year" value={partner.regYear} />
@@ -342,4 +353,3 @@ export default function PartnerDetails({ partnerId, initialPartnerType, hospital
     );
 }
 
-    
