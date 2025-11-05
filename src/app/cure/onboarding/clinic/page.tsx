@@ -11,7 +11,7 @@ import { useToast } from '@/hooks/use-toast'
 import Link from 'next/link'
 import BrandLogo from '@/components/brand-logo'
 import { useFirebase } from '@/firebase/client-provider'
-import { collection, addDoc, serverTimestamp, query, where, getDocs, limit } from "firebase/firestore";
+import { collection, addDoc, serverTimestamp, query, where, getDocs, limit, GeoPoint } from "firebase/firestore";
 import { ArrowLeft } from 'lucide-react'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Progress } from '@/components/ui/progress'
@@ -20,13 +20,20 @@ import dynamic from 'next/dynamic'
 import { Skeleton } from '@/components/ui/skeleton'
 import { RecaptchaVerifier, signInWithPhoneNumber, type ConfirmationResult } from 'firebase/auth'
 
+
+const LiveMap = dynamic(() => import('@/components/live-map'), {
+    ssr: false,
+    loading: () => <Skeleton className="w-full h-full bg-muted" />,
+});
+
 export default function ClinicOnboardingPage() {
     const { toast } = useToast()
     const router = useRouter()
     const { db, auth } = useFirebase();
     const [isLoading, setIsLoading] = useState(false)
     const [currentStep, setCurrentStep] = useState(1);
-    const totalSteps = 4;
+    const totalSteps = 5;
+    const mapRef = useRef<any>(null);
     
     const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
     const recaptchaVerifierRef = useRef<RecaptchaVerifier | null>(null);
@@ -45,7 +52,10 @@ export default function ClinicOnboardingPage() {
         doctorName: '',
         doctorRegNo: '',
         specialization: '',
-        // Step 4
+        // Step 4: Location
+        address: '',
+        location: null as { lat: number, lon: number } | null,
+        // Step 5
         agreedToTerms: false,
     });
 
@@ -102,6 +112,18 @@ export default function ClinicOnboardingPage() {
     
     const handlePrevStep = () => setCurrentStep(prev => prev - 1);
 
+    const handleLocationSelect = async () => {
+        if (mapRef.current) {
+            const center = mapRef.current.getCenter();
+            if (center) {
+                const address = await mapRef.current.getAddress(center.lat, center.lng);
+                handleInputChange('address', address || 'Could not fetch address');
+                handleInputChange('location', { lat: center.lat, lon: center.lng });
+                toast({ title: "Location Confirmed!", description: address });
+            }
+        }
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         
@@ -141,6 +163,7 @@ export default function ClinicOnboardingPage() {
                 partnerId: partnerId,
                 name: restOfData.clinicName,
                 businessType: 'Clinic',
+                location: formData.location ? new GeoPoint(formData.location.lat, formData.location.lon) : null,
                 type: 'cure',
                 status: 'pending_verification',
                 isOnline: false,
@@ -225,19 +248,36 @@ export default function ClinicOnboardingPage() {
                                 <Label htmlFor="doctorRegNo">Medical Registration No.*</Label>
                                 <Input id="doctorRegNo" name="doctorRegNo" value={formData.doctorRegNo} onChange={(e) => handleInputChange('doctorRegNo', e.target.value)} required />
                             </div>
-                            <div className="md:col-span-2 flex items-start space-x-2 pt-4">
-                                <Checkbox id="terms" checked={!!formData.agreedToTerms} onCheckedChange={(checked) => handleInputChange('agreedToTerms', !!checked)} />
-                                <Label htmlFor="terms" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                                I agree to Curocity's terms & conditions and consent to the verification of all documents and credentials provided.
-                                </Label>
+                        </div>
+                    </div>
+                );
+            case 5:
+                 return (
+                     <div className="space-y-6">
+                         <div className="space-y-2">
+                            <Label className="font-semibold text-lg">Set Facility Location*</Label>
+                            <CardDescription>Drag the map to pin your exact location.</CardDescription>
+                            <div className="h-48 w-full rounded-md overflow-hidden border">
+                                <LiveMap ref={mapRef} onLocationFound={(addr, coords) => {
+                                    handleInputChange('address', addr);
+                                    handleInputChange('location', coords);
+                                }} />
                             </div>
+                            <Button type="button" className="w-full" onClick={handleLocationSelect}>Confirm My Location on Map</Button>
+                            {formData.address && <p className="text-sm text-green-600 font-medium text-center">{formData.address}</p>}
+                        </div>
+                         <div className="flex items-start space-x-2 pt-4">
+                            <Checkbox id="terms" checked={!!formData.agreedToTerms} onCheckedChange={(checked) => handleInputChange('agreedToTerms', !!checked)} />
+                            <Label htmlFor="terms" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                                I agree to Curocity's terms & conditions and consent to the verification of all documents and credentials provided.
+                            </Label>
                         </div>
                     </div>
                 );
          }
     }
 
-    const stepTitles = ["Verify Phone", "Verify OTP", "Owner Details", "Facility Details & Submit"];
+    const stepTitles = ["Verify Phone", "Verify OTP", "Owner Details", "Facility Details", "Location & Final Submit"];
 
 
     return (
