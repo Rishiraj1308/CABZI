@@ -1,4 +1,3 @@
-
 'use client'
 
 import React, { useState, useEffect, useRef, useMemo } from 'react'
@@ -14,7 +13,7 @@ import { useToast } from '@/hooks/use-toast'
 import { Skeleton } from '@/components/ui/skeleton'
 import dynamic from 'next/dynamic'
 import { useFirebase } from '@/firebase/client-provider'
-import { collection, query, where, onSnapshot, doc, updateDoc, GeoPoint, serverTimestamp, arrayUnion, addDoc, getDocs, orderBy, Timestamp, writeBatch, deleteDoc } from 'firebase/firestore'
+import { collection, query, where, onSnapshot, doc, updateDoc, GeoPoint, serverTimestamp, arrayUnion, addDoc, getDocs, getDoc, orderBy, Timestamp, writeBatch, deleteDoc } from 'firebase/firestore'
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
@@ -36,19 +35,6 @@ const LiveMap = dynamic(() => import('@/components/live-map'), {
     ssr: false,
     loading: () => <div className="w-full h-full bg-muted flex items-center justify-center"><p>Loading Map...</p></div>
 });
-
-const StatCard = ({ title, value, icon: Icon, description }: { title: string, value: string, icon: React.ElementType, description: string }) => (
-    <Card>
-        <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">{title}</CardTitle>
-            <Icon className="w-4 h-4 text-muted-foreground"/>
-        </CardHeader>
-        <CardContent>
-            <div className="text-2xl font-bold">{value}</div>
-            <p className="text-xs text-muted-foreground">{description}</p>
-        </CardContent>
-    </Card>
-);
 
 interface AmbulanceVehicle {
     id: string;

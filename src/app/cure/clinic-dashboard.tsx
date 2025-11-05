@@ -1,4 +1,3 @@
-
 'use client'
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
@@ -548,4 +547,3 @@ const ClinicDashboard = () => {
 };
 
 export default ClinicDashboard;
-
