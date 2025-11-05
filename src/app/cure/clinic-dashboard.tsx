@@ -1,10 +1,11 @@
 
+
 'use client'
 
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Stethoscope, Calendar, Users, Clock, UserCheck, UserPlus, MoreHorizontal, Trash2, Phone, ArrowLeft, Video, Building, UploadCloud, CheckCircle } from 'lucide-react';
+import { Stethoscope, Calendar, Users, Clock, UserCheck, UserPlus, MoreHorizontal, Trash2, Phone, ArrowLeft, Video, Building, UploadCloud, CheckCircle, FileSignature } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { useDb, useFirebase } from '@/firebase/client-provider';
 import { collection, query, where, onSnapshot, Timestamp, orderBy, getDocs, doc, updateDoc, deleteDoc, addDoc, serverTimestamp, writeBatch, limit, collectionGroup } from 'firebase/firestore';
@@ -94,6 +95,7 @@ const initialDoctorState = {
     regYear: '',
     consultationFee: '',
     otp: '',
+    agreedToTerms: false,
 };
 
 const ClinicDashboard = () => {
@@ -106,7 +108,7 @@ const ClinicDashboard = () => {
     const [generatedCreds, setGeneratedCreds] = useState<{ id: string, pass: string, role: string } | null>(null);
     const [isCredsDialogOpen, setIsCredsDialogOpen] = useState(false);
     const [currentFormStep, setCurrentFormStep] = useState(1);
-    const totalSteps = 5;
+    const totalSteps = 6;
     const { partnerData } = useCurePartner();
     const { user, db, auth } = useFirebase();
     const { toast } = useToast();
@@ -268,9 +270,18 @@ const ClinicDashboard = () => {
         }
         
         if (currentFormStep === 5) {
+            setCurrentFormStep(p => p + 1);
+            return;
+        }
+
+        if (currentFormStep === 6) {
+             if (!newDoctorData.agreedToTerms) {
+                toast({ variant: 'destructive', title: 'Agreement Required', description: 'Please agree to the terms to proceed.' });
+                return;
+            }
             setIsSubmitting(true);
       
-            const { otp, ...restOfData } = newDoctorData;
+            const { otp, agreedToTerms, ...restOfData } = newDoctorData;
             const { fullName: name, contactNumber: phone, emailAddress: email } = restOfData;
           
             if (!name || !phone || !email || !restOfData.specialization) {
@@ -303,7 +314,7 @@ const ClinicDashboard = () => {
                     ...restOfData,
                     partnerId, 
                     createdAt: serverTimestamp(), 
-                    docStatus: 'kyc_pending', 
+                    docStatus: 'Awaiting Final Approval', 
                     hospitalId: partnerData.id, hospitalName: partnerData.name, 
                     isAvailable: false,
                     weeklyAvailability: availability,
@@ -449,12 +460,40 @@ const ClinicDashboard = () => {
             case 5:
                 return (
                     <div className="space-y-4">
-                        <h3 className="text-lg font-semibold border-b pb-2">Step 5: Final Submission</h3>
-                        <p className="text-sm text-muted-foreground">Please review all the information before submitting. Once submitted, the profile will be sent for verification.</p>
-                         <div className="flex items-start space-x-2 pt-4">
-                            <Checkbox id="terms" required />
+                        <h3 className="text-lg font-semibold border-b pb-2">Step 5: Set Default Availability</h3>
+                        <CardDescription>Set the doctor's weekly recurring schedule. This can be changed later.</CardDescription>
+                        <div className="space-y-2 max-h-60 overflow-y-auto pr-2">
+                            {Object.entries(availability).map(([day, value]) => (
+                                <div key={day} className="flex items-center gap-2 p-2 bg-muted/50 rounded-lg">
+                                    <Switch
+                                        id={`avail-${day}`}
+                                        checked={value.available}
+                                        onCheckedChange={(c) => handleAvailabilityDayChange(day, 'available', c)}
+                                    />
+                                    <Label htmlFor={`avail-${day}`} className="font-medium w-24">{day}</Label>
+                                    <Input type="time" value={value.start} onChange={e => handleAvailabilityDayChange(day, 'start', e.target.value)} disabled={!value.available} className="w-32"/>
+                                    <span className="text-muted-foreground">-</span>
+                                    <Input type="time" value={value.end} onChange={e => handleAvailabilityDayChange(day, 'end', e.target.value)} disabled={!value.available} className="w-32"/>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                );
+            case 6:
+                return (
+                    <div className="space-y-4">
+                        <h3 className="text-lg font-semibold border-b pb-2">Step 6: Digital Signature &amp; Legal</h3>
+                         <CardDescription>The doctor must agree to these terms to be listed on the Curocity platform.</CardDescription>
+                         <ul className="list-disc pl-5 space-y-2 text-sm text-muted-foreground mt-4">
+                            <li>I take full responsibility for all diagnoses and prescriptions provided.</li>
+                            <li>I acknowledge and accept full medical liability for my consultations.</li>
+                            <li>I agree to Curocity's terms of service and partnership policies.</li>
+                            <li>I consent to data privacy and compliance policies of the platform.</li>
+                         </ul>
+                         <div className="flex items-center space-x-2 pt-4">
+                            <Checkbox id="terms" checked={newDoctorData.agreedToTerms} onCheckedChange={(checked) => handleFormChange('agreedToTerms', !!checked)} />
                             <Label htmlFor="terms" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                                I confirm that all the information provided is accurate and I agree to Curocity's terms and conditions for partner doctors.
+                                The doctor has read and agreed to all terms and conditions.
                             </Label>
                         </div>
                     </div>
@@ -550,7 +589,7 @@ const ClinicDashboard = () => {
                                         {isSubmitting ? "Submitting..." : 
                                          currentFormStep === 2 ? 'Send OTP' : 
                                          currentFormStep === 3 ? 'Verify OTP' :
-                                         currentFormStep < totalSteps ? 'Next Step' : "Add Doctor & Generate Credentials"
+                                         currentFormStep < totalSteps ? 'Next Step' : "Add Doctor & Submit for Verification"
                                         }
                                       </Button>
                                     </DialogFooter>
@@ -644,5 +683,3 @@ const ClinicDashboard = () => {
 };
 
 export default ClinicDashboard;
-
-    
