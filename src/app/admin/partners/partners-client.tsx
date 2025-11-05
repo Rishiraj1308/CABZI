@@ -253,7 +253,7 @@ export default function PartnersClient() {
        case 'Awaiting Final Approval':
         return <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100/80 dark:bg-blue-900/40 dark:text-blue-200"><Clock className="w-3 h-3 mr-1"/> Awaiting Approval</Badge>
       default:
-        return <Badge variant="secondary">{status || 'Unknown'}</Badge>;
+        return <Badge variant="secondary">{status || 'Unknown'}</Badge>
     }
   }
 
