@@ -14,7 +14,7 @@ import { useToast } from '@/hooks/use-toast'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle, AlertDialogFooter } from "@/components/ui/alert-dialog"
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
 import type { Timestamp } from 'firebase/firestore'
 
 interface CurePartnerData {
@@ -26,6 +26,7 @@ interface CurePartnerData {
     services?: string[];
     baseFare?: number;
     perKmRate?: number;
+    businessType?: string;
 }
 
 export default function CureProfilePage() {
@@ -221,7 +222,9 @@ export default function CureProfilePage() {
                 </CardContent>
               </div>
           </Card>
-          <Card>
+          
+          {partnerData?.businessType === 'Hospital' && (
+             <Card>
               <CardHeader>
                    <CardTitle className="flex items-center gap-2"><IndianRupee className="w-5 h-5 text-primary"/> Ambulance Fare Settings</CardTitle>
                    <CardDescription>Set your own pricing for ambulance services. This will be used to calculate estimated fares for patients.</CardDescription>
@@ -241,7 +244,9 @@ export default function CureProfilePage() {
               <CardFooter>
                    <Button onClick={handleSaveFares}><Save className="mr-2 h-4 w-4"/> Save Fare Settings</Button>
               </CardFooter>
-          </Card>
+            </Card>
+          )}
+
           <Card>
               <CardHeader>
                   <div className="flex items-center gap-2">
