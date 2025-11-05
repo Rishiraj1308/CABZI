@@ -15,6 +15,9 @@ import { collection, addDoc, serverTimestamp, query, where, getDocs, limit } fro
 import { ArrowLeft } from 'lucide-react'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Progress } from '@/components/ui/progress'
+import { Checkbox } from '@/components/ui/checkbox'
+import dynamic from 'next/dynamic'
+import { Skeleton } from '@/components/ui/skeleton'
 import { RecaptchaVerifier, signInWithPhoneNumber, type ConfirmationResult } from 'firebase/auth'
 
 export default function ClinicOnboardingPage() {
@@ -42,6 +45,8 @@ export default function ClinicOnboardingPage() {
         doctorName: '',
         doctorRegNo: '',
         specialization: '',
+        // Step 4
+        agreedToTerms: false,
     });
 
     // Initialize Recaptcha only once
@@ -51,7 +56,7 @@ export default function ClinicOnboardingPage() {
         }
     }, [auth]);
 
-    const handleInputChange = (field: keyof typeof formData, value: string) => {
+    const handleInputChange = (field: keyof typeof formData, value: string | boolean) => {
         setFormData(prev => ({...prev, [field]: value}));
     };
     
@@ -99,6 +104,12 @@ export default function ClinicOnboardingPage() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        
+        if(!formData.agreedToTerms) {
+            toast({ variant: 'destructive', title: "Agreement Required" });
+            return;
+        }
+
         setIsLoading(true);
 
         if (!db) {
@@ -107,7 +118,7 @@ export default function ClinicOnboardingPage() {
             return;
         }
 
-        const { otp, ...restOfData } = formData;
+        const { otp, agreedToTerms, ...restOfData } = formData;
         
         if (!restOfData.clinicName || !restOfData.phone || !restOfData.doctorName || !restOfData.doctorRegNo) {
             toast({ variant: 'destructive', title: "Incomplete Form", description: "Please fill all required fields." });
@@ -214,13 +225,19 @@ export default function ClinicOnboardingPage() {
                                 <Label htmlFor="doctorRegNo">Medical Registration No.*</Label>
                                 <Input id="doctorRegNo" name="doctorRegNo" value={formData.doctorRegNo} onChange={(e) => handleInputChange('doctorRegNo', e.target.value)} required />
                             </div>
+                            <div className="md:col-span-2 flex items-start space-x-2 pt-4">
+                                <Checkbox id="terms" checked={!!formData.agreedToTerms} onCheckedChange={(checked) => handleInputChange('agreedToTerms', !!checked)} />
+                                <Label htmlFor="terms" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                                I agree to Curocity's terms & conditions and consent to the verification of all documents and credentials provided.
+                                </Label>
+                            </div>
                         </div>
                     </div>
                 );
          }
     }
 
-    const stepTitles = ["Verify Phone", "Verify OTP", "Owner Details", "Facility Details"];
+    const stepTitles = ["Verify Phone", "Verify OTP", "Owner Details", "Facility Details & Submit"];
 
 
     return (
@@ -261,4 +278,3 @@ export default function ClinicOnboardingPage() {
         </div>
     );
 }
-

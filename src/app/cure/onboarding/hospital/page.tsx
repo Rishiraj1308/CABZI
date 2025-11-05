@@ -12,7 +12,7 @@ import Link from 'next/link'
 import BrandLogo from '@/components/brand-logo'
 import { useFirebase } from '@/firebase/client-provider'
 import { collection, addDoc, serverTimestamp, GeoPoint, query, where, getDocs, limit } from "firebase/firestore";
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, Building2, BedDouble, Stethoscope } from 'lucide-react'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Progress } from '@/components/ui/progress'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -25,17 +25,6 @@ const LiveMap = dynamic(() => import('@/components/live-map'), {
     loading: () => <Skeleton className="w-full h-full bg-muted" />,
 });
 
-const serviceCategories = [
-    { id: 'consultation', label: 'General Consultation' },
-    { id: 'emergency', label: '24/7 Emergency Care' },
-    { id: 'ipd', label: 'In-Patient Services (IPD)' },
-    { id: 'pharmacy', label: 'Pharmacy' },
-    { id: 'diagnostics', label: 'Lab / Diagnostics' },
-    { id: 'icu', label: 'ICU / Critical Care' },
-    { id: 'minor_ot', label: 'Minor OT / Surgery' },
-    { id: 'ambulance', label: 'Ambulance Services' },
-];
-
 
 export default function HospitalOnboardingPage() {
     const { toast } = useToast()
@@ -45,7 +34,6 @@ export default function HospitalOnboardingPage() {
     const [currentStep, setCurrentStep] = useState(1);
     const totalSteps = 5;
     const mapRef = useRef<any>(null);
-    const [selectedServices, setSelectedServices] = useState<string[]>([]);
     
     const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
     const recaptchaVerifierRef = useRef<RecaptchaVerifier | null>(null);
@@ -59,12 +47,13 @@ export default function HospitalOnboardingPage() {
         // Step 2: Owner
         ownerName: '',
         ownerEmail: '',
-        ownerAltPhone: '',
-        // Step 3: Facility
-        clinicName: '',
-        clinicRegNo: '',
-        issuingAuthority: '',
-        // Step 4: Location & Services
+        // Step 3: Business Details
+        hospitalName: '',
+        registrationNumber: '',
+        hospitalType: '',
+        totalBeds: '',
+        bedsOccupied: '',
+        // Step 4: Location
         address: '',
         location: null as { lat: number, lon: number } | null,
         // Step 5: Final
@@ -169,10 +158,11 @@ export default function HospitalOnboardingPage() {
             await addDoc(collection(db, "ambulances"), {
                 ...restOfData,
                 partnerId: partnerId,
-                services: selectedServices,
-                location: new GeoPoint(formData.location!.lat, formData.location!.lon),
+                name: formData.hospitalName,
                 businessType: 'Hospital',
-                name: formData.clinicName,
+                totalBeds: Number(formData.totalBeds) || 0,
+                bedsOccupied: Number(formData.bedsOccupied) || 0,
+                location: new GeoPoint(formData.location!.lat, formData.location!.lon),
                 type: 'cure',
                 status: 'pending_verification',
                 isOnline: false,
@@ -181,7 +171,7 @@ export default function HospitalOnboardingPage() {
             
             toast({
                 title: "Application Submitted!",
-                description: `Thank you, ${formData.clinicName}. Your application is under review.`,
+                description: `Thank you, ${formData.hospitalName}. Your application is under review.`,
             });
             
             setTimeout(() => {
@@ -221,18 +211,39 @@ export default function HospitalOnboardingPage() {
                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="space-y-2"><Label htmlFor="ownerName">Full Name*</Label><Input id="ownerName" name="ownerName" value={formData.ownerName} onChange={(e) => handleInputChange('ownerName', e.target.value)} required /></div>
                             <div className="space-y-2"><Label htmlFor="ownerEmail">Email ID*</Label><Input id="ownerEmail" name="ownerEmail" type="email" value={formData.ownerEmail} onChange={(e) => handleInputChange('ownerEmail', e.target.value)} required /></div>
-                             <div className="space-y-2"><Label htmlFor="ownerAltPhone">Alternate Phone (Optional)</Label><Input id="ownerAltPhone" name="ownerAltPhone" type="tel" value={formData.ownerAltPhone} onChange={(e) => handleInputChange('ownerAltPhone', e.target.value)} /></div>
                         </div>
                     </div>
                 );
             case 4:
                 return (
                      <div className="space-y-6">
-                        <h3 className="font-semibold text-lg border-b pb-2">Hospital Details</h3>
+                        <h3 className="font-semibold text-lg border-b pb-2">Facility Details</h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                             <div className="space-y-2 md:col-span-2"><Label htmlFor="clinicName">Hospital Name*</Label><Input id="clinicName" name="clinicName" value={formData.clinicName} onChange={(e) => handleInputChange('clinicName', e.target.value)} required /></div>
-                            <div className="space-y-2"><Label htmlFor="clinicRegNo">Hospital Registration Number*</Label><Input id="clinicRegNo" name="clinicRegNo" value={formData.clinicRegNo} onChange={(e) => handleInputChange('clinicRegNo', e.target.value)} required /></div>
-                            <div className="space-y-2"><Label htmlFor="issuingAuthority">Issuing Authority*</Label><Input id="issuingAuthority" name="issuingAuthority" placeholder="e.g., Delhi Medical Council" value={formData.issuingAuthority} onChange={(e) => handleInputChange('issuingAuthority', e.target.value)} required /></div>
+                             <div className="space-y-2 md:col-span-2"><Label htmlFor="hospitalName">Hospital Name*</Label><Input id="hospitalName" name="hospitalName" value={formData.hospitalName} onChange={(e) => handleInputChange('hospitalName', e.target.value)} required /></div>
+                            <div className="space-y-2">
+                                <Label htmlFor="hospitalType">Hospital Type*</Label>
+                                <Select name="hospitalType" required value={formData.hospitalType} onValueChange={(v) => handleInputChange('hospitalType', v)}>
+                                    <SelectTrigger><SelectValue placeholder="Select type"/></SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="Private Hospital">Private Hospital</SelectItem>
+                                        <SelectItem value="Government Hospital">Government Hospital</SelectItem>
+                                        <SelectItem value="Multi-speciality Hospital">Multi-speciality Hospital</SelectItem>
+                                        <SelectItem value="Super-speciality Hospital">Super-speciality Hospital</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="registrationNumber">Hospital Registration Number*</Label>
+                                <Input id="registrationNumber" name="registrationNumber" value={formData.registrationNumber} onChange={(e) => handleInputChange('registrationNumber', e.target.value)} required />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="totalBeds">Total Bed Count*</Label>
+                                <Input id="totalBeds" name="totalBeds" type="number" value={formData.totalBeds} onChange={(e) => handleInputChange('totalBeds', e.target.value)} required />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="bedsOccupied">Currently Occupied Beds*</Label>
+                                <Input id="bedsOccupied" name="bedsOccupied" type="number" value={formData.bedsOccupied} onChange={(e) => handleInputChange('bedsOccupied', e.target.value)} required />
+                            </div>
                         </div>
                     </div>
                 );
@@ -302,4 +313,3 @@ export default function HospitalOnboardingPage() {
         </div>
     );
 }
-
