@@ -1,5 +1,4 @@
 
-
 'use client'
 
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
@@ -270,7 +269,7 @@ const ClinicDashboard = () => {
         }
         
         if (currentFormStep === 5) {
-            setCurrentFormStep(p => p + 1);
+             setCurrentFormStep(p => p + 1);
             return;
         }
 
@@ -438,17 +437,7 @@ const ClinicDashboard = () => {
             case 3:
                 return (
                     <div className="space-y-4">
-                        <h3 className="text-lg font-semibold border-b pb-2">Step 3: Verify Phone Number</h3>
-                        <div className="space-y-2">
-                            <Label>Enter OTP sent to +91 {newDoctorData.contactNumber}</Label>
-                            <Input name="otp" type="tel" maxLength={6} required value={newDoctorData.otp} onChange={e => handleFormChange('otp', e.target.value)} />
-                        </div>
-                    </div>
-                );
-            case 4:
-                return (
-                    <div className="space-y-4">
-                        <h3 className="text-lg font-semibold border-b pb-2">Step 4: Medical KYC</h3>
+                        <h3 className="text-lg font-semibold border-b pb-2">Step 3: Medical KYC</h3>
                         <CardDescription>Upload clear photos of the documents.</CardDescription>
                         <div className="space-y-4 pt-2">
                              <div className="space-y-2"><Label htmlFor="doc-reg">Medical Registration Certificate* (e.g., from MCI)</Label><Input id="doc-reg" type="file" required /></div>
@@ -457,10 +446,10 @@ const ClinicDashboard = () => {
                         </div>
                     </div>
                 );
-            case 5:
+            case 4:
                 return (
                     <div className="space-y-4">
-                        <h3 className="text-lg font-semibold border-b pb-2">Step 5: Set Default Availability</h3>
+                        <h3 className="text-lg font-semibold border-b pb-2">Step 4: Set Default Availability</h3>
                         <CardDescription>Set the doctor's weekly recurring schedule. This can be changed later.</CardDescription>
                         <div className="space-y-2 max-h-60 overflow-y-auto pr-2">
                             {Object.entries(availability).map(([day, value]) => (
@@ -479,10 +468,10 @@ const ClinicDashboard = () => {
                         </div>
                     </div>
                 );
-            case 6:
+            case 5:
                 return (
                     <div className="space-y-4">
-                        <h3 className="text-lg font-semibold border-b pb-2">Step 6: Digital Signature &amp; Legal</h3>
+                        <h3 className="text-lg font-semibold border-b pb-2">Step 5: Digital Signature &amp; Legal</h3>
                          <CardDescription>The doctor must agree to these terms to be listed on the Curocity platform.</CardDescription>
                          <ul className="list-disc pl-5 space-y-2 text-sm text-muted-foreground mt-4">
                             <li>I take full responsibility for all diagnoses and prescriptions provided.</li>
@@ -495,6 +484,23 @@ const ClinicDashboard = () => {
                             <Label htmlFor="terms" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
                                 The doctor has read and agreed to all terms and conditions.
                             </Label>
+                        </div>
+                    </div>
+                );
+            case 6:
+                return (
+                    <div className="space-y-4">
+                        <h3 className="text-lg font-semibold border-b pb-2">Step 6: Review &amp; Submit</h3>
+                        <CardDescription>Please review all the information before final submission.</CardDescription>
+                        <div className="space-y-4 pt-2">
+                             <div className="p-4 rounded-lg border bg-muted/50 space-y-3">
+                                <div className="flex justify-between"><span className="text-muted-foreground">Name:</span> <span className="font-semibold">Dr. {newDoctorData.fullName}</span></div>
+                                <div className="flex justify-between"><span className="text-muted-foreground">Specialization:</span> <span className="font-semibold">{newDoctorData.specialization}</span></div>
+                                <div className="flex justify-between"><span className="text-muted-foreground">Contact:</span> <span className="font-semibold">{newDoctorData.contactNumber}</span></div>
+                                <div className="flex justify-between"><span className="text-muted-foreground">Fee:</span> <span className="font-semibold">₹{newDoctorData.consultationFee || 'N/A'}</span></div>
+                                <Separator />
+                                <p className="text-xs text-center text-muted-foreground">The submitted documents will be verified by the Curocity team.</p>
+                             </div>
                         </div>
                     </div>
                 );
@@ -588,8 +594,7 @@ const ClinicDashboard = () => {
                                       <Button type="submit" disabled={isSubmitting}>
                                         {isSubmitting ? "Submitting..." : 
                                          currentFormStep === 2 ? 'Send OTP' : 
-                                         currentFormStep === 3 ? 'Verify OTP' :
-                                         currentFormStep < totalSteps ? 'Next Step' : "Add Doctor & Submit for Verification"
+                                         currentFormStep < totalSteps ? 'Next Step' : "Submit for Verification"
                                         }
                                       </Button>
                                     </DialogFooter>
@@ -683,3 +688,4 @@ const ClinicDashboard = () => {
 };
 
 export default ClinicDashboard;
+
