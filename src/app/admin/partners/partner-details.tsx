@@ -7,10 +7,14 @@ import { useDb } from '@/firebase/client-provider';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Car, Wrench, Ambulance, Stethoscope, Briefcase, GraduationCap, FileText, IndianRupee, Building, User, Phone, MapPin, BedDouble, Hospital, Calendar, Cake } from 'lucide-react';
+import { Car, Wrench, Ambulance, Stethoscope, Briefcase, GraduationCap, FileText, IndianRupee, Building, User, Phone, MapPin, BedDouble, Hospital, Calendar, Cake, Clock } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
+import { cn } from '@/lib/utils';
+import { format } from 'date-fns';
+
 
 interface PartnerDetailsProps {
     partnerId: string;
@@ -227,6 +231,55 @@ export default function PartnerDetails({ partnerId, initialPartnerType, hospital
             </CardContent>
         </Card>
     );
+    
+    const renderDoctorAvailability = () => {
+      if (!partner.weeklyAvailability) return null;
+      const daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+      const sortedOverrides = partner.dateOverrides ? Object.entries(partner.dateOverrides).sort(([dateA], [dateB]) => new Date(dateA).getTime() - new Date(dateB).getTime()) : [];
+
+      return (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2"><Clock className="w-5 h-5 text-primary"/> Availability Schedule</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div>
+              <h4 className="font-semibold mb-2 text-sm text-muted-foreground">Weekly Recurring Schedule</h4>
+              <div className="grid grid-cols-1 divide-y border rounded-lg">
+                {daysOfWeek.map(day => {
+                  const availability = partner.weeklyAvailability[day];
+                  return (
+                    <div key={day} className="flex items-center justify-between p-3">
+                      <span className="font-medium w-24">{day}</span>
+                      {availability?.available ? (
+                        <span className="font-mono text-sm text-green-600">{availability.start} - {availability.end}</span>
+                      ) : (
+                        <span className="text-sm text-muted-foreground">Unavailable</span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+            {sortedOverrides.length > 0 && (
+              <div>
+                <h4 className="font-semibold mb-2 text-sm text-muted-foreground">Date Overrides / Holidays</h4>
+                <div className="grid grid-cols-2 gap-2">
+                    {sortedOverrides.map(([date, override]: [string, any]) => (
+                        <div key={date} className="p-2 bg-muted rounded-md text-center">
+                            <p className="font-semibold text-sm">{format(new Date(date), 'PPP')}</p>
+                             <Badge variant={override.available ? 'default' : 'destructive'} className="mt-1">
+                                {override.available ? 'Available' : 'Unavailable'}
+                             </Badge>
+                        </div>
+                    ))}
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      );
+    }
 
     const renderDoctorDetails = () => (
         <>
@@ -263,6 +316,7 @@ export default function PartnerDetails({ partnerId, initialPartnerType, hospital
                     <DetailItem label="Registration Year" value={partner.regYear} />
                 </CardContent>
             </Card>
+            {renderDoctorAvailability()}
         </>
     );
 
