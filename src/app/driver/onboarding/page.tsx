@@ -1,7 +1,7 @@
 
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card'
@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast'
 import Link from 'next/link'
 import BrandLogo from '@/components/brand-logo'
-import { useFirebase } from '@/firebase/client-provider'
+import { useDb } from '@/firebase/client-provider'
 import { collection, addDoc, serverTimestamp, query, where, getDocs, limit } from "firebase/firestore";
 import { Skeleton } from '@/components/ui/skeleton'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -30,7 +30,7 @@ const vehicleBrands = [
 export default function OnboardingPage() {
     const { toast } = useToast()
     const router = useRouter()
-    const { db } = useFirebase();
+    const db = useDb();
     const [isLoading, setIsLoading] = useState(false)
     const [isMounted, setIsMounted] = useState(false)
     const [isCurocityPink, setIsCurocityPink] = useState(false);
@@ -124,7 +124,7 @@ export default function OnboardingPage() {
                 return;
             }
 
-            const partnerId = `CZD${phone.slice(-4)}${vehicleNumber.slice(-4).toUpperCase()}`
+            const partnerId = `CZP-${phone.slice(-4)}${vehicleNumber.slice(-4).toUpperCase()}`
             const curocityBankAccountNumber = `11${phone}`
             const photoUrl = 'https://placehold.co/100x100.png';
 
@@ -208,11 +208,19 @@ export default function OnboardingPage() {
                 <CardHeader className="text-center">
                     <div className="mx-auto"><Link href="/"><BrandLogo className="text-5xl justify-center" /></Link></div>
                     <CardTitle className="text-3xl mt-4">Become a Path Partner</CardTitle>
-                    <CardDescription>Step {currentStep}: {stepTitles[currentStep - 1]}</CardDescription>
-                    <div className="px-10 pt-4"><Progress value={(currentStep / totalSteps) * 100} className="w-full" /></div>
+                    <CardDescription>
+                       Step {currentStep}: {stepTitles[currentStep - 1]}
+                    </CardDescription>
+                     <div className="px-10 pt-4">
+                        <Progress value={(currentStep / totalSteps) * 100} className="w-full" />
+                    </div>
                 </CardHeader>
                 <form onSubmit={handleSubmit}>
-                    <CardContent className="min-h-[300px]"><div className="p-4 border rounded-lg">{renderStepContent()}</div></CardContent>
+                    <CardContent className="min-h-[300px]">
+                        <div className="p-4 border rounded-lg">
+                           {renderStepContent()}
+                        </div>
+                    </CardContent>
                     <CardFooter className="flex-col gap-4">
                         <div className="w-full flex justify-between">
                             <Button type="button" variant="outline" onClick={handlePrevStep} disabled={currentStep === 1}><ArrowLeft className="w-4 h-4 mr-2"/> Previous Step</Button>
