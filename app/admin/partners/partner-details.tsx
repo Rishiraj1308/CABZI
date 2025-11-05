@@ -103,7 +103,7 @@ export default function PartnerDetails({ partnerId, initialPartnerType, hospital
          return (
             <div className="text-center p-4">
                 <h2 className="text-xl font-bold">Partner Not Found</h2>
-                <p className="text-muted-foreground">The partner with ID &apos;{partnerId}&apos; could not be found.</p>
+                <p className="text-muted-foreground">The partner with ID '{partnerId}' could not be found.</p>
             </div>
         )
     }
