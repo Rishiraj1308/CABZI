@@ -1,4 +1,5 @@
 
+
 'use client'
 
 import { useState, useEffect } from 'react'
@@ -109,7 +110,7 @@ export default function AdminLayout({
        <div className="flex items-center gap-2">
          <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
              <SheetTrigger asChild>
-                 <Button variant="outline" size="icon" className="shrink-0">
+                 <Button variant="outline" size="icon" className="shrink-0 md:hidden">
                      <PanelLeft className="h-5 w-5" />
                      <span className="sr-only">Toggle navigation menu</span>
                  </Button>
@@ -128,7 +129,7 @@ export default function AdminLayout({
              </SheetContent>
          </Sheet>
          <div className="hidden md:block">
-            <h1 className="text-xl font-semibold">Admin Dashboard</h1>
+            <AdminNav />
          </div>
        </div>
 
@@ -138,7 +139,7 @@ export default function AdminLayout({
            <DropdownMenuTrigger asChild>
              <Button variant="secondary" size="icon" className="rounded-full">
                <Avatar className="h-8 w-8">
-                 <AvatarImage src={`https://picsum.photos/40/40?random=${adminName}`} alt={adminName} data-ai-hint="administrator portrait" />
+                 <AvatarImage src={`https://i.pravatar.cc/40?u=${adminName}`} alt={adminName} data-ai-hint="administrator portrait" />
                  <AvatarFallback>{getInitials(adminName).toUpperCase()}</AvatarFallback>
                </Avatar>
                <span className="sr-only">Toggle user menu</span>
