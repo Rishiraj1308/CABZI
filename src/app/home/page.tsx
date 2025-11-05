@@ -1,575 +1,292 @@
+
 'use client'
 
 import React, { useState, useEffect, useRef, useCallback } from 'react'
-import Link from 'next/link'
-import { Button } from '@/components/ui/button'
-import BrandLogo, { NewLogoIcon } from '@/components/brand-logo'
-import { ArrowRight, Car, Wrench, Ambulance, Landmark, CheckCircle, Shield, IndianRupee, Signal, Wifi, Battery, Sun, Moon, Globe, User, LogIn, Star, MapPin, Clock, Bike, Phone, Share2, Siren, Send, ScanLine, NotebookText, Banknote, Sparkles, PiggyBank, HeartHandshake, CircleHelp, Hand, Briefcase, Home, MessageSquare, Calendar, Building, BrainCircuit, AppWindow } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { Button, buttonVariants } from '@/components/ui/button'
+import {
+  Car, Wrench, Ambulance, Calendar, TestTube, Search, X, Mic, AlertTriangle, Phone, History, MapPin, ArrowUpRight, Clock, MessageCircle, Shield, Home
+} from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
 import { useLanguage } from '@/hooks/use-language'
-import { useTheme } from 'next-themes'
-import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from '@/components/ui/dropdown-menu'
-import { Carousel, CarouselContent, CarouselItem, type CarouselApi } from '@/components/ui/carousel'
-import Autoplay from "embla-carousel-autoplay"
-import { BikeIcon, AutoIcon, CabIcon } from '@/components/icons'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import dynamic from 'next/dynamic'
-import { Progress } from '@/components/ui/progress'
+import { Input } from '@/components/ui/input'
+import { AlertDialog, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogCancel, AlertDialogAction } from '@/components/ui/alert-dialog'
+import { useToast } from '@/hooks/use-toast'
+import { useFirebase } from '@/firebase/client-provider'
+import { getDoc, doc, onSnapshot, query, collection, where } from 'firebase/firestore'
+import type { ClientSession, RideData, AmbulanceCase, GarageRequest } from '@/lib/types'
+import EmergencyButtons from '@/components/EmergencyButtons'
+import RideStatus from '@/components/ride-status'
+import Link from 'next/link'
 
-
-const LiveMap = dynamic(() => import('@/components/live-map'), {
-    ssr: false,
-    loading: () => <div className="w-full h-full bg-muted flex items-center justify-center"><p>Loading Map...</p></div>
-});
-
-
-const cprData = [
-  {
-    value: 'path',
-    icon: Car,
-    title: 'Fair Fares with PATH',
-    description: "Our core 0% commission ride-hailing service ensures drivers earn more and riders pay fair, consistent fares. No surge, no surprises.",
-    color: 'bg-primary/10',
-    textColor: 'text-primary'
-  },
-  {
-    value: 'resq',
-    icon: Wrench,
-    title: 'Reliability with ResQ',
-    description: "Our network of verified mechanics provides instant on-road assistance to our partners, minimizing downtime and ensuring a reliable service for you.",
-    color: 'bg-amber-500/10',
-    textColor: 'text-amber-600'
-  },
-   {
-    value: 'cure',
-    icon: Ambulance,
-    title: 'Safety with CURE',
-    description: "In an emergency, every second counts. Our integrated ambulance dispatch and doctor appointment system connects you to the nearest partner hospital.",
-    color: 'bg-red-500/10',
-    textColor: 'text-red-600'
-  },
-  {
-    value: 'bank',
-    icon: Landmark,
-    title: 'Empowerment with Bank',
-    description: "We are a FinTech company at heart. Our 'Curocity Bank' offers partners instant loans, savings, and financial security, creating a loyal and happy fleet.",
-    color: 'bg-green-500/10',
-    textColor: 'text-green-600'
-  },
+const serviceCards = [
+    { id: 'ride', href: '/user/book', icon: Car, title: 'Ride', description: 'Fair fares for your daily commute.', tag: '5–10m', tagIcon: Clock, iconBg: 'bg-emerald-400/15', iconRing: 'ring-emerald-400/30', iconColor: 'text-emerald-500', tagBg: 'bg-emerald-400/10', tagBorder: 'border-emerald-400/30', tagColor: 'text-emerald-600', label: 'ride transport car taxi clinic mobility hospital cab गाड़ी कार टैक्सी', glowColor: 'hsl(145, 63%, 49%)' },
+    { id: 'resq', href: '/user/resq', icon: Wrench, title: 'ResQ', description: 'On-site assistance for minor issues', tag: 'On-Demand', tagIcon: Wrench, iconBg: 'bg-amber-400/15', iconRing: 'ring-amber-400/30', iconColor: 'text-amber-500', tagBg: 'bg-amber-400/10', tagBorder: 'border-amber-400/30', tagColor: 'text-amber-600', label: 'resq on-site assistance home help nurse minor issues support मदद सहायता', glowColor: 'hsl(45, 100%, 51%)' },
+    { id: 'sos', onClick: () => {}, icon: Ambulance, title: 'Emergency SOS', description: 'Connect to 24/7 emergency line', tag: '~15 min', tagIcon: Clock, iconBg: 'bg-red-500/20', iconRing: 'ring-red-500/40', iconColor: 'text-red-500', tagBg: 'bg-red-400/10', tagBorder: 'border-red-400/40', tagColor: 'text-red-600', label: 'sos emergency ambulance urgent help police fire medical आपातकालीन एम्बुलेंस मदद', glowColor: 'hsl(0, 84%, 60%)' },
+    { id: 'appointment', href: '/user/appointments', icon: Calendar, title: 'Book Appointment', description: 'Clinics, specialists, telehealth', tag: 'Next: 1–2d', tagIcon: Clock, iconBg: 'bg-sky-400/15', iconRing: 'ring-sky-400/30', iconColor: 'text-sky-500', tagBg: 'bg-sky-400/10', tagBorder: 'border-sky-400/30', tagColor: 'text-sky-200', label: 'book appointment doctor specialist telehealth clinic schedule calendar अपॉइंटमेंट डॉक्टर', glowColor: 'hsl(204, 100%, 50%)' },
+    { id: 'lab_tests', href: '/user/lab-tests', icon: TestTube, title: 'Lab Tests', description: 'Home sample pickup available', tag: 'Home pickup', tagIcon: Home, iconBg: 'bg-fuchsia-400/15', iconRing: 'ring-fuchsia-400/30', iconColor: 'text-fuchsia-500', tagBg: 'bg-fuchsia-400/10', tagBorder: 'border-fuchsia-400/30', tagColor: 'text-fuchsia-600', label: 'lab tests diagnostics blood test home pickup reports लैब टेस्ट', glowColor: 'hsl(280, 84%, 60%)' }
 ];
 
+const ServiceCard = ({
+  service,
+  onClick,
+}: {
+  service: any
+  onClick: () => void
+}) => (
+  <motion.button
+    className="serviceCard group flex items-center justify-between rounded-2xl border border-border bg-card p-5 sm:p-6 hover:bg-accent/10 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 relative"
+    role="button"
+    tabIndex={0}
+    title={service.title}
+    onClick={onClick}
+    data-label={service.label}
+    style={{ '--glow-color': service.glowColor } as React.CSSProperties}
+    whileHover={{ scale: 1.02 }}
+    transition={{ type: 'spring', stiffness: 400, damping: 10 }}
+  >
+    <div className="absolute inset-0 rounded-2xl animate-card-glow opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+    <div className="flex items-center gap-4 text-left relative">
+      <span className={cn("inline-flex h-10 w-10 items-center justify-center rounded-full ring-1", service.iconBg, service.iconRing, service.iconColor)}>
+        <service.icon className="h-5 w-5" />
+      </span>
+      <div>
+        <p className="text-[15px] sm:text-base font-semibold tracking-tight text-card-foreground">{service.title}</p>
+        <p className="text-xs text-muted-foreground mt-0.5">{service.description}</p>
+      </div>
+    </div>
+    <div className="flex items-center gap-2 relative">
+      {service.tag && (
+        <span className={cn("inline-flex items-center gap-1 rounded-full border px-2 py-1 text-[11px]", service.tagBg, service.tagBorder, service.tagColor)}>
+          <service.tagIcon className="h-3 w-3" />
+          {service.tag}
+        </span>
+      )}
+      <ArrowUpRight className="h-5 w-5 text-muted-foreground group-hover:text-foreground" />
+    </div>
+  </motion.button>
+)
 
-const journeySteps = [
-    {
-        icon: MapPin,
-        title: "1. Instant Booking",
-        description: "Enter your destination and get a fair, transparent fare instantly. No hidden costs, no surprise surge pricing."
-    },
-    {
-        icon: User,
-        title: "2. Partner on the Way",
-        description: "A professional, verified partner accepts your ride. Track their arrival in real-time on the map."
-    },
-    {
-        icon: Shield,
-        title: "3. Safety During Ride",
-        description: "Feel secure with our in-app SOS, ride-sharing feature, and the backing of our CURE emergency network."
-    },
-    {
-        icon: IndianRupee,
-        title: "4. Seamless Payment",
-        description: "Pay with ease using UPI, cash, or the integrated Curocity Wallet at the end of your trip."
-    }
-]
+export default function ServicePortalPage() {
+  const router = useRouter();
+  const { toast } = useToast();
+  
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isSosModalOpen, setIsSosModalOpen] = useState(false);
+  const [services, setServices] = useState<any[]>(serviceData);
+  const [isListening, setIsListening] = useState(false);
+  const recognitionRef = useRef<SpeechRecognition | null>(null);
 
-function LanguageToggle() {
-    const { setLanguage, t } = useLanguage()
-    return (
-        <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon">
-                    <Globe className="h-5 w-5" />
-                    <span className="sr-only">Toggle language</span>
-                </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => setLanguage('en')}>English</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setLanguage('hi')}>हिन्दी</DropdownMenuItem>
-            </DropdownMenuContent>
-        </DropdownMenu>
-    )
-}
+  const [activeRide, setActiveRide] = useState<RideData | null>(null);
+  const [activeAmbulanceCase, setActiveAmbulanceCase] = useState<AmbulanceCase | null>(null);
+  const [activeGarageRequest, setActiveGarageRequest] = useState<GarageRequest | null>(null);
 
-function ThemeToggle() {
-    const { setTheme } = useTheme()
-    return (
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-           <Button variant="ghost" size="icon">
-            <Sun className="h-5 w-5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-            <Moon className="absolute h-5 w-5 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-            <span className="sr-only">Toggle theme</span>
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
-          <DropdownMenuItem onClick={() => setTheme('light')}>Light</DropdownMenuItem>
-          <DropdownMenuItem onClick={() => setTheme('dark')}>Dark</DropdownMenuItem>
-          <DropdownMenuItem onClick={() => setTheme('system')}>System</DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-    )
-}
+  const [session, setSession] = useState<ClientSession | null>(null);
+  const { user, db } = useFirebase();
 
-
-export default function HomePage() {
-  const [activeTab, setActiveTab] = useState(cprData[0].value);
-  const activeTabData = cprData.find(tab => tab.value === activeTab)!;
-  const [carouselApi, setCarouselApi] = useState<CarouselApi>()
-  const [currentSlide, setCurrentSlide] = useState(0)
+   const resetFlow = useCallback(() => {
+        setActiveRide(null);
+        setActiveAmbulanceCase(null);
+        setActiveGarageRequest(null);
+        localStorage.removeItem('activeRideId');
+        localStorage.removeItem('activeGarageRequestId');
+    }, []);
 
   useEffect(() => {
-    if (!carouselApi) return
+    if (user && db) {
+      const userDocRef = doc(db, 'users', user.uid);
+      getDoc(userDocRef).then(docSnap => {
+        if (docSnap.exists()) {
+          const userData = docSnap.data();
+          setSession({
+            userId: user.uid,
+            name: userData.name,
+            phone: userData.phone,
+            gender: userData.gender
+          });
+        }
+      });
+    }
+  }, [user, db]);
 
-    setCurrentSlide(carouselApi.selectedScrollSnap());
-    carouselApi.on("select", () => {
-      setCurrentSlide(carouselApi.selectedScrollSnap());
-    })
-  }, [carouselApi])
-
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.1,
-        delayChildren: 0.2,
-      },
-    },
-  };
-
-  const itemVariants = {
-    hidden: { y: 20, opacity: 0 },
-    visible: { 
-        y: 0, 
-        opacity: 1,
-        transition: { type: 'spring', stiffness: 100 }
-    },
+  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const query = e.target.value.toLowerCase();
+    setSearchQuery(query);
+    if (!query) {
+      setServices(serviceData);
+      return;
+    }
+    const filtered = serviceData.filter(service => 
+      service.label.toLowerCase().includes(query) ||
+      service.title.toLowerCase().includes(query)
+    );
+    setServices(filtered);
   };
   
-  const carouselSlides = [
-    // Slide 1: Path (Ride Booking)
-    {
-      type: 'path',
-      content: (
-        <div className="p-4 h-full flex flex-col">
-            <h3 className="font-bold text-xl mb-3">Choose Your Ride</h3>
-            <div className="space-y-2">
-                <Card className="flex items-center p-2 gap-3 bg-muted">
-                    <BikeIcon className="w-8 h-8 text-foreground"/>
-                    <div className="flex-1"><p className="font-semibold">Bike</p><p className="text-xs text-muted-foreground">Quick & affordable</p></div>
-                    <div className="text-right"><p className="font-bold">₹85</p><p className="text-xs flex items-center gap-1"><Clock className="w-3 h-3"/> 3 min</p></div>
-                </Card>
-                 <Card className="flex items-center p-2 gap-3 bg-pink-100/50 dark:bg-pink-900/20 border-pink-500/50 ring-2 ring-pink-500">
-                    <HeartHandshake className="w-8 h-8 text-pink-500"/>
-                    <div className="flex-1"><p className="font-semibold">Curocity Pink</p><p className="text-xs text-pink-600/80 dark:text-pink-400/80">For women, by women</p></div>
-                    <div className="text-right"><p className="font-bold">₹215</p><p className="text-xs flex items-center gap-1"><Clock className="w-3 h-3"/> 5 min</p></div>
-                </Card>
-                <Card className="flex items-center p-2 gap-3 bg-muted">
-                    <CabIcon className="w-8 h-8 text-foreground" />
-                    <div className="flex-1"><p className="font-semibold">Cab XL</p><p className="text-xs text-muted-foreground">SUVs for 6 or more</p></div>
-                    <div className="text-right"><p className="font-bold">₹320</p><p className="text-xs flex items-center gap-1"><Clock className="w-3 h-3"/> 6 min</p></div>
-                </Card>
-            </div>
+  const handleServiceClick = (service: any) => {
+    if (service.id === 'sos') {
+      setIsSosModalOpen(true);
+    } else if (service.href) {
+      router.push(service.href);
+    }
+  };
+
+  const handleVoiceSearch = () => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      toast({
+        variant: 'destructive',
+        title: 'Browser Not Supported',
+        description: 'Voice search is not available on this browser.',
+      });
+      return;
+    }
+
+    if (recognitionRef.current && isListening) {
+      recognitionRef.current.stop();
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognitionRef.current = recognition;
+    
+    recognition.lang = 'en-US';
+
+    recognition.onstart = () => setIsListening(true);
+    recognition.onend = () => setIsListening(false);
+    recognition.onerror = (event) => {
+      toast({
+        variant: 'destructive',
+        title: 'Voice Search Error',
+        description: event.error === 'not-allowed' ? 'Microphone permission denied.' : 'An error occurred.',
+      });
+      setIsListening(false);
+    };
+
+    recognition.onresult = (event) => {
+      const transcript = event.results[0][0].transcript;
+      setSearchQuery(transcript);
+    };
+
+    recognition.start();
+  };
+  
+    const activeService = activeRide || activeAmbulanceCase || activeGarageRequest;
+    
+  if (activeService) {
+    return (
+        <div className="h-full w-full flex items-center justify-center p-4">
+            <RideStatus 
+                ride={activeService}
+                isGarageRequest={!!activeGarageRequest}
+                onCancel={resetFlow} 
+                onDone={resetFlow}
+            />
         </div>
-      ),
-    },
-     // Slide 2: Partner En-Route
-    {
-      type: 'path_enroute',
-      content: (
-        <div className="p-4 h-full flex flex-col">
-            <h3 className="font-bold text-xl mb-2 text-primary flex items-center gap-2">Partner on the way</h3>
-            <div className="relative flex-1 bg-muted rounded-xl overflow-hidden">
-                <LiveMap 
-                    riderLocation={{ lat: 28.4595, lon: 77.0266 }}
-                    driverLocation={{ lat: 28.4620, lon: 77.0300 }}
-                    routeGeometry={{ type: "LineString", coordinates: [[77.0300, 28.4620], [77.0280, 28.4610], [77.0266, 28.4595]] }}
-                />
-            </div>
-            <Card className="mt-2">
-                <CardContent className="p-3 flex items-center gap-3">
-                    <Avatar><AvatarImage src="https://i.pravatar.cc/40?u=driver1" data-ai-hint="driver portrait" /><AvatarFallback>RK</AvatarFallback></Avatar>
-                    <div className="flex-1">
-                      <p className="font-semibold">Ramesh Kumar</p>
-                      <p className="text-xs text-muted-foreground flex items-center gap-1">DL01AB1234 • <Star className="w-3 h-3 text-amber-400 fill-amber-400"/> 4.9</p>
-                    </div>
-                    <Button variant="ghost" size="icon"><MessageSquare className="w-5 h-5 text-muted-foreground"/></Button>
-                    <Button variant="ghost" size="icon"><Phone className="w-5 h-5 text-muted-foreground"/></Button>
-                </CardContent>
-            </Card>
-        </div>
-      ),
-    },
-    // Slide 3: CURE Emergency
-    {
-      type: 'cure',
-      content: (
-        <div className="p-4 h-full flex flex-col bg-red-500/10">
-            <h3 className="font-bold text-xl mb-2 text-red-600 flex items-center gap-2"><Siren className="animate-pulse"/> CURE Emergency</h3>
-            <div className="relative flex-1 bg-muted rounded-xl overflow-hidden">
-                <LiveMap
-                  riderLocation={{lat: 28.4500, lon: 77.0300}}
-                  activePartners={[{id: 'a1', name: 'Amb', type: 'ambulance', location: {lat: 28.4550, lon: 77.0350}}]}
-                  routeGeometry={{ type: "LineString", coordinates: [[77.0350, 28.4550], [77.0320, 28.4520], [77.0300, 28.4500]] }}
-                />
-            </div>
-            <Card className="mt-2 bg-background">
-                <CardHeader className="p-2 text-center">
-                  <p className="font-semibold text-sm">Ambulance UK07-1234</p>
-                  <p className="text-xs text-muted-foreground">Paramedic: Sunil Yadav • To: Max Hospital</p>
-                </CardHeader>
-                <CardContent className="p-2 grid grid-cols-2 gap-2 text-center">
-                    <div className="bg-muted p-2 rounded-md">
-                        <p className="text-xs">ETA to Patient</p>
-                        <p className="font-bold text-lg">2 min</p>
-                    </div>
-                     <div className="bg-muted p-2 rounded-md">
-                        <p className="text-xs">ETA to Hospital</p>
-                        <p className="font-bold text-lg">12 min</p>
-                    </div>
-                </CardContent>
-            </Card>
-        </div>
-      ),
-    },
-    // Slide 4: Doctor Appointment
-    {
-      type: 'doctor',
-      content: (
-        <div className="p-4 h-full flex flex-col">
-            <h3 className="font-bold text-xl mb-3 flex items-center gap-2">
-                <Calendar className="w-5 h-5 text-blue-500" /> Book an Appointment
-            </h3>
-            <div className="space-y-2">
-                <Card className="flex items-center p-2 gap-3 bg-muted">
-                    <Avatar className="w-10 h-10"><AvatarImage src="https://i.pravatar.cc/40?u=doc1" /><AvatarFallback>RS</AvatarFallback></Avatar>
-                    <div className="flex-1">
-                        <p className="font-semibold text-sm">Dr. Ramesh Sharma</p>
-                        <p className="text-xs text-muted-foreground">Cardiology</p>
-                    </div>
-                    <p className="font-bold text-sm">₹1200</p>
-                </Card>
-                <Card className="flex items-center p-2 gap-3 bg-muted ring-2 ring-primary">
-                    <Avatar className="w-10 h-10"><AvatarImage src="https://i.pravatar.cc/40?u=doc2" /><AvatarFallback>PG</AvatarFallback></Avatar>
-                    <div className="flex-1">
-                        <p className="font-semibold text-sm">Dr. Priya Gupta</p>
-                        <p className="text-xs text-muted-foreground">Orthopedics</p>
-                    </div>
-                    <p className="font-bold text-sm">₹1000</p>
-                </Card>
-                <Card className="flex items-center p-2 gap-3 bg-muted">
-                    <Avatar className="w-10 h-10"><AvatarImage src="https://i.pravatar.cc/40?u=doc3" /><AvatarFallback>AV</AvatarFallback></Avatar>
-                    <div className="flex-1">
-                        <p className="font-semibold text-sm">Dr. Alok Verma</p>
-                        <p className="text-xs text-muted-foreground">General Physician</p>
-                    </div>
-                    <p className="font-bold text-sm">₹800</p>
-                </Card>
-            </div>
-        </div>
-      ),
-    },
-  ];
+    )
+  }
+
+  const headingText = "How can we help you today?".split("");
+  const containerVariants = { hidden: { opacity: 0 }, visible: { opacity: 1, transition: { staggerChildren: 0.1, delayChildren: 0.2, }}};
 
   return (
-      <div className="flex flex-col min-h-screen bg-background">
-          <header className="sticky top-0 z-50 w-full border-b bg-background/80 backdrop-blur-sm">
-            <div className="container flex h-14 items-center">
-                <Link href="/" className="mr-6 flex items-center gap-2">
-                    <BrandLogo hideText={false} iconClassName="w-8 h-8" />
-                </Link>
-              <div className="flex flex-1 items-center justify-end gap-2">
-                <LanguageToggle />
-                <ThemeToggle />
-                 <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                        <Button variant="outline">
-                            <User className="mr-2 h-4 w-4"/> Login / Signup
-                        </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                        <DropdownMenuItem asChild><Link href="/login?role=user">Login as User</Link></DropdownMenuItem>
-                        <DropdownMenuItem asChild><Link href="/login?role=driver">Login as Partner</Link></DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem asChild><Link href="/admin" className="text-xs">Admin Panel</Link></DropdownMenuItem>
-                    </DropdownMenuContent>
-                 </DropdownMenu>
+    <>
+      <main id="main" className="relative z-10 p-4">
+        <section className="mx-auto max-w-7xl">
+          <div className="rounded-3xl border border-border bg-card/50 p-5 sm:p-8 md:p-10 shadow-xl backdrop-blur-sm">
+            <div className="text-center">
+              <h1 className="text-3xl sm:text-4xl md:text-5xl tracking-tight font-semibold text-foreground">
+                {headingText.map((el, i) => (
+                  <motion.span
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{
+                      duration: 0.25,
+                      delay: i / 20,
+                    }}
+                    key={i}
+                  >
+                    {el}
+                  </motion.span>
+                ))}
+              </h1>
+              <p className="mt-2 text-base sm:text-lg text-muted-foreground font-normal">
+                Choose a service to get started.
+              </p>
+
+              <div className="mt-6 relative max-w-xl mx-auto">
+                <label htmlFor="serviceSearch" className="sr-only">Search services</label>
+                <div className="pointer-events-none absolute inset-y-0 left-0 pl-3 flex items-center">
+                  <Search className="h-4 w-4 text-muted-foreground" />
+                </div>
+                <Input
+                  id="serviceSearch"
+                  type="text"
+                  autoComplete="off"
+                  className="w-full rounded-xl border-border bg-background pl-9 pr-24 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary"
+                  placeholder="Search services (e.g., ride, lab, appointment)"
+                  value={searchQuery}
+                  onChange={handleSearch}
+                />
+                <div className="absolute inset-y-0 right-0 mr-1.5 my-1.5 flex items-center gap-1.5">
+                  <Button variant="ghost" size="icon" className={cn("h-8 w-8", isListening && "bg-destructive/20 text-destructive animate-pulse")} title="Voice search" onClick={handleVoiceSearch}>
+                    <Mic className="h-4 w-4" />
+                  </Button>
+                  {searchQuery && (
+                    <Button variant="ghost" size="icon" className="h-8 w-8" title="Clear search" onClick={() => { setSearchQuery('');}}>
+                      <X className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+              </div>
+
+              <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
+                <Button variant="ghost" className="rounded-full px-3 py-1.5 text-xs font-medium">
+                  <MapPin className="h-3.5 w-3.5 mr-1.5" /> Nearest clinic
+                </Button>
+                <Button variant="ghost" className="rounded-full px-3 py-1.5 text-xs font-medium" onClick={() => router.push('/user/activity')}>
+                  <History className="h-3.5 w-3.5 mr-1.5" /> Recent Activity
+                </Button>
               </div>
             </div>
-          </header>
-          <main className="flex-1">
-            {/* Hero Section */}
-            <section className="relative py-24 md:py-32 lg:py-32 overflow-hidden">
-                <div className="absolute inset-0 -z-10 animate-text-gradient bg-gradient-to-br from-primary/10 via-red-500/10 to-amber-500/10"></div>
-                <div className="container grid lg:grid-cols-2 gap-10 items-center">
-                    <motion.div 
-                        className="text-center lg:text-left"
-                        variants={containerVariants}
-                        initial="hidden"
-                        animate="visible"
-                    >
-                        <motion.h1 
-                            variants={itemVariants}
-                            className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold tracking-tighter bg-clip-text text-transparent bg-gradient-to-b from-foreground to-foreground/70 font-headline"
-                        >
-                           Your Partner On The Road. Fair for Everyone.
-                        </motion.h1>
-                        <motion.p 
-                           variants={itemVariants}
-                           className="mt-4 text-lg font-semibold text-destructive"
-                        >
-                           Psst... other apps take 30% of your earnings. Just saying.
-                        </motion.p>
-                         <motion.p 
-                            variants={itemVariants}
-                            className="mx-auto lg:mx-0 mt-6 max-w-xl text-lg text-muted-foreground"
-                        >
-                            Curocity is more than a ride. It's a promise of fair fares for riders, 0% commission for partners, and an integrated safety network that looks out for you on every trip.
-                        </motion.p>
-                        <motion.div 
-                            variants={itemVariants}
-                            className="mt-8 flex justify-center lg:justify-start gap-4"
-                        >
-                             <Button size="lg" className="btn-glow bg-accent text-accent-foreground hover:bg-accent/90" asChild>
-                                <Link href="/login?role=user">
-                                   Get a Safe Ride <ArrowRight className="ml-2 h-5 w-5" />
-                                </Link>
-                            </Button>
-                        </motion.div>
-                    </motion.div>
-
-                    {/* Phone Mockup with Carousel */}
-                     <motion.div 
-                        initial={{ opacity: 0, y: 50, rotateY: -30, rotateX: 10 }}
-                        animate={{ opacity: 1, y: 0, rotateY: 15, rotateX: 5 }}
-                        transition={{ duration: 0.8, ease: [0.25, 1, 0.5, 1] }}
-                        className="relative w-72 h-[620px] lg:w-80 lg:h-[680px] mx-auto mt-16 lg:mt-0"
-                        style={{ perspective: '1000px' }}
-                    >
-                        <div 
-                            className="relative w-full h-full bg-background/50 backdrop-blur-md rounded-[3rem] border-[6px] border-neutral-800 dark:border-neutral-700 shadow-2xl ring-1 ring-black/10"
-                        >
-                            {/* Inner screen */}
-                            <div className="absolute inset-2 bg-background rounded-[2.5rem] overflow-hidden flex flex-col">
-                                {/* Notch */}
-                                <div className="absolute top-4 left-1/2 -translate-x-1/2 w-28 h-5 bg-black rounded-full z-20"></div>
-
-                                {/* Status Bar */}
-                                <div className="relative z-10 flex justify-between items-center px-6 pt-7 text-xs font-bold text-foreground">
-                                    <span>9:41</span>
-                                    <div className="flex gap-1.5">
-                                        <Signal size={14} />
-                                        <Wifi size={14} />
-                                        <Battery size={14} />
-                                    </div>
-                                </div>
-
-                                {/* App Content Carousel */}
-                                <div className="flex-1 mt-2">
-                                    <Carousel 
-                                      className="w-full h-full"
-                                      plugins={[Autoplay({ delay: 5000, stopOnInteraction: false })]}
-                                      opts={{ loop: true }}
-                                      setApi={setCarouselApi}
-                                    >
-                                        <CarouselContent>
-                                          {carouselSlides.map((slide, index) => (
-                                              <CarouselItem key={index}>
-                                                  {slide.content}
-                                              </CarouselItem>
-                                          ))}
-                                        </CarouselContent>
-                                    </Carousel>
-                                     <div className="py-2 px-4">
-                                         <div className="flex w-full justify-center gap-2">
-                                            {carouselSlides.map((_, index) => (
-                                                <div
-                                                    key={index}
-                                                    className={cn(
-                                                        "h-1.5 w-6 rounded-full transition-all duration-500",
-                                                        currentSlide === index ? "bg-primary w-8" : "bg-muted"
-                                                    )}
-                                                />
-                                            ))}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </motion.div>
-                </div>
-            </section>
-
-             <section className="py-20 md:py-24 bg-muted/40">
-                <div className="container">
-                    <div className="mx-auto max-w-3xl text-center">
-                        <h2 className="text-3xl font-bold tracking-tight sm:text-4xl font-headline">
-                            The CPR Ecosystem: One App, Complete Peace of Mind
-                        </h2>
-                        <p className="mt-4 text-lg text-muted-foreground">
-                           Curocity isn't just an app; it's a unified platform for urban safety and mobility, built on four powerful pillars.
-                        </p>
-                    </div>
-                     <div className="mt-16 grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-4">
-                        {cprData.map((item, i) => (
-                             <Card key={i} className={cn("text-center transition-all hover:shadow-lg", item.color)}>
-                                 <CardHeader>
-                                     <div className="mx-auto p-3 rounded-full bg-background border w-fit">
-                                         <item.icon className={cn("w-6 h-6", item.textColor)} />
-                                     </div>
-                                     <CardTitle className="pt-2">{item.title}</CardTitle>
-                                 </CardHeader>
-                                 <CardContent>
-                                     <p className="text-sm text-muted-foreground">{item.description}</p>
-                                 </CardContent>
-                             </Card>
-                        ))}
-                    </div>
-                </div>
-            </section>
             
-             <section className="py-20 md:py-24">
-                <div className="container text-center">
-                    <h2 className="text-3xl font-bold tracking-tight sm:text-4xl font-headline">The Curocity Advantage</h2>
-                    <p className="mt-4 text-lg text-muted-foreground max-w-3xl mx-auto">
-                        We've rebuilt the system from the ground up to create a win-win ecosystem for everyone involved.
-                    </p>
-                    <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-8 text-left">
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="flex items-center gap-2"><User /> For Users</CardTitle>
-                            </CardHeader>
-                            <CardContent className="space-y-3">
-                                <p className="flex items-start gap-2"><CheckCircle className="w-5 h-5 text-green-500 mt-0.5 shrink-0" /> <span><span className="font-semibold">Fair & Transparent Fares:</span> No random surge pricing. Ever.</span></p>
-                                <p className="flex items-start gap-2"><CheckCircle className="w-5 h-5 text-green-500 mt-0.5 shrink-0" /> <span><span className="font-semibold">Unmatched Safety:</span> An integrated CURE network for real emergencies.</span></p>
-                                <p className="flex items-start gap-2"><CheckCircle className="w-5 h-5 text-green-500 mt-0.5 shrink-0" /> <span><span className="font-semibold">Professional Service:</span> Happy, respected partners provide better service.</span></p>
-                                <p className="flex items-start gap-2"><CheckCircle className="w-5 h-5 text-green-500 mt-0.5 shrink-0" /> <span><span className="font-semibold">Reliable Rides:</span> Our driver-first model means fewer cancellations.</span></p>
-                                <p className="flex items-start gap-2"><CheckCircle className="w-5 h-5 text-green-500 mt-0.5 shrink-0" /> <span><span className="font-semibold">Cashless Insurance Feel:</span> Seamless insurance verification at partner hospitals.</span></p>
-                                <p className="flex items-start gap-2"><CheckCircle className="w-5 h-5 text-green-500 mt-0.5 shrink-0" /> <span><span className="font-semibold">Freedom of Choice:</span> From Bikes to Cabs and secure Pink rides, all in one app.</span></p>
-                            </CardContent>
-                        </Card>
-                         <Card className="ring-2 ring-primary border-primary shadow-lg">
-                            <CardHeader>
-                                <CardTitle className="flex items-center gap-2"><HeartHandshake /> For Partners</CardTitle>
-                            </CardHeader>
-                             <CardContent className="space-y-3">
-                                <p className="flex items-start gap-2"><CheckCircle className="w-5 h-5 text-green-500 mt-0.5 shrink-0" /> <span><span className="font-semibold">Just ONE Monthly Recharge:</span> No commission cuts. If you earn ₹1000, you keep ₹1000.</span></p>
-                                <p className="flex items-start gap-2"><CheckCircle className="w-5 h-5 text-green-500 mt-0.5 shrink-0" /> <span><span className="font-semibold">True Financial Security:</span> Access instant loans and high-interest savings via Curocity Bank.</span></p>
-                                <p className="flex items-start gap-2"><CheckCircle className="w-5 h-5 text-green-500 mt-0.5 shrink-0" /> <span><span className="font-semibold">Accident & Vehicle Insurance:</span> Stay protected on and off the road with our insurance plans.</span></p>
-                                <p className="flex items-start gap-2"><CheckCircle className="w-5 h-5 text-green-500 mt-0.5 shrink-0" /> <span><span className="font-semibold">Respect & Dignity:</span> You are our partner, not a number. We are committed to your growth and well-being.</span></p>
-                                <p className="flex items-start gap-2"><CheckCircle className="w-5 h-5 text-green-500 mt-0.5 shrink-0" /> <span><span className="font-semibold">AI Earnings Coach:</span> Get smart, personalized tips in your app to maximize your daily income.</span></p>
-                            </CardContent>
-                        </Card>
-                         <Card>
-                            <CardHeader>
-                                <CardTitle className="flex items-center gap-2"><Building /> For the City</CardTitle>
-                            </CardHeader>
-                            <CardContent className="space-y-3">
-                                <p className="flex items-start gap-2"><CheckCircle className="w-5 h-5 text-green-500 mt-0.5 shrink-0" /> <span><span className="font-semibold">Smarter Emergency Response:</span> Digitizing hospital dispatch saves critical time.</span></p>
-                                <p className="flex items-start gap-2"><CheckCircle className="w-5 h-5 text-green-500 mt-0.5 shrink-0" /> <span><span className="font-semibold">Economic Empowerment:</span> More earnings for drivers means more money flowing into the local economy.</span></p>
-                                <p className="flex items-start gap-2"><CheckCircle className="w-5 h-5 text-green-500 mt-0.5 shrink-0" /> <span><span className="font-semibold">Data-Driven Urban Planning:</span> Our integrated data can help city planners solve mobility challenges.</span></p>
-                                <p className="flex items-start gap-2"><CheckCircle className="w-5 h-5 text-green-500 mt-0.5 shrink-0" /> <span><span className="font-semibold">A Safer Urban Fabric:</span> A connected, reliable network for travel and emergencies.</span></p>
-                                <p className="flex items-start gap-2"><CheckCircle className="w-5 h-5 text-green-500 mt-0.5 shrink-0" /> <span><span className="font-semibold">Reduced Congestion & Carbon Footprint:</span> Promoting efficient dispatch and shared mobility.</span></p>
-                            </CardContent>
-                        </Card>
-                    </div>
-                </div>
-            </section>
-
-            {/* Your Journey Section */}
-             <section className="py-20 md:py-24 bg-muted/40">
-                <div className="container">
-                    <div className="mx-auto max-w-3xl text-center">
-                        <h2 className="text-3xl font-bold tracking-tight sm:text-4xl font-headline">
-                           Your Journey with Curocity
-                        </h2>
-                        <p className="mt-4 text-lg text-muted-foreground">
-                           A simple, safe, and transparent experience from start to finish.
-                        </p>
-                    </div>
-                    <div className="relative mt-16">
-                        {/* The connecting line */}
-                        <div className="absolute left-1/2 top-8 hidden h-[calc(100%-4rem)] w-0.5 bg-border md:block" aria-hidden="true" />
-
-                        <motion.div 
-                            className="grid grid-cols-1 md:grid-cols-2 gap-y-16 gap-x-12"
-                            variants={containerVariants}
-                            initial="hidden"
-                            whileInView="visible"
-                            viewport={{ once: true, amount: 0.2 }}
-                        >
-                            {journeySteps.map((step, index) => (
-                                <motion.div 
-                                    key={step.title}
-                                    variants={itemVariants}
-                                    className={cn(
-                                        "relative flex items-start gap-6",
-                                        index % 2 === 1 && "md:flex-row-reverse"
-                                    )}
-                                >
-                                    <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 ring-8 ring-background">
-                                        <step.icon className="h-8 w-8 text-primary" />
-                                    </div>
-                                    <div className={cn("text-left", index % 2 === 1 && "md:text-right")}>
-                                        <h3 className="text-xl font-bold">{step.title}</h3>
-                                        <p className="mt-2 text-muted-foreground">{step.description}</p>
-                                    </div>
-                                </motion.div>
-                            ))}
-                        </motion.div>
-                    </div>
-                </div>
-            </section>
-
-             {/* Partner CTA Section */}
-            <section className="py-20 md:py-24">
-                <div className="container text-center">
-                    <h2 className="text-3xl font-bold tracking-tight sm:text-4xl font-headline">Join Our Driver-First Revolution</h2>
-                    <p className="mt-4 text-lg text-muted-foreground max-w-2xl mx-auto">
-                        Are you a driver, mechanic, or hospital administrator? Partner with Curocity and be part of a fairer, more profitable ecosystem.
-                    </p>
-                    <div className="mt-8">
-                        <Button size="lg" asChild>
-                            <Link href="/partner-hub">
-                                Become a Partner <ArrowRight className="ml-2 h-5 w-5" />
-                            </Link>
-                        </Button>
-                    </div>
-                </div>
-            </section>
-
-          </main>
-          <footer className="py-6 md:px-8 md:py-0 bg-background border-t">
-            <div className="container flex flex-col items-center justify-between gap-4 md:h-24 md:flex-row">
-              <div className="flex items-center gap-2">
-                 <p className="text-center text-sm leading-loose text-muted-foreground md:text-left">
-                    Built by Team Curocity. All rights reserved. &copy; {new Date().getFullYear()}
-                  </p>
-                  <Link href="/admin" legacyBehavior>
-                    <a className="text-muted-foreground hover:text-primary transition-colors">
-                      <Shield size={16} />
-                      <span className="sr-only">Admin Login</span>
-                    </a>
-                  </Link>
-              </div>
-               <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                 <Link href="/terms" className="hover:text-primary">Terms of Service</Link>
-                 <Link href="/privacy" className="hover:text-primary">Privacy Policy</Link>
-               </div>
+            <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
+              {services.map(service => (
+                <ServiceCard key={service.id} service={service} onClick={() => handleServiceClick(service)} />
+              ))}
             </div>
-          </footer>
-      </div>
-  );
+
+            {services.length === 0 && searchQuery && (
+                 <div className="mt-4 rounded-xl border border-border bg-muted/50 p-5 text-center">
+                    <div className="mx-auto inline-flex h-10 w-10 items-center justify-center rounded-full bg-background border">
+                        <Search className="h-4 w-4 text-muted-foreground"/>
+                    </div>
+                    <p className="mt-2 text-sm text-muted-foreground">No services match your search.</p>
+                </div>
+            )}
+          </div>
+        </section>
+        
+        <AlertDialog open={isSosModalOpen} onOpenChange={setIsSosModalOpen}>
+            <AlertDialogContent>
+                <EmergencyButtons 
+                    serviceType="cure"
+                    // These props are simplified as the component is now self-contained for location
+                    liveMapRef={{current: null}} 
+                    pickupCoords={null} 
+                    setIsRequestingSos={() => {}}
+                    setActiveAmbulanceCase={setActiveAmbulanceCase}
+                    setActiveGarageRequest={() => {}}
+                    onBack={() => setIsSosModalOpen(false)}
+                    session={session}
+                />
+            </AlertDialogContent>
+        </AlertDialog>
+
+      </main>
+    </>
+  )
 }
+
+    

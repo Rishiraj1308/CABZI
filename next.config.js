@@ -17,6 +17,15 @@ const nextConfig = {
     ignoreDuringBuilds: true,
   },
   productionBrowserSourceMaps: false,
+  async redirects() {
+    return [
+      {
+        source: '/user',
+        destination: '/home',
+        permanent: true,
+      },
+    ]
+  },
 };
 
 module.exports = nextConfig;
