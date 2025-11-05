@@ -26,13 +26,20 @@ const LiveMap = dynamic(() => import('@/components/live-map'), {
     loading: () => <Skeleton className="w-full h-full bg-muted" />,
 });
 
+const clinicServices = [
+    { id: 'opd', label: 'OPD Consultation' },
+    { id: 'first_aid', label: 'First-Aid / Minor Injury Care' },
+    { id: 'pharmacy', label: 'In-house Pharmacy' },
+    { id: 'pathology', label: 'Basic Pathology / Blood Tests' },
+]
+
 export default function ClinicOnboardingPage() {
     const { toast } = useToast()
     const router = useRouter()
     const { db, auth } = useFirebase();
     const [isLoading, setIsLoading] = useState(false)
     const [currentStep, setCurrentStep] = useState(1);
-    const totalSteps = 5;
+    const totalSteps = 6;
     const mapRef = useRef<any>(null);
     
     const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
@@ -52,10 +59,12 @@ export default function ClinicOnboardingPage() {
         doctorName: '',
         doctorRegNo: '',
         specialization: '',
-        // Step 4: Location
+        // Step 4: Services
+        services: [] as string[],
+        // Step 5: Location
         address: '',
         location: null as { lat: number, lon: number } | null,
-        // Step 5
+        // Step 6: Final
         agreedToTerms: false,
     });
 
@@ -66,7 +75,7 @@ export default function ClinicOnboardingPage() {
         }
     }, [auth]);
 
-    const handleInputChange = (field: keyof typeof formData, value: string | boolean) => {
+    const handleInputChange = (field: keyof typeof formData, value: string | boolean | string[]) => {
         setFormData(prev => ({...prev, [field]: value}));
     };
     
@@ -253,6 +262,30 @@ export default function ClinicOnboardingPage() {
                 );
             case 5:
                  return (
+                    <div className="space-y-4">
+                        <Label className="font-semibold text-lg">Services Offered</Label>
+                        <CardDescription>Select all services available at your clinic.</CardDescription>
+                         <div className="grid grid-cols-2 gap-4 p-4 border rounded-lg">
+                            {clinicServices.map(service => (
+                                <div key={service.id} className="flex items-center space-x-2">
+                                    <Checkbox
+                                        id={service.id}
+                                        checked={formData.services.includes(service.label)}
+                                        onCheckedChange={(checked) => {
+                                            const newServices = checked
+                                                ? [...formData.services, service.label]
+                                                : formData.services.filter(s => s !== service.label);
+                                            handleInputChange('services', newServices);
+                                        }}
+                                    />
+                                    <Label htmlFor={service.id} className="text-sm font-normal cursor-pointer">{service.label}</Label>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                );
+            case 6:
+                 return (
                      <div className="space-y-6">
                          <div className="space-y-2">
                             <Label className="font-semibold text-lg">Set Facility Location*</Label>
@@ -277,7 +310,7 @@ export default function ClinicOnboardingPage() {
          }
     }
 
-    const stepTitles = ["Verify Phone", "Verify OTP", "Owner Details", "Facility Details", "Location & Final Submit"];
+    const stepTitles = ["Verify Phone", "Verify OTP", "Owner Details", "Facility Details", "Services", "Location & Submit"];
 
 
     return (
@@ -295,7 +328,7 @@ export default function ClinicOnboardingPage() {
                     </div>
                 </CardHeader>
                 <form onSubmit={handleSubmit}>
-                     <CardContent className="min-h-[250px] flex flex-col justify-center">
+                     <CardContent className="min-h-[300px] flex flex-col justify-center">
                        {renderStepContent()}
                     </CardContent>
                     <CardFooter className="flex-col gap-4">
@@ -310,7 +343,7 @@ export default function ClinicOnboardingPage() {
                             )}
                         </div>
                         <Button asChild variant="link" className="text-muted-foreground">
-                            <Link href="/cure/onboarding"><ArrowLeft className="mr-2 h-4 w-4" />Back to Partner Type Selection</Link>
+                            <Link href="/cure/onboarding"><ArrowLeft className="mr-2 h-4 w-4" />Back to Partner Type</Link>
                         </Button>
                     </CardFooter>
                 </form>

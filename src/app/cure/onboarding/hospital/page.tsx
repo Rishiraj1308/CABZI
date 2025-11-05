@@ -12,7 +12,7 @@ import Link from 'next/link'
 import BrandLogo from '@/components/brand-logo'
 import { useFirebase } from '@/firebase/client-provider'
 import { collection, addDoc, serverTimestamp, GeoPoint, query, where, getDocs, limit } from "firebase/firestore";
-import { ArrowLeft, Building2, BedDouble, Stethoscope } from 'lucide-react'
+import { ArrowLeft, Building2, BedDouble, Stethoscope, Ambulance as AmbulanceIcon, Heart, Shield } from 'lucide-react'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Progress } from '@/components/ui/progress'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -25,6 +25,17 @@ const LiveMap = dynamic(() => import('@/components/live-map'), {
     loading: () => <Skeleton className="w-full h-full bg-muted" />,
 });
 
+const hospitalDepartments = [
+    { id: 'icu', label: 'ICU (Intensive Care Unit)' },
+    { id: 'trauma', label: 'Trauma Center / Emergency Room' },
+    { id: 'cardiac', label: 'Cardiac Care / Cardiology' },
+    { id: 'neurology', label: 'Neurology' },
+    { id: 'orthopedics', label: 'Orthopedics' },
+    { id: 'pediatrics', label: 'Pediatrics' },
+    { id: 'oncology', label: 'Oncology' },
+    { id: 'maternity', label: 'Maternity / Gynecology' },
+]
+
 
 export default function HospitalOnboardingPage() {
     const { toast } = useToast()
@@ -32,7 +43,7 @@ export default function HospitalOnboardingPage() {
     const { db, auth } = useFirebase();
     const [isLoading, setIsLoading] = useState(false)
     const [currentStep, setCurrentStep] = useState(1);
-    const totalSteps = 5;
+    const totalSteps = 6;
     const mapRef = useRef<any>(null);
     
     const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
@@ -53,10 +64,15 @@ export default function HospitalOnboardingPage() {
         hospitalType: '',
         totalBeds: '',
         bedsOccupied: '',
-        // Step 4: Location
+        // Step 4: Services & Fleet
+        departments: [] as string[],
+        blsAmbulances: '0',
+        alsAmbulances: '0',
+        cardiacAmbulances: '0',
+        // Step 5: Location
         address: '',
         location: null as { lat: number, lon: number } | null,
-        // Step 5: Final
+        // Step 6: Final
         agreedToTerms: false,
     });
 
@@ -67,7 +83,7 @@ export default function HospitalOnboardingPage() {
         }
     }, [auth]);
     
-    const handleInputChange = (field: keyof typeof formData, value: string | boolean) => {
+    const handleInputChange = (field: keyof typeof formData, value: string | boolean | string[]) => {
         setFormData(prev => ({...prev, [field]: value}));
     };
     
@@ -249,6 +265,41 @@ export default function HospitalOnboardingPage() {
                 );
             case 5:
                 return (
+                    <div className="space-y-6">
+                        <div className="space-y-4">
+                            <Label className="font-semibold text-lg">Departments & Fleet</Label>
+                            <CardDescription>Select the departments available at your facility and specify your ambulance fleet count.</CardDescription>
+                            <div className="p-4 border rounded-lg space-y-4">
+                               <p className="font-medium text-sm">Available Departments</p>
+                               <div className="grid grid-cols-2 gap-3">
+                                   {hospitalDepartments.map(dept => (
+                                       <div key={dept.id} className="flex items-center space-x-2">
+                                            <Checkbox 
+                                                id={dept.id} 
+                                                checked={formData.departments.includes(dept.label)}
+                                                onCheckedChange={(checked) => {
+                                                    const newDepts = checked
+                                                        ? [...formData.departments, dept.label]
+                                                        : formData.departments.filter(d => d !== dept.label);
+                                                    handleInputChange('departments', newDepts);
+                                                }}
+                                            />
+                                            <Label htmlFor={dept.id} className="text-sm font-normal cursor-pointer">{dept.label}</Label>
+                                        </div>
+                                   ))}
+                               </div>
+                               <p className="font-medium text-sm pt-4">Ambulance Fleet Count</p>
+                               <div className="grid grid-cols-3 gap-4">
+                                   <div className="space-y-2"><Label htmlFor="blsAmbulances">BLS</Label><Input id="blsAmbulances" type="number" value={formData.blsAmbulances} onChange={e => handleInputChange('blsAmbulances', e.target.value)} /></div>
+                                   <div className="space-y-2"><Label htmlFor="alsAmbulances">ALS</Label><Input id="alsAmbulances" type="number" value={formData.alsAmbulances} onChange={e => handleInputChange('alsAmbulances', e.target.value)} /></div>
+                                   <div className="space-y-2"><Label htmlFor="cardiacAmbulances">Cardiac</Label><Input id="cardiacAmbulances" type="number" value={formData.cardiacAmbulances} onChange={e => handleInputChange('cardiacAmbulances', e.target.value)} /></div>
+                               </div>
+                            </div>
+                        </div>
+                    </div>
+                );
+            case 6:
+                return (
                      <div className="space-y-6">
                          <div className="space-y-2">
                             <Label className="font-semibold text-lg">Set Hospital Location*</Label>
@@ -273,7 +324,7 @@ export default function HospitalOnboardingPage() {
         }
     }
 
-    const stepTitles = ["Verify Phone", "Verify OTP", "Owner Details", "Facility Details", "Location & Final Submit"];
+    const stepTitles = ["Verify Phone", "Verify OTP", "Owner Details", "Facility Details", "Services & Fleet", "Location & Submit"];
 
     return (
         <div className="flex min-h-screen items-center justify-center p-4 bg-muted/40">
@@ -290,12 +341,12 @@ export default function HospitalOnboardingPage() {
                     </div>
                 </CardHeader>
                 <form onSubmit={handleSubmit}>
-                    <CardContent className="min-h-[250px] flex flex-col justify-center">
+                    <CardContent className="min-h-[300px] flex flex-col justify-center">
                        {renderStepContent()}
                     </CardContent>
                     <CardFooter className="flex-col gap-4">
                         <div className="w-full flex justify-between">
-                            <Button type="button" variant="outline" onClick={handlePrevStep} disabled={currentStep === 1}>Previous Step</Button>
+                            <Button type="button" variant="outline" onClick={handlePrevStep} disabled={currentStep === 1}>Previous</Button>
                             {currentStep < totalSteps ? (
                                 <Button type="button" onClick={handleNextStep} disabled={isLoading}>
                                     {isLoading ? 'Verifying...' : 'Next Step'}
@@ -305,7 +356,7 @@ export default function HospitalOnboardingPage() {
                             )}
                         </div>
                         <Button asChild variant="link" className="text-muted-foreground">
-                            <Link href="/cure/onboarding"><ArrowLeft className="mr-2 h-4 w-4" />Back to Partner Type Selection</Link>
+                            <Link href="/cure/onboarding"><ArrowLeft className="mr-2 h-4 w-4" />Back to Partner Type</Link>
                         </Button>
                     </CardFooter>
                 </form>
