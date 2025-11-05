@@ -17,7 +17,7 @@ export default function PartnerHub() {
             href: '/cure/onboarding',
             icon: Ambulance,
             title: 'Cure Partner',
-            description: 'Onboard your Hospital/Clinic to join our life-saving network.',
+            description: 'Onboard your Hospital or Clinic to join our life-saving network.',
             buttonText: 'Join as Cure Partner',
             className: 'hover:border-destructive hover:shadow-red-500/10',
             buttonClassName: 'border-destructive text-destructive hover:bg-destructive/10 hover:text-destructive',
@@ -59,7 +59,7 @@ export default function PartnerHub() {
                         <BrandLogo iconClassName="w-12 h-12" />
                        </Link>
                     </div>
-                    <CardTitle className="text-3xl mt-4">Join the Cabzi <span className="text-red-600">C</span><span className="text-primary">P</span><span className="text-amber-600">R</span> Partners Network</CardTitle>
+                    <CardTitle className="text-3xl mt-4">Join the Curocity <span className="text-red-600">C</span><span className="text-primary">P</span><span className="text-amber-600">R</span> Partners Network</CardTitle>
                     <CardDescription>
                         Become a part of India&apos;s first complete mobility, safety, and life-saving ecosystem.
                     </CardDescription>
