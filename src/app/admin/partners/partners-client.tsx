@@ -1,3 +1,4 @@
+
 'use client'
 
 import { useState, useMemo, useEffect, useCallback } from 'react'
@@ -277,13 +278,16 @@ export default function PartnersClient() {
   }
 
   const renderTable = (partnerTypes: Array<'driver' | 'mechanic' | 'hospital' | 'clinic' | 'doctor'>) => {
-      const data = filteredPartners.filter(p => {
+      let data = filteredPartners.filter(p => {
           if (partnerTypes.includes('hospital') && p.type === 'cure' && p.businessType === 'Hospital') return true;
           if (partnerTypes.includes('clinic') && p.type === 'cure' && p.businessType === 'Clinic') return true;
           return partnerTypes.includes(p.type);
       });
       
       const isDoctorTab = partnerTypes.includes('doctor');
+      if (isDoctorTab) {
+          data = data.filter(p => p.docStatus !== 'Verified');
+      }
       
       return (
         <Table>
