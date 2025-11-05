@@ -7,7 +7,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
-import PartnerDetails from '@/app/admin/partners/partner-details';
+import PartnerDetails from '../partner-details';
 
 function PartnerDetailsPageContent() {
   const params = useParams();
