@@ -1,12 +1,11 @@
 
 'use client'
 
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Stethoscope, Calendar, Users, BarChart, FileText, Clock, UserCheck, UserPlus, MoreHorizontal, Trash2, Phone, ArrowLeft, Video, Building } from 'lucide-react';
+import { Stethoscope, Calendar, Users as UsersIcon, Clock, UserCheck, UserPlus, MoreHorizontal, Trash2, Phone, ArrowLeft, Video, Building, UploadCloud } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useDb, useFirebase } from '@/firebase/client-provider';
 import { collection, query, where, onSnapshot, Timestamp, orderBy, getDocs, doc, updateDoc, deleteDoc, addDoc, serverTimestamp, writeBatch, limit } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -39,6 +38,7 @@ import { Progress } from '@/components/ui/progress';
 import { Switch } from '@/components/ui/switch';
 import { cn } from '@/lib/utils';
 import { useCurePartner } from './layout';
+import { RecaptchaVerifier, signInWithPhoneNumber, type ConfirmationResult } from 'firebase/auth'
 
 const StatCard = ({ title, value, icon: Icon, isLoading }: { title: string, value: string, icon: React.ElementType, isLoading?: boolean }) => (
     <Card>
@@ -90,6 +90,7 @@ const initialDoctorState = {
     regCouncil: '',
     regYear: '',
     consultationFee: '',
+    otp: '',
 };
 
 const ClinicDashboard = () => {
@@ -102,9 +103,20 @@ const ClinicDashboard = () => {
     const [generatedCreds, setGeneratedCreds] = useState<{ id: string, pass: string, role: string } | null>(null);
     const [isCredsDialogOpen, setIsCredsDialogOpen] = useState(false);
     const [currentFormStep, setCurrentFormStep] = useState(1);
+    const totalSteps = 4;
     const { partnerData } = useCurePartner();
-    const { user, db } = useFirebase();
+    const { user, db, auth } = useFirebase();
     const { toast } = useToast();
+    const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
+    const recaptchaContainerRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        if (auth && recaptchaContainerRef.current && !auth.currentUser?.getIdToken) {
+            // @ts-ignore
+            window.recaptchaVerifier = new RecaptchaVerifier(auth, recaptchaContainerRef.current, { size: 'invisible' });
+        }
+    }, [auth]);
+
 
     const handleLogout = useCallback(() => {
         // Placeholder for logout logic
@@ -187,12 +199,44 @@ const ClinicDashboard = () => {
             return;
         }
         
-        if (currentFormStep < 3) {
+        if (currentFormStep < totalSteps -1) { // -1 because the last step is submission
             if (currentFormStep === 1) {
                 if (newDoctorData.fullName.length < 3 || !newDoctorData.specialization) {
                     toast({ variant: 'destructive', title: 'Incomplete', description: 'Please enter a valid name and select a specialization.' });
                     return;
                 }
+            }
+            if (currentFormStep === 2) {
+                 if (!auth) return;
+                setIsSubmitting(true);
+                try {
+                    const fullPhoneNumber = `+91${newDoctorData.contactNumber}`;
+                    // @ts-ignore
+                    const confirmation = await signInWithPhoneNumber(auth, fullPhoneNumber, window.recaptchaVerifier);
+                    setConfirmationResult(confirmation);
+                    toast({ title: 'OTP Sent!', description: `An OTP has been sent to ${fullPhoneNumber}.` });
+                } catch (error) {
+                    toast({ variant: 'destructive', title: 'Failed to Send OTP' });
+                    setIsSubmitting(false);
+                    return;
+                }
+                setIsSubmitting(false);
+            }
+            if (currentFormStep === 3) {
+                 if (!confirmationResult || newDoctorData.otp.length !== 6) {
+                    toast({ variant: 'destructive', title: 'Invalid OTP' });
+                    return;
+                }
+                setIsSubmitting(true);
+                try {
+                    await confirmationResult.confirm(newDoctorData.otp);
+                    toast({ title: 'Phone Verified!', className: 'bg-green-600 text-white border-green-600'});
+                } catch (error) {
+                     toast({ variant: 'destructive', title: 'OTP Verification Failed' });
+                     setIsSubmitting(false);
+                     return;
+                }
+                setIsSubmitting(false);
             }
             setCurrentFormStep(p => p + 1);
             return;
@@ -202,8 +246,8 @@ const ClinicDashboard = () => {
       
         const { fullName: name, contactNumber: phone, emailAddress: email, ...restOfData } = newDoctorData;
       
-        if (!name || !phone || !email || !restOfData.specialization || !restOfData.medicalRegNo || !restOfData.regCouncil || !restOfData.regYear) {
-            toast({ variant: 'destructive', title: 'Missing Required Fields', description: 'Please complete all form steps.' });
+        if (!name || !phone || !email || !restOfData.specialization) {
+            toast({ variant: 'destructive', title: 'Missing Required Fields', description: 'Please complete all required fields.' });
             setIsSubmitting(false);
             return;
         }
@@ -230,7 +274,7 @@ const ClinicDashboard = () => {
                 name, phone, email, ...restOfData, 
                 partnerId, 
                 createdAt: serverTimestamp(), 
-                docStatus: 'Awaiting Final Approval', 
+                docStatus: 'kyc_pending', 
                 hospitalId: partnerData.id, hospitalName: partnerData.name, 
                 isAvailable: false 
             };
@@ -319,18 +363,11 @@ const ClinicDashboard = () => {
                                     <SelectContent>{doctorSpecializations.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
                                 </Select>
                             </div>
-                             <div className="space-y-2">
-                                <Label>Gender</Label>
-                                <Select name="gender" onValueChange={v => handleFormChange('gender', v)} value={newDoctorData.gender}>
-                                    <SelectTrigger><SelectValue placeholder="Select Gender"/></SelectTrigger>
-                                    <SelectContent><SelectItem value="male">Male</SelectItem><SelectItem value="female">Female</SelectItem><SelectItem value="other">Other</SelectItem></SelectContent>
-                                </Select>
-                            </div>
                             <div className="space-y-2">
                                 <Label>Experience (years)</Label>
                                 <Input name="experience" type="number" value={newDoctorData.experience} onChange={e => handleFormChange('experience', e.target.value)} />
                             </div>
-                            <div className="space-y-2 md:col-span-2">
+                            <div className="space-y-2">
                                 <Label>Consultation Fee (INR, optional)</Label>
                                 <Input name="consultationFee" type="number" placeholder="e.g., 800" value={newDoctorData.consultationFee} onChange={e => handleFormChange('consultationFee', e.target.value)} />
                             </div>
@@ -340,22 +377,21 @@ const ClinicDashboard = () => {
             case 2:
                  return (
                     <div className="space-y-4">
-                        <h3 className="text-lg font-semibold border-b pb-2">Step 2: Professional Details</h3>
+                        <h3 className="text-lg font-semibold border-b pb-2">Step 2: Contact Verification</h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
-                             <div className="space-y-2 md:col-span-2"><Label>Qualifications</Label><Input name="qualifications" placeholder="MBBS, MD" value={newDoctorData.qualifications} onChange={e => handleFormChange('qualifications', e.target.value)} /></div>
-                            <div className="space-y-2"><Label>Department</Label><Input name="department" value={newDoctorData.department} onChange={e => handleFormChange('department', e.target.value)} /></div>
-                            <div className="space-y-2"><Label>Designation</Label><Input name="designation" placeholder="e.g., Senior Consultant" value={newDoctorData.designation} onChange={e => handleFormChange('designation', e.target.value)} /></div>
+                             <div className="space-y-2"><Label>Email Address*</Label><Input name="emailAddress" type="email" required value={newDoctorData.emailAddress} onChange={e => handleFormChange('emailAddress', e.target.value)} /></div>
+                             <div className="space-y-2"><Label>Contact Number*</Label><Input name="contactNumber" type="tel" maxLength={10} required value={newDoctorData.contactNumber} onChange={e => handleFormChange('contactNumber', e.target.value)} /></div>
                         </div>
                     </div>
                  );
             case 3:
                 return (
-                    <div className="space-y-4">
-                        <h3 className="text-lg font-semibold border-b pb-2">Step 3: Licenses & Verification</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
-                             <div className="space-y-2 md:col-span-2"><Label>Medical Registration Number*</Label><Input name="medicalRegNo" required value={newDoctorData.medicalRegNo} onChange={e => handleFormChange('medicalRegNo', e.target.value)} /></div>
-                            <div className="space-y-2"><Label>Registration Council*</Label><Input name="regCouncil" placeholder="e.g., Medical Council of India" required value={newDoctorData.regCouncil} onChange={e => handleFormChange('regCouncil', e.target.value)} /></div>
-                            <div className="space-y-2"><Label>Registration Year*</Label><Input name="regYear" type="number" placeholder="e.g., 2010" required value={newDoctorData.regYear} onChange={e => handleFormChange('regYear', e.target.value)} /></div>
+                     <div className="space-y-4">
+                        <h3 className="text-lg font-semibold border-b pb-2">Step 3: Medical KYC</h3>
+                        <div className="space-y-4">
+                             <div className="space-y-2"><Label>Medical Registration Certificate*</Label><Input type="file" required /></div>
+                             <div className="space-y-2"><Label>Degree Certificate (MBBS/BDS etc)*</Label><Input type="file" required /></div>
+                             <div className="space-y-2"><Label>Doctor's Photo ID*</Label><Input type="file" required /></div>
                         </div>
                     </div>
                 );
@@ -367,6 +403,7 @@ const ClinicDashboard = () => {
 
     return (
         <div className="space-y-6">
+            <div id="recaptcha-container" ref={recaptchaContainerRef} className="fixed bottom-0 right-0"></div>
             <div>
                 <h2 className="text-3xl font-bold tracking-tight">Clinic Dashboard</h2>
                 <p className="text-muted-foreground">Manage your appointments, doctors, and patient interactions.</p>
@@ -374,14 +411,13 @@ const ClinicDashboard = () => {
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 <StatCard title="Today's Appointments" value={`${stats.todayAppointments}`} icon={Calendar} isLoading={isLoading} />
-                <StatCard title="Patients Waiting" value={`${stats.waiting}`} icon={Users} isLoading={isLoading} />
+                <StatCard title="Patients Waiting" value={`${stats.waiting}`} icon={UsersIcon} isLoading={isLoading} />
                 <StatCard title="Avg. Wait Time" value={`${stats.avgWaitTime} min`} icon={Clock} isLoading={isLoading} />
             </div>
             
             <Tabs defaultValue="appointments" className="w-full">
-                <TabsList className="grid w-full grid-cols-3">
+                <TabsList className="grid w-full grid-cols-2">
                     <TabsTrigger value="appointments">Appointment Queue</TabsTrigger>
-                    <TabsTrigger value="schedules">Doctor Schedules</TabsTrigger>
                     <TabsTrigger value="doctors">Manage Roster</TabsTrigger>
                 </TabsList>
                 <TabsContent value="appointments" className="mt-4">
@@ -423,57 +459,6 @@ const ClinicDashboard = () => {
                         </CardContent>
                     </Card>
                 </TabsContent>
-                 <TabsContent value="schedules" className="mt-4">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Doctor Schedules</CardTitle>
-                            <CardDescription>View and manage doctor availability for the upcoming week.</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                             <Table>
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead>Doctor</TableHead>
-                                        <TableHead>Availability</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                   {isLoading ? (
-                                     Array.from({ length: 3 }).map((_, i) => (
-                                        <TableRow key={i}>
-                                            <TableCell><Skeleton className="h-5 w-32" /></TableCell>
-                                            <TableCell><Skeleton className="h-6 w-24 rounded-full" /></TableCell>
-                                        </TableRow>
-                                    ))
-                                   ) : doctors.length > 0 ? (
-                                     doctors.map(doctor => (
-                                        <TableRow key={doctor.id}>
-                                            <TableCell className="font-medium">Dr. {doctor.name}</TableCell>
-                                            <TableCell>
-                                                <div className="flex items-center gap-2">
-                                                    <Switch 
-                                                        id={`avail-${doctor.id}`} 
-                                                        checked={doctor.isAvailable} 
-                                                        onCheckedChange={(checked) => handleToggleAvailability(doctor.id, checked)}
-                                                        className="data-[state=checked]:bg-green-500"
-                                                    />
-                                                    <Label htmlFor={`avail-${doctor.id}`} className={cn("text-xs", doctor.isAvailable ? 'text-green-600' : 'text-muted-foreground')}>
-                                                        {doctor.isAvailable ? 'Online' : 'Offline'}
-                                                    </Label>
-                                                </div>
-                                            </TableCell>
-                                        </TableRow>
-                                     ))
-                                   ) : (
-                                    <TableRow>
-                                        <TableCell colSpan={2} className="text-center h-24">No doctors on roster.</TableCell>
-                                    </TableRow>
-                                   )}
-                                </TableBody>
-                            </Table>
-                        </CardContent>
-                    </Card>
-                </TabsContent>
                 <TabsContent value="doctors" className="mt-4">
                      <Card>
                         <CardHeader className="flex flex-row items-center justify-between">
@@ -489,7 +474,7 @@ const ClinicDashboard = () => {
                                 <DialogHeader>
                                     <DialogTitle>Add New Doctor</DialogTitle>
                                     <DialogDescription>Enter the details for the new doctor to add them to your hospital's roster.</DialogDescription>
-                                     <Progress value={(currentFormStep / 3) * 100} className="w-full mt-2" />
+                                     <Progress value={(currentFormStep / totalSteps) * 100} className="w-full mt-2" />
                                 </DialogHeader>
                                 <form onSubmit={handleAddDoctor}>
                                     <div className="py-4 max-h-[70vh] overflow-y-auto pr-6">
@@ -497,7 +482,7 @@ const ClinicDashboard = () => {
                                     </div>
                                     <DialogFooter className="pt-6">
                                       {currentFormStep > 1 && <Button type="button" variant="outline" onClick={() => setCurrentFormStep(p => p - 1)}><ArrowLeft className="w-4 h-4 mr-2"/>Previous</Button>}
-                                      <Button type="submit" disabled={isSubmitting}>{isSubmitting ? "Adding..." : (currentFormStep < 3 ? 'Next Step' : "Add Doctor & Generate Credentials")}</Button>
+                                      <Button type="submit" disabled={isSubmitting}>{isSubmitting ? "Adding..." : (currentFormStep < totalSteps ? 'Next Step' : "Add Doctor & Generate Credentials")}</Button>
                                     </DialogFooter>
                                 </form>
                                 </DialogContent>
@@ -581,6 +566,5 @@ const ClinicDashboard = () => {
 };
 
 export default ClinicDashboard;
-
 
     
