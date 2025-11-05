@@ -2,12 +2,12 @@
 'use client'
 
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Stethoscope, Calendar, Users as UsersIcon, Clock, UserCheck, UserPlus, MoreHorizontal, Trash2, Phone, ArrowLeft, Video, Building, UploadCloud } from 'lucide-react';
+import { Stethoscope, Calendar, Users, Clock, UserCheck, UserPlus, MoreHorizontal, Trash2, Phone, ArrowLeft, Video, Building, UploadCloud, CheckCircle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { useDb, useFirebase } from '@/firebase/client-provider';
-import { collection, query, where, onSnapshot, Timestamp, orderBy, getDocs, doc, updateDoc, deleteDoc, addDoc, serverTimestamp, writeBatch, limit } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, Timestamp, orderBy, getDocs, doc, updateDoc, deleteDoc, addDoc, serverTimestamp, writeBatch, limit, collectionGroup } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { startOfDay, endOfDay } from 'date-fns';
@@ -39,6 +39,8 @@ import { Switch } from '@/components/ui/switch';
 import { cn } from '@/lib/utils';
 import { useCurePartner } from './layout';
 import { RecaptchaVerifier, signInWithPhoneNumber, type ConfirmationResult } from 'firebase/auth'
+import { Checkbox } from '@/components/ui/checkbox';
+
 
 const StatCard = ({ title, value, icon: Icon, isLoading }: { title: string, value: string, icon: React.ElementType, isLoading?: boolean }) => (
     <Card>
@@ -103,17 +105,32 @@ const ClinicDashboard = () => {
     const [generatedCreds, setGeneratedCreds] = useState<{ id: string, pass: string, role: string } | null>(null);
     const [isCredsDialogOpen, setIsCredsDialogOpen] = useState(false);
     const [currentFormStep, setCurrentFormStep] = useState(1);
-    const totalSteps = 4;
+    const totalSteps = 5;
     const { partnerData } = useCurePartner();
     const { user, db, auth } = useFirebase();
     const { toast } = useToast();
     const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
     const recaptchaContainerRef = useRef<HTMLDivElement>(null);
+    const [availability, setAvailability] = useState<Record<string, { available: boolean, start: string, end: string, breakStart: string, breakEnd: string }>>({
+        Monday: { available: true, start: '09:00', end: '17:00', breakStart: '13:00', breakEnd: '14:00' },
+        Tuesday: { available: true, start: '09:00', end: '17:00', breakStart: '13:00', breakEnd: '14:00' },
+        Wednesday: { available: true, start: '09:00', end: '17:00', breakStart: '13:00', breakEnd: '14:00' },
+        Thursday: { available: true, start: '09:00', end: '17:00', breakStart: '13:00', breakEnd: '14:00' },
+        Friday: { available: true, start: '09:00', end: '17:00', breakStart: '13:00', breakEnd: '14:00' },
+        Saturday: { available: false, start: '10:00', end: '14:00', breakStart: '', breakEnd: '' },
+        Sunday: { available: false, start: '', end: '', breakStart: '', breakEnd: '' },
+    });
+    const [maxPatients, setMaxPatients] = useState('20');
+
 
     useEffect(() => {
-        if (auth && recaptchaContainerRef.current && !auth.currentUser?.getIdToken) {
-            // @ts-ignore
-            window.recaptchaVerifier = new RecaptchaVerifier(auth, recaptchaContainerRef.current, { size: 'invisible' });
+        if (auth && recaptchaContainerRef.current && !recaptchaContainerRef.current.hasChildNodes()) {
+            try {
+                // @ts-ignore
+                window.recaptchaVerifier = new RecaptchaVerifier(auth, recaptchaContainerRef.current, { size: 'invisible' });
+            } catch (e) {
+                console.error("Recaptcha Verifier error", e);
+            }
         }
     }, [auth]);
 
@@ -215,28 +232,17 @@ const ClinicDashboard = () => {
                     const confirmation = await signInWithPhoneNumber(auth, fullPhoneNumber, window.recaptchaVerifier);
                     setConfirmationResult(confirmation);
                     toast({ title: 'OTP Sent!', description: `An OTP has been sent to ${fullPhoneNumber}.` });
+                    setCurrentFormStep(p => p + 1);
                 } catch (error) {
                     toast({ variant: 'destructive', title: 'Failed to Send OTP' });
                     setIsSubmitting(false);
                     return;
                 }
                 setIsSubmitting(false);
+                 return;
             }
             if (currentFormStep === 3) {
-                 if (!confirmationResult || newDoctorData.otp.length !== 6) {
-                    toast({ variant: 'destructive', title: 'Invalid OTP' });
-                    return;
-                }
-                setIsSubmitting(true);
-                try {
-                    await confirmationResult.confirm(newDoctorData.otp);
-                    toast({ title: 'Phone Verified!', className: 'bg-green-600 text-white border-green-600'});
-                } catch (error) {
-                     toast({ variant: 'destructive', title: 'OTP Verification Failed' });
-                     setIsSubmitting(false);
-                     return;
-                }
-                setIsSubmitting(false);
+                 // KYC step has no validation here, just moves to next
             }
             setCurrentFormStep(p => p + 1);
             return;
@@ -244,7 +250,8 @@ const ClinicDashboard = () => {
         
         setIsSubmitting(true);
       
-        const { fullName: name, contactNumber: phone, emailAddress: email, ...restOfData } = newDoctorData;
+        const { otp, ...restOfData } = newDoctorData;
+        const { fullName: name, contactNumber: phone, emailAddress: email } = restOfData;
       
         if (!name || !phone || !email || !restOfData.specialization) {
             toast({ variant: 'destructive', title: 'Missing Required Fields', description: 'Please complete all required fields.' });
@@ -252,14 +259,14 @@ const ClinicDashboard = () => {
             return;
         }
         
-        const globalDoctorsRef = collection(db, 'doctors');
+        const globalDoctorsRef = collectionGroup(db, 'doctors');
 
         try {
             const q = query(globalDoctorsRef, where("phone", "==", phone), limit(1));
             const phoneCheckSnapshot = await getDocs(q);
 
             if (!phoneCheckSnapshot.empty) {
-                throw new Error("A doctor with this phone number is already registered.");
+                throw new Error("A doctor with this phone number is already registered across the platform.");
             }
 
             const partnerId = `CZD-${phone.slice(-4)}${name.split(' ')[0].slice(0, 2).toUpperCase()}`;
@@ -269,25 +276,31 @@ const ClinicDashboard = () => {
             
             const hospitalDoctorsRef = collection(db, `curePartners/${partnerData.id}/doctors`);
             const newDoctorDocRefInHospital = doc(hospitalDoctorsRef);
+            
             const doctorData = { 
                 id: newDoctorDocRefInHospital.id, 
-                name, phone, email, ...restOfData, 
+                name, phone, email, 
+                ...restOfData,
                 partnerId, 
                 createdAt: serverTimestamp(), 
                 docStatus: 'kyc_pending', 
                 hospitalId: partnerData.id, hospitalName: partnerData.name, 
-                isAvailable: false 
+                isAvailable: false,
+                weeklyAvailability: availability,
+                maxPatientsPerDay: Number(maxPatients)
             };
             
             batch.set(newDoctorDocRefInHospital, doctorData);
 
-            const newDoctorDocRefGlobal = doc(globalDoctorsRef, newDoctorDocRefInHospital.id);
+            // Also create a global doctor record for login purposes.
+            // This collection would be secured with different rules in production.
+            const newDoctorDocRefGlobal = doc(collection(db, 'doctors'), newDoctorDocRefInHospital.id);
             batch.set(newDoctorDocRefGlobal, {
                  id: newDoctorDocRefInHospital.id, 
                  name, phone, email, partnerId, password,
                  hospitalId: partnerData.id, hospitalName: partnerData.name,
                  createdAt: serverTimestamp(),
-                 status: 'pending_verification' 
+                 status: 'pending_verification' // Global status for admin panel
             });
 
             await batch.commit();
@@ -339,6 +352,13 @@ const ClinicDashboard = () => {
     const handleFormChange = (field: keyof typeof newDoctorData, value: any) => {
         setNewDoctorData(prev => ({ ...prev, [field]: value }));
     };
+
+    const handleAvailabilityDayChange = (day: string, field: 'available' | 'start' | 'end' | 'breakStart' | 'breakEnd', value: any) => {
+        setAvailability(prev => ({
+            ...prev,
+            [day]: { ...prev[day], [field]: value }
+        }));
+    };
     
     const queue = useMemo(() => {
         return appointments.filter(a => a.status === 'In Queue').sort((a,b) => a.appointmentDate.seconds - b.appointmentDate.seconds);
@@ -363,6 +383,7 @@ const ClinicDashboard = () => {
                                     <SelectContent>{doctorSpecializations.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
                                 </Select>
                             </div>
+                            <div className="space-y-2"><Label>Gender*</Label><RadioGroup name="gender" required className="flex gap-4 pt-2" value={newDoctorData.gender} onValueChange={v => handleFormChange('gender', v)}><div className="flex items-center space-x-2"><RadioGroupItem value="male" id="male" /><Label htmlFor="male">Male</Label></div><div className="flex items-center space-x-2"><RadioGroupItem value="female" id="female" /><Label htmlFor="female">Female</Label></div></RadioGroup></div>
                             <div className="space-y-2">
                                 <Label>Experience (years)</Label>
                                 <Input name="experience" type="number" value={newDoctorData.experience} onChange={e => handleFormChange('experience', e.target.value)} />
@@ -388,13 +409,48 @@ const ClinicDashboard = () => {
                 return (
                      <div className="space-y-4">
                         <h3 className="text-lg font-semibold border-b pb-2">Step 3: Medical KYC</h3>
-                        <div className="space-y-4">
-                             <div className="space-y-2"><Label>Medical Registration Certificate*</Label><Input type="file" required /></div>
-                             <div className="space-y-2"><Label>Degree Certificate (MBBS/BDS etc)*</Label><Input type="file" required /></div>
-                             <div className="space-y-2"><Label>Doctor's Photo ID*</Label><Input type="file" required /></div>
+                        <CardDescription>Upload clear photos of the documents.</CardDescription>
+                        <div className="space-y-4 pt-2">
+                             <div className="space-y-2"><Label htmlFor="doc-reg">Medical Registration Certificate* (e.g., from MCI)</Label><Input id="doc-reg" type="file" required /></div>
+                             <div className="space-y-2"><Label htmlFor="doc-degree">Degree Certificate* (MBBS, BDS, etc.)</Label><Input id="doc-degree" type="file" required /></div>
+                             <div className="space-y-2"><Label htmlFor="doc-photo">Doctor's Passport-size Photo*</Label><Input id="doc-photo" type="file" required /></div>
                         </div>
                     </div>
                 );
+            case 4:
+                return (
+                    <div className="space-y-4">
+                        <h3 className="text-lg font-semibold border-b pb-2">Step 4: Availability Setup</h3>
+                        <div className="space-y-4">
+                             {Object.keys(availability).map(day => (
+                                <div key={day} className="flex flex-col md:flex-row md:items-center gap-2 p-2 border rounded-md">
+                                    <div className="flex items-center gap-3 w-full md:w-36">
+                                        <Checkbox
+                                            id={`avail-${day}`}
+                                            checked={availability[day].available}
+                                            onCheckedChange={(checked) => handleAvailabilityDayChange(day, 'available', !!checked)}
+                                        />
+                                        <Label htmlFor={`avail-${day}`} className="font-semibold">{day}</Label>
+                                    </div>
+                                    <div className="flex-1 grid grid-cols-2 gap-2">
+                                        <div className="space-y-1">
+                                            <Label htmlFor={`start-${day}`} className="text-xs">Start Time</Label>
+                                            <Input type="time" id={`start-${day}`} value={availability[day].start} onChange={e => handleAvailabilityDayChange(day, 'start', e.target.value)} disabled={!availability[day].available}/>
+                                        </div>
+                                        <div className="space-y-1">
+                                            <Label htmlFor={`end-${day}`} className="text-xs">End Time</Label>
+                                            <Input type="time" id={`end-${day}`} value={availability[day].end} onChange={e => handleAvailabilityDayChange(day, 'end', e.target.value)} disabled={!availability[day].available}/>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                            <div className="space-y-2">
+                                <Label htmlFor="max-patients">Max Patients per Day (Optional)</Label>
+                                <Input id="max-patients" type="number" value={maxPatients} onChange={e => setMaxPatients(e.target.value)} placeholder="e.g., 20" />
+                            </div>
+                        </div>
+                    </div>
+                )
             default:
                 return null;
         }
@@ -411,7 +467,7 @@ const ClinicDashboard = () => {
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 <StatCard title="Today's Appointments" value={`${stats.todayAppointments}`} icon={Calendar} isLoading={isLoading} />
-                <StatCard title="Patients Waiting" value={`${stats.waiting}`} icon={UsersIcon} isLoading={isLoading} />
+                <StatCard title="Patients Waiting" value={`${stats.waiting}`} icon={Users} isLoading={isLoading} />
                 <StatCard title="Avg. Wait Time" value={`${stats.avgWaitTime} min`} icon={Clock} isLoading={isLoading} />
             </div>
             
@@ -473,7 +529,7 @@ const ClinicDashboard = () => {
                                 <DialogContent className="max-w-4xl">
                                 <DialogHeader>
                                     <DialogTitle>Add New Doctor</DialogTitle>
-                                    <DialogDescription>Enter the details for the new doctor to add them to your hospital's roster.</DialogDescription>
+                                    <DialogDescription>Enter the details for the new doctor to add them to your roster.</DialogDescription>
                                      <Progress value={(currentFormStep / totalSteps) * 100} className="w-full mt-2" />
                                 </DialogHeader>
                                 <form onSubmit={handleAddDoctor}>
@@ -567,4 +623,4 @@ const ClinicDashboard = () => {
 
 export default ClinicDashboard;
 
-    
+```
