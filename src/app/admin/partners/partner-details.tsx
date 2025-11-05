@@ -112,12 +112,21 @@ export default function PartnerDetails({ partnerId, initialPartnerType, hospital
         switch(partner.type) {
             case 'driver': return <Car className="w-4 h-4 mr-2"/>;
             case 'mechanic': return <Wrench className="w-4 h-4 mr-2"/>;
-            case 'cure': return <Ambulance className="w-4 h-4 mr-2"/>;
-            case 'clinic': return <Building className="w-4 h-4 mr-2"/>;
+            case 'cure': 
+                return partner.businessType === 'Clinic' 
+                    ? <Building className="w-4 h-4 mr-2" /> 
+                    : <Ambulance className="w-4 h-4 mr-2" />;
             case 'doctor': return <Stethoscope className="w-4 h-4 mr-2"/>;
             default: return null;
         }
     }
+
+    const getPartnerTypeLabel = () => {
+        if (partner.type === 'cure') {
+            return partner.businessType || 'Cure Partner';
+        }
+        return partner.type;
+    };
 
     const DetailItem = ({ label, value }: { label: string, value: string | undefined | null }) => (
         <div className="p-3 bg-muted rounded-lg">
@@ -139,12 +148,12 @@ export default function PartnerDetails({ partnerId, initialPartnerType, hospital
         </Card>
     );
     
-    const renderCureDetails = (isClinic = false) => (
+    const renderCureDetails = () => (
         <>
             <Card>
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2">
-                        {isClinic ? <Building className="w-5 h-5 text-primary"/> : <Hospital className="w-5 h-5 text-primary"/>}
+                        {partner.businessType === 'Clinic' ? <Building className="w-5 h-5 text-primary"/> : <Hospital className="w-5 h-5 text-primary"/>}
                         Facility Details
                     </CardTitle>
                 </CardHeader>
@@ -153,12 +162,22 @@ export default function PartnerDetails({ partnerId, initialPartnerType, hospital
                         <DetailItem label="Official Name" value={partner.name} />
                         <DetailItem label="Owner/Contact Name" value={partner.ownerName} />
                         <DetailItem label="Contact Email" value={partner.ownerEmail} />
-                        <DetailItem label="Facility Type" value={isClinic ? partner.clinicType : partner.hospitalType} />
+                        <DetailItem label="Facility Type" value={partner.businessType === 'Clinic' ? partner.clinicType : partner.hospitalType} />
                         <DetailItem label="Registration No." value={partner.registrationNumber} />
-                        <DetailItem label="Lead Doctor" value={partner.doctorName} />
-                        <DetailItem label="Medical Reg. No." value={partner.doctorRegNo} />
-                        {!isClinic && <DetailItem label="Total Beds" value={partner.totalBeds} />}
-                        {!isClinic && <DetailItem label="Beds Occupied" value={partner.bedsOccupied} />}
+                        
+                        {partner.businessType === 'Clinic' && (
+                            <>
+                                <DetailItem label="Lead Doctor" value={partner.doctorName} />
+                                <DetailItem label="Medical Reg. No." value={partner.doctorRegNo} />
+                            </>
+                        )}
+                        
+                        {partner.businessType === 'Hospital' && (
+                            <>
+                                <DetailItem label="Total Beds" value={partner.totalBeds} />
+                                <DetailItem label="Beds Occupied" value={partner.bedsOccupied} />
+                            </>
+                        )}
                     </div>
                      <div className="p-3 bg-muted rounded-lg">
                         <p className="text-xs text-muted-foreground">Address</p>
@@ -179,7 +198,7 @@ export default function PartnerDetails({ partnerId, initialPartnerType, hospital
                     ) : (
                         <p className="text-sm text-muted-foreground">No services listed for this facility.</p>
                     )}
-                    {!isClinic && (
+                    {partner.businessType === 'Hospital' && (
                         <div className="mt-4">
                             <h4 className="font-semibold mb-2">Ambulance Fleet</h4>
                             <div className="grid grid-cols-3 gap-2 text-center">
@@ -235,8 +254,6 @@ export default function PartnerDetails({ partnerId, initialPartnerType, hospital
             </Card>
         </>
     );
-    
-    const partnerIsCure = partner.type === 'cure' || partner.type === 'clinic';
 
     return (
         <div className="space-y-6 max-h-[70vh] overflow-y-auto p-1 pr-4">
@@ -260,7 +277,7 @@ export default function PartnerDetails({ partnerId, initialPartnerType, hospital
                                 <div className="flex items-center gap-2">
                                     <Badge variant="outline" className="capitalize">
                                         {getPartnerIcon()}
-                                        {partner.type === 'cure' ? partner.hospitalType || 'Hospital' : partner.type}
+                                        {getPartnerTypeLabel()}
                                     </Badge>
                                 </div>
                             </div>
@@ -275,7 +292,7 @@ export default function PartnerDetails({ partnerId, initialPartnerType, hospital
                 </CardHeader>
                 <CardContent className="space-y-4">
                    {partner.type === 'doctor' ? renderDoctorDetails() 
-                    : partnerIsCure ? renderCureDetails(partner.type === 'clinic') 
+                    : partner.type === 'cure' ? renderCureDetails() 
                     : partner.type === 'driver' ? renderDriverDetails() 
                     : partner.type === 'mechanic' ? renderMechanicDetails() 
                     : null
@@ -283,7 +300,7 @@ export default function PartnerDetails({ partnerId, initialPartnerType, hospital
                 </CardContent>
             </Card>
 
-           {!partnerIsCure && partner.type !== 'doctor' && (
+           {partner.type !== 'cure' && partner.type !== 'doctor' && (
                 <Card>
                     <CardHeader>
                         <CardTitle>Financial Ledger</CardTitle>
@@ -324,3 +341,5 @@ export default function PartnerDetails({ partnerId, initialPartnerType, hospital
         </div>
     );
 }
+
+    
