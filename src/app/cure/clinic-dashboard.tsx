@@ -71,6 +71,7 @@ interface Doctor {
     isAvailable: boolean;
     partnerId: string;
     phone: string;
+    docStatus?: 'Awaiting Final Approval' | 'Verified' | 'Rejected';
 }
 
 const doctorSpecializations = [
@@ -392,6 +393,15 @@ const ClinicDashboard = () => {
     const queue = useMemo(() => {
         return appointments.filter(a => a.status === 'In Queue').sort((a,b) => a.appointmentDate.seconds - b.appointmentDate.seconds);
     }, [appointments]);
+    
+    const getDocStatusBadge = (status?: Doctor['docStatus']) => {
+        switch(status) {
+            case 'Verified': return <Badge className="bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-200">{status}</Badge>;
+            case 'Awaiting Final Approval': return <Badge className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-200">Awaiting Approval</Badge>;
+            case 'Rejected': return <Badge variant="destructive">{status}</Badge>;
+            default: return <Badge variant="secondary">{status || 'Unknown'}</Badge>;
+        }
+    }
 
 
     const renderAddDoctorForm = () => {
@@ -498,8 +508,7 @@ const ClinicDashboard = () => {
                                 <div className="flex justify-between"><span className="text-muted-foreground">Specialization:</span> <span className="font-semibold">{newDoctorData.specialization}</span></div>
                                 <div className="flex justify-between"><span className="text-muted-foreground">Contact:</span> <span className="font-semibold">{newDoctorData.contactNumber}</span></div>
                                 <div className="flex justify-between"><span className="text-muted-foreground">Fee:</span> <span className="font-semibold">₹{newDoctorData.consultationFee || 'N/A'}</span></div>
-                                <Separator />
-                                <p className="text-xs text-center text-muted-foreground">The submitted documents will be verified by the Curocity team.</p>
+                                <div className="flex justify-between"><span className="text-muted-foreground">Availability:</span> <span className="font-semibold">Default schedule set</span></div>
                              </div>
                         </div>
                     </div>
@@ -608,7 +617,7 @@ const ClinicDashboard = () => {
                                     <TableRow>
                                         <TableHead>Doctor</TableHead>
                                         <TableHead>Specialization</TableHead>
-                                        <TableHead>Contact</TableHead>
+                                        <TableHead>Status</TableHead>
                                         <TableHead>Availability</TableHead>
                                         <TableHead className="text-right">Actions</TableHead>
                                     </TableRow>
@@ -619,7 +628,7 @@ const ClinicDashboard = () => {
                                         <TableRow key={i}>
                                             <TableCell><Skeleton className="h-5 w-32" /></TableCell>
                                             <TableCell><Skeleton className="h-5 w-24" /></TableCell>
-                                            <TableCell><Skeleton className="h-5 w-28" /></TableCell>
+                                            <TableCell><Skeleton className="h-6 w-28 rounded-full" /></TableCell>
                                             <TableCell><Skeleton className="h-6 w-20" /></TableCell>
                                             <TableCell className="text-right"><Skeleton className="h-8 w-8 rounded-full ml-auto" /></TableCell>
                                         </TableRow>
@@ -629,10 +638,10 @@ const ClinicDashboard = () => {
                                         <TableRow key={doctor.id}>
                                             <TableCell className="font-medium">Dr. {doctor.name}</TableCell>
                                             <TableCell><Badge variant="secondary">{doctor.specialization}</Badge></TableCell>
-                                            <TableCell>{doctor.phone}</TableCell>
+                                            <TableCell>{getDocStatusBadge(doctor.docStatus)}</TableCell>
                                             <TableCell>
                                                 <div className="flex items-center gap-2">
-                                                    <Switch checked={doctor.isAvailable} onCheckedChange={(c) => handleToggleAvailability(doctor.id, c)} />
+                                                    <Switch checked={doctor.isAvailable} onCheckedChange={(c) => handleToggleAvailability(doctor.id, c)} disabled={doctor.docStatus !== 'Verified'}/>
                                                     <span className={cn('text-xs font-semibold', doctor.isAvailable ? 'text-green-600' : 'text-muted-foreground')}>{doctor.isAvailable ? 'Online' : 'Offline'}</span>
                                                 </div>
                                             </TableCell>
@@ -689,3 +698,4 @@ const ClinicDashboard = () => {
 
 export default ClinicDashboard;
 
+```
