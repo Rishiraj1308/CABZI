@@ -13,7 +13,6 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Toaster } from "@/components/ui/toaster";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from "@/components/ui/alert-dialog";
 import { MotionDiv } from "@/components/ui/motion-div";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -57,7 +56,6 @@ export const usePartnerData = () => {
 function MechanicProvider({ children }: { children: React.ReactNode }) {
   const { db, user, isUserLoading } = useFirebase();
   const router = useRouter();
-  const pathname = usePathname();
   const { toast } = useToast();
 
   const [partner, setPartner] = useState<MechanicData | null>(null);
@@ -94,45 +92,52 @@ function MechanicProvider({ children }: { children: React.ReactNode }) {
     }
 
     const { partnerId } = JSON.parse(session);
+    if (!partnerId) {
+        logout();
+        return;
+    }
     const mechRef = doc(db, "mechanics", partnerId);
 
-    let unsubMech = () => {};
-    let unsubReq = () => {};
-
-    // ✅ Mechanic real-time listener
-    unsubMech = onSnapshot(mechRef, (snap) => {
+    const unsubMech = onSnapshot(mechRef, (snap) => {
       if (!snap.exists()) {
         logout();
         return;
       }
-
       const data = { id: snap.id, ...snap.data() } as MechanicData;
       setPartner(data);
-
-      // ✅ Listen to pending requests ONLY WHEN ONLINE
-      if (data.isOnline === true) {
-        const q = query(
-          collection(db, "garageRequests"),
-          where("status", "==", "pending")
-        );
-
-        unsubReq = onSnapshot(q, (reqSnap) => {
-          const list = reqSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
-          setRequests(list);
-        });
-      } else {
-        setRequests([]);
-        if (unsubReq) unsubReq();
-      }
-
       setIsLoading(false);
-    });
+    }, logout);
 
     return () => {
       unsubMech();
-      if (unsubReq) unsubReq();
     };
   }, [isUserLoading, db, logout]);
+
+  useEffect(() => {
+    if (!partner || !db) return;
+    
+    let unsubReq: () => void = () => {};
+
+    if (partner.isOnline) {
+      const q = query(
+        collection(db, "garageRequests"),
+        where("status", "==", "pending")
+      );
+
+      unsubReq = onSnapshot(q, (reqSnap) => {
+        const list = reqSnap.docs
+          .map((d) => ({ id: d.id, ...d.data() }))
+          .filter(job => !job.rejectedBy || !job.rejectedBy.includes(partner.id));
+        setRequests(list);
+      });
+    } else {
+      setRequests([]);
+    }
+
+    return () => {
+      unsubReq();
+    }
+  }, [partner, db]);
 
 
   const value = useMemo(() => ({
@@ -140,7 +145,7 @@ function MechanicProvider({ children }: { children: React.ReactNode }) {
     isLoading,
     requests,
     handleAvailabilityChange
-  }), [partner, isLoading, requests]);
+  }), [partner, isLoading, requests, handleAvailabilityChange]);
 
   return (
     <MechanicContext.Provider value={value}>
