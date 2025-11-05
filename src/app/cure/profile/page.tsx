@@ -57,7 +57,7 @@ export default function CureProfilePage() {
                 }
                 if (session) {
                     const { phone } = JSON.parse(session);
-                    const cureRef = collection(db, "ambulances");
+                    const cureRef = collection(db, "curePartners");
                     const q = query(cureRef, where("phone", "==", phone));
                     
                     try {
@@ -166,7 +166,7 @@ export default function CureProfilePage() {
         }
         
         try {
-            const partnerRef = doc(db, 'ambulances', partnerDocId);
+            const partnerRef = doc(db, 'curePartners', partnerDocId);
             await updateDoc(partnerRef, fareData);
             toast({ title: 'Fare Settings Saved', description: 'Your ambulance fares have been updated.' });
         } catch (error) {
