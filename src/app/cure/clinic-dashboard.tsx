@@ -535,3 +535,4 @@ const ClinicDashboard = () => {
 };
 
 export default ClinicDashboard;
+
