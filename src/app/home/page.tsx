@@ -5,7 +5,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button, buttonVariants } from '@/components/ui/button'
 import {
-  Car, Wrench, Ambulance, Calendar, TestTube, Search, X, Mic, AlertTriangle, Phone, History, MapPin, ArrowUpRight, Clock, MessageCircle, Shield, Home
+  Car, Wrench, Ambulance, Calendar, TestTube, Search, X, Mic, AlertTriangle, Phone, History, MapPin, ArrowUpRight, Clock, MessageSquare, Shield, Home
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { cn } from '@/lib/utils'
@@ -74,7 +74,7 @@ export default function ServicePortalPage() {
   
   const [searchQuery, setSearchQuery] = useState('');
   const [isSosModalOpen, setIsSosModalOpen] = useState(false);
-  const [services, setServices] = useState<any[]>(serviceData);
+  const [services, setServices] = useState<any[]>(serviceCards);
   const [isListening, setIsListening] = useState(false);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
 
@@ -114,10 +114,10 @@ export default function ServicePortalPage() {
     const query = e.target.value.toLowerCase();
     setSearchQuery(query);
     if (!query) {
-      setServices(serviceData);
+      setServices(serviceCards);
       return;
     }
-    const filtered = serviceData.filter(service => 
+    const filtered = serviceCards.filter(service => 
       service.label.toLowerCase().includes(query) ||
       service.title.toLowerCase().includes(query)
     );
@@ -288,5 +288,3 @@ export default function ServicePortalPage() {
     </>
   )
 }
-
-    
