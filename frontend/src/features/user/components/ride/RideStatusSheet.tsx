@@ -153,5 +153,3 @@ export default function RideStatus({ ride, onCancel, isGarageRequest, isAmbulanc
     <DriverArriving ride={ride as RideData} onCancel={onCancel} />
   );
 }
-
-    

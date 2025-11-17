@@ -1,13 +1,12 @@
 
 'use client';
 
-import React, { useEffect, useMemo, useRef, useState } from 'react';
-import dynamic from 'next/dynamic';
+import React, { useEffect, useState, useRef } from 'react';
 import { Phone, Shield, Share2, Siren, Star, XCircle, Route, Clock, MapPin, CheckCircle, Navigation, User, BadgeCheck, PartyPopper, IndianRupee } from 'lucide-react';
 import { doc, onSnapshot, updateDoc } from 'firebase/firestore';
 import { useFirebase } from '@/lib/firebase/client-provider';
 import type { RideData } from '@/lib/types';
-import { getDriverToPickupRoute } from '@/lib/osrm';
+import { getRoute } from '@/lib/routing';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { toast } from 'sonner';
@@ -38,7 +37,7 @@ import { motion } from 'framer-motion';
 import { Separator } from '@/components/ui/separator';
 import { Table, TableBody, TableCell, TableRow, TableFooter, TableHead } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
-
+import dynamic from 'next/dynamic';
 
 const LiveMap = dynamic(() => import('@/features/user/components/ride/LiveMap'), {
     ssr: false,
@@ -87,15 +86,17 @@ export default function DriverArriving({ ride, onCancel }: DriverArrivingProps) 
     if (!destination) return;
 
     try {
-      const routeData = await getDriverToPickupRoute(
+      const routeData = await getRoute(
         { lat: driverLocation.lat, lon: driverLocation.lon },
         { lat: destination.latitude, lon: destination.longitude }
       );
 
-      if (routeData) {
-        setEtaMin(Math.max(1, Math.round(routeData.durationMin)));
-        setDistKm(Number(routeData.distanceKm.toFixed(1)));
-        setRouteCoords(routeData.coords);
+      if (routeData?.routes?.[0]) {
+        const route = routeData.routes[0];
+        setEtaMin(Math.max(1, Math.round(route.duration / 60)));
+        setDistKm(route.distance / 1000);
+        const coords = route.geometry.coordinates.map((c: [number, number]) => [c[1], c[0]]);
+        setRouteCoords(coords);
       }
     } catch (error) {
         console.error("Error computing route:", error);
@@ -349,5 +350,6 @@ export default function DriverArriving({ ride, onCancel }: DriverArrivingProps) 
     </div>
   );
 }
+
 
     

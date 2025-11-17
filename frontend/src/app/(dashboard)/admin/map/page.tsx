@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { useDb, useFunctions } from '@/lib/firebase/client-provider';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import { httpsCallable } from 'firebase/functions';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 
 const LiveMap = dynamic(() => import('@/components/live-map'), {
     ssr: false,
@@ -51,14 +51,13 @@ export default function LiveMapPage() {
     const [isHudVisible, setIsHudVisible] = useState(true);
     const db = useDb();
     const functions = useFunctions();
-    const { toast } = useToast();
 
     useEffect(() => {
         async function fetchData() {
             if (!db) return;
             setIsLoading(true);
 
-            const collections = ['partners', 'mechanics', 'ambulances', 'users'];
+            const collections = ['pathPartners', 'mechanics', 'ambulances', 'users'];
             const types: ActiveEntity['type'][] = ['driver', 'mechanic', 'ambulance', 'rider'];
 
             try {
@@ -132,22 +131,19 @@ export default function LiveMapPage() {
 
     const handleSimulateDemand = async () => {
         if (!functions) {
-            toast({ variant: 'destructive', title: 'Functions not available.' });
+            toast.error('Functions not available.');
             return;
         }
 
         const simulateHighDemand = httpsCallable(functions, 'simulateHighDemand');
         try {
             await simulateHighDemand({ zoneName: 'Cyber Hub, Gurgaon' });
-            toast({
-                title: 'Demand Simulated!',
+            toast.success('Demand Simulated!', {
                 description: 'A high-demand alert has been triggered for automation workflows.',
             });
         } catch (error) {
             console.error('Error calling simulateHighDemand function:', error);
-            toast({
-                variant: 'destructive',
-                title: 'Simulation Failed',
+            toast.error('Simulation Failed', {
                 description: 'Could not trigger the high-demand alert.',
             });
         }
@@ -276,3 +272,5 @@ export default function LiveMapPage() {
         </div>
     );
 }
+
+    

@@ -1,7 +1,7 @@
 
 'use client'
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
@@ -10,9 +10,9 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import BrandLogo from '@/components/shared/brand-logo';
 import { useDb } from '@/lib/firebase/client-provider';
-import { collection, doc, setDoc, serverTimestamp, query, where, getDocs, limit } from 'firebase/firestore';
+import { collection, doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { Progress } from '@/components/ui/progress';
-import { ArrowLeft, UploadCloud, MapPin } from 'lucide-react';
+import { ArrowLeft, UploadCloud } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import dynamic from 'next/dynamic';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -127,7 +127,7 @@ export default function CureOnboardingPage() {
                      <div>
                         <Label>Pin your location on the map</Label>
                         <div className="h-64 mt-2 rounded-lg overflow-hidden border">
-                            <LiveMap center={formData.location ? [formData.location.lat, formData.location.lon] : undefined} />
+                            <LiveMap activePartners={[]} center={formData.location ? [formData.location.lat, formData.location.lon] : undefined} />
                         </div>
                     </div>
                 )
@@ -185,3 +185,5 @@ export default function CureOnboardingPage() {
         </div>
     );
 }
+
+    
