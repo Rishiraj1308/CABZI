@@ -2,7 +2,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, Suspense } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -20,6 +20,8 @@ import { cn } from '@/lib/utils';
 import type { RideData, ClientSession } from '@/lib/types';
 import { useFirebase } from '@/lib/firebase/client-provider';
 import { GeoPoint, addDoc, collection, serverTimestamp } from 'firebase/firestore';
+import { useActiveRequest } from '@/features/user/components/active-request-provider';
+import { useDebounce } from 'use-debounce';
 
 
 const recentTrips = [
@@ -44,304 +46,289 @@ const timeSlots = [
   '09:00 AM', '10:00 AM', '11:00 AM', '12:00 PM', '02:00 PM', '03:00 PM', '04:00 PM'
 ]
 
-interface RideBookingSheetProps {
-  session: ClientSession | null;
-  pickup: string | null;
-  drop: string | null;
-  setRide: (ride: RideData) => void;
-}
-
 interface LocationSuggestion {
   place_id: number;
   display_name: string;
   lat: string;
   lon: string;
+  distance?: number;
+  duration?: number;
 }
 
-interface VehicleOption {
-  id: 'Bike' | 'Auto' | 'Cab' | 'Curocity Pink';
-  name: string;
-  icon: React.ElementType;
-  fare: number | null;
-  eta: number | null;
-}
-
-const RideBookingSheet: React.FC<RideBookingSheetProps> = ({ session, pickup, drop, setRide }) => {
-  const router = useRouter();
-  const { db } = useFirebase();
-
-  const [step, setStep] = useState<'input' | 'confirm' | 'searching'>('input');
+function BookRidePageComponent() {
+    const router = useRouter();
+    const { setActiveRide } = useActiveRequest() as any;
   
-  const [pickupAddress, setPickupAddress] = useState(pickup || '');
-  const [dropAddress, setDropAddress] = useState(drop || '');
-  const [debouncedPickup] = useDebounce(pickupAddress, 500);
-  const [debouncedDrop] = useDebounce(dropAddress, 500);
+    const [destination, setDestination] = useState('')
+    const [searchResults, setSearchResults] = useState<LocationSuggestion[]>([])
+    const [isSearching, setIsSearching] = useState(false)
+    const [currentUserLocation, setCurrentUserLocation] = useState<{ lat: number, lon: number } | null>(null)
   
-  const [pickupSuggestions, setPickupSuggestions] = useState<LocationSuggestion[]>([]);
-  const [dropSuggestions, setDropSuggestions] = useState<LocationSuggestion[]>([]);
+    const [isScheduleDialogOpen, setIsScheduleDialogOpen] = useState(false)
+    const [scheduledDate, setScheduledDate] = useState<Date | undefined>(new Date())
+    const [scheduledTime, setScheduledTime] = useState('')
   
-  const [pickupCoords, setPickupCoords] = useState<{ lat: number; lon: number } | null>(null);
-  const [dropCoords, setDropCoords] = useState<{ lat: number; lon: number } | null>(null);
-
-  const [isFetchingFares, setIsFetchingFares] = useState(false);
-  const [distance, setDistance] = useState<number | null>(null);
-
-  const [vehicles, setVehicles] = useState<VehicleOption[]>([
-    { id: 'Bike', name: 'Bike', icon: Bike, fare: null, eta: null },
-    { id: 'Auto', name: 'Auto', icon: Car, fare: null, eta: null },
-    { id: 'Cab', name: 'Cab', icon: Car, fare: null, eta: null },
-    { id: 'Curocity Pink', name: 'Curocity Pink', icon: HeartHandshake, fare: null, eta: null },
-  ]);
-  const [selectedVehicle, setSelectedVehicle] = useState<VehicleOption['id'] | null>(null);
-  
-   useEffect(() => {
-    if (debouncedPickup.length > 2) {
-      fetchSuggestions(debouncedPickup, setPickupSuggestions);
-    } else {
-      setPickupSuggestions([]);
-    }
-  }, [debouncedPickup]);
-
-  useEffect(() => {
-    if (debouncedDrop.length > 2) {
-      fetchSuggestions(debouncedDrop, setDropSuggestions);
-    } else {
-      setDropSuggestions([]);
-    }
-  }, [debouncedDrop]);
-
-  useEffect(() => {
-    // If drop address is passed via URL, geocode it and calculate fares
-    if (drop && !dropCoords) {
-      fetchSuggestions(drop, (suggestions) => {
-        if (suggestions.length > 0) {
-            handleSelectSuggestion(suggestions[0], 'drop');
-        }
-      });
-    }
-  }, [drop]);
-
-  const fetchSuggestions = async (query: string, setter: React.Dispatch<React.SetStateAction<LocationSuggestion[]>>) => {
-    try {
-      const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&countrycodes=in&limit=5`);
-      const data = await response.json();
-      setter(data);
-    } catch (error) {
-      console.error("Failed to fetch suggestions", error);
-    }
-  };
-
-  const handleSelectSuggestion = (suggestion: LocationSuggestion, type: 'pickup' | 'drop') => {
-    const coords = { lat: parseFloat(suggestion.lat), lon: parseFloat(suggestion.lon) };
-    if (type === 'pickup') {
-      setPickupAddress(suggestion.display_name);
-      setPickupCoords(coords);
-      setPickupSuggestions([]);
-    } else {
-      setDropAddress(suggestion.display_name);
-      setDropCoords(coords);
-      setDropSuggestions([]);
-    }
-  };
-  
-  const handleFindRides = async () => {
-    // For now, assume pickup is current location if not set
-    if (!pickupCoords) {
-        // A better implementation would get user's current location here
-        toast.error('Pickup location required', { description: 'Please set a pickup location.' });
-        return;
-    }
-    if (!dropCoords) {
-      toast.error('Locations required', { description: 'Please select a drop location.' });
-      return;
-    }
-    setIsFetchingFares(true);
-    try {
-      const response = await fetch(`https://router.project-osrm.org/route/v1/driving/${pickupCoords.lon},${pickupCoords.lat};${dropCoords.lon},${dropCoords.lat}?overview=false`);
-      const data = await response.json();
-      if (data.routes && data.routes[0]) {
-        const route = data.routes[0];
-        const distKm = route.distance / 1000;
-        setDistance(distKm);
-        
-        setVehicles(prev => prev.map(v => ({
-          ...v,
-          fare: calculateFare(v.id, distKm),
-          eta: Math.round(distKm * 2.5) // Simplified ETA
-        })));
-
-        setStep('confirm');
-        router.push(`/user/ride-map?pickup=${encodeURIComponent(pickupAddress)}&drop=${encodeURIComponent(dropAddress)}`);
+    useEffect(() => {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            setCurrentUserLocation({
+              lat: pos.coords.latitude,
+              lon: pos.coords.longitude,
+            })
+          },
+          () => {
+            toast.error('Location Access Denied', {
+              description: 'Distance and ETA cannot be calculated without your location.',
+            })
+          }
+        )
       }
-    } catch (error) {
-      toast.error('Could not get route', { description: 'Failed to calculate fares. Please try again.' });
-    } finally {
-      setIsFetchingFares(false);
-    }
-  };
-
-  const calculateFare = (vehicleType: VehicleOption['id'], dist: number): number => {
-    let base = 0;
-    let perKm = 0;
-    switch(vehicleType) {
-        case 'Bike': base = 25; perKm = 8; break;
-        case 'Auto': base = 40; perKm = 12; break;
-        case 'Cab': base = 60; perKm = 18; break;
-        case 'Curocity Pink': base = 70; perKm = 20; break;
-    }
-    return Math.round(base + (perKm * dist) + (dist * 0.2 * 5)); // Include 20% traffic buffer
-  };
-
-  const handleConfirmRide = async () => {
-    if (!selectedVehicle || !session || !db) {
-        toast.error('Please select a vehicle');
-        return;
-    }
-    const vehicle = vehicles.find(v => v.id === selectedVehicle);
-    const finalPickupCoords = pickupCoords || {lat: 28.6139, lon: 77.2090}; // Default fallback
-    
-    if (!vehicle || !vehicle.fare || !finalPickupCoords || !dropCoords) {
-        toast.error('Error confirming ride');
-        return;
-    }
-    
-    setStep('searching');
-
-    const rideDoc = {
-      riderId: session.userId,
-      riderName: session.name,
-      riderGender: session.gender,
-      pickup: {
-        address: pickupAddress || 'Current Location',
-        location: new GeoPoint(finalPickupCoords.lat, finalPickupCoords.lon)
-      },
-      destination: {
-        address: dropAddress,
-        location: new GeoPoint(dropCoords.lat, dropCoords.lon)
-      },
-      rideType: vehicle.name,
-      status: 'searching' as const,
-      fare: vehicle.fare,
-      otp: Math.floor(1000 + Math.random() * 9000).toString(),
-      createdAt: serverTimestamp(),
-      rejectedBy: [],
+    }, [])
+  
+    const containerVariants = {
+      hidden: { opacity: 0 },
+      visible: {
+        opacity: 1,
+        transition: { staggerChildren: 0.1 }
+      }
     };
-    
-    try {
-      const docRef = await addDoc(collection(db, 'rides'), rideDoc);
-      localStorage.setItem('activeRideId', docRef.id);
-      setRide({ id: docRef.id, ...rideDoc } as RideData); // Update parent state
-    } catch (error) {
-      console.error("Error creating ride document: ", error);
-      toast.error('Failed to book ride', { description: 'Please try again later.' });
-      setStep('confirm'); // Go back to confirm step on error
+  
+    const itemVariants = {
+      hidden: { opacity: 0, y: 20 },
+      visible: { opacity: 1, y: 0 }
+    };
+  
+    useEffect(() => {
+      if (destination.length < 3) {
+        setSearchResults([])
+        return
+      }
+  
+      const handler = setTimeout(async () => {
+        setIsSearching(true)
+        const results: LocationSuggestion[] = await searchPlace(destination)
+  
+        if (currentUserLocation && results) {
+          const enriched = await Promise.all(
+            results.map(async (place: LocationSuggestion) => {
+              try {
+                const route = await getRoute(
+                  currentUserLocation,
+                  { lat: parseFloat(place.lat), lon: parseFloat(place.lon) }
+                )
+  
+                if (route?.routes?.[0]) {
+                  const r = route.routes[0]
+                  return {
+                    ...place,
+                    distance: r.distance / 1000,
+                    duration: Math.round(r.duration / 60),
+                  }
+                }
+              } catch { }
+  
+              return place
+            })
+          )
+  
+          setSearchResults(enriched)
+        } else {
+          setSearchResults(results || [])
+        }
+  
+        setIsSearching(false)
+      }, 500)
+  
+      return () => clearTimeout(handler)
+    }, [destination, currentUserLocation])
+  
+    const handleSelectDestination = (place: any) => {
+      const destinationName = place.display_name.split(',')[0]
+      setDestination(destinationName)
+      setSearchResults([])
+      router.push(`/user/ride-map?search=${encodeURIComponent(place.display_name)}`)
     }
-  };
-
-
-  return (
-    <Sheet open={true} onOpenChange={(open) => !open && router.push('/user/ride-booking')}>
-      <SheetContent side="bottom" className="max-h-[90vh] rounded-t-2xl flex flex-col">
-        <SheetHeader>
-          <div className="flex items-center">
-            {step !== 'input' && (
-                <Button variant="ghost" size="icon" onClick={() => setStep('input')} className="mr-2">
-                    <ArrowLeft/>
-                </Button>
+  
+    const handleConfirmSchedule = () => {
+      if (!scheduledDate || !scheduledTime) {
+        toast.error('Error', {
+          description: 'Please select date and time.'
+        })
+        return
+      }
+  
+      toast.success('Ride Scheduled!', {
+        description: `Your ride is scheduled for ${format(scheduledDate, 'PPP')} at ${scheduledTime}.`,
+      })
+  
+      setIsScheduleDialogOpen(false)
+      setScheduledDate(new Date())
+      setScheduledTime('')
+    }
+    
+    return (
+      <motion.div 
+        className="min-h-screen w-full flex flex-col bg-muted/30 overflow-hidden"
+        initial="hidden"
+        animate="visible"
+        variants={containerVariants}
+      >
+        <header className="bg-background p-4 relative">
+          <div className="container mx-auto">
+            <motion.div variants={itemVariants} className="flex justify-between items-center">
+              <Button variant="ghost" size="icon" className="hover:bg-muted" onClick={() => router.push('/user')}>
+                <ArrowLeft className="w-5 h-5"/>
+              </Button>
+              <Button variant="outline" onClick={() => router.push('/user/ride-map')}>
+                <Map className="w-4 h-4 mr-2"/> Map
+              </Button>
+            </motion.div>
+            
+            <motion.div variants={itemVariants} className="pt-8 pb-20">
+              <h1 className="text-4xl font-bold">Book a Ride</h1>
+              <p className="text-muted-foreground mt-1 max-w-md">Enter your destination to see fare estimates and book a ride instantly.</p>
+            </motion.div>
+          </div>
+        </header>
+  
+        <div className="flex-1 container mx-auto p-4 space-y-6 relative z-10 -mt-16">
+          <motion.div initial={{ y: 50 }} animate={{ y: 0 }} transition={{ delay: 0.3 }} className="space-y-6">
+            
+            <Card className="shadow-lg overflow-hidden">
+              <CardContent className="p-3 flex items-center gap-2">
+                <div className="relative flex-1">
+                  <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-red-500" />
+                  <Input
+                    placeholder="Where to?"
+                    className="border-0 bg-transparent text-base font-semibold p-0 h-12 pl-10 focus-visible:ring-0 focus-visible:ring-offset-0"
+                    value={destination}
+                    onChange={(e) => setDestination(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && searchResults.length > 0 && handleSelectDestination(searchResults[0])}
+                  />
+                </div>
+  
+                <Dialog open={isScheduleDialogOpen} onOpenChange={setIsScheduleDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button variant="outline">
+                      <CalendarIcon className="w-4 h-4 mr-2"/> Later
+                    </Button>
+                  </DialogTrigger>
+  
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Schedule a Ride</DialogTitle>
+                      <DialogDescription>Choose a future date and time for your pickup.</DialogDescription>
+                    </DialogHeader>
+  
+                    <div className="space-y-6 py-4">
+                      
+                      <div>
+                        <Label>Select Date</Label>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button variant="outline" className="w-full justify-start text-left">
+                              <CalendarIcon className="mr-2 h-4 w-4" />
+                              {scheduledDate ? format(scheduledDate, "PPP") : "Pick a date"}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent><Calendar mode="single" selected={scheduledDate} onSelect={setScheduledDate} initialFocus/></PopoverContent>
+                        </Popover>
+                      </div>
+  
+                      <div>
+                        <Label>Select Time Slot</Label>
+                        <div className="grid grid-cols-3 gap-2">
+                          {timeSlots.map(slot => (
+                            <Button 
+                              key={slot}
+                              variant={scheduledTime === slot ? 'default' : 'outline'}
+                              onClick={() => setScheduledTime(slot)}
+                            >
+                              {slot}
+                            </Button>
+                          ))}
+                        </div>
+                      </div>
+  
+                    </div>
+  
+                    <DialogFooter>
+                      <Button onClick={handleConfirmSchedule}>Schedule Ride</Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+              </CardContent>
+            </Card>
+  
+            {(isSearching || searchResults.length > 0) && (
+              <Card className="shadow-lg">
+                <CardContent className="p-2 space-y-1">
+                  {isSearching ? (
+                    Array.from({length: 2}).map((_, i) => (
+                      <div key={i} className="p-2 space-y-2">
+                        <Skeleton className="h-5 w-3/4" />
+                        <Skeleton className="h-4 w-1/2" />
+                      </div>
+                    ))
+                  ) : (
+                    searchResults.map(place => (
+                      <div 
+                        key={place.place_id}
+                        onClick={() => handleSelectDestination(place)}
+                        className="flex items-center gap-4 p-3 rounded-lg hover:bg-muted cursor-pointer transition-colors"
+                      >
+                        <div className="p-2 bg-muted rounded-full border">
+                          <MapPin className="w-4 h-4 text-muted-foreground" />
+                        </div>
+  
+                        <div className="flex-1">
+                           <p className="font-semibold text-sm">{place.display_name.split(',')[0]}</p>
+                           <p className="text-xs text-muted-foreground" dangerouslySetInnerHTML={{ __html: place.display_name.split(',').slice(1).join(', ') }} />
+                           {place.distance && place.duration && (
+                              <div className="text-xs text-primary font-semibold flex items-center gap-2 mt-1">
+                                 <div className="flex items-center gap-1"><Car className="w-3 h-3"/> {place.distance.toFixed(1)} km</div>
+                                 <div className="flex items-center gap-1"><Clock className="w-3 h-3"/> ~{place.duration} min</div>
+                              </div>
+                           )}
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </CardContent>
+              </Card>
             )}
-            <div>
-            <SheetTitle>
-                {step === 'input' && "Plan your ride"}
-                {step === 'confirm' && "Choose your ride"}
-                {step === 'searching' && "Finding your ride..."}
-            </SheetTitle>
-            <SheetDescription>
-                {step === 'input' && "Enter your pickup and drop-off locations."}
-                {step === 'confirm' && "Select a vehicle that suits your needs."}
-                {step === 'searching' && "Please wait while we connect you to a nearby partner."}
-            </SheetDescription>
+  
+            <div className="space-y-2 pt-6">
+              <h3 className="font-bold text-lg">Recent Trips</h3>
+  
+              {recentTrips.map((trip, i) => (
+                <motion.div key={trip.title} variants={itemVariants}>
+                  <div className="flex items-center gap-4 p-3 rounded-lg hover:bg-card cursor-pointer transition-colors">
+                    <div className="p-3 bg-card rounded-full border">
+                      <trip.icon className="w-5 h-5 text-muted-foreground" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-semibold">{trip.title}</p>
+                      <p className="text-sm text-muted-foreground">{trip.description}</p>
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+  
             </div>
-          </div>
-        </SheetHeader>
-        
-        <div className="flex-1 overflow-y-auto pr-6">
-        {step === 'input' && (
-          <div className="space-y-4 py-4">
-            <div className="relative">
-              <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-              <Input value={pickupAddress} onChange={e => setPickupAddress(e.target.value)} placeholder="Pickup location" className="pl-10 h-11"/>
-              {pickupSuggestions.length > 0 && (
-                <Card className="absolute z-10 w-full mt-1 max-h-48 overflow-y-auto">
-                  {pickupSuggestions.map(s => <div key={s.place_id} onClick={() => handleSelectSuggestion(s, 'pickup')} className="p-2 text-sm hover:bg-muted cursor-pointer">{s.display_name}</div>)}
-                </Card>
-              )}
-            </div>
-            <div className="relative">
-              <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-              <Input value={dropAddress} onChange={e => setDropAddress(e.target.value)} placeholder="Drop-off location" className="pl-10 h-11"/>
-              {dropSuggestions.length > 0 && (
-                <Card className="absolute z-10 w-full mt-1 max-h-48 overflow-y-auto">
-                  {dropSuggestions.map(s => <div key={s.place_id} onClick={() => handleSelectSuggestion(s, 'drop')} className="p-2 text-sm hover:bg-muted cursor-pointer">{s.display_name}</div>)}
-                </Card>
-              )}
-            </div>
-          </div>
-        )}
-
-        {step === 'confirm' && (
-          <div className="space-y-3 py-4">
-            {isFetchingFares ? (
-                Array.from({length: 4}).map((_, i) => <Skeleton key={i} className="h-20 w-full" />)
-            ) : (
-                vehicles.map((vehicle) => (
-                    <Card 
-                        key={vehicle.id} 
-                        onClick={() => setSelectedVehicle(vehicle.id)}
-                        className={`cursor-pointer transition-all ${selectedVehicle === vehicle.id ? 'ring-2 ring-primary' : 'hover:bg-muted'}`}
-                    >
-                        <CardContent className="p-3 flex items-center justify-between">
-                            <div className="flex items-center gap-4">
-                                <vehicle.icon className="w-8 h-8 text-primary" />
-                                <div>
-                                    <p className="font-bold">{vehicle.name}</p>
-                                    <p className="text-xs text-muted-foreground">{vehicle.eta} min away</p>
-                                </div>
-                            </div>
-                            <p className="font-semibold text-lg">₹{vehicle.fare}</p>
-                        </CardContent>
-                    </Card>
-                ))
-            )}
-          </div>
-        )}
-
-        {step === 'searching' && (
-          <div className="flex flex-col items-center justify-center h-full py-8">
-            <SearchingIndicator partnerType="path" />
-            <p className="mt-4 font-semibold text-lg">Connecting you to a driver...</p>
-            <p className="text-sm text-muted-foreground">This may take a moment.</p>
-          </div>
-        )}
+          </motion.div>
         </div>
+      </motion.div>
+    )
+  }
+  
+  export default function Page() {
+    return (
+      <Suspense fallback={<Skeleton className="h-screen w-full" />}>
+        <BookRidePageComponent />
+      </Suspense>
+    );
+  }
 
-
-        {step !== 'searching' && (
-            <SheetFooter>
-            {step === 'input' ? (
-                <Button onClick={handleFindRides} disabled={!dropAddress || isFetchingFares} className="w-full">
-                    {isFetchingFares ? "Calculating..." : "Find Rides"}
-                </Button>
-            ) : (
-                <Button onClick={handleConfirmRide} disabled={!selectedVehicle} className="w-full">
-                    Confirm {selectedVehicle}
-                </Button>
-            )}
-            </SheetFooter>
-        )}
-
-      </SheetContent>
-    </Sheet>
-  );
-};
-
-export default RideBookingSheet;
+    

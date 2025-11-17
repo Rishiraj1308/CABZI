@@ -182,7 +182,7 @@ export default function MechanicDashboardPage() {
             toast.error('Invalid OTP');
             return;
         }
-        await updateDoc(doc(db, 'garageRequests', activeJob.id), { status: 'in_progress' });
+        await updateDoc(doc(db, 'garageRequests', activeJob!.id), { status: 'in_progress' });
     };
 
     const handleSendBill = async () => {
@@ -264,7 +264,7 @@ export default function MechanicDashboardPage() {
                 </CardContent>
                 <CardFooter>
                     {activeJob.status === 'accepted' && (
-                        <Button className="w-full" size="lg" onClick={() => updateDoc(db, 'garageRequests', activeJob.id, { status: 'arrived' })}>Arrived at Location</Button>
+                        <Button className="w-full" size="lg" onClick={() => updateDoc(doc(db, 'garageRequests', activeJob.id), { status: 'arrived' })}>Arrived at Location</Button>
                     )}
                     {activeJob.status === 'in_progress' && (
                         <Button className="w-full bg-green-600 hover:bg-green-700" size="lg" onClick={handleSendBill}>Send Bill to Customer</Button>
@@ -338,3 +338,5 @@ export default function MechanicDashboardPage() {
       </div>
     );
   }
+
+    
