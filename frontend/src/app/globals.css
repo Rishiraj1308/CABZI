@@ -81,12 +81,7 @@
     --input: 340 100% 88%;
     --ring: 340 90% 55%;
   }
-}
 
-@layer base {
-  * {
-    @apply border-border;
-  }
   body {
     @apply bg-background text-foreground;
     font-family: 'Poppins', sans-serif;

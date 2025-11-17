@@ -14,47 +14,38 @@
     --popover: 210 20% 98%;
     --popover-foreground: 210 10% 23%;
     --primary: 180 35% 35%;
-    --primary-foreground: 210 20% 98%;
-    --secondary: 210 20% 94%;
+    --primary-foreground: 180 20% 98%;
+    --secondary: 180 10% 94%;
     --secondary-foreground: 180 35% 35%;
-    --muted: 210 20% 94%;
-    --muted-foreground: 210 10% 45%;
+    --muted: 180 10% 94%;
+    --muted-foreground: 180 10% 45%;
     --accent: 45 95% 55%;
     --accent-foreground: 45 80% 5%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
-    --border: 210 20% 88%;
-    --input: 210 20% 88%;
+    --border: 180 10% 88%;
+    --input: 180 10% 88%;
     --ring: 180 40% 50%;
     --radius: 0.8rem;
   }
  
   .dark {
-    /* Deep Dark Teal Theme */
     --background: 180 15% 10%;
     --foreground: 180 10% 95%;
- 
     --card: 180 12% 15%;
     --card-foreground: 180 10% 95%;
- 
     --popover: 180 15% 5%;
     --popover-foreground: 180 10% 95%;
- 
     --primary: 180 10% 95%;
     --primary-foreground: 180 15% 10%;
- 
     --secondary: 180 10% 15%;
     --secondary-foreground: 180 10% 95%;
- 
     --muted: 180 10% 20%;
     --muted-foreground: 180 10% 65%;
- 
     --accent: 45 95% 55%;
     --accent-foreground: 45 80% 5%;
- 
     --destructive: 0 63% 31%;
     --destructive-foreground: 0 0% 98%;
- 
     --border: 180 10% 25%;
     --input: 180 10% 12%;
     --ring: 180 40% 60%;
@@ -163,6 +154,38 @@
         box-shadow: 0 0 30px 5px var(--glow-color);
       }
     }
+    @keyframes float {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-15px); }
+    }
+    .animate-float-slow {
+      animation: float 8s ease-in-out infinite;
+    }
+    .animate-float-medium {
+      animation: float 6s ease-in-out infinite;
+    }
+    .animate-pulse-slow {
+      animation: pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+    .timeline-line {
+        position: absolute;
+        left: 50%;
+        top: 0;
+        bottom: 0;
+        width: 2px;
+        background-color: hsl(var(--border));
+        transform: translateX(-50%);
+    }
+    .timeline-progress {
+        position: absolute;
+        left: 50%;
+        top: 0;
+        width: 2px;
+        background: linear-gradient(to bottom, hsl(var(--primary)), hsl(var(--accent)));
+        transform: translateX(-50%);
+        height: 0%;
+        transition: height 0.1s ease-out;
+    }
 }
 
 
@@ -249,4 +272,3 @@
     opacity: 0;
   }
 }
-    
