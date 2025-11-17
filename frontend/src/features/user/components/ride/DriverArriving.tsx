@@ -252,6 +252,8 @@ export default function DriverArriving({ ride, onCancel }: DriverArrivingProps) 
 
   if (!ride?.pickup?.location) return null;
 
+  const pickupPosition: [number, number] = [ride.pickup.location.latitude, ride.pickup.location.longitude];
+
   return (
     <div className="w-full h-full flex flex-col">
       <div className="relative flex-1 w-full">
@@ -348,3 +350,4 @@ export default function DriverArriving({ ride, onCancel }: DriverArrivingProps) 
   );
 }
 
+    

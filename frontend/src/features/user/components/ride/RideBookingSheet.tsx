@@ -1,27 +1,26 @@
 
-'use client';
+'use client'
 
-import React, { useState, useEffect, useCallback, Suspense } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { ArrowLeft, Map, MapPin, Calendar as CalendarIcon, Clock, Car } from 'lucide-react';
-import { motion } from 'framer-motion';
-import { getRoute, searchPlace } from '@/lib/routing';
-import { Skeleton } from '@/components/ui/skeleton';
-import { toast } from 'sonner';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Calendar } from '@/components/ui/calendar';
-import { Label } from '@/components/ui/label';
-import { format } from 'date-fns';
-import { cn } from '@/lib/utils';
-import type { RideData, ClientSession } from '@/lib/types';
-import { useFirebase } from '@/lib/firebase/client-provider';
-import { GeoPoint, addDoc, collection, serverTimestamp } from 'firebase/firestore';
+import React, { useState, useEffect, useCallback, Suspense } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { ArrowLeft, Map, MapPin, Calendar as CalendarIcon, Clock, Car } from 'lucide-react'
+import { motion } from 'framer-motion'
+import { getRoute, searchPlace } from '@/lib/routing'
+import { Skeleton } from '@/components/ui/skeleton'
+import { toast } from 'sonner'
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { Calendar } from '@/components/ui/calendar'
+import { Label } from '@/components/ui/label'
+import { format } from 'date-fns'
+import { cn } from '@/lib/utils'
+import type { RideData, ClientSession } from '@/lib/types'
+import { useFirebase } from '@/lib/firebase/client-provider'
+import { GeoPoint, addDoc, collection, serverTimestamp } from 'firebase/firestore'
 import { useActiveRequest } from '@/features/user/components/active-request-provider';
-import { useDebounce } from 'use-debounce';
 
 
 const recentTrips = [
