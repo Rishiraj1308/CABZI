@@ -175,5 +175,3 @@ export default function MechanicOnboardingPage() {
         </div>
     );
 }
-
-    

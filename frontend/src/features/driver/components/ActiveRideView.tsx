@@ -11,13 +11,12 @@ import { RideData } from '@/lib/types';
 import { useFirebase } from '@/lib/firebase/client-provider';
 import { doc, updateDoc } from 'firebase/firestore';
 import { toast } from 'sonner';
-import dynamic from 'next/dynamic';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useDriver } from '@/app/(dashboard)/driver/layout';
 import { useRoute } from '../hooks/useRoute';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import {
   AlertDialog,
@@ -31,6 +30,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { format } from 'date-fns';
+import dynamic from 'next/dynamic';
 
 const LiveMap = dynamic(() => import('@/features/user/components/ride/LiveMap'), { 
     ssr: false,
@@ -52,7 +52,7 @@ const fareConfig: {[key: string]: { base: number, perKm: number, serviceFee: num
     'Curocity Pink': { base: 50, perKm: 12, serviceFee: 30 },
 }
 
-export const ActiveRideView: React.FC<ActiveRideViewProps> = ({ activeRide, setActiveRide }) => {
+const ActiveRideView: React.FC<ActiveRideViewProps> = ({ activeRide, setActiveRide }) => {
   const { db } = useFirebase();
   const { partnerData } = useDriver();
   const [enteredOtp, setEnteredOtp] = useState('');

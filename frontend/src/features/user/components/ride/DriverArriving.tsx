@@ -350,6 +350,3 @@ export default function DriverArriving({ ride, onCancel }: DriverArrivingProps) 
     </div>
   );
 }
-
-
-    

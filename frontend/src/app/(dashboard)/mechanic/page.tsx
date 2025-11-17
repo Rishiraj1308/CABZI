@@ -23,7 +23,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Phone } from 'lucide-react'
 import { format } from 'date-fns'
 
-const LiveMap = dynamic(() => import('@/features/user/components/ride/LiveMap'), { ssr: false })
+const LiveMap = dynamic(() => import('@/features/user/components/ride/LiveMap'), { ssr: false });
 
 const StatCard = ({ title, value, icon: Icon, isLoading }: { title: string, value: string, icon: React.ElementType, isLoading?: boolean }) => (
   <Card>
@@ -338,5 +338,3 @@ export default function MechanicDashboardPage() {
       </div>
     );
   }
-
-    

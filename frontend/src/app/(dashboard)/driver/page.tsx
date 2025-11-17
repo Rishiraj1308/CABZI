@@ -34,11 +34,17 @@ import { cn } from '@/lib/utils'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from '@/components/ui/button'
 import { format } from 'date-fns'
+import dynamic from 'next/dynamic'
 
 import { useDriverLocation } from '@/features/driver/hooks/useDriverLocation'
 import { RidePopup } from '@/features/driver/components/RidePopup'
-import { ActiveRideView } from '@/features/driver/components/ActiveRideView'
 import { Separator } from '@/components/ui/separator'
+
+const ActiveRideView = dynamic(() => import('@/features/driver/components/ActiveRideView'), {
+    ssr: false,
+    loading: () => <div className="p-4"><Skeleton className="h-96 w-full" /></div>,
+});
+
 
 const StatCard = ({ title, value, icon: Icon, isLoading, onValueClick }: { title: string, value: string, icon: React.ElementType, isLoading?: boolean, onValueClick?: () => void }) => (
 <Card>
