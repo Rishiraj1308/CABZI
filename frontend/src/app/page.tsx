@@ -111,7 +111,7 @@ const ecosystemServices = [
       icon: Ambulance,
       title: "Cure (Emergency Response)",
       description: "Integrated ambulance dispatch and doctor appointment system.",
-      href: "/user/cure",
+      href: "/user/cure-booking",
     },
     {
       icon: Wrench,
@@ -129,7 +129,7 @@ const ecosystemServices = [
       icon: Calendar,
       title: "Appointments",
       description: "Book verified doctors and specialists in minutes.",
-      href: "/user/appointments",
+      href: "/user/appointment-booking",
     },
     {
       icon: MapIcon,
@@ -178,7 +178,7 @@ function ThemeToggle() {
     )
 }
 
-export default function HomePage() {
+function HomePage() {
   const router = useRouter();
 
   useEffect(() => {
@@ -330,6 +330,7 @@ export default function HomePage() {
                     </div>
                 </div>
             </section>
+            
             <section id="a-day-with-curocity" className="py-20 md:py-24 bg-background">
   <div className="container">
     <div className="text-center max-w-3xl mx-auto mb-16" data-aos="fade-up">
@@ -643,3 +644,5 @@ export default function HomePage() {
       </div>
   )
 }
+
+export default HomePage;
