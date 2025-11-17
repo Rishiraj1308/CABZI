@@ -2,21 +2,21 @@
   "firestore": {
     "database": "(default)",
     "location": "nam5",
-    "rules": "backend/firestore.rules",
-    "indexes": "backend/firestore.indexes.json"
+    "rules": "firestore.rules",
+    "indexes": "firestore.indexes.json"
   },
   "functions": {
     "predeploy": [
-      "npm --prefix backend install",
-      "npm --prefix backend run build"
+      "npm --prefix ./ install",
+      "npm --prefix ./ run build"
     ],
-    "source": "backend"
+    "source": "."
   },
   "storage": {
-    "rules": "backend/storage.rules"
+    "rules": "storage.rules"
   },
   "hosting": {
-    "public": "frontend/out",
+    "public": "out",
     "ignore": [
       "firebase.json",
       "**/.*",

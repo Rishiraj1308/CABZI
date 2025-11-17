@@ -1,3 +1,4 @@
+
 'use client'
 
 import React, { useState, useEffect, useCallback } from 'react'
@@ -8,17 +9,19 @@ import type { GarageRequest, ClientSession } from '@/lib/types'
 import { useToast } from '@/hooks/use-toast'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import RideStatus from '@/features/user/components/ride/RideStatusSheet'
 import { Wrench, Zap, Fuel, Car, MoreHorizontal, ArrowLeft, MapPin, History, AlertTriangle, RefreshCw } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { motion } from 'framer-motion'
-import Image from 'next/image'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Label } from '@/components/ui/label'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { useLanguage } from '@/hooks/use-language'
+import dynamic from 'next/dynamic'
 
-const LiveMap = React.lazy(() => import('@/features/user/components/ride/LiveMap'));
+const LiveMap = dynamic(() => import('@/features/user/components/ride/LiveMap'), {
+    ssr: false,
+    loading: () => <div className="h-full w-full bg-muted animate-pulse" />
+});
 
 const commonIssues = [
     { id: 'flat_tyre', label: 'Flat Tyre / Puncture', icon: Car },
@@ -90,18 +93,10 @@ export default function ResQPage() {
 
   useEffect(() => {
     if (user && db) {
-      const userDocRef = doc(db, 'users', user.uid);
-      getDoc(userDocRef).then((docSnap) => {
-        if (docSnap.exists()) {
-          const userData = docSnap.data();
-          setSession({
-            userId: user.uid,
-            name: userData.name,
-            phone: userData.phone,
-            gender: userData.gender,
-          } as ClientSession);
-        }
-      });
+      const sessionData = localStorage.getItem('curocity-session');
+      if (sessionData) {
+          setSession(JSON.parse(sessionData));
+      }
     }
   }, [user, db]);
 
@@ -127,12 +122,12 @@ export default function ResQPage() {
         
         setActiveGarageRequest(prev => {
             if (prev?.status !== 'accepted' && requestData.status === 'accepted') {
-                toast({ title: "ResQ Partner Assigned!", description: `${requestData.mechanicName} is on the way.` });
+                toast({ title: "ResQ Partner Assigned!", description: `${(requestData as GarageRequest).mechanicName} is on the way.` });
             }
             if (prev?.status !== 'bill_sent' && requestData.status === 'bill_sent') {
                 toast({
                     title: "Job Card Ready for Approval",
-                    description: `Please review and approve the job card from ${requestData.mechanicName}.`,
+                    description: `Please review and approve the job card from ${(requestData as GarageRequest).mechanicName}.`,
                     duration: 9000
                 });
             }

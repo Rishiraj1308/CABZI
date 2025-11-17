@@ -55,7 +55,7 @@ export function FirebaseProviderClient({ children }: { children: ReactNode }) {
       user,
       isUserLoading,
     }),
-    [user, isUserLoading, messaging]
+    [user, isUserLoading, messaging, functions]
   );
 
   return (

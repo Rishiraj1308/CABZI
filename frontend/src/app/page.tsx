@@ -1,4 +1,3 @@
-
 'use client'
 
 import React, { useState, useEffect, useRef, useCallback } from 'react'
@@ -238,7 +237,7 @@ function HomePage() {
                 <div className="container text-center">
                     <motion.div className="text-center" variants={containerVariants} initial="hidden" animate="visible">
                         <motion.h1 variants={itemVariants} className="text-3xl sm:text-5xl md:text-6xl font-extrabold tracking-tighter bg-clip-text text-transparent bg-gradient-to-b from-foreground to-foreground/70 font-headline">
-                           Move. Heal. Fix. <br/> One App for Your Urban Life.
+                           Move. Heal. Fix. <br /> One App for Your Urban Life.
                         </motion.h1>
                          <motion.p variants={itemVariants} className="mx-auto mt-6 max-w-2xl text-base sm:text-lg text-muted-foreground">
                             Mobility, safety, health, home, help — everything you deal with in a city, now controlled from one clean, powerful platform.
@@ -332,56 +331,42 @@ function HomePage() {
             </section>
             
             <section id="a-day-with-curocity" className="py-20 md:py-24 bg-background">
-  <div className="container">
-    <div className="text-center max-w-3xl mx-auto mb-16" data-aos="fade-up">
-      <h2 className="text-3xl font-bold tracking-tight sm:text-4xl font-headline">A Day with Curocity</h2>
-      <p className="mt-4 text-lg text-muted-foreground">
-        One app for your entire day, from your morning commute to unexpected emergencies.
-      </p>
-    </div>
-
-    <div className="relative">
-      <div className="hidden md:block absolute left-1/2 top-0 bottom-0 w-1 bg-border -translate-x-1/2"></div>
-
-      <div className="space-y-12">
-        {dayTimelineItems.map((item, index) => (
-          <div
-            key={index}
-            className="md:grid md:grid-cols-2 md:gap-8 items-center relative"
-            data-aos="fade-up"
-          >
-            <div className={cn("md:text-right", index % 2 === 0 ? "md:order-1" : "md:order-2")}>
-              <div className={cn("p-4 rounded-lg bg-muted/50 shadow-sm",
-                index % 2 === 0 ? "md:mr-8" : "md:ml-8")}>
-                <div className="flex items-center gap-4">
-                  <div className="p-3 rounded-full bg-primary/10 hidden md:flex items-center justify-center">
-                    <item.icon className="w-6 h-6 text-primary" />
-                  </div>
-
-                  <div className="flex-1">
-                    <p className="font-bold">{item.title}</p>
-                    <p className="text-sm text-muted-foreground">{item.description}</p>
-                  </div>
+                <div className="container">
+                    <div className="text-center max-w-3xl mx-auto mb-16" data-aos="fade-up">
+                        <h2 className="text-3xl font-bold tracking-tight sm:text-4xl font-headline">A Day with Curocity</h2>
+                        <p className="mt-4 text-lg text-muted-foreground">
+                            One app for your entire day, from your morning commute to unexpected emergencies.
+                        </p>
+                    </div>
+                     <div className="relative">
+                        <div className="hidden md:block absolute left-1/2 top-0 bottom-0 w-1 bg-border -translate-x-1/2"></div>
+                        <div className="space-y-12">
+                            {dayTimelineItems.map((item, index) => (
+                                <div key={index} className="md:grid md:grid-cols-2 md:gap-8 items-center relative" data-aos="fade-up">
+                                    <div className={cn("md:text-right", index % 2 === 0 ? "md:order-1" : "md:order-2")}>
+                                        <div className={cn("p-4 rounded-lg bg-muted/50 shadow-sm", index % 2 === 0 ? "md:mr-8" : "md:ml-8")}>
+                                            <div className="flex items-center gap-4">
+                                                <div className="p-3 rounded-full bg-primary/10 hidden md:flex items-center justify-center">
+                                                    <item.icon className="w-6 h-6 text-primary" />
+                                                </div>
+                                                <div className="flex-1">
+                                                    <p className="font-bold">{item.title}</p>
+                                                    <p className="text-sm text-muted-foreground">{item.description}</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className={cn("flex items-center", index % 2 === 0 ? "md:order-2" : "md:order-1 justify-end")}>
+                                        <div className="hidden md:block w-4 h-4 bg-primary rounded-full border-4 border-background absolute left-1/2 -translate-x-1/2"></div>
+                                        <time className="font-semibold text-primary text-sm p-2 bg-background border rounded-lg md:border-0 md:bg-transparent">{item.time}</time>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
                 </div>
-              </div>
-            </div>
-
-            <div className={cn(
-              "flex items-center",
-              index % 2 === 0 ? "md:order-2" : "md:order-1",
-              "justify-end"
-            )}>
-              <div className="hidden md:block w-4 h-4 bg-primary rounded-full border-4 border-background absolute left-1/2 -translate-x-1/2"></div>
-              <time className="font-semibold text-primary text-sm p-2 bg-background border rounded-lg md:border-0 md:bg-transparent">
-                {item.time}
-              </time>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  </div>
-</section>            
+            </section>
+            
             <section id="what-we-solve" className="py-20 md:py-24 bg-muted/40">
                 <div className="container">
                      <div className="text-center max-w-3xl mx-auto mb-16">
@@ -644,5 +629,3 @@ function HomePage() {
       </div>
   )
 }
-
-export default HomePage;

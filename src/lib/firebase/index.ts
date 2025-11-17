@@ -1,3 +1,4 @@
+
 // This file is the single source of truth for Firebase client-side services.
 // It ensures that only one instance of each service is created and used throughout the app.
 
@@ -12,7 +13,7 @@ const app = getFirebaseApp();
 const auth = app ? getFirebaseAuth() : null;
 const db = app ? getDb() : null;
 const functions = app ? getFirebaseFunctions() : null;
-const messaging = app ? getFirebaseMessaging() : Promise.resolve(null);
+const messaging = app ? getFirebaseMessaging() : null;
 
 
 export { app, auth, db, functions, messaging };

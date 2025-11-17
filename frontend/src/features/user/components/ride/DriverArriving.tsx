@@ -2,7 +2,7 @@
 'use client';
 
 import React, { useEffect, useState, useRef } from 'react';
-import { MapContainer, TileLayer, Marker, Polyline, useMap } from 'react-leaflet';
+import { useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Phone, Shield, Share2, Siren, Star, XCircle, Route, Clock, MapPin, CheckCircle, Navigation, User, BadgeCheck, PartyPopper, IndianRupee } from 'lucide-react';
@@ -35,7 +35,7 @@ import {
 } from "@/components/ui/dialog"
 import SearchingIndicator from '@/components/ui/searching-indicator';
 import dynamic from 'next/dynamic';
-import { differenceInYears } from 'date-fns';
+import { differenceInYears, format } from 'date-fns';
 import { motion } from 'framer-motion';
 import { Separator } from '@/components/ui/separator';
 import { Table, TableBody, TableCell, TableRow, TableFooter, TableHead } from '@/components/ui/table';
@@ -353,5 +353,3 @@ export default function DriverArriving({ ride, onCancel }: DriverArrivingProps) 
     </div>
   );
 }
-
-    
