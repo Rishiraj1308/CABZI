@@ -32,6 +32,7 @@ import { Input } from '@/components/ui/input'
 import { motion, AnimatePresence } from 'framer-motion';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useLanguage } from '@/context/language-provider';
+import { ActiveRequestProvider } from '@/features/user/components/active-request-provider';
 
 
 const navItems = [
@@ -45,7 +46,7 @@ const navItems = [
 function LanguageToggle() {
     const { setLanguage, language } = useLanguage()
     return (
-        <Button variant="ghost" size="icon" onClick={() => setLanguage(language === 'en' ? 'hi' : 'en')} className="inline-flex items-center justify-center h-10 w-10 rounded-full border border-border bg-card/50 backdrop-blur hover:bg-accent/80" aria-label="Switch language" title="Switch language">
+        <Button variant="ghost" size="icon" onClick={() => setLanguage(language === 'en' ? 'hi' : 'en')} className="inline-flex items-center justify-center h-10 w-10 rounded-full border bg-card/50 backdrop-blur hover:bg-accent/80" aria-label="Switch language" title="Switch language">
             <Languages className="h-4 w-4" />
         </Button>
     )
@@ -55,7 +56,7 @@ function LanguageToggle() {
 function ThemeToggle() {
     const { theme, setTheme } = useTheme()
     return (
-      <Button variant="ghost" size="icon" onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} className="inline-flex items-center justify-center h-10 w-10 rounded-full border border-border bg-card/50 backdrop-blur hover:bg-accent/80" aria-label="Toggle theme" title="Toggle theme">
+      <Button variant="ghost" size="icon" onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} className="inline-flex items-center justify-center h-10 w-10 rounded-full border bg-card/50 backdrop-blur hover:bg-accent/80" aria-label="Toggle theme" title="Toggle theme">
         <Sun className="h-5 w-5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
         <Moon className="absolute h-5 w-5 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
         <span className="sr-only">Toggle theme</span>
@@ -63,11 +64,7 @@ function ThemeToggle() {
     )
 }
 
-export default function UserLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+function UserLayoutContent({ children }: { children: React.ReactNode }) {
   const [isMounted, setIsMounted] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
@@ -105,22 +102,11 @@ export default function UserLayout({
   }
   
   const pageVariants = {
-    initial: {
-      opacity: 0,
-    },
-    in: {
-      opacity: 1,
-    },
-    out: {
-      opacity: 0,
-    },
+    initial: { opacity: 0 },
+    in: { opacity: 1 },
+    out: { opacity: 0 },
   };
-
-  const pageTransition = {
-    type: 'tween',
-    ease: 'anticipate',
-    duration: 0.5,
-  };
+  const pageTransition = { type: 'tween', ease: 'anticipate', duration: 0.5 };
 
   const menuContainerVariants = {
     hidden: { opacity: 0 },
@@ -138,9 +124,7 @@ export default function UserLayout({
   };
 
   if (!isMounted || isUserLoading) {
-    return (
-        <div className="flex h-screen w-full flex-col bg-background"></div>
-    );
+    return <div className="flex h-screen w-full flex-col bg-background"></div>;
   }
   
   return (
@@ -149,7 +133,7 @@ export default function UserLayout({
              <header className="fixed top-0 left-0 right-0 z-50 bg-background/30 backdrop-blur-lg">
                 <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                     <nav className="flex items-center justify-between py-4">
-                        <Link href="/user" className="flex items-center gap-2 rounded-full border border-border bg-card/50 px-3 py-2 backdrop-blur hover:bg-accent/80 focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-white/30" aria-label="Home">
+                        <Link href="/user" className="flex items-center gap-2 rounded-full border bg-card/50 px-3 py-2 backdrop-blur hover:bg-accent/80 focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-white/30" aria-label="Home">
                             <BrandLogo iconClassName='w-8 h-8' />
                         </Link>
 
@@ -158,7 +142,7 @@ export default function UserLayout({
                             <LanguageToggle />
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
-                                 <Button variant="ghost" size="icon" className="rounded-full w-10 h-10 border border-border bg-card/50 backdrop-blur hover:bg-accent/80">
+                                 <Button variant="ghost" size="icon" className="rounded-full w-10 h-10 border bg-card/50 backdrop-blur hover:bg-accent/80">
                                    <Avatar className="h-8 w-8">
                                       <AvatarImage src={user?.photoURL || undefined} alt={user?.displayName || 'User'} />
                                       <AvatarFallback>{getInitials(user?.displayName)}</AvatarFallback>
@@ -223,22 +207,32 @@ export default function UserLayout({
         {!isMapPage && (
             <>
                 <div className="fixed bottom-5 right-5 z-30 flex flex-col items-center gap-3">
-                    <Button className="h-12 w-12 rounded-full border border-border bg-card/50 backdrop-blur shadow-xl hover:bg-accent/80 inline-flex items-center justify-center focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-white/30" title="Open chat">
+                    <Button className="h-12 w-12 rounded-full border bg-card/50 backdrop-blur shadow-xl hover:bg-accent/80 inline-flex items-center justify-center focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-white/30" title="Open chat">
                       <MessageSquare className="h-5 w-5 fill-background/80" stroke="black" strokeWidth={1.5} />
                       <span className="sr-only">Open chat</span>
                     </Button>
-                    <Button className="h-12 w-12 rounded-full border border-border bg-card/50 backdrop-blur shadow-xl hover:bg-accent/80 inline-flex items-center justify-center focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-white/30" title="Safety">
+                    <Button className="h-12 w-12 rounded-full border bg-card/50 backdrop-blur shadow-xl hover:bg-accent/80 inline-flex items-center justify-center focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-white/30" title="Safety">
                       <Shield className="h-5 w-5 fill-background/80" stroke="black" strokeWidth={1.5} />
                       <span className="sr-only">Safety</span>
                     </Button>
                 </div>
-                <footer className="mt-10 border-t border-border/30">
-                  <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6 flex items-center justify-between">
-                    <p className="text-sm text-muted-foreground">© {new Date().getFullYear()} Curocity. All rights reserved.</p>
-                    <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                      <Link href="/terms" className="hover:text-primary focus:outline-none focus-visible:underline">Terms</Link>
-                      <Link href="/privacy" className="hover:text-primary focus:outline-none focus-visible:underline">Privacy</Link>
-                    </div>
+                <footer className="fixed bottom-0 left-0 right-0 z-40 p-4">
+                  <div className="relative mx-auto max-w-sm">
+                    <nav className="flex items-center justify-around h-16 rounded-full bg-background/80 backdrop-blur-lg border shadow-lg">
+                      {navItems.map((item) => (
+                          <Link 
+                            key={item.href} 
+                            href={item.href} 
+                            className={cn(
+                              "flex flex-col items-center gap-1 text-muted-foreground hover:text-primary transition-colors",
+                              pathname === item.href && "text-primary"
+                            )}
+                          >
+                            <item.icon className="w-6 h-6" />
+                            <span className="text-[10px] font-semibold">{item.label}</span>
+                          </Link>
+                      ))}
+                    </nav>
                   </div>
                 </footer>
             </>
@@ -246,4 +240,14 @@ export default function UserLayout({
       <Toaster />
     </div>
   );
+}
+
+export default function Layout({ children }: { children: React.ReactNode }) {
+    return (
+        <ActiveRequestProvider>
+            <UserLayoutContent>
+                {children}
+            </UserLayoutContent>
+        </ActiveRequestProvider>
+    )
 }
