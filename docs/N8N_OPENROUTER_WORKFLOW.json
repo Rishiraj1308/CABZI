@@ -1,0 +1,73 @@
+{
+  "name": "OpenRouter AI with n8n",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "ai-prompt",
+        "options": {}
+      },
+      "id": "e2a3f4b5-c6d7-e8f9-a0b1-c2d3e4f5a6b7",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        860,
+        440
+      ],
+      "notes": "Receives a prompt from an external source, e.g., your Curocity app."
+    },
+    {
+      "parameters": {
+        "url": "https://openrouter.ai/api/v1/chat/completions",
+        "authentication": "headerAuth",
+        "sendBody": true,
+        "bodyContentType": "json",
+        "jsonBody": "={\n    \"model\": \"nousresearch/hermes-2-pro-llama-3-8b\",\n    \"messages\": [\n        {\n            \"role\": \"user\",\n            \"content\": \"{{ $json.body.prompt }}\"\n        }\n    ]\n}",
+        "options": {}
+      },
+      "id": "b1c2d3e4-f5a6-b7c8-d9e0-f1a2b3c4d5e6",
+      "name": "Call OpenRouter AI",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        1100,
+        440
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "YOUR_OPENROUTER_CREDENTIAL_ID",
+          "name": "OpenRouter API Key"
+        }
+      },
+      "notes": "Sends the prompt to a free model on OpenRouter. The model name can be changed to any other model available on OpenRouter."
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "a0b1c2d3-e4f5-a6b7-c8d9-e0f1a2b3c4d5",
+      "name": "Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1100,
+        260
+      ],
+      "notesInFlow": true,
+      "content": "To get this to work:\n1. Create a Header Auth credential for HTTP Request.\n2. Set the Name to `Authorization`.\n3. Set the Value to `Bearer sk-or-v1-YOUR-KEY` (replace with your OpenRouter key)."
+    }
+  ],
+  "connections": {
+    "Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Call OpenRouter AI",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Curocity</string>
+    <string name="title_activity_main">Curocity</string>
+    <string name="package_name">com.curocity.app</string>
+    <string name="custom_url_scheme">com.curocity.app</string>
+</resources>

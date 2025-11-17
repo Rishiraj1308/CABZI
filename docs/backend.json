@@ -1,0 +1,347 @@
+{
+  "entities": {
+    "Rider": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Rider",
+      "type": "object",
+      "description": "Represents a rider in the Cabzi application.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the rider entity."
+        },
+        "firebaseUid": {
+          "type": "string",
+          "description": "Firebase UID associated with the rider's account."
+        },
+        "mobileNumber": {
+          "type": "string",
+          "description": "Rider's mobile number."
+        },
+        "name": {
+          "type": "string",
+          "description": "Rider's name."
+        },
+        "email": {
+          "type": "string",
+          "description": "Rider's email address.",
+          "format": "email"
+        },
+        "paymentMethods": {
+          "type": "array",
+          "description": "List of rider's preferred payment methods.",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "id",
+        "firebaseUid",
+        "mobileNumber"
+      ]
+    },
+    "Driver": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Driver",
+      "type": "object",
+      "description": "Represents a driver in the Cabzi application.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the driver entity."
+        },
+        "firebaseUid": {
+          "type": "string",
+          "description": "Firebase UID associated with the driver's account."
+        },
+        "mobileNumber": {
+          "type": "string",
+          "description": "Driver's mobile number."
+        },
+        "name": {
+          "type": "string",
+          "description": "Driver's name."
+        },
+        "email": {
+          "type": "string",
+          "description": "Driver's email address.",
+          "format": "email"
+        },
+        "licenseImageURL": {
+          "type": "string",
+          "description": "URL of the driver's license image."
+        },
+        "aadhaarImageURL": {
+          "type": "string",
+          "description": "URL of the driver's Aadhaar image."
+        },
+        "vehicleRCImageURL": {
+          "type": "string",
+          "description": "URL of the driver's Vehicle Registration Certificate image."
+        },
+        "vehicleType": {
+          "type": "string",
+          "description": "Type of vehicle the driver operates (e.g., Bike, Auto, Cab, Toto)."
+        },
+        "subscriptionId": {
+          "type": "string",
+          "description": "Reference to Subscription. (Relationship: Driver 1:1 Subscription)"
+        },
+        "walletId": {
+          "type": "string",
+          "description": "Reference to Wallet. (Relationship: Driver 1:1 Wallet)"
+        }
+      },
+      "required": [
+        "id",
+        "firebaseUid",
+        "mobileNumber",
+        "vehicleType"
+      ]
+    },
+    "Ride": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Ride",
+      "type": "object",
+      "description": "Represents a ride request and its details.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the ride entity."
+        },
+        "riderId": {
+          "type": "string",
+          "description": "Reference to Rider. (Relationship: Rider 1:N Ride)"
+        },
+        "driverId": {
+          "type": "string",
+          "description": "Reference to Driver. (Relationship: Driver 1:N Ride)"
+        },
+        "pickupLatitude": {
+          "type": "number",
+          "description": "Latitude of the pickup location."
+        },
+        "pickupLongitude": {
+          "type": "number",
+          "description": "Longitude of the pickup location."
+        },
+        "dropoffLatitude": {
+          "type": "number",
+          "description": "Latitude of the drop-off location."
+        },
+        "dropoffLongitude": {
+          "type": "number",
+          "description": "Longitude of the drop-off location."
+        },
+        "rideType": {
+          "type": "string",
+          "description": "Type of ride requested (e.g., Bike, Auto, Cab, Toto)."
+        },
+        "fareEstimate": {
+          "type": "number",
+          "description": "Estimated fare for the ride."
+        },
+        "actualFare": {
+          "type": "number",
+          "description": "Actual fare charged for the ride."
+        },
+        "status": {
+          "type": "string",
+          "description": "Status of the ride (e.g., requested, accepted, in progress, completed, cancelled)."
+        },
+        "paymentMethod": {
+          "type": "string",
+          "description": "Payment method used for the ride (e.g., Cash, UPI, Wallet)."
+        },
+        "startTime": {
+          "type": "string",
+          "description": "The time the ride started",
+          "format": "date-time"
+        },
+        "endTime": {
+          "type": "string",
+          "description": "The time the ride ended",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "riderId",
+        "pickupLatitude",
+        "pickupLongitude",
+        "dropoffLatitude",
+        "dropoffLongitude",
+        "rideType",
+        "fareEstimate",
+        "status"
+      ]
+    },
+    "Subscription": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Subscription",
+      "type": "object",
+      "description": "Represents a subscription plan for drivers.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the subscription entity."
+        },
+        "planName": {
+          "type": "string",
+          "description": "Name of the subscription plan (e.g., Free, Basic, Premium)."
+        },
+        "price": {
+          "type": "number",
+          "description": "Price of the subscription plan."
+        },
+        "durationMonths": {
+          "type": "number",
+          "description": "Duration of the subscription plan in months."
+        },
+        "benefits": {
+          "type": "array",
+          "description": "List of benefits included in the subscription plan.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "insuranceStatus": {
+          "type": "string",
+          "description": "Insurance status for the driver (e.g., Active, Pending)."
+        }
+      },
+      "required": [
+        "id",
+        "planName",
+        "price",
+        "durationMonths"
+      ]
+    },
+    "Wallet": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Wallet",
+      "type": "object",
+      "description": "Represents a driver's wallet for managing earnings and withdrawals.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the wallet entity."
+        },
+        "totalEarnings": {
+          "type": "number",
+          "description": "Total earnings in the wallet."
+        },
+        "availableBalance": {
+          "type": "number",
+          "description": "Available balance in the wallet for withdrawal."
+        },
+        "withdrawalMethods": {
+          "type": "array",
+          "description": "List of available withdrawal methods (e.g., UPI).",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "id"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/riders/{riderId}",
+        "definition": {
+          "entityName": "Rider",
+          "schema": {
+            "$ref": "#/backend/entities/Rider"
+          },
+          "description": "Stores rider profile information. Uses path-based ownership for easy security rules.",
+          "params": [
+            {
+              "name": "riderId",
+              "description": "The unique identifier for the rider."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/drivers/{driverId}",
+        "definition": {
+          "entityName": "Driver",
+          "schema": {
+            "$ref": "#/backend/entities/Driver"
+          },
+          "description": "Stores driver profile information. Uses path-based ownership for security rules.",
+          "params": [
+            {
+              "name": "driverId",
+              "description": "The unique identifier for the driver."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/riders/{riderId}/rides/{rideId}",
+        "definition": {
+          "entityName": "Ride",
+          "schema": {
+            "$ref": "#/backend/entities/Ride"
+          },
+          "description": "Stores ride information associated with a specific rider. Includes denormalized `driverId` for authorization independence.",
+          "params": [
+            {
+              "name": "riderId",
+              "description": "The unique identifier for the rider."
+            },
+            {
+              "name": "rideId",
+              "description": "The unique identifier for the ride."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/subscriptions/{subscriptionId}",
+        "definition": {
+          "entityName": "Subscription",
+          "schema": {
+            "$ref": "#/backend/entities/Subscription"
+          },
+          "description": "Stores subscription plan information.",
+          "params": [
+            {
+              "name": "subscriptionId",
+              "description": "The unique identifier for the subscription."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/wallets/{walletId}",
+        "definition": {
+          "entityName": "Wallet",
+          "schema": {
+            "$ref": "#/backend/entities/Wallet"
+          },
+          "description": "Stores wallet information for drivers.",
+          "params": [
+            {
+              "name": "walletId",
+              "description": "The unique identifier for the wallet."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The Firestore data structure is designed to support the Cabzi application's features for riders and drivers, focusing on authorization independence, scalability, and security. User data (Riders and Drivers) is stored in separate collections. Rides are stored in a subcollection under each rider to associate rides with riders, enabling path-based security rules. Driver subscriptions and wallet details are kept in separate collections. This design eliminates the need for `get()` calls in security rules, simplifying them and enhancing security. Specifically, the `rides` subcollection maintains a copy of relevant driver information (driverId) for authorization independence. Segregation of data into collections like `riders`, `drivers`, `subscriptions`, and `wallets` allows for homogeneous security postures within each collection. Real-time map functionality can be implemented using Firebase's Realtime Database or Firestore's GeoPoint data type in conjunction with appropriate indexing."
+  }
+}

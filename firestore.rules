@@ -1,0 +1,74 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+
+    // --- User (Rider) Rules ---
+    match /users/{userId} {
+      // Admins can list, users can only access their own doc.
+      allow list: if isSignedIn(); 
+      allow read, write: if isOwner(userId);
+    }
+    
+    // --- Ride Rules ---
+    match /rides/{rideId} {
+      // Admins can read all rides. Users can read rides if they are the rider or driver.
+      allow read: if isSignedIn() && (resource.data.riderId == request.auth.uid || resource.data.driverId == request.auth.uid);
+      allow create: if request.resource.data.riderId == request.auth.uid;
+      allow update: if (resource.data.riderId == request.auth.uid || resource.data.driverId == request.auth.uid);
+    }
+
+    // --- Path Partner (Driver) Rules ---
+    match /pathPartners/{partnerId} {
+      allow get: if true; 
+      allow list: if isSignedIn();
+      allow create: if isSignedIn();
+      allow update: if request.auth.uid == partnerId;
+    }
+
+    // --- ResQ Partner (Mechanic) Rules ---
+    match /mechanics/{mechanicId} {
+      allow get: if true;
+      allow list: if isSignedIn();
+      allow create: if isSignedIn();
+      allow update: if request.auth.uid == mechanicId;
+    }
+
+    // --- Cure Partner (Hospital/Clinic) & their staff ---
+    match /curePartners/{hospitalId} {
+      allow get: if true;
+      allow list: if isSignedIn(); // Allow any signed-in user to list for admin panel
+      allow create: if isSignedIn();
+      allow update: if request.auth.uid == hospitalId; 
+
+      match /doctors/{doctorId} {
+        allow read, write, list: if isSignedIn();
+      }
+      match /ambulances/{ambulanceId} {
+        allow read, write, list: if isSignedIn();
+      }
+    }
+    
+    // --- Rules for other top-level collections ---
+    match /supportQueries/{queryId} {
+      allow read, list, write: if isSignedIn();
+      allow create: if isSignedIn();
+    }
+
+    match /expenses/{expenseId} {
+      allow read, list, write: if isSignedIn();
+    }
+
+    match /vendors/{vendorId} {
+       allow read, list, write: if isSignedIn();
+    }
+  }
+}

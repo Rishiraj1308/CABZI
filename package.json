@@ -1,0 +1,13 @@
+{
+  "name": "curocity-monorepo",
+  "private": true,
+  "workspaces": [
+    "frontend",
+    "backend"
+  ],
+  "scripts": {
+    "dev": "npm run dev -w frontend --",
+    "build": "npm run build -w frontend",
+    "deploy": "npm run deploy --workspace backend"
+  }
+}

@@ -1,0 +1,112 @@
+[33m94ca7828[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m chore: Clear node_modules to fix space issue
+[33m4170c2fc[m fix: Update node version and firebase config
+[33m1ed54f83[m feat: Initial commit of all files
+[33m20743387[m location select karne k baad aisa aata hai
+[33m3edb7b3d[m Try fixing this error: `Unhandled Runtime Error: ReferenceError: Car is
+[33m58d0bdd9[m haiyeah dekh bhai
+[33mc0cc0b4c[m bhai aisa layout kr de bhai please \
+[33m363983b7[m yaha ohle auto location set hog agr use ko jarurat hoga toh change krega
+[33m9771b956[m yaha auto location kyu nhi aa rha h bhai  (_for element src/app/(dashboa
+[33m8322a8d2[m bhai hm open source map  ka use kr rhe hai na
+[33m1b064662[m current location  yaha  hmesha rhega  (_for element src/app/(dashboard)/
+[33m462fdd9c[m bhai yaha se he ride booking hoota hoga  aur yeah he nomination hoga  (_
+[33m07c9da65[m bhai nomination nahi aa rha hai  (_for element src/app/(dashboard)/user/
+[33m8d3ba648[m abhi bhi aisa nhi hua hai bhai
+[33mef2edbf1[m bhai ride ka pge aisa tha mera
+[33m7754c3c9[m 'use client'
+[33m00eb2529[m okay  tu it
+[33m88bd3260[m Try fixing this error: `Unhandled Runtime Error: TypeError: Cannot read
+[33m923a2da8[m bhai abhi thoda polish ki jaruruat hai bhai
+[33m2563ecbe[m Try fixing this error: `Build Error: Failed to compile. Error source: ./
+[33m4ea7a62a[m import type { Metadata } from "next"; import "./globals.css"; import { P
+[33mcf966065[m chalo phle home page se start karte hai  i mean klanding pages e
+[33mc3674e0f[m bhai kuch change toh hua he nahi
+[33m141f657e[m 'use client'
+[33m203b0a2b[m Try fixing this error: `Unhandled Runtime Error: Error: Objects are not
+[33m689d1508[m Try fixing this error: `Build Error: Failed to compile. Error source: ./
+[33mb437d3a5[m Try fixing this error: `Build Error: Failed to compile. Error source: ./
+[33m4b23b411[m bhai yeah dekh
+[33m5418b76a[m bhai waia bnaya he nahi tumne
+[33mef97eb54[m @import 'leaflet/dist/leaflet.css';
+[33mf83f7ce1[m tune backgound dekha hai kitna premium lga hua dekh sab kitna smooth hai
+[33m059a940d[m bhai yeah abhi tk nnhi aa rha hai
+[33m6e3c975a[m yeah kyu likha hua aaa rha hai bhai  (_for element div_)
+[33m9de11887[m Try fixing this error: `Build Error: Failed to compile. Error source: ./
+[33m5ff33fe7[m bhai mera user page aisa tha tune kya kr dia hai
+[33mcf3d8dc4[m Try fixing this error: `Build Error: Failed to compile. Error source: ./
+[33me205dd5f[m bhai jb user login krega toh  user k dashboard m kya dikhega
+[33mbf543d9b[m bhai date of birth wala bhi section add kr deta na
+[33m6da4c55b[m bhai  form m kuch missing hai kya wo add kr de  (_for element src/app/(a
+[33m6fe3f02b[m bhai login kyu nhi ho rh  hai  (_for element src/app/(auth)/login/page.t
+[33m4f0d58aa[m Try fixing this error: `Unhandled Runtime Error: ReferenceError: Languag
+[33m06115631[m Try fixing this error: `Unhandled Runtime Error: Error: useLanguage must
+[33m60e0fe49[m 1 of 1 error Next.js (14.2.33) is outdated (learn more)
+[33mfc839d05[m Try fixing this error: `Unhandled Runtime Error: Error: useLanguage must
+[33m13cb2229[m I see this error with the app, reported by NextJS, please fix it. The er
+[33m439e64a8[m The app isn't starting. Please investigate what could be wrong based on
+[33meed48d8d[m CORE MISSING ELEMENTS (must fix) 1. Root-Level Setup (Monorepo Base)
+[33m83c3ce50[m hmare code ka strucre desing bnana hai bhai
+[33m5dc40976[m mujhe ab curocity ka architecture desing bta
+[33mca5dc228[m aur kuch folders bhi honge shayad
+[33m78a1f833[m bhai thoda clean up kar files kaa thik hai jo file jaruri thoda bhi nahi
+[33m9485c89d[m ab isk landing page ko polish kiaa jaaye bhai
+[33m7f155375[m bhai yeah front end wala kyu mhi load lee rha yeah
+[33m0df1490e[m jo tu dhundh rha hai wo front end m hai
+[33m8db16ce4[m apna jo app router hai usse front end m shift kr naa ki waha ka lending
+[33me4451d10[m okay toh tu kaha bna rha hai
+[33m51a512fd[m dikkat kya hai bhai
+[33m124e1d6e[m landing page hai kua bhai
+[33mf4f1fb38[m abhi bhi nahi bna hai bhai
+[33mb34f0bf5[m bhai yeah dekh  kaha bna hai
+[33m11b2a1fe[m abhi hmko iska home page yaani ladning page bnaan ahai jismai user and p
+[33m4f2e99b3[m Build Error Failed to compile
+[33m3eda7be5[m Build Error Failed to compile
+[33mdb2af951[m Build Error Failed to compile
+[33md1b8a03d[m BHAI CHECK KR APP KYA DIKKAT AA AAY AH RUN NHI HO RHA HAI THIK KR USSE \
+[33mde5669b1[m nextn@0.1.0 dev > next dev 9002 0.0.0.0
+[33mf0acd9a4[m ⨯ ./src/components/shared/FirebaseErrorListener.tsx:8:1 Module not found
+[33m7ba63608[m okay do it  make sure tumhare structure k wajah se mera global css file
+[33m76bd6cba[m ok proceed
+[33m4b64e75c[m Try fixing this error: `Build Error: Failed to compile. Error source: ./
+[33m234471b0[m I see this error with the app, reported by NextJS, please fix it. The er
+[33mbb3f6bc4[m bhai tune pura kaam nahi kia hai aadha he bhi nhi hua h i think
+[33md5949813[m okay do it
+[33mc9b4b200[m Try fixing this error: `Build Error: Failed to compile. Error source: ./
+[33m6a50beb7[m src/ │ ├── app/                     # Next.js app routes (if using app r
+[33m0271aab2[m ek kaam kr jo file and folder working hai usse sapaerate kroo joo workin
+[33m384fc578[m aur deep analysis kr sab file and folder production level se organisex h
+[33mf0b50a03[m haaa aur kr bhai aur kuch file pending hai sabji kr issi tarah mujhe cle
+[33m475e9ef0[m bhai m under ka file and folder ka baat kr rha hai sab production lebel
+[33mec881e40[m bhai ek baat bta tu ne production level m architecture desing kia hai me
+[33m0f8f189d[m I see this error with the app, reported by NextJS, please fix it. The er
+[33m3f9ca359[m user ka data admin m fatch kyu nhi ho rha hai bhai
+[33md3bde826[m bhai m chahta hu toh mere system k backend m jitne bhi id bne chahe koi
+[33m5960ee10[m iss page k liye puch rha tha bhai
+[33m5943968f[m tere side se kuch suggestion ab
+[33ma102fe7f[m user ka full details mtlb full details sab kuch jo wo onboarding form m
+[33m2d554e2f[m isko click krta hu 404 aa jata hai bhai  (_for element src/app/admin/cus
+[33mfab16550[m ismai sare service jo apne wo user profile m use karte  hai wo sab aayeg
+[33m2730f043[m sirf ride ka nhi bro aur bhi bohot kuch activity hai user page mai wo sa
+[33m5705aecc[m bhai mujhe admin m all user ek option chahiye jaaha haar user ka details
+[33m4b6b031a[m bhai account not active abhi bhi bta rha hai  kyu aisa
+[33md4869d1f[m bhai mechanic paertner varified hai toh phir wo kyu varify karne bol rha
+[33m033d90c6[m Try fixing this error: `Unhandled Runtime Error: ReferenceError: Badge i
+[33m0bbd22e0[m Try fixing this error: `Unhandled Runtime Error: ReferenceError: useMemo
+[33mc6e13d87[m bhai hospital wala ko bola tha
+[33m3c7a5f2a[m bhai driver ka jaisa layout hai waisa he iska bhi kr do na
+[33m8722cf60[m bhai maine toh approve kr dia hai aur database m abhi koi pending bhi nh
+[33m660340e8[m aur yeah he logic haar partner m lgaooo samjha
+[33m8478ca43[m bhai jb hospital varified ho jaiga toh usko login karne dii
+[33mf6083338[m haa toh  m toh hospital page m hu
+[33m1cd87c6b[m bhai live location aa he nhi rhha hai  (_for element src/app/cure/onboar
+[33md201f3d6[m i dint check it yet okay fix it
+[33m9fd395ea[m okay kr phir
+[33m9ca64f8a[m bhai user logout kaise karega yeah bta
+[33m1c7cb1e9[m Try fixing this error: `Unhandled Runtime Error: FirebaseError: Firestor
+[33mda033b87[m Try fixing this error: `Unhandled Runtime Error: FirebaseError: Firestor
+[33m3b15f44c[m bhai resq page ko reset maar do
+[33ma9ebb11f[m bhai user k resq page m kya dikkat hai yeah bta mujhe phle kyu uska loca
+[33me9cd02f0[m bhai phle toh assing partner ko thik kr pata nhi yeah kiska lee rha hai
+[33md2370752[m Try fixing this error: `Unhandled Runtime Error: Error: Maximum update d
+[33md7dc5176[m bhai yeah header sirf iss screen se haat skta hai kya i mean is page se
+[33mf8308e6f[m Try fixing this error: `Unhandled Runtime Error: Error: Fai
