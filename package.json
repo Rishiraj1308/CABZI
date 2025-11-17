@@ -2,11 +2,16 @@
   "name": "curocity-monorepo",
   "private": true,
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "next lint"
+    "dev": "npm run dev -w frontend",
+    "build": "npm run build -w frontend",
+    "start": "npm run start -w frontend",
+    "lint": "npm run lint -w frontend",
+    "deploy": "npm run deploy -w backend"
   },
+  "workspaces": [
+    "frontend",
+    "backend"
+  ],
   "dependencies": {
     "@builder.io/react": "^3.2.9",
     "@hookform/resolvers": "^3.9.0",
