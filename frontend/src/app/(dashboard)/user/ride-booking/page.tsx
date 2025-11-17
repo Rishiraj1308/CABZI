@@ -329,4 +329,4 @@ function BookRidePageComponent() {
       </Suspense>
     );
   }
-    
+

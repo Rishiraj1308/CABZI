@@ -1,15 +1,13 @@
 
 'use client';
 
-import React, { useEffect, useState, useRef } from 'react';
-import { useMap } from 'react-leaflet';
-import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import dynamic from 'next/dynamic';
 import { Phone, Shield, Share2, Siren, Star, XCircle, Route, Clock, MapPin, CheckCircle, Navigation, User, BadgeCheck, PartyPopper, IndianRupee } from 'lucide-react';
 import { doc, onSnapshot, updateDoc } from 'firebase/firestore';
 import { useFirebase } from '@/lib/firebase/client-provider';
 import type { RideData } from '@/lib/types';
-import { getRoute } from '@/lib/routing';
+import { getDriverToPickupRoute } from '@/lib/osrm';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { toast } from 'sonner';
@@ -34,7 +32,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog"
 import SearchingIndicator from '@/components/ui/searching-indicator';
-import dynamic from 'next/dynamic';
+import { Skeleton } from '@/components/ui/skeleton';
 import { differenceInYears, format } from 'date-fns';
 import { motion } from 'framer-motion';
 import { Separator } from '@/components/ui/separator';
@@ -89,17 +87,15 @@ export default function DriverArriving({ ride, onCancel }: DriverArrivingProps) 
     if (!destination) return;
 
     try {
-      const routeData = await getRoute(
+      const routeData = await getDriverToPickupRoute(
         { lat: driverLocation.lat, lon: driverLocation.lon },
         { lat: destination.latitude, lon: destination.longitude }
       );
 
-      if (routeData?.routes?.[0]) {
-        const route = routeData.routes[0];
-        setEtaMin(Math.max(1, Math.round(route.duration / 60)));
-        setDistKm(route.distance / 1000);
-        const coords = route.geometry.coordinates.map((c: [number, number]) => [c[1], c[0]]);
-        setRouteCoords(coords);
+      if (routeData) {
+        setEtaMin(Math.max(1, Math.round(routeData.durationMin)));
+        setDistKm(Number(routeData.distanceKm.toFixed(1)));
+        setRouteCoords(routeData.coords);
       }
     } catch (error) {
         console.error("Error computing route:", error);
@@ -151,7 +147,7 @@ export default function DriverArriving({ ride, onCancel }: DriverArrivingProps) 
         <LiveMap riderLocation={ride.pickup?.location ? { lat: ride.pickup.location.latitude, lon: ride.pickup.location.longitude } : null} />
       </div>
       <Card className="rounded-t-2xl -mt-4 z-10 flex-shrink-0 border-t-4 border-primary/20">
-        <CardContent className="p-6 flex flex-col items-center justify-center text-center">
+        <CardContent className="p-6 flex flex-col items-center justify-center text-center flex-1">
           <SearchingIndicator partnerType="path" />
           <p className="mt-4 font-semibold text-lg">Finding your ride...</p>
           <p className="text-sm text-muted-foreground">Connecting you to a nearby partner.</p>
@@ -256,8 +252,6 @@ export default function DriverArriving({ ride, onCancel }: DriverArrivingProps) 
 
   if (!ride?.pickup?.location) return null;
 
-  const pickupPosition: [number, number] = [ride.pickup.location.latitude, ride.pickup.location.longitude];
-
   return (
     <div className="w-full h-full flex flex-col">
       <div className="relative flex-1 w-full">
@@ -273,7 +267,7 @@ export default function DriverArriving({ ride, onCancel }: DriverArrivingProps) 
                 <div className="text-center">
                     <p className="font-semibold text-lg">{etaMin ? `Arriving in ~${etaMin} min` : 'Calculating ETA...'}</p>
                      <p className="text-sm text-muted-foreground">
-                        {driverDetails?.vehicle || 'Vehicle'} • {ride.vehicleNumber} • {distKm ? `${distKm.toFixed(1)} km away` : '...'}
+                        {driverDetails?.vehicle || 'Vehicle'} • {distKm ? `${distKm.toFixed(1)} km away` : '...'}
                     </p>
                 </div>
 
@@ -353,3 +347,4 @@ export default function DriverArriving({ ride, onCancel }: DriverArrivingProps) 
     </div>
   );
 }
+

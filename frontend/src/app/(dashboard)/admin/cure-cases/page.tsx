@@ -10,7 +10,7 @@ import { Search, Ambulance, Siren } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useDb } from '@/lib/firebase/client-provider'
 import { collection, query, onSnapshot, orderBy, Timestamp } from 'firebase/firestore'
-import { useToast } from '@/hooks/use-toast'
+import { toast } from 'sonner'
 
 interface EmergencyCase {
     id: string;
@@ -27,7 +27,6 @@ export default function AdminCureCasesPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
     const db = useDb();
-    const { toast } = useToast();
     
     useEffect(() => {
         if (!db) return;
@@ -39,12 +38,12 @@ export default function AdminCureCasesPage() {
             setIsLoading(false);
         }, (error) => {
             console.error("Error fetching emergency cases:", error);
-            toast({ variant: 'destructive', title: "Error", description: "Could not fetch emergency cases."});
+            toast.error("Error", {description: "Could not fetch emergency cases."});
             setIsLoading(false);
         });
 
         return () => unsubscribe();
-    }, [db, toast]);
+    }, [db]);
 
     const filteredCases = useMemo(() => {
         if (!searchQuery) {

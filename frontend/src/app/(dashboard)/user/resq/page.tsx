@@ -13,8 +13,9 @@ import { Wrench, Zap, Fuel, Car, MapPin, History, AlertTriangle, RefreshCw } fro
 import { cn } from '@/lib/utils'
 import { motion } from 'framer-motion'
 import { Label } from '@/components/ui/label'
-import DriverArriving from '@/features/user/components/ride/DriverArriving'
+import dynamic from 'next/dynamic'
 
+const DriverArriving = dynamic(() => import('@/features/user/components/ride/DriverArriving'), { ssr: false });
 
 const commonIssues = [
     { id: 'flat_tyre', label: 'Flat Tyre / Puncture', icon: Car },

@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge'
 import { useDb } from '@/lib/firebase/client-provider'
 import { collection, query, onSnapshot, orderBy, Timestamp, doc, deleteDoc } from 'firebase/firestore'
 import { Skeleton } from '@/components/ui/skeleton'
-import { useToast } from '@/hooks/use-toast'
+import { toast } from 'sonner'
 import { Input } from '@/components/ui/input'
 import { Search, Users, MoreHorizontal, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -49,12 +49,11 @@ export default function AdminCustomersPage() {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const { toast } = useToast();
   const db = useDb();
 
   useEffect(() => {
     if (!db) {
-      toast({ variant: 'destructive', title: 'Database Error' });
+      toast.error('Database Error');
       setIsLoading(false);
       return;
     }
@@ -67,16 +66,14 @@ export default function AdminCustomersPage() {
         setIsLoading(false);
     }, (error) => {
         console.error("Error fetching customers: ", error);
-        toast({
-          variant: 'destructive',
-          title: 'Error',
+        toast.error('Error', {
           description: 'Could not fetch customer data.',
         });
         setIsLoading(false);
     });
 
     return () => unsubscribe();
-  }, [toast, db]);
+  }, [db]);
 
   const filteredCustomers = useMemo(() => {
     if (!searchQuery) {
@@ -93,17 +90,13 @@ export default function AdminCustomersPage() {
     if (!db) return;
     try {
       await deleteDoc(doc(db, 'users', customerId));
-      toast({
-        variant: 'destructive',
-        title: 'Customer Deleted',
+      toast.error('Customer Deleted', {
         description: `The user has been permanently removed.`,
       });
       // The onSnapshot listener will automatically update the UI
     } catch (error) {
       console.error("Error deleting customer: ", error);
-      toast({
-        variant: 'destructive',
-        title: 'Deletion Failed',
+      toast.error('Deletion Failed', {
         description: 'Could not delete the user from the database.',
       });
     }

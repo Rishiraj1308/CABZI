@@ -1,3 +1,4 @@
+
 'use client'
 
 import { Button } from "@/components/ui/button"
@@ -5,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
-import { useToast } from "@/hooks/use-toast"
+import { toast } from "sonner"
 import { useState } from "react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Loader2, Building } from "lucide-react"
@@ -31,7 +32,6 @@ const mockSettings = {
 export default function SettingsPage() {
     const [settings, setSettings] = useState(mockSettings);
     const [isSaving, setIsSaving] = useState(false);
-    const { toast } = useToast();
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { id, value } = e.target;
@@ -43,10 +43,8 @@ export default function SettingsPage() {
         // Simulate an API call
         setTimeout(() => {
             setIsSaving(false);
-            toast({
-                title: 'Settings Saved!',
+            toast.success('Settings Saved!', {
                 description: 'Your changes have been successfully saved.',
-                className: 'bg-green-100 dark:bg-green-900'
             })
         }, 1500);
     }

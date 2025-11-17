@@ -110,7 +110,7 @@ export default function UserDashboard() {
             }
         };
 
-        fetchNearestPartner('partners', 25, setNearestDriverEta, setIsLoadingEta);
+        fetchNearestPartner('pathPartners', 25, setNearestDriverEta, setIsLoadingEta);
         fetchNearestPartner('mechanics', 20, setNearestMechanicEta, setIsLoadingMechanicEta);
 
     }, [db, userLocation]);
@@ -252,12 +252,12 @@ export default function UserDashboard() {
                             title={service.title}
                             description={service.description}
                             tag={service.tag}
-                            tagIcon={service.tagIcon}
                             href={service.href}
                             iconBgClass={service.iconBgClass}
                             iconColorClass={service.iconColorClass}
                             tagBgClass={service.tagBgClass}
                             tagColorClass={service.tagColorClass}
+                            tagIcon={service.tagIcon}
                             className={service.className}
                             glowColor={service.glowColor}
                         />

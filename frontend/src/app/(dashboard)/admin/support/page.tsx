@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { useToast } from '@/hooks/use-toast'
+import { toast } from 'sonner'
 import { MessageSquare, Phone, MoreHorizontal, User, Car, Filter, FileText } from 'lucide-react'
 import { useDb } from '@/lib/firebase/client-provider'
 import { collection, query, onSnapshot, orderBy, Timestamp, doc, updateDoc, arrayUnion } from 'firebase/firestore'
@@ -45,14 +45,13 @@ export default function AdminSupportPage() {
   const [isNoteSubmitting, setIsNoteSubmitting] = useState(false);
   const [statusFilter, setStatusFilter] = useState('All');
   const [userTypeFilter, setUserTypeFilter] = useState('All');
-  const { toast } = useToast();
   const db = useDb();
   
   const adminName = 'Support Exec'; // In a real app, this would come from the admin's session
 
   useEffect(() => {
     if (!db) {
-        toast({ variant: 'destructive', title: 'Database Error' });
+        toast.error('Database Error');
         setIsLoading(false);
         return;
     }
@@ -66,13 +65,13 @@ export default function AdminSupportPage() {
         setIsLoading(false);
     }, (error) => {
         console.error("Error fetching support queries: ", error);
-        toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch real-time support queries.' });
+        toast.error('Error', { description: 'Could not fetch real-time support queries.' });
         setIsLoading(false);
     });
 
     // Cleanup the listener when the component unmounts
     return () => unsubscribe();
-  }, [db, toast]);
+  }, [db]);
   
   const filteredQueries = useMemo(() => {
     return queries
@@ -89,12 +88,10 @@ export default function AdminSupportPage() {
       const queryRef = doc(db, 'supportQueries', id);
       try {
         await updateDoc(queryRef, { status });
-        toast({
-            title: `Ticket status updated to "${status}"`,
-        });
+        toast.success(`Ticket status updated to "${status}"`);
         // No need to manually refetch; onSnapshot handles it.
       } catch (error) {
-        toast({ variant: 'destructive', title: 'Update Failed', description: 'Could not update ticket status.' });
+        toast.error('Update Failed', { description: 'Could not update ticket status.' });
       }
   }
 
@@ -110,14 +107,14 @@ export default function AdminSupportPage() {
                 at: Timestamp.now()
             })
         });
-        toast({ title: 'Note Added', description: 'Your internal note has been saved.' });
+        toast.success('Note Added', { description: 'Your internal note has been saved.' });
         setNote('');
         // No need to manually refetch; onSnapshot handles it.
         // We also need to update the selectedQuery state to see the new note in the dialog
         setSelectedQuery(prev => prev ? {...prev, notes: [...(prev.notes || []), {text: note, by: adminName, at: Timestamp.now()}]} : null);
 
     } catch (error) {
-        toast({ variant: 'destructive', title: 'Error', description: 'Could not add note.' });
+        toast.error('Error', { description: 'Could not add note.' });
     } finally {
         setIsNoteSubmitting(false);
     }
@@ -285,5 +282,3 @@ export default function AdminSupportPage() {
     </Card>
   )
 }
-
-    
