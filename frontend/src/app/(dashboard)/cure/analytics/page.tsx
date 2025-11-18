@@ -1,11 +1,18 @@
 'use client'
 
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { BarChart as BarChartIcon, Clock, Users, Activity, AlertTriangle } from 'lucide-react'
+import { BarChart as BarChartIcon, Clock, Users, Activity, AlertTriangle, Hospital } from 'lucide-react'
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts"
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart'
+import dynamic from 'next/dynamic'
+import type { ActiveEntity } from '@/app/(dashboard)/admin/map/page'
+
+const LiveMap = dynamic(() => import('@/components/live-map'), {
+    ssr: false,
+    loading: () => <div className="w-full h-full bg-muted flex items-center justify-center"><p>Loading Map...</p></div>,
+});
 
 
 const StatCard = ({ title, value, icon: Icon, description }: { title: string, value: string, icon: React.ElementType, description: string }) => (
@@ -37,6 +44,14 @@ const casesByHourData = [
   { hour: '08 PM', cases: 22 },
   { hour: '11 PM', cases: 18 },
 ]
+
+const mockHotspots: ActiveEntity[] = [
+    { id: 'hotspot-1', name: 'AIIMS', type: 'hospital', location: { lat: 28.566, lon: 77.212 } },
+    { id: 'hotspot-2', name: 'Cyber Hub', type: 'hospital', location: { lat: 28.496, lon: 77.088 } },
+    { id: 'hotspot-3', name: 'Noida Sec 18', type: 'hospital', location: { lat: 28.570, lon: 77.323 } },
+    { id: 'hotspot-4', name: 'Connaught Place', type: 'hospital', location: { lat: 28.632, lon: 77.217 } },
+    { id: 'hotspot-5', name: 'Saket', type: 'hospital', location: { lat: 28.524, lon: 77.212 } },
+];
 
 
 export default function AnalyticsPage() {
@@ -81,10 +96,12 @@ export default function AnalyticsPage() {
                     <CardTitle>Emergency Case Heatmap</CardTitle>
                     <CardDescription>A visual representation of emergency case locations to identify high-demand zones.</CardDescription>
                 </CardHeader>
-                <CardContent>
-                    <div className="w-full h-80 bg-muted rounded-lg flex items-center justify-center">
-                        <p className="text-muted-foreground">Heatmap data will be displayed here</p>
-                    </div>
+                <CardContent className="h-80 w-full p-0 rounded-lg overflow-hidden">
+                   <LiveMap 
+                        activePartners={mockHotspots} 
+                        center={[28.58, 77.2]}
+                        zoom={11}
+                    />
                 </CardContent>
             </Card>
 
