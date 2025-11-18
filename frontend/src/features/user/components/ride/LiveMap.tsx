@@ -95,6 +95,14 @@ const LocateButton = () => {
     )
 }
 
+const AutoLocate = () => {
+    const map = useMap();
+    useEffect(() => {
+        map.locate({ setView: true, maxZoom: 15 });
+    }, [map]);
+    return null;
+};
+
 const LiveMap = ({ riderLocation, destinationLocation, driverLocation, driverVehicleType, routeGeometry, isTripInProgress, partners, activePartners }: LiveMapProps) => {
     const { theme } = useTheme();
     
@@ -127,6 +135,7 @@ const LiveMap = ({ riderLocation, destinationLocation, driverLocation, driverVeh
             attribution={attribution}
         />
         
+        <AutoLocate />
         <LocateButton />
 
         {riderPosition && <Marker position={riderPosition} icon={greenPulsatingIcon}><Popup>Rider Pickup</Popup></Marker>}
