@@ -1,10 +1,9 @@
-
 'use client';
 
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
-import { Siren, Star, Wrench } from 'lucide-react';
+import { Siren, Star, Wrench, Car } from 'lucide-react';
 import type { RideData, GarageRequest, AmbulanceCase } from '@/lib/types';
 import { toast } from 'sonner';
 import { Skeleton } from '@/components/ui/skeleton';
