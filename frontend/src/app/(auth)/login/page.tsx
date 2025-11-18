@@ -64,7 +64,7 @@ export default function LoginPage() {
       setIsLoading(true);
 
       try {
-        const response = await fetch('/api/auth/login', {
+        const response = await fetch('/api/auth/admin-login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ adminId, adminPassword }),
@@ -75,7 +75,7 @@ export default function LoginPage() {
         if (response.ok && data.success) {
             toast.success("Login Successful", { description: `Welcome, ${data.user.role}! Redirecting...`});
             localStorage.setItem('curocity-admin-session', JSON.stringify(data.session));
-            window.location.href = '/admin';
+            window.location.href = '/admin'; // Force reload to ensure layout state is fresh
         } else {
              toast.error("Authentication Failed", {
                 description: data.message || "Invalid Admin ID or Password.",
@@ -478,5 +478,3 @@ export default function LoginPage() {
     </>
   );
 }
-
-    
