@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { BarChart as BarChartIcon, Clock, Users, Activity, AlertTriangle, Hospital } from 'lucide-react'
+import { BarChart as BarChartIcon, Clock, Users, Activity, AlertTriangle, Hospital, Map } from 'lucide-react'
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts"
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart'
@@ -104,8 +104,8 @@ export default function AnalyticsPage() {
             
             <Card>
                 <CardHeader>
-                    <CardTitle>Emergency Case Heatmap</CardTitle>
-                    <CardDescription>A visual representation of emergency case locations to identify high-demand zones.</CardDescription>
+                    <CardTitle className="flex items-center gap-2"><Map className="w-5 h-5 text-primary"/> Emergency Case Heatmap</CardTitle>
+                    <CardDescription>A visual representation of emergency case locations. Use this to identify high-demand "hotspots" and strategically position your ambulance fleet to reduce response times.</CardDescription>
                 </CardHeader>
                 <CardContent className="h-80 w-full p-0 rounded-lg overflow-hidden">
                    <LiveMap center={[28.58, 77.2]} zoom={11}>
@@ -118,15 +118,15 @@ export default function AnalyticsPage() {
                 <Card>
                     <CardHeader>
                         <CardTitle>Response Time by Zone (Avg. Mins)</CardTitle>
-                        <CardDescription>Average time taken to reach the patient across different city zones.</CardDescription>
+                        <CardDescription>Compare the average time taken to reach a patient across different city zones. This helps identify areas where operational efficiency can be improved.</CardDescription>
                     </CardHeader>
                     <CardContent>
                          <ChartContainer config={{ time: { label: "Time (min)", color: "hsl(var(--primary))" } }} className="h-64">
-                            <BarChart data={responseTimeData}>
+                            <BarChart data={responseTimeData} margin={{ top: 5, right: 10, left: -10, bottom: 5 }}>
                                 <CartesianGrid vertical={false} />
-                                <XAxis dataKey="zone" tickLine={false} axisLine={false} tickMargin={8} />
-                                <YAxis />
-                                <ChartTooltip content={<ChartTooltipContent />} />
+                                <XAxis dataKey="zone" tickLine={false} axisLine={false} tickMargin={8} fontSize={12} />
+                                <YAxis tickFormatter={(value) => `${value}m`} />
+                                <ChartTooltip cursor={false} content={<ChartTooltipContent />} />
                                 <Bar dataKey="time" fill="var(--color-time)" radius={4} />
                             </BarChart>
                         </ChartContainer>
@@ -134,14 +134,14 @@ export default function AnalyticsPage() {
                 </Card>
                  <Card>
                     <CardHeader>
-                        <CardTitle>Peak Hours (Total Cases)</CardTitle>
-                        <CardDescription>Number of emergency cases received at different times of the day.</CardDescription>
+                        <CardTitle>Peak Hours for Emergencies</CardTitle>
+                        <CardDescription>Understand when emergency cases peak during the day to optimize staff and fleet scheduling for maximum availability during high-demand periods.</CardDescription>
                     </CardHeader>
                     <CardContent>
                          <ChartContainer config={{ cases: { label: "Cases", color: "hsl(var(--destructive))" } }} className="h-64">
-                             <BarChart data={casesByHourData}>
+                             <BarChart data={casesByHourData} margin={{ top: 5, right: 10, left: -10, bottom: 5 }}>
                                 <CartesianGrid vertical={false} />
-                                <XAxis dataKey="hour" tickLine={false} axisLine={false} tickMargin={8} />
+                                <XAxis dataKey="hour" tickLine={false} axisLine={false} tickMargin={8} fontSize={12} />
                                 <YAxis />
                                 <ChartTooltip content={<ChartTooltipContent />} />
                                 <Bar dataKey="cases" fill="var(--color-cases)" radius={4} />
