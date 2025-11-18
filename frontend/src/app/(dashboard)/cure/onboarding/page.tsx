@@ -1,7 +1,7 @@
 
 'use client'
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
@@ -97,6 +97,27 @@ export default function CureOnboardingPage() {
             setIsLoading(false);
         }
     };
+
+    const fetchLocation = useCallback(() => {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    const { latitude, longitude } = position.coords;
+                    handleInputChange('location', { lat: latitude, lon: longitude });
+                },
+                (error) => {
+                    toast.error("Location Error", { description: "Could not get your location. Please pin it manually."});
+                },
+                { enableHighAccuracy: true }
+            );
+        }
+    }, []);
+
+    useEffect(() => {
+        if (currentStep === 2 && !formData.location) {
+            fetchLocation();
+        }
+    }, [currentStep, formData.location, fetchLocation]);
     
     const renderStepContent = () => {
         switch (currentStep) {
