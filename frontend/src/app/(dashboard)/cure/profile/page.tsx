@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Ambulance, IndianRupee, Save, BadgeCheck, Phone } from 'lucide-react';
+import { Ambulance, IndianRupee, Save, BadgeCheck, Phone, Check, Loader2 } from 'lucide-react';
 import { doc, updateDoc } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
@@ -16,6 +16,18 @@ import { Badge } from '@/components/ui/badge';
 import { useCurePartner } from '../layout';
 import { useDb } from '@/lib/firebase';
 import { DetailItem } from '@/components/shared/detail-item';
+import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Checkbox } from '@/components/ui/checkbox';
+
+const allServices = [
+    // Hospital & Clinic
+    "24/7 Emergency", "Ambulance Service", "Pharmacy", "Pathology Lab", "General Consultation",
+    // Hospital Specific
+    "ICU (Intensive Care Unit)", "IPD (In-Patient Department)", "Radiology (X-Ray/CT)", "Operation Theater",
+    "Cardiology", "Orthopedics", "Neurology", "Pediatrics", "Gynecology",
+    // Clinic Specific
+    "Dental Care", "Dermatology (Skin)", "ENT", "Ophthalmology (Eye)",
+];
 
 export default function CureProfilePage() {
     const { partnerData, isLoading } = useCurePartner();
@@ -23,12 +35,18 @@ export default function CureProfilePage() {
 
     const [baseFare, setBaseFare] = useState<number | string>('');
     const [perKmRate, setPerKmRate] = useState<number | string>('');
-    const [isSaving, setIsSaving] = useState(false);
+    const [isSavingFares, setIsSavingFares] = useState(false);
+
+    // State for services dialog
+    const [isServicesDialogOpen, setIsServicesDialogOpen] = useState(false);
+    const [selectedServices, setSelectedServices] = useState<string[]>([]);
+    const [isSavingServices, setIsSavingServices] = useState(false);
 
     useEffect(() => {
         if (partnerData) {
             setBaseFare(partnerData.baseFare || '');
             setPerKmRate(partnerData.perKmRate || '');
+            setSelectedServices(partnerData.services || []);
         }
     }, [partnerData]);
     
@@ -46,7 +64,7 @@ export default function CureProfilePage() {
             toast.error('Error', { description: 'Could not save settings. Partner not found.' });
             return;
         }
-        setIsSaving(true);
+        setIsSavingFares(true);
         const fareData = {
             baseFare: Number(baseFare),
             perKmRate: Number(perKmRate)
@@ -54,7 +72,7 @@ export default function CureProfilePage() {
 
         if (isNaN(fareData.baseFare) || isNaN(fareData.perKmRate)) {
              toast.error('Invalid Input', { description: 'Please enter valid numbers for fares.' });
-             setIsSaving(false);
+             setIsSavingFares(false);
             return;
         }
         
@@ -65,8 +83,32 @@ export default function CureProfilePage() {
         } catch (error) {
              toast.error('Save Failed', { description: 'Could not update your fare settings.' });
         } finally {
-            setIsSaving(false);
+            setIsSavingFares(false);
         }
+    }
+
+    const handleServicesSave = async () => {
+        if (!partnerData?.id || !db) {
+            toast.error('Error', { description: 'Could not save services. Partner not found.' });
+            return;
+        }
+        setIsSavingServices(true);
+        try {
+            const partnerRef = doc(db, 'curePartners', partnerData.id);
+            await updateDoc(partnerRef, { services: selectedServices });
+            toast.success('Services Updated', { description: 'Your offered services have been saved.' });
+            setIsServicesDialogOpen(false);
+        } catch (error) {
+            toast.error('Update Failed', { description: 'Could not save your new services.' });
+        } finally {
+            setIsSavingServices(false);
+        }
+    };
+    
+    const handleServiceCheck = (service: string, checked: boolean) => {
+        setSelectedServices(prev => 
+            checked ? [...prev, service] : prev.filter(s => s !== service)
+        );
     }
 
     if (isLoading) {
@@ -123,17 +165,17 @@ export default function CureProfilePage() {
                            <div className="grid md:grid-cols-2 gap-4">
                                <div className="space-y-2">
                                    <Label htmlFor="baseFare">Base Fare (INR)</Label>
-                                   <Input id="baseFare" type="number" placeholder="e.g., 500" value={baseFare} onChange={e => setBaseFare(e.target.value)} disabled={isSaving}/>
+                                   <Input id="baseFare" type="number" placeholder="e.g., 500" value={baseFare} onChange={e => setBaseFare(e.target.value)} disabled={isSavingFares}/>
                                </div>
                                <div className="space-y-2">
                                    <Label htmlFor="perKmRate">Per Kilometer Rate (INR)</Label>
-                                   <Input id="perKmRate" type="number" placeholder="e.g., 20" value={perKmRate} onChange={e => setPerKmRate(e.target.value)} disabled={isSaving}/>
+                                   <Input id="perKmRate" type="number" placeholder="e.g., 20" value={perKmRate} onChange={e => setPerKmRate(e.target.value)} disabled={isSavingFares}/>
                                </div>
                            </div>
                       </CardContent>
                       <CardFooter>
-                           <Button onClick={handleSaveFares} disabled={isSaving}>
-                               {isSaving ? 'Saving...' : <><Save className="mr-2 h-4 w-4"/> Save Fare Settings</>}
+                           <Button onClick={handleSaveFares} disabled={isSavingFares}>
+                               {isSavingFares ? <><Loader2 className="w-4 h-4 mr-2 animate-spin"/> Saving...</> : <><Save className="mr-2 h-4 w-4"/> Save Fare Settings</>}
                             </Button>
                       </CardFooter>
                     </Card>
@@ -145,14 +187,14 @@ export default function CureProfilePage() {
                               <Ambulance className="w-5 h-5 text-primary"/>
                               <CardTitle>My Services</CardTitle>
                           </div>
-                          <CardDescription>The list of ambulance services you offer.</CardDescription>
+                          <CardDescription>The list of services you offer to patients and for emergency response.</CardDescription>
                       </CardHeader>
                       <CardContent>
                           <div className="flex flex-wrap gap-2">
                               {partnerData?.services && partnerData.services.length > 0 ? (
                                   partnerData.services.map((service: string) => (
                                       <Badge key={service} variant="secondary" className="p-2 text-sm">
-                                          <BadgeCheck className="w-4 h-4 mr-1.5 text-green-600"/>
+                                          <Check className="w-4 h-4 mr-1.5 text-green-600"/>
                                           {service}
                                       </Badge>
                                   ))
@@ -160,7 +202,37 @@ export default function CureProfilePage() {
                                   <p className="text-sm text-muted-foreground">No services have been configured for this facility yet.</p>
                               )}
                           </div>
-                           <Button variant="outline" className="w-full mt-4" disabled>Edit My Services (Coming Soon)</Button>
+                           <Dialog open={isServicesDialogOpen} onOpenChange={setIsServicesDialogOpen}>
+                                <DialogTrigger asChild>
+                                   <Button variant="outline" className="w-full mt-4">Edit My Services</Button>
+                                </DialogTrigger>
+                                <DialogContent className="max-w-2xl">
+                                    <DialogHeader>
+                                        <DialogTitle>Edit Your Services</DialogTitle>
+                                        <DialogDescription>Select all services and departments available at your facility.</DialogDescription>
+                                    </DialogHeader>
+                                    <div className="py-4 grid grid-cols-2 md:grid-cols-3 gap-4 max-h-[60vh] overflow-y-auto">
+                                        {allServices.map(service => (
+                                            <div key={service} className="flex items-center space-x-2">
+                                                <Checkbox
+                                                    id={service}
+                                                    checked={selectedServices.includes(service)}
+                                                    onCheckedChange={(checked) => handleServiceCheck(service, !!checked)}
+                                                />
+                                                <label htmlFor={service} className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                                                    {service}
+                                                </label>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    <DialogFooter>
+                                        <Button variant="outline" onClick={() => setIsServicesDialogOpen(false)}>Cancel</Button>
+                                        <Button onClick={handleServicesSave} disabled={isSavingServices}>
+                                            {isSavingServices ? <><Loader2 className="w-4 h-4 mr-2 animate-spin"/> Saving...</> : <><Save className="mr-2 h-4 w-4"/> Save Changes</>}
+                                        </Button>
+                                    </DialogFooter>
+                                </DialogContent>
+                           </Dialog>
                       </CardContent>
                   </Card>
                </div>
@@ -168,3 +240,5 @@ export default function CureProfilePage() {
       </div>
   );
 }
+
+    
