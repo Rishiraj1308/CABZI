@@ -126,7 +126,7 @@ export default function CureOnboardingPage() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-2 col-span-2"><Label>Facility Type</Label><Select required onValueChange={(v) => handleInputChange('businessType', v)} value={formData.businessType}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="Hospital">Hospital</SelectItem><SelectItem value="Clinic">Clinic</SelectItem></SelectContent></Select></div>
                         <div className="space-y-2 col-span-2"><Label>Facility Name</Label><Input required value={formData.name} onChange={e => handleInputChange('name', e.target.value)}/></div>
-                        <div className="space-y-2"><Label>Owner/Contact Person</Label><Input required value={formData.ownerName} onChange={e => handleInputChange('ownerName', e.target.value)}/></div>
+                        <div className="space-y-2"><Label>Owner Name</Label><Input required value={formData.ownerName} onChange={e => handleInputChange('ownerName', e.target.value)}/></div>
                         <div className="space-y-2">
                            <Label>Official Phone</Label>
                             <div className="flex items-center gap-0 rounded-md border border-input focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2">
