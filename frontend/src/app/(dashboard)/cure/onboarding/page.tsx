@@ -204,6 +204,8 @@ export default function CureOnboardingPage() {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                            <div className="flex items-center justify-center w-full p-6 border-2 border-dashed rounded-lg text-center text-muted-foreground flex-col gap-2"><UploadCloud className="w-8 h-8" /><p className="text-sm">Hospital Registration Cert.</p></div>
                            <div className="flex items-center justify-center w-full p-6 border-2 border-dashed rounded-lg text-center text-muted-foreground flex-col gap-2"><UploadCloud className="w-8 h-8" /><p className="text-sm">Fire & Safety Certificate</p></div>
+                           <div className="flex items-center justify-center w-full p-6 border-2 border-dashed rounded-lg text-center text-muted-foreground flex-col gap-2"><UploadCloud className="w-8 h-8" /><p className="text-sm">Pollution Control Certificate</p></div>
+                           <div className="flex items-center justify-center w-full p-6 border-2 border-dashed rounded-lg text-center text-muted-foreground flex-col gap-2"><UploadCloud className="w-8 h-8" /><p className="text-sm">Bio-medical Waste Authorization</p></div>
                         </div>
                     </div>
                 );
