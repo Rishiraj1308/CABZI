@@ -23,6 +23,8 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import dynamic from 'next/dynamic';
+import MiniMap from '@/features/user/components/ride/MiniMap';
+
 
 const DriverArriving = dynamic(() => import('@/features/user/components/ride/DriverArriving'), {
     ssr: false,
@@ -75,30 +77,35 @@ export default function RideStatus({ ride, onCancel, isGarageRequest, isAmbulanc
   const partnerType = isGarageRequest ? 'resq' : isAmbulanceCase ? 'cure' : 'path';
 
   const renderSearchingView = () => (
-     <Card className="w-full max-w-md mx-auto h-full flex flex-col shadow-2xl">
-        <CardContent className="p-6 flex flex-col items-center justify-center text-center flex-1">
-          <SearchingIndicator partnerType={partnerType} />
-          <p className="mt-4 font-semibold text-lg">Finding your partner...</p>
-          <p className="text-sm text-muted-foreground">Connecting you to a nearby {isAmbulanceCase ? 'hospital' : 'partner'}.</p>
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button variant="destructive" className="mt-6 w-full max-w-xs" disabled={isCancelling}>
-                {isCancelling ? 'Cancelling...' : 'Cancel Search'}
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                <AlertDialogDescription>This will cancel your request. You can always book a new one.</AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Go Back</AlertDialogCancel>
-                <AlertDialogAction onClick={handleCancelClick} className="bg-destructive hover:bg-destructive/90">Confirm Cancellation</AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-        </CardContent>
-      </Card>
+     <div className="w-full h-full flex flex-col">
+        <div className="relative flex-1 w-full">
+            <MiniMap riderLocation={(ride as RideData).pickup?.location ? { lat: (ride as RideData).pickup.location.latitude, lon: (ride as RideData).pickup.location.longitude } : null} />
+        </div>
+        <Card className="rounded-t-2xl -mt-4 z-10 flex-shrink-0 border-t-4 border-primary/20">
+            <CardContent className="p-6 flex flex-col items-center justify-center text-center flex-1">
+                <SearchingIndicator partnerType={partnerType} />
+                <p className="mt-4 font-semibold text-lg">Finding your partner...</p>
+                <p className="text-sm text-muted-foreground">Connecting you to a nearby {isAmbulanceCase ? 'hospital' : 'partner'}.</p>
+                <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                    <Button variant="destructive" className="mt-6 w-full max-w-xs" disabled={isCancelling}>
+                        {isCancelling ? 'Cancelling...' : 'Cancel Search'}
+                    </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                        <AlertDialogDescription>This will cancel your request. You can always book a new one.</AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Go Back</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleCancelClick} className="bg-destructive hover:bg-destructive/90">Confirm Cancellation</AlertDialogAction>
+                    </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
+            </CardContent>
+        </Card>
+      </div>
   );
   
   const renderCompletedView = () => (
