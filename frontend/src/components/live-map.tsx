@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useEffect, useRef } from 'react';
@@ -8,7 +7,6 @@ import L, { LatLngExpression } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { useTheme } from 'next-themes';
 import { Car, Wrench, Ambulance, User, Hospital, MapPin } from 'lucide-react';
-import type { ActiveEntity } from '@/app/(dashboard)/admin/map/page';
 
 // Fix for default icon path in Next.js
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -51,8 +49,22 @@ const entityIcons = {
     hospital: createEntityIcon(Hospital, 'hsl(var(--indigo-500, 221 83% 53%))'),
 };
 
+interface ActiveEntity {
+    id: string;
+    name: string;
+    type: 'driver' | 'mechanic' | 'ambulance' | 'rider' | 'hospital';
+    status?: string;
+    location: {
+        lat: number;
+        lon: number;
+    };
+    phone?: string;
+    vehicle?: string;
+}
+
 interface LiveMapProps {
-  activePartners: ActiveEntity[];
+  children?: React.ReactNode; // To allow for layers like Heatmap
+  activePartners?: ActiveEntity[];
   center?: [number, number];
   zoom?: number;
   enableCursorTooltip?: boolean;
@@ -162,7 +174,7 @@ const CursorTooltip = ({ partners }: { partners: ActiveEntity[] }) => {
     return null;
 }
 
-const LiveMap = ({ activePartners, center = [28.6139, 77.2090], zoom = 12, enableCursorTooltip = false, isDraggable = false, onMarkerDrag }: LiveMapProps) => {
+const LiveMap = ({ children, activePartners = [], center = [28.6139, 77.2090], zoom = 12, enableCursorTooltip = false, isDraggable = false, onMarkerDrag }: LiveMapProps) => {
     const { theme } = useTheme();
 
     const darkTileUrl = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
@@ -182,6 +194,8 @@ const LiveMap = ({ activePartners, center = [28.6139, 77.2090], zoom = 12, enabl
                 url={tileUrl}
                 attribution={attribution}
             />
+
+            {children}
 
             {activePartners.map(partner => (
                 <Marker

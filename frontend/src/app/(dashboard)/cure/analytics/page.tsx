@@ -14,6 +14,10 @@ const LiveMap = dynamic(() => import('@/components/live-map'), {
     loading: () => <div className="w-full h-full bg-muted flex items-center justify-center"><p>Loading Map...</p></div>,
 });
 
+const HeatmapLayer = dynamic(() => import('@/features/user/components/ride/HeatmapLayer'), {
+    ssr: false,
+});
+
 
 const StatCard = ({ title, value, icon: Icon, description }: { title: string, value: string, icon: React.ElementType, description: string }) => (
     <Card>
@@ -45,12 +49,19 @@ const casesByHourData = [
   { hour: '11 PM', cases: 18 },
 ]
 
-const mockHotspots: ActiveEntity[] = [
-    { id: 'hotspot-1', name: 'AIIMS', type: 'hospital', location: { lat: 28.566, lon: 77.212 } },
-    { id: 'hotspot-2', name: 'Cyber Hub', type: 'hospital', location: { lat: 28.496, lon: 77.088 } },
-    { id: 'hotspot-3', name: 'Noida Sec 18', type: 'hospital', location: { lat: 28.570, lon: 77.323 } },
-    { id: 'hotspot-4', name: 'Connaught Place', type: 'hospital', location: { lat: 28.632, lon: 77.217 } },
-    { id: 'hotspot-5', name: 'Saket', type: 'hospital', location: { lat: 28.524, lon: 77.212 } },
+const mockHotspots: [number, number][] = [
+    [28.566, 77.212], // AIIMS
+    [28.567, 77.213],
+    [28.565, 77.211],
+    [28.496, 77.088], // Cyber Hub
+    [28.497, 77.089],
+    [28.495, 77.087],
+    [28.498, 77.086],
+    [28.570, 77.323], // Noida Sec 18
+    [28.571, 77.324],
+    [28.632, 77.217], // Connaught Place
+    [28.633, 77.218],
+    [28.524, 77.212], // Saket
 ];
 
 
@@ -97,11 +108,9 @@ export default function AnalyticsPage() {
                     <CardDescription>A visual representation of emergency case locations to identify high-demand zones.</CardDescription>
                 </CardHeader>
                 <CardContent className="h-80 w-full p-0 rounded-lg overflow-hidden">
-                   <LiveMap 
-                        activePartners={mockHotspots} 
-                        center={[28.58, 77.2]}
-                        zoom={11}
-                    />
+                   <LiveMap center={[28.58, 77.2]} zoom={11}>
+                       <HeatmapLayer points={mockHotspots} />
+                   </LiveMap>
                 </CardContent>
             </Card>
 

@@ -1,7 +1,6 @@
-
 'use client';
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap, Polyline } from 'react-leaflet';
 import L, { LatLngExpression } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -75,6 +74,7 @@ interface LiveMapProps {
   partners?: Partner[];
   activePartners?: Partner[];
   enableCursorTooltip?: boolean;
+  children?: React.ReactNode;
 }
 
 const LocateButton = () => {
@@ -103,7 +103,7 @@ const AutoLocate = () => {
     return null;
 };
 
-const LiveMap = ({ riderLocation, destinationLocation, driverLocation, driverVehicleType, routeGeometry, isTripInProgress, partners, activePartners }: LiveMapProps) => {
+const LiveMap = ({ children, riderLocation, destinationLocation, driverLocation, driverVehicleType, routeGeometry, isTripInProgress, partners, activePartners }: LiveMapProps) => {
     const { theme } = useTheme();
     
     const riderPosition: LatLngExpression | null = riderLocation ? [riderLocation.lat, riderLocation.lon] : null;
@@ -137,6 +137,8 @@ const LiveMap = ({ riderLocation, destinationLocation, driverLocation, driverVeh
         
         <AutoLocate />
         <LocateButton />
+
+        {children}
 
         {riderPosition && <Marker position={riderPosition} icon={greenPulsatingIcon}><Popup>Rider Pickup</Popup></Marker>}
         {driverPosition && <Marker position={driverPosition} icon={getDriverIcon(driverVehicleType)}><Popup>Your Location</Popup></Marker>}
