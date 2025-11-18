@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Ambulance, IndianRupee, Save, BadgeCheck, Phone, Check, Loader2, FileText, Shield, Building, Edit } from 'lucide-react';
+import { Ambulance, IndianRupee, Save, BadgeCheck, Phone, Check, Loader2, FileText, Shield, Building, Edit, View } from 'lucide-react';
 import { doc, updateDoc } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
@@ -172,7 +172,13 @@ export default function CureProfilePage() {
                             {requiredDocuments.map(doc => (
                                 <div key={doc.name} className="flex justify-between items-center text-sm p-2 bg-muted/50 rounded-md">
                                     <span className="font-medium flex items-center gap-2"><FileText className="w-4 h-4 text-muted-foreground"/>{doc.name}</span>
-                                    <Badge className="bg-green-100 text-green-800 text-xs">Verified</Badge>
+                                    {doc.name === "Partnership Agreement / MOU" ? (
+                                        <Button variant="outline" size="sm" onClick={() => toast.info('Feature Coming Soon!')}>
+                                            <View className="w-4 h-4 mr-2"/> View
+                                        </Button>
+                                    ) : (
+                                        <Badge className="bg-green-100 text-green-800 text-xs">Verified</Badge>
+                                    )}
                                 </div>
                             ))}
                         </CardContent>
