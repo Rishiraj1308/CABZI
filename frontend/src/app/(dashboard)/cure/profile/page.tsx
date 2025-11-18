@@ -147,7 +147,7 @@ export default function CureProfilePage() {
               <CardContent>
                   <div className="flex flex-wrap gap-2">
                       {partnerData?.services && partnerData.services.length > 0 ? (
-                          partnerData.services.map(service => (
+                          partnerData.services.map((service: string) => (
                               <Badge key={service} variant="secondary" className="p-2 text-sm">
                                   <BadgeCheck className="w-4 h-4 mr-1.5 text-green-600"/>
                                   {service}
@@ -164,3 +164,4 @@ export default function CureProfilePage() {
   );
 }
 
+    

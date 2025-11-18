@@ -29,4 +29,7 @@ if (typeof window !== 'undefined' && app) {
   }
 }
 
+// Re-export hooks from client-provider
+export * from './client-provider';
+
 export { app, auth, db, functions, messaging };
