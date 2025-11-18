@@ -74,6 +74,7 @@ export default function LoginPage() {
 
         if (response.ok && data.success) {
             toast.success("Login Successful", { description: `Welcome, ${data.user.role}! Redirecting...`});
+            // Correctly store the session object from the server response
             localStorage.setItem('curocity-admin-session', JSON.stringify(data.session));
             window.location.href = '/admin'; // Force reload to ensure layout state is fresh
         } else {
