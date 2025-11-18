@@ -106,7 +106,13 @@ export default function CureOnboardingPage() {
                         <div className="space-y-2 col-span-2"><Label>Facility Type</Label><Select required onValueChange={(v) => handleInputChange('businessType', v)} value={formData.businessType}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="Hospital">Hospital</SelectItem><SelectItem value="Clinic">Clinic</SelectItem></SelectContent></Select></div>
                         <div className="space-y-2 col-span-2"><Label>Facility Name</Label><Input required value={formData.name} onChange={e => handleInputChange('name', e.target.value)}/></div>
                         <div className="space-y-2"><Label>Owner/Contact Person</Label><Input required value={formData.ownerName} onChange={e => handleInputChange('ownerName', e.target.value)}/></div>
-                        <div className="space-y-2"><Label>Official Phone</Label><Input required type="tel" value={formData.phone} onChange={e => handleInputChange('phone', e.target.value)}/></div>
+                        <div className="space-y-2">
+                           <Label>Official Phone</Label>
+                            <div className="flex items-center gap-0 rounded-md border border-input focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2">
+                                <span className="pl-3 text-muted-foreground text-sm">+91</span>
+                                <Input required type="tel" maxLength={10} placeholder="12345 67890" value={formData.phone} onChange={e => handleInputChange('phone', e.target.value)} className="border-0 h-9 focus-visible:ring-0 focus-visible:ring-offset-0 flex-1" />
+                            </div>
+                        </div>
                         <div className="space-y-2 col-span-2"><Label>Official Email</Label><Input required type="email" value={formData.ownerEmail} onChange={e => handleInputChange('ownerEmail', e.target.value)}/></div>
                         <div className="space-y-2"><Label>Registration Number</Label><Input required value={formData.registrationNumber} onChange={e => handleInputChange('registrationNumber', e.target.value)}/></div>
                         {formData.businessType === 'Hospital' ? (
