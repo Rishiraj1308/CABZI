@@ -10,7 +10,7 @@
       "npm --prefix ./ install",
       "npm --prefix ./ run build"
     ],
-    "source": "."
+    "source": "functions"
   },
   "storage": {
     "rules": "storage.rules"
