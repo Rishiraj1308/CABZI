@@ -23,15 +23,15 @@ interface FirebaseContextValue {
 
 const FirebaseContext = createContext<FirebaseContextValue | undefined>(undefined);
 
-export function FirebaseProviderClient({ children }: { children: ReactNode }) {
+export default function FirebaseProviderClient({ children }: { children: ReactNode }) {
   const [messaging, setMessaging] = useState<Messaging | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [isUserLoading, setIsUserLoading] = useState(true);
 
   useEffect(() => {
-    // getMessagingPromise is now a promise that resolves to Messaging | null
-    getMessagingPromise.then((m) => setMessaging(m));
-  }, []);
+    setMessaging(messaging);
+  }, [messaging]);
+  
 
   useEffect(() => {
     if (!auth) {
@@ -43,7 +43,7 @@ export function FirebaseProviderClient({ children }: { children: ReactNode }) {
       setIsUserLoading(false);
     });
     return () => unsubscribe();
-  }, [auth]);
+  }, []);
 
   const value = useMemo(
     () => ({

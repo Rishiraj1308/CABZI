@@ -15,7 +15,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import { useFirebase } from '@/lib/firebase/client-provider';
 import { collection, collectionGroup, getDocs, query, where, addDoc, serverTimestamp, getDoc, doc, GeoPoint, setDoc } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -92,7 +92,6 @@ export default function BookAppointmentPage() {
   const [consultationType, setConsultationType] = useState<'in-clinic' | 'video' | ''>('');
   const [session, setSession] = useState<ClientSession | null>(null);
 
-  const { toast } = useToast();
   const { db, user } = useFirebase();
   const [userLocation, setUserLocation] = useState<{ lat: number, lon: number } | null>(null);
 
@@ -162,11 +161,11 @@ export default function BookAppointmentPage() {
         setDoctors(doctorsList);
     } catch (error) {
         console.error("Error fetching verified doctors:", error);
-        toast({ variant: 'destructive', title: 'Failed to load doctors' });
+        toast.error('Failed to load doctors');
     } finally {
         setIsLoading(false);
     }
-  }, [db, userLocation, toast]);
+  }, [db, userLocation]);
   
   useEffect(() => {
     fetchVerifiedDoctors();
@@ -206,7 +205,7 @@ export default function BookAppointmentPage() {
   }, [doctors, searchQuery, selectedSymptom, sortBy, priceRange, genderFilter, availabilityFilter]);
 
   const handleBookingConfirmation = async () => {
-    if (!selectedDoctor || !session || !db || !date || !time || !consultationType) { toast({ variant: 'destructive', title: 'Error', description: 'Missing required information to book.' }); return; }
+    if (!selectedDoctor || !session || !db || !date || !time || !consultationType) { toast.error('Error', { description: 'Missing required information to book.' }); return; }
     setIsBooking(true);
     try {
       const userDoc = await getDoc(doc(db, "users", session.userId));
@@ -233,11 +232,11 @@ export default function BookAppointmentPage() {
           consultationType: consultationType,
           status: 'Pending', createdAt: serverTimestamp()
       });
-      toast({ title: "Appointment Requested!", description: `Your request for Dr. ${selectedDoctor?.name} has been sent. You will be notified upon confirmation.`, className: 'bg-green-600 border-green-600 text-white' });
+      toast.success("Appointment Requested!", { description: `Your request for Dr. ${selectedDoctor?.name} has been sent. You will be notified upon confirmation.` });
       setIsSheetOpen(false);
     } catch(error) {
         console.error("Failed to book appointment:", error);
-        toast({ variant: 'destructive', title: 'Booking Failed', description: (error as Error).message || 'There was an issue sending your request.' });
+        toast.error('Booking Failed', { description: (error as Error).message || 'There was an issue sending your request.' });
     } finally {
         setIsBooking(false);
     }

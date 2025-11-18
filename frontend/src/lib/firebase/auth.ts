@@ -1,3 +1,4 @@
+'use client';
 import { getAuth, browserLocalPersistence, setPersistence, Auth } from "firebase/auth";
 import { getFirebaseApp } from "./app";
 

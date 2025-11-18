@@ -10,7 +10,7 @@ import {
   QuerySnapshot,
   CollectionReference,
 } from 'firebase/firestore';
-import { errorEmitter, FirestorePermissionError } from '@/firebase';
+import { errorEmitter, FirestorePermissionError } from '@/lib/firebase';
 
 /** Utility type to add an 'id' field to a given type T. */
 export type WithId<T> = T & { id: string };

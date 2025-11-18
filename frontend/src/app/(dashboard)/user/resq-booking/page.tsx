@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation'
 import { useFirebase } from '@/lib/firebase/client-provider'
 import { getDoc, doc, onSnapshot, query, collection, where, updateDoc, GeoPoint, serverTimestamp, addDoc, runTransaction } from 'firebase/firestore'
 import type { GarageRequest, ClientSession } from '@/lib/types'
-import { useToast } from '@/hooks/use-toast'
+import { toast } from 'sonner'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Wrench, Zap, Fuel, Car, MapPin, History, AlertTriangle, RefreshCw } from 'lucide-react'
@@ -37,7 +37,6 @@ export default function ResQPage() {
   const [locationError, setLocationError] = useState(false);
 
   const { user, db } = useFirebase();
-  const { toast } = useToast();
   const router = useRouter();
 
   const getAddressFromCoords = useCallback(async (lat: number, lon: number) => {
@@ -65,7 +64,7 @@ export default function ResQPage() {
             () => {
                 setLocationAddress('Location access denied. Please enable it in browser settings.');
                 setLocationError(true);
-                toast({ variant: 'destructive', title: 'Location Access Denied' });
+                toast.error('Location Access Denied');
             },
             { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
         );
@@ -73,7 +72,7 @@ export default function ResQPage() {
         setLocationAddress('Geolocation is not supported by this browser.');
         setLocationError(true);
     }
-  }, [getAddressFromCoords, toast]);
+  }, [getAddressFromCoords]);
 
 
   useEffect(() => {
@@ -92,7 +91,7 @@ export default function ResQPage() {
 
   const handleRequestMechanic = async () => {
     if (!db || !session || !currentUserLocation || !selectedIssue) {
-        toast({ variant: "destructive", title: "Error", description: "Could not get your location or user details." });
+        toast.error("Error", { description: "Could not get your location or user details." });
         return;
     }
     const generatedOtp = Math.floor(1000 + Math.random() * 9000).toString();
@@ -109,9 +108,9 @@ export default function ResQPage() {
     try {
         const requestDocRef = await addDoc(collection(db, 'garageRequests'), requestData);
         // The ActiveRequestProvider will automatically pick this up now.
-        toast({ title: "Request Sent!", description: "We are finding a nearby ResQ partner for you." });
+        toast.success("Request Sent!", { description: "We are finding a nearby ResQ partner for you." });
     } catch (error) {
-        toast({ variant: 'destructive', title: 'Request Failed', description: 'Could not create service request.' });
+        toast.error('Request Failed', { description: 'Could not create service request.' });
     }
   }
 

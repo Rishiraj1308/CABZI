@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Input } from '@/components/ui/input'
 import { ArrowLeft, FlaskConical, Search, FileText, CheckCircle, Home, Calendar, Clock } from 'lucide-react'
 import { motion } from 'framer-motion'
-import { useToast } from '@/hooks/use-toast'
+import { toast } from 'sonner'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Badge } from '@/components/ui/badge'
 import Image from 'next/image'
@@ -63,7 +63,6 @@ const timeSlots = [
 
 export default function LabTestsPage() {
     const router = useRouter();
-    const { toast } = useToast();
     const [searchQuery, setSearchQuery] = useState('');
     
     // Booking Dialog State
@@ -103,14 +102,12 @@ export default function LabTestsPage() {
     
     const handleConfirmBooking = () => {
         if (!selectedPackage || !selectedLab || !selectedDate || !selectedTime) {
-            toast({ variant: 'destructive', title: 'Incomplete Details', description: 'Please select a lab, date, and time slot.' });
+            toast.error('Incomplete Details', { description: 'Please select a lab, date, and time slot.' });
             return;
         }
 
-        toast({
-            title: 'Booking Confirmed!',
+        toast.success('Booking Confirmed!',{
             description: `Your ${selectedPackage.title} with ${selectedLab} is scheduled for ${format(selectedDate, "PPP")} at ${selectedTime}.`,
-            className: 'bg-green-600 text-white border-green-600'
         });
 
         // Reset state and close dialog

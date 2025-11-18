@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation'
 import { useFirebase } from '@/lib/firebase/client-provider'
 import { getDoc, doc, onSnapshot, query, collection, where, updateDoc, GeoPoint, serverTimestamp, addDoc, runTransaction } from 'firebase/firestore'
 import type { GarageRequest, ClientSession } from '@/lib/types'
-import { useToast } from '@/hooks/use-toast'
+import { toast } from 'sonner'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Wrench, Zap, Fuel, Car, MoreHorizontal, ArrowLeft, MapPin, History, AlertTriangle, RefreshCw } from 'lucide-react'
@@ -47,7 +47,6 @@ export default function ResQPage() {
   const [locationError, setLocationError] = useState(false);
 
   const { user, db } = useFirebase();
-  const { toast } = useToast();
   const router = useRouter();
 
   const getAddressFromCoords = useCallback(async (lat: number, lon: number) => {
@@ -75,7 +74,7 @@ export default function ResQPage() {
             () => {
                 setLocationAddress('Location access denied. Please enable it in browser settings.');
                 setLocationError(true);
-                toast({ variant: 'destructive', title: 'Location Access Denied' });
+                toast.error('Location Access Denied');
             },
             { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
         );
@@ -83,7 +82,7 @@ export default function ResQPage() {
         setLocationAddress('Geolocation is not supported by this browser.');
         setLocationError(true);
     }
-  }, [getAddressFromCoords, toast]);
+  }, [getAddressFromCoords]);
 
 
   useEffect(() => {
@@ -122,11 +121,10 @@ export default function ResQPage() {
         
         setActiveGarageRequest(prev => {
             if (prev?.status !== 'accepted' && requestData.status === 'accepted') {
-                toast({ title: "ResQ Partner Assigned!", description: `${(requestData as GarageRequest).mechanicName} is on the way.` });
+                toast.success("ResQ Partner Assigned!", {description: `${(requestData as GarageRequest).mechanicName} is on the way.`});
             }
             if (prev?.status !== 'bill_sent' && requestData.status === 'bill_sent') {
-                toast({
-                    title: "Job Card Ready for Approval",
+                toast.info("Job Card Ready for Approval", {
                     description: `Please review and approve the job card from ${(requestData as GarageRequest).mechanicName}.`,
                     duration: 9000
                 });
@@ -141,7 +139,7 @@ export default function ResQPage() {
     });
 
     return () => unsubscribe();
-  }, [db, session?.userId, resetFlow, toast]);
+  }, [db, session?.userId, resetFlow]);
   
   const handleGaragePayment = async (paymentMode: 'cash' | 'wallet') => {
     if (!db || !activeGarageRequest || !user || !activeGarageRequest.mechanicId) return;
@@ -151,32 +149,27 @@ export default function ResQPage() {
     try {
         await runTransaction(db, async (transaction) => {
             if (paymentMode === 'wallet') {
-                toast({ variant: 'destructive', title: 'Wallet Payment Coming Soon', description: 'Please use cash payment for now.'});
+                toast.error('Wallet Payment Coming Soon', {description: 'Please use cash payment for now.'});
                 throw new Error("Wallet payment not implemented yet.");
             }
             
             transaction.update(garageRequestRef, { status: 'completed', paymentMode });
         });
 
-        toast({
-            title: `Payment via ${paymentMode} confirmed`,
+        toast.success(`Payment via ${paymentMode} confirmed`, {
             description: `Thank you for using Curocity ResQ.`,
-            className: "bg-green-600 text-white border-green-600"
         });
         resetFlow();
     } catch (error: any) {
         console.error("Garage payment failed:", error);
-        toast({
-            variant: 'destructive',
-            title: 'Payment Failed',
-            description: error.message || 'There was an issue processing the payment.'
-        });
+        toast.error('Payment Failed',
+           { description: error.message || 'There was an issue processing the payment.'});
     }
   }
 
   const handleRequestMechanic = async () => {
     if (!db || !session || !currentUserLocation || !selectedIssue) {
-        toast({ variant: "destructive", title: "Error", description: "Could not get your location or user details." });
+        toast.error("Error", { description: "Could not get your location or user details." });
         return;
     }
     const generatedOtp = Math.floor(1000 + Math.random() * 9000).toString();
@@ -196,7 +189,7 @@ export default function ResQPage() {
         setActiveGarageRequest({ id: requestDocRef.id, ...requestData } as unknown as GarageRequest);
         localStorage.setItem('activeGarageRequestId', requestDocRef.id);
     } catch (error) {
-        toast({ variant: 'destructive', title: 'Request Failed', description: 'Could not create service request.' });
+        toast.error('Request Failed', { description: 'Could not create service request.' });
     }
   }
 
@@ -205,10 +198,10 @@ export default function ResQPage() {
     const requestRef = doc(db, 'garageRequests', activeGarageRequest.id);
     try {
       await updateDoc(requestRef, { status: 'cancelled_by_user' });
-      toast({ variant: 'destructive', title: 'Service Request Cancelled' });
+      toast.error('Service Request Cancelled');
       resetFlow();
     } catch (error) {
-      toast({ variant: 'destructive', title: 'Error', description: 'Could not cancel the request.' });
+      toast.error( 'Error', { description: 'Could not cancel the request.' });
     }
   };
 
@@ -247,7 +240,7 @@ export default function ResQPage() {
               <Wrench className="w-10 h-10 text-amber-500"/>
             </div>
             <CardTitle className="text-3xl font-bold pt-2">Roadside ResQ</CardTitle>
-            <CardDescription>Stuck on the road? Tell us what&apos;s wrong and we&apos;ll find help nearby.</CardDescription>
+            <CardDescription>Stuck on the road? Tell us what's wrong and we'll find help nearby.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
             <div className="p-3 flex items-center gap-3 bg-muted rounded-lg">
@@ -257,7 +250,7 @@ export default function ResQPage() {
             </div>
             
             <div className="space-y-3">
-                <h3 className="font-bold text-lg">What&apos;s the issue?</h3>
+                <h3 className="font-bold text-lg">What's the issue?</h3>
                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                     {commonIssues.map((item, i) => (
                       <motion.div

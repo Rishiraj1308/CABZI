@@ -1,29 +1,42 @@
-import { getMessaging, isSupported, Messaging } from "firebase/messaging";
+'use client';
+
+import { getMessaging, isSupported, type Messaging } from "firebase/messaging";
 import { getFirebaseApp } from "./app";
 
-let _msg: Messaging | null | undefined = undefined;
+let messagingInstance: Messaging | null | undefined = undefined;
 
-export async function getFirebaseMessaging(): Promise<Messaging | null> {
-  if (_msg !== undefined) return _msg;
-  
+export function getFirebaseMessaging(): Messaging | null {
+  // already initialized
+  if (messagingInstance !== undefined) return messagingInstance;
+
+  // SSR safety
+  if (typeof window === "undefined") {
+    messagingInstance = null;
+    return null;
+  }
+
   const app = getFirebaseApp();
   if (!app) {
-    _msg = null;
+    messagingInstance = null;
     return null;
   }
 
-  if (typeof window === "undefined") {
-    _msg = null;
-    return null;
-  }
+  // DO NOT BLOCK — check support async + set later
+  isSupported()
+    .then((supported) => {
+      if (supported && messagingInstance === null) {
+        try {
+          messagingInstance = getMessaging(app);
+        } catch {
+          messagingInstance = null;
+        }
+      }
+    })
+    .catch(() => {
+      messagingInstance = null;
+    });
 
-  try {
-    if (await isSupported()) {
-      _msg = getMessaging(app);
-      return _msg;
-    }
-  } catch {}
-
-  _msg = null;
+  // Return null immediately (non-blocking)
+  messagingInstance = null;
   return null;
 }

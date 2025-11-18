@@ -23,25 +23,23 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { Input } from '@/components/ui/input'
-import { useToast } from '@/hooks/use-toast'
+import { toast } from 'sonner'
 import QrScanner from '@/components/ui/qr-scanner'
 
 const mockTransactions = [
   { type: 'debit', amount: 312, description: 'Ride to IGI Airport', date: 'Today' },
   { type: 'credit', amount: 50, description: 'Cashback Reward', date: 'Yesterday' },
   { type: 'debit', amount: 157, description: 'Ride to Cyber Hub', date: 'Yesterday' },
-  { type: 'credit', amount: 500, amount: 500, description: 'Added from UPI', date: '2 days ago' },
+  { type: 'credit', amount: 500, description: 'Added from UPI', date: '2 days ago' },
 ]
 
 export default function WalletPage() {
-    const { toast } = useToast()
     const [scannerOpen, setScannerOpen] = React.useState(false)
 
     const handleScanResult = (result: any, error: any) => {
         if (result) {
             setScannerOpen(false)
-            toast({
-                title: "QR Code Scanned",
+            toast.success("QR Code Scanned", {
                 description: `Result: ${result?.text}`,
             })
         }
@@ -85,7 +83,7 @@ export default function WalletPage() {
                         <Input type="number" placeholder="₹ Amount" className="text-lg h-12" />
                     </div>
                     <DialogFooter>
-                        <Button onClick={() => toast({ title: "Coming Soon!", description: "Live payment integration is on the way." })} className="w-full">Proceed to Add</Button>
+                        <Button onClick={() => toast.info("Coming Soon!", { description: "Live payment integration is on the way." })} className="w-full">Proceed to Add</Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
@@ -119,7 +117,7 @@ export default function WalletPage() {
                         </Dialog>
                     </div>
                     <DialogFooter>
-                        <Button onClick={() => toast({ title: "Coming Soon!", description: "Live payment integration is on the way." })} className="w-full">Verify & Proceed</Button>
+                        <Button onClick={() => toast.info("Coming Soon!", { description: "Live payment integration is on the way." })} className="w-full">Verify & Proceed</Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>

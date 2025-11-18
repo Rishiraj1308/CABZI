@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { useFirebase } from '@/lib/firebase/client-provider'
 import { collection, query, where, orderBy, onSnapshot, addDoc, serverTimestamp, Timestamp } from 'firebase/firestore'
-import { useToast } from '@/hooks/use-toast'
+import { toast } from 'sonner'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import type { ClientSession } from '@/lib/types'
@@ -45,7 +45,6 @@ const faqs = [
 
 export default function SupportPage() {
   const { db, user } = useFirebase();
-  const { toast } = useToast();
   const [session, setSession] = useState<ClientSession | null>(null);
   const [tickets, setTickets] = useState<SupportTicket[]>([]);
   const [newQuery, setNewQuery] = useState('');
@@ -80,17 +79,17 @@ export default function SupportPage() {
       setIsLoadingTickets(false);
     }, (error) => {
       console.error("Error fetching support tickets:", error);
-      toast({ variant: 'destructive', title: "Error", description: "Could not load your support tickets." });
+      toast.error("Error", { description: "Could not load your support tickets." });
       setIsLoadingTickets(false);
     });
 
     return () => unsubscribe();
-  }, [db, session?.userId, toast]);
+  }, [db, session?.userId]);
   
   const handleSubmitQuery = async (e: React.FormEvent) => {
       e.preventDefault();
       if (!newQuery.trim() || !db || !session) {
-          toast({ variant: 'destructive', title: 'Cannot Submit', description: 'Please enter your query and ensure you are logged in.' });
+          toast.error('Cannot Submit', { description: 'Please enter your query and ensure you are logged in.' });
           return;
       }
       setIsSubmitting(true);
@@ -107,9 +106,9 @@ export default function SupportPage() {
               createdAt: serverTimestamp()
           });
           setNewQuery('');
-          toast({ title: 'Query Submitted!', description: `Your ticket ID is ${ticketId}. Our team will get back to you shortly.`, className: 'bg-green-600 text-white' });
+          toast.success('Query Submitted!', { description: `Your ticket ID is ${ticketId}. Our team will get back to you shortly.` });
       } catch (error) {
-          toast({ variant: 'destructive', title: 'Submission Failed', description: 'There was an error submitting your query.' });
+          toast.error('Submission Failed', { description: 'There was an error submitting your query.' });
       } finally {
           setIsSubmitting(false);
       }
