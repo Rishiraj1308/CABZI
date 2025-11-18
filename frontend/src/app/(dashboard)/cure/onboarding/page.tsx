@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import BrandLogo from '@/components/shared/brand-logo';
-import { useDb } from '@/lib/firebase/client-provider';
+import { useDb } from '@/lib/firebase';
 import { collection, doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { Progress } from '@/components/ui/progress';
 import { ArrowLeft, UploadCloud } from 'lucide-react';
@@ -206,6 +206,7 @@ export default function CureOnboardingPage() {
                            <div className="flex items-center justify-center w-full p-6 border-2 border-dashed rounded-lg text-center text-muted-foreground flex-col gap-2"><UploadCloud className="w-8 h-8" /><p className="text-sm">Fire & Safety Certificate</p></div>
                            <div className="flex items-center justify-center w-full p-6 border-2 border-dashed rounded-lg text-center text-muted-foreground flex-col gap-2"><UploadCloud className="w-8 h-8" /><p className="text-sm">Pollution Control Certificate</p></div>
                            <div className="flex items-center justify-center w-full p-6 border-2 border-dashed rounded-lg text-center text-muted-foreground flex-col gap-2"><UploadCloud className="w-8 h-8" /><p className="text-sm">Bio-medical Waste Authorization</p></div>
+                           <div className="md:col-span-2 flex items-center justify-center w-full p-6 border-2 border-dashed rounded-lg text-center text-muted-foreground flex-col gap-2"><UploadCloud className="w-8 h-8" /><p className="text-sm">Partnership Agreement / MOU</p></div>
                         </div>
                     </div>
                 );

@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Ambulance, IndianRupee, Save, BadgeCheck, Phone, Check, Loader2, FileText, Shield, Building } from 'lucide-react';
+import { Ambulance, IndianRupee, Save, BadgeCheck, Phone, Check, Loader2, FileText, Shield, Building, Edit } from 'lucide-react';
 import { doc, updateDoc } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
@@ -35,6 +35,7 @@ const requiredDocuments = [
     { name: "Pollution Control Certificate" },
     { name: "Bio-medical Waste Authorization" },
     { name: "Ambulance Registration (RC)" },
+    { name: "Partnership Agreement / MOU" },
 ];
 
 
@@ -207,28 +208,14 @@ export default function CureProfilePage() {
 
                   <Card>
                       <CardHeader>
-                          <div className="flex items-center gap-2">
-                              <Ambulance className="w-5 h-5 text-primary"/>
-                              <CardTitle>My Services</CardTitle>
-                          </div>
-                          <CardDescription>The list of services you offer to patients and for emergency response.</CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                          <div className="flex flex-wrap gap-2">
-                              {partnerData?.services && partnerData.services.length > 0 ? (
-                                  partnerData.services.map((service: string) => (
-                                      <Badge key={service} variant="secondary" className="p-2 text-sm">
-                                          <Check className="w-4 h-4 mr-1.5 text-green-600"/>
-                                          {service}
-                                      </Badge>
-                                  ))
-                              ) : (
-                                  <p className="text-sm text-muted-foreground">No services have been configured for this facility yet.</p>
-                              )}
-                          </div>
-                           <Dialog open={isServicesDialogOpen} onOpenChange={setIsServicesDialogOpen}>
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                                <Ambulance className="w-5 h-5 text-primary"/>
+                                <CardTitle>My Services</CardTitle>
+                            </div>
+                            <Dialog open={isServicesDialogOpen} onOpenChange={setIsServicesDialogOpen}>
                                 <DialogTrigger asChild>
-                                   <Button variant="outline" className="w-full mt-4">Edit My Services</Button>
+                                   <Button variant="outline" size="sm"><Edit className="w-4 h-4 mr-2"/>Edit</Button>
                                 </DialogTrigger>
                                 <DialogContent className="max-w-2xl">
                                     <DialogHeader>
@@ -257,6 +244,22 @@ export default function CureProfilePage() {
                                     </DialogFooter>
                                 </DialogContent>
                            </Dialog>
+                          </div>
+                          <CardDescription>The list of services you offer to patients and for emergency response.</CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                          <div className="flex flex-wrap gap-2">
+                              {partnerData?.services && partnerData.services.length > 0 ? (
+                                  partnerData.services.map((service: string) => (
+                                      <Badge key={service} variant="secondary" className="p-2 text-sm">
+                                          <Check className="w-4 h-4 mr-1.5 text-green-600"/>
+                                          {service}
+                                      </Badge>
+                                  ))
+                              ) : (
+                                  <p className="text-sm text-muted-foreground">No services have been configured for this facility yet.</p>
+                              )}
+                          </div>
                       </CardContent>
                   </Card>
                </div>
