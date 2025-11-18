@@ -118,6 +118,19 @@ export default function CureOnboardingPage() {
             fetchLocation();
         }
     }, [currentStep, formData.location, fetchLocation]);
+
+    const handleMapMarkerDrag = async (newLocation: { lat: number; lon: number }) => {
+        handleInputChange('location', newLocation);
+        try {
+            const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${newLocation.lat}&lon=${newLocation.lon}`);
+            const data = await response.json();
+            if (data.display_name) {
+                handleInputChange('address', data.display_name);
+            }
+        } catch (error) {
+            console.error("Error fetching address from coords:", error);
+        }
+    };
     
     const renderStepContent = () => {
         switch (currentStep) {
@@ -154,7 +167,16 @@ export default function CureOnboardingPage() {
                      <div>
                         <Label>Pin your location on the map</Label>
                         <div className="h-64 mt-2 rounded-lg overflow-hidden border">
-                            <LiveMap activePartners={[]} center={formData.location ? [formData.location.lat, formData.location.lon] : undefined} />
+                            <LiveMap 
+                                activePartners={[]}
+                                center={formData.location ? [formData.location.lat, formData.location.lon] : undefined}
+                                onMarkerDrag={handleMapMarkerDrag}
+                                isDraggable={true}
+                            />
+                        </div>
+                        <div className="mt-4">
+                            <Label>Detected Address</Label>
+                            <Input value={formData.address} readOnly placeholder="Address will appear here..." />
                         </div>
                     </div>
                 )

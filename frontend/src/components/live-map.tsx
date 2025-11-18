@@ -56,7 +56,46 @@ interface LiveMapProps {
   center?: [number, number];
   zoom?: number;
   enableCursorTooltip?: boolean;
+  isDraggable?: boolean;
+  onMarkerDrag?: (location: { lat: number; lon: number }) => void;
 }
+
+const DraggableMarker = ({ center, onMarkerDrag }: { center: [number, number], onMarkerDrag?: (location: { lat: number; lon: number }) => void }) => {
+    const [position, setPosition] = React.useState(center);
+    const markerRef = React.useRef<L.Marker>(null);
+    const map = useMap();
+
+    const eventHandlers = React.useMemo(
+        () => ({
+            dragend() {
+                const marker = markerRef.current;
+                if (marker != null) {
+                    const { lat, lng } = marker.getLatLng();
+                    setPosition([lat, lng]);
+                    onMarkerDrag?.({ lat, lon: lng });
+                }
+            },
+        }),
+        [onMarkerDrag],
+    );
+
+    useEffect(() => {
+        map.setView(center, 15);
+    }, [center, map]);
+    
+
+    return (
+        <Marker
+            draggable={true}
+            eventHandlers={eventHandlers}
+            position={position}
+            ref={markerRef}
+        >
+            <Tooltip>Drag to set exact location</Tooltip>
+        </Marker>
+    );
+};
+
 
 const CursorTooltip = ({ partners }: { partners: ActiveEntity[] }) => {
     const map = useMap();
@@ -123,7 +162,7 @@ const CursorTooltip = ({ partners }: { partners: ActiveEntity[] }) => {
     return null;
 }
 
-const LiveMap = ({ activePartners, center = [28.6139, 77.2090], zoom = 12, enableCursorTooltip = false }: LiveMapProps) => {
+const LiveMap = ({ activePartners, center = [28.6139, 77.2090], zoom = 12, enableCursorTooltip = false, isDraggable = false, onMarkerDrag }: LiveMapProps) => {
     const { theme } = useTheme();
 
     const darkTileUrl = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
@@ -159,6 +198,8 @@ const LiveMap = ({ activePartners, center = [28.6139, 77.2090], zoom = 12, enabl
                     </Popup>
                 </Marker>
             ))}
+
+            {isDraggable && <DraggableMarker center={center} onMarkerDrag={onMarkerDrag} />}
 
             {enableCursorTooltip && <CursorTooltip partners={activePartners} />}
         </MapContainer>
