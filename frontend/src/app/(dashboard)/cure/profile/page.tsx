@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Ambulance, IndianRupee, Save, BadgeCheck, Phone, Check, Loader2, FileText, Shield, Building, Edit, View } from 'lucide-react';
+import { Ambulance, IndianRupee, Save, Phone, Check, Loader2, FileText, Shield, Building, Edit, View, Hospital, MapPin } from 'lucide-react';
 import { doc, updateDoc } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
@@ -147,21 +147,17 @@ export default function CureProfilePage() {
           <h2 className="text-3xl font-bold tracking-tight">Cure Partner Profile</h2>
            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
                <div className="lg:col-span-1 space-y-6">
-                    <Card className="overflow-hidden">
-                        <CardHeader className="items-center text-center bg-muted/40 pb-6">
-                            <Avatar className="w-24 h-24 border-4 border-background shadow-lg">
+                     <Card>
+                        <CardHeader className="flex flex-row items-center gap-4 p-4">
+                            <Avatar className="w-16 h-16 border">
                                 <AvatarImage src="https://placehold.co/100x100.png" alt={partnerData?.name} data-ai-hint="hospital building" />
-                                <AvatarFallback className="text-3xl">{getInitials(partnerData?.name).toUpperCase()}</AvatarFallback>
+                                <AvatarFallback className="text-xl">{getInitials(partnerData?.name).toUpperCase()}</AvatarFallback>
                             </Avatar>
-                            <div className="pt-2">
-                                <CardTitle className="text-2xl">{partnerData?.name}</CardTitle>
-                                <CardDescription className="font-mono">{partnerData?.id}</CardDescription>
+                            <div>
+                                <CardTitle className="text-xl">{partnerData?.name}</CardTitle>
+                                <CardDescription className="font-mono text-xs">{partnerData?.id}</CardDescription>
                             </div>
                         </CardHeader>
-                        <CardContent className="p-6 space-y-4">
-                           <DetailItem icon={Phone} label="Contact Phone Number" value={partnerData?.phone} />
-                           <DetailItem icon={BadgeCheck} label="Govt. Registration No." value={partnerData?.registrationNumber} />
-                        </CardContent>
                     </Card>
 
                     <Card>
@@ -173,7 +169,7 @@ export default function CureProfilePage() {
                                 <div key={doc.name} className="flex justify-between items-center text-sm p-2 bg-muted/50 rounded-md">
                                     <span className="font-medium flex items-center gap-2"><FileText className="w-4 h-4 text-muted-foreground"/>{doc.name}</span>
                                     {doc.name === "Partnership Agreement / MOU" ? (
-                                        <Button variant="outline" size="sm" onClick={() => toast.info('Feature Coming Soon!')}>
+                                        <Button variant="outline" size="sm" onClick={() => toast.info('This feature is coming soon!')}>
                                             <View className="w-4 h-4 mr-2"/> View
                                         </Button>
                                     ) : (
@@ -186,6 +182,25 @@ export default function CureProfilePage() {
 
                </div>
                <div className="lg:col-span-2 space-y-6">
+                  <Card>
+                      <CardHeader>
+                          <CardTitle className="flex items-center gap-2"><Hospital className="w-5 h-5"/> Facility Details</CardTitle>
+                          <CardDescription>Your verified business information.</CardDescription>
+                      </CardHeader>
+                       <CardContent className="space-y-4">
+                            <div className="grid md:grid-cols-2 gap-4">
+                                <DetailItem icon={Phone} label="Contact Phone" value={partnerData.phone} />
+                                <DetailItem icon={Building} label="Facility Type" value={partnerData.businessType} />
+                                <DetailItem icon={FileText} label="Registration No." value={partnerData.registrationNumber} />
+                                <DetailItem icon={Building} label="Sub-Type" value={partnerData.clinicType || partnerData.hospitalType} />
+                            </div>
+                             <div className="p-3 bg-muted rounded-lg">
+                                <p className="text-xs text-muted-foreground">Registered Address</p>
+                                <p className="font-semibold text-sm flex items-start gap-2 pt-1"><MapPin className="w-4 h-4 mt-0.5 shrink-0"/>{partnerData.address || 'N/A'}</p>
+                            </div>
+                       </CardContent>
+                  </Card>
+
                   {partnerData?.businessType === 'Hospital' && (
                      <Card>
                       <CardHeader>
@@ -273,3 +288,5 @@ export default function CureProfilePage() {
       </div>
   );
 }
+
+    
