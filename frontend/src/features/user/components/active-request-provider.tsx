@@ -5,7 +5,7 @@ import React, { createContext, useContext, useState, useEffect, ReactNode, useCa
 import { useFirebase } from '@/lib/firebase/client-provider';
 import { collection, query, where, onSnapshot, doc, updateDoc } from 'firebase/firestore';
 import type { RideData, GarageRequest, AmbulanceCase } from '@/lib/types';
-import RideStatus from './ride/RideStatusSheet';
+import RideStatus from '@/features/user/components/ride/RideStatus';
 import { toast } from 'sonner';
 
 interface ActiveRequestContextType {
