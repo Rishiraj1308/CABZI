@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Ambulance, IndianRupee, Save, BadgeCheck, Phone, Check, Loader2 } from 'lucide-react';
+import { Ambulance, IndianRupee, Save, BadgeCheck, Phone, Check, Loader2, FileText, Shield, Building } from 'lucide-react';
 import { doc, updateDoc } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
@@ -28,6 +28,15 @@ const allServices = [
     // Clinic Specific
     "Dental Care", "Dermatology (Skin)", "ENT", "Ophthalmology (Eye)",
 ];
+
+const requiredDocuments = [
+    { name: "Hospital Registration Certificate" },
+    { name: "Fire & Safety Certificate (NOC)" },
+    { name: "Pollution Control Certificate" },
+    { name: "Bio-medical Waste Authorization" },
+    { name: "Ambulance Registration (RC)" },
+];
+
 
 export default function CureProfilePage() {
     const { partnerData, isLoading } = useCurePartner();
@@ -153,6 +162,21 @@ export default function CureProfilePage() {
                            <DetailItem icon={BadgeCheck} label="Govt. Registration No." value={partnerData?.registrationNumber} />
                         </CardContent>
                     </Card>
+
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2 text-lg"><Shield className="w-5 h-5 text-primary"/> Documents & Compliance</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-3">
+                            {requiredDocuments.map(doc => (
+                                <div key={doc.name} className="flex justify-between items-center text-sm p-2 bg-muted/50 rounded-md">
+                                    <span className="font-medium flex items-center gap-2"><FileText className="w-4 h-4 text-muted-foreground"/>{doc.name}</span>
+                                    <Badge className="bg-green-100 text-green-800 text-xs">Verified</Badge>
+                                </div>
+                            ))}
+                        </CardContent>
+                    </Card>
+
                </div>
                <div className="lg:col-span-2 space-y-6">
                   {partnerData?.businessType === 'Hospital' && (
@@ -240,5 +264,3 @@ export default function CureProfilePage() {
       </div>
   );
 }
-
-    
