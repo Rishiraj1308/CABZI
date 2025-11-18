@@ -34,11 +34,14 @@ async function handleAdminLogin(req: NextRequest) {
 }
 
 async function handleLogout(req: NextRequest) {
+    // In a real app, you would invalidate a server-side session here.
+    // For this mock implementation, we just confirm the action.
     return NextResponse.json({ success: true, message: 'Logout confirmed' });
 }
 
 export async function POST(req: NextRequest, { params }: { params: { action: string[] } }) {
-    const action = params.action[0];
+    // Correctly handle the catch-all route parameter which is an array.
+    const action = params.action.join('/');
     
     switch (action) {
         case 'admin-login':
