@@ -96,7 +96,7 @@ export default function HomePage() {
     <div className={cn("flex flex-col min-h-screen bg-background aurora-background")}>
       <header className="sticky top-0 z-40 w-full border-b bg-background/80 backdrop-blur-sm">
         <div className="container flex h-14 items-center justify-between">
-          <Link href="/" className="flex items-center gap-2">
+          <Link href="/" className="flex items-center gap-2 opacity-0 pointer-events-none" aria-hidden="true">
             <BrandLogo hideText={false} iconClassName="w-8 h-8" />
           </Link>
           <div className="flex items-center gap-2">
@@ -125,12 +125,20 @@ export default function HomePage() {
       </header>
 
       <main className="flex-1">
-        <section className="relative py-24 md:py-32 text-center">
+        <section className="relative py-20 md:py-24 text-center">
           <div className="container" data-aos="fade-up">
+            <motion.div
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.2 }}
+              className="flex justify-center mb-6"
+            >
+              <BrandLogo hideText={true} iconClassName="w-20 h-20" />
+            </motion.div>
             <h1 className="text-5xl md:text-6xl font-extrabold font-headline animate-text-gradient bg-gradient-to-r from-primary via-accent to-primary">
               Move. Heal. Fix.
             </h1>
-            <h2 className="text-2xl sm:text-4xl md:text-5xl font-extrabold font-headline animate-text-gradient bg-gradient-to-r from-primary via-accent to-primary">
+            <h2 className="text-3xl sm:text-4xl md:text-4xl font-extrabold font-headline animate-text-gradient bg-gradient-to-r from-primary via-accent to-primary">
               One App for Urban Life.
             </h2>
             <div className="mt-6 text-lg text-muted-foreground max-w-3xl mx-auto space-y-4">
