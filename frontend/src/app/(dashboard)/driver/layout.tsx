@@ -4,7 +4,7 @@
 import React, { useState, useEffect, useCallback, createContext, useContext } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { LayoutDashboard, LogOut, Sun, Moon, Wrench, MapPin, Map, Shield, Siren, Radio, UserCheck } from 'lucide-react'
+import { LayoutDashboard, LogOut, Sun, Moon, Wrench, MapPin, Map, Shield, Siren, Radio, UserCheck, Landmark, Menu } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet'
@@ -30,6 +30,8 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator } from '@/components/ui/dropdown-menu'
 import { toast } from 'sonner'
 import { Separator } from '@/components/ui/separator'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+
 
 interface PartnerData {
     id: string;
@@ -175,7 +177,7 @@ function DriverNav() {
 }
 
 function ThemeToggle() {
-    const { theme, setTheme } = useTheme()
+    const { theme, setTheme } = useTheme();
     return (
        <Button variant="outline" size="icon" onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} className="h-9 w-9">
             <Sun className="h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
