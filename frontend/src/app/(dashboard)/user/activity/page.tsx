@@ -1,7 +1,7 @@
 
 'use client'
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { 
@@ -15,7 +15,7 @@ import type { RideData, AmbulanceCase, Appointment, GarageRequest, ClientSession
 import { format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Table, TableBody, TableCell, TableRow, TableFooter, TableHead } from '@/components/ui/table';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from '@/components/ui/table';
 import { Separator } from '@/components/ui/separator';
 
 type ActivityItem = (RideData | AmbulanceCase | Appointment | GarageRequest) & { activityType: 'Ride' | 'SOS' | 'Appointment' | 'ResQ' };
@@ -48,13 +48,13 @@ export default function UserActivityPage() {
                 ]);
 
                 const combinedActivities: ActivityItem[] = [
-                    ...ridesSnapshot.docs.map(doc => ({ activityType: 'Ride' as const, id: doc.id, ...doc.data() } as ActivityItem)),
-                    ...casesSnapshot.docs.map(doc => ({ activityType: 'SOS' as const, id: doc.id, ...doc.data() } as ActivityItem)),
-                    ...appointmentsSnapshot.docs.map(doc => ({ activityType: 'Appointment' as const, id: doc.id, ...doc.data() } as ActivityItem)),
-                    ...garageRequestsSnapshot.docs.map(doc => ({ activityType: 'ResQ' as const, id: doc.id, ...doc.data() } as ActivityItem)),
+                    ...ridesSnapshot.docs.map(doc => ({ activityType: 'Ride' as const, id: doc.id, ...doc.data(), title: `Ride to ${doc.data().destination?.address?.split(',')[0] || 'destination'}`, description: `Partner: ${doc.data().driverDetails?.name || 'N/A'}` } as ActivityItem)),
+                    ...casesSnapshot.docs.map(doc => ({ activityType: 'SOS' as const, id: doc.id, ...doc.data(), title: `Emergency SOS`, description: `Hospital: ${doc.data().assignedPartner?.name || 'N/A'}` } as ActivityItem)),
+                    ...appointmentsSnapshot.docs.map(doc => ({ activityType: 'Appointment' as const, id: doc.id, ...doc.data(), title: `Dr. ${doc.data().doctorName}`, description: doc.data().hospitalName || '' } as ActivityItem)),
+                    ...garageRequestsSnapshot.docs.map(doc => ({ activityType: 'ResQ' as const, id: doc.id, ...doc.data(), title: `ResQ: ${doc.data().issue}`, description: `Mechanic: ${doc.data().mechanicName || 'N/A'}` } as ActivityItem)),
                 ];
                 
-                combinedActivities.sort((a, b) => b.createdAt.toMillis() - a.createdAt.toMillis());
+                combinedActivities.sort((a, b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0));
                 
                 setActivities(combinedActivities);
 
@@ -183,4 +183,3 @@ export default function UserActivityPage() {
         </div>
     );
 }
-
