@@ -5,7 +5,7 @@ import { useEffect } from 'react';
 import { useFirebase } from '@/lib/firebase/client-provider';
 import { doc, updateDoc, serverTimestamp, GeoPoint } from 'firebase/firestore';
 import { toast } from 'sonner';
-import { useDriver } from '@/app/(dashboard)/driver/layout';
+import { useDriver } from '@/app/(dashboard)/driver/ClientLayout';
 
 export const useDriverLocation = () => {
     const { db } = useFirebase();
