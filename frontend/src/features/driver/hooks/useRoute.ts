@@ -38,12 +38,7 @@ export function useRoute(start: Coord | null, end: Coord | null) {
 
     fetchRouteData();
     
-    // Optional: Add a timer to refetch the route periodically for live updates
-    const interval = setInterval(fetchRouteData, 30000); // every 30 seconds
-
-    return () => clearInterval(interval);
-
-  }, [start?.lat, start?.lon, end?.lat, end?.lon]);
+  }, [start?.lat, start?.lon, end?.lat, end?.lon]); // Only refetch when start or end points change
 
   return { route, distance, duration };
 }

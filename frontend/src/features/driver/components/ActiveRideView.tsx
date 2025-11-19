@@ -342,6 +342,13 @@ export function ActiveRideView({ activeRide, setActiveRide }: ActiveRideViewProp
                         <p className="font-bold text-lg">{duration ? `~${duration} min` : '...'}</p>
                     </div>
                 </div>
+                 <div className="px-3 pb-3">
+                    <Button asChild size="sm" className="w-full bg-blue-600 hover:bg-blue-700 text-white">
+                        <a href={navigateUrl} target="_blank" rel="noopener noreferrer">
+                            <Navigation className="w-4 h-4 mr-2" /> Navigate with Google Maps
+                        </a>
+                    </Button>
+                </div>
              </CardContent>
         </Card>
         
