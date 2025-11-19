@@ -1,4 +1,3 @@
-
 'use client'
 
 import React, { useEffect, useRef } from 'react'
@@ -108,7 +107,7 @@ export default function HomePage() {
                 One App for Urban Life
                 </h2>
                 <p className="mt-6 text-lg text-muted-foreground max-w-lg mx-auto md:mx-0">
-                    Your all-in-one solution for rides, emergency response, and financial services—seamlessly integrating into your daily routine.
+                    From your morning commute to sudden emergencies, one app handles it all. Curocity begins its journey at AMC, Dibrugarh with rides, rescue, and medical access.
                 </p>
                 <div className="mt-10 flex flex-col sm:flex-row justify-center md:justify-start gap-4">
                 <Button size="lg" className="h-12 text-base btn-glow bg-accent text-accent-foreground hover:bg-accent/90" asChild>
