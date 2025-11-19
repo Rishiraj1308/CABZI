@@ -52,8 +52,11 @@ const fareConfig: {[key: string]: { base: number, perKm: number, serviceFee: num
 }
 
 const GPayIcon = () => (
-    <svg width="32" height="32" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-        <path d="M10.385 10.052v3.917h5.9c-.25 1.55-1.733 3.916-5.9 3.916-3.55 0-6.45-2.933-6.45-6.5S6.835 4.885 10.385 4.885c2.017 0 3.3.85 4.067 1.583l2.55-2.583C15.118 2.085 12.985 1 10.385 1 5.318 1 1.452 4.817 1.452 9.833c0 5.017 3.866 8.834 8.933 8.834 5.3 0 8.6-3.55 8.6-8.633 0-.85-.1-1.483-.233-2.034h-8.367z" fill="#FFF"/>
+    <svg width="40" height="40" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path d="M10.385 10.052v3.917h5.9c-.25 1.55-1.733 3.916-5.9 3.916-3.55 0-6.45-2.933-6.45-6.5S6.835 4.885 10.385 4.885c2.017 0 3.3.85 4.067 1.583l2.55-2.583C15.118 2.085 12.985 1 10.385 1 5.318 1 1.452 4.817 1.452 9.833c0 5.017 3.866 8.834 8.933 8.834 5.3 0 8.6-3.55 8.6-8.633 0-.85-.1-1.483-.233-2.034h-8.367z" fill="#4285F4"/>
+        <path d="M19.283 9.833c0-.85-.1-1.483-.233-2.033H10.385v3.916h5.9c-.25 1.55-1.733 3.917-5.9 3.917-1.35 0-2.6-.45-3.667-1.217l-2.65 2.65A9.01 9.01 0 0010.385 18.5c5.3 0 8.6-3.55 8.6-8.634a8.23 8.23 0 00-.25-2.033h-.085v.001z" fill="#34A853"/>
+        <path d="M4.085 9.833c0-1.767.583-3.4 1.583-4.733L3.05 2.517A8.84 8.84 0 001.452 9.833a8.84 8.84 0 002.633 7.316l2.617-2.616c-1-1.334-1.583-2.967-1.583-4.734z" fill="#FBBC05"/>
+        <path d="M10.385 1c-2.967 0-5.584 1.25-7.384 3.167L5.585 6.45c1-1 2.333-1.567 4.8-1.567 2.017 0 3.3.85 4.067 1.583l2.55-2.583C15.118 2.085 12.985 1 10.385 1z" fill="#EA4335"/>
     </svg>
 );
 const PhonePeIcon = () => (
@@ -182,7 +185,7 @@ export default function RideStatus({ ride, onCancel, isGarageRequest, isAmbulanc
                 </Card>
                 <div className="mt-4 text-center text-sm text-muted-foreground">
                     <p className="font-semibold">Pay driver in cash or use UPI</p>
-                    <div className="flex justify-center gap-4 mt-3">
+                    <div className="flex justify-center gap-2 mt-3">
                          <a href={`upi://pay?pa=driver-upi@oksbi&pn=${driverDetails?.name || 'Driver'}&am=${totalAmount.toFixed(2)}&cu=INR`}><Button variant="outline" className="h-14 w-14 p-0 flex items-center justify-center bg-white"><GPayIcon /></Button></a>
                          <a href={`phonepe://pay?pa=driver-upi@ybl&pn=${driverDetails?.name || 'Driver'}&am=${totalAmount.toFixed(2)}&cu=INR`}><Button variant="outline" className="h-14 w-14 p-0 flex items-center justify-center bg-white"><PhonePeIcon /></Button></a>
                          <a href={`paytmmp://pay?pa=driver-upi@paytm&pn=${driverDetails?.name || 'Driver'}&am=${totalAmount.toFixed(2)}&cu=INR`}><Button variant="outline" className="h-14 w-14 p-0 flex items-center justify-center bg-white"><PaytmIcon /></Button></a>
