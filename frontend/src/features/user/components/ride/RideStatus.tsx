@@ -169,23 +169,6 @@ export default function RideStatus({ ride, onCancel, isGarageRequest, isAmbulanc
             
             <Card>
                 <CardHeader>
-                    <CardTitle className="text-base">Fare Breakdown</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-2 text-sm">
-                    <div className="flex justify-between"><span className="text-muted-foreground">Base Fare</span><span>₹{baseFare.toFixed(2)}</span></div>
-                    <div className="flex justify-between">
-                        <span className="text-muted-foreground">Distance Charge</span>
-                        <div className="text-right">
-                            <span>₹{distanceCharge.toFixed(2)}</span>
-                            <p className="text-xs text-muted-foreground">({distanceKm.toFixed(1)} km @ ₹{perKmRate.toFixed(1)}/km)</p>
-                        </div>
-                    </div>
-                    <div className="flex justify-between"><span className="text-muted-foreground">Taxes & Fees</span><span>₹{taxesAndFees.toFixed(2)}</span></div>
-                </CardContent>
-            </Card>
-
-            <Card>
-                <CardHeader>
                     <CardTitle className="text-base">Payment Methods</CardTitle>
                 </CardHeader>
                 <CardContent>
