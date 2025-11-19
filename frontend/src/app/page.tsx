@@ -90,7 +90,6 @@ export default function HomePage() {
     offset: ["start end", "end start"]
   });
   const height = useTransform(scrollYProgress, [0, 1], ["0%", "100%"]);
-  const isInView = useInView(timelineRef, { once: true, amount: 0.4 });
 
 
   return (
@@ -128,16 +127,16 @@ export default function HomePage() {
       <main className="flex-1">
         <section className="relative py-24 md:py-32 text-center">
           <div className="container" data-aos="fade-up">
-            <h1 className="text-5xl md:text-6xl font-extrabold font-headline animate-text-gradient bg-gradient-to-r from-primary via-accent to-primary">
-              Move. Heal. Fix.
+            <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold font-headline animate-text-gradient bg-gradient-to-r from-primary via-accent to-primary">
+              <span className="whitespace-nowrap">Move. Heal. Fix.</span>
               <br />
-              One App for Real Life.
+              <span className="whitespace-nowrap">One App for Urban Life.</span>
             </h1>
             <div className="mt-6 text-lg text-muted-foreground max-w-3xl mx-auto space-y-4">
                 <p>
                     Curocity is building a practical Super App that connects mobility, medical access, and everyday assistance into one simple platform — starting with our pilot in the AMC Zone, Dibrugarh.
                 </p>
-                <p>
+                <p className="text-base">
                     Whether it’s a ride, on-road rescue, or urgent medical help, Curocity keeps your day running smoothly.
                 </p>
             </div>
