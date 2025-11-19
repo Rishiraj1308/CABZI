@@ -68,6 +68,12 @@ export function ActiveRideView({ activeRide, setActiveRide }: ActiveRideViewProp
       driverLocation, 
       isNavigatingToRider ? riderLocation : destinationLocation
   );
+  
+  // Centralize Invoice ID logic
+  const rideCount = (partnerData?.jobsToday || 0) + 1;
+  const formattedRideCount = rideCount.toString().padStart(3, '0');
+  const partnerIdentifier = partnerData?.partnerId?.split('-')[1] || '0000';
+  const invoiceId = `${partnerIdentifier}-${formattedRideCount}`;
 
   const handleRideStatusUpdate = async (newStatus: RideData['status']) => {
     if (!db || !activeRide || !partnerData?.id) return;
@@ -76,6 +82,11 @@ export function ActiveRideView({ activeRide, setActiveRide }: ActiveRideViewProp
 
     try {
         const updates: any = { status: newStatus };
+        
+        if (newStatus === 'payment_pending') {
+            updates.invoiceId = invoiceId; // Save the invoiceId to Firestore
+        }
+        
         // When trip ends, set partner liveStatus back to online
         if (newStatus === 'payment_pending' || newStatus === 'completed' || newStatus.includes('cancelled')) {
             await updateDoc(partnerRef, { liveStatus: 'online' });
@@ -84,7 +95,7 @@ export function ActiveRideView({ activeRide, setActiveRide }: ActiveRideViewProp
         await updateDoc(rideRef, updates);
         
         // Optimistically update the local state
-        setActiveRide(prev => prev ? { ...prev, status: newStatus } : null);
+        setActiveRide(prev => prev ? { ...prev, status: newStatus, invoiceId: newStatus === 'payment_pending' ? invoiceId : prev.invoiceId } : null);
 
         toast.info("Status Updated", { description: `Ride is now ${newStatus.replace(/_/g, ' ')}` });
     } catch (error) {
@@ -141,11 +152,6 @@ export function ActiveRideView({ activeRide, setActiveRide }: ActiveRideViewProp
     ? `https://www.google.com/maps/dir/?api=1&destination=${destinationLocation.lat},${destinationLocation.lon}`
     : '#';
 
-  // Centralize Invoice ID logic
-  const rideCount = (partnerData?.jobsToday || 0) + 1;
-  const formattedRideCount = rideCount.toString().padStart(3, '0');
-  const partnerIdentifier = partnerData?.partnerId?.split('-')[1] || '0000';
-  const invoiceId = `${partnerIdentifier}-${formattedRideCount}`;
     
    const renderActionButton = () => {
         switch (activeRide.status) {
@@ -247,7 +253,7 @@ export function ActiveRideView({ activeRide, setActiveRide }: ActiveRideViewProp
                 <Card className="mt-6 text-left w-full max-w-sm mx-auto">
                     <CardHeader>
                         <CardTitle>Trip Summary</CardTitle>
-                        <CardDescription>Invoice ID: {invoiceId}</CardDescription>
+                        <CardDescription>Invoice ID: {activeRide.invoiceId || invoiceId}</CardDescription>
                     </CardHeader>
                     <CardContent>
                          <Table>
@@ -341,13 +347,6 @@ export function ActiveRideView({ activeRide, setActiveRide }: ActiveRideViewProp
                         <p className="text-xs text-muted-foreground flex items-center justify-center gap-1"><Clock className="w-3 h-3"/> ETA</p>
                         <p className="font-bold text-lg">{duration ? `~${duration} min` : '...'}</p>
                     </div>
-                </div>
-                 <div className="px-3 pb-3">
-                    <Button asChild size="sm" className="w-full bg-blue-600 hover:bg-blue-700 text-white">
-                        <a href={navigateUrl} target="_blank" rel="noopener noreferrer">
-                            <Navigation className="w-4 h-4 mr-2" /> Navigate with Google Maps
-                        </a>
-                    </Button>
                 </div>
              </CardContent>
         </Card>

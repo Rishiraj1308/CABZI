@@ -47,11 +47,14 @@ export interface RideData {
     phone: string;
     location?: GeoPoint;
     dob?: string;
+    partnerId?: string;
+    jobsToday?: number;
   };
 
   vehicleNumber?: string;
   rideType?: string;
   otp?: string;
+  invoiceId?: string;
 
   fare?: number;
   driverEta?: number;

@@ -121,11 +121,8 @@ export default function RideStatus({ ride, onCancel, isGarageRequest, isAmbulanc
     const rideType = r.rideType || 'Cab (Lite)';
     const config = fareConfig[rideType] || fareConfig['Cab (Lite)'];
     
-    // Consistent invoice ID logic
-    const rideCount = (r.driverDetails?.jobsToday || 0) + 1;
-    const formattedRideCount = rideCount.toString().padStart(3, '0');
-    const partnerIdentifier = r.driverDetails?.partnerId?.split('-')[1] || '0000';
-    const invoiceId = `${partnerIdentifier}-${formattedRideCount}`;
+    // Get invoiceId from ride data
+    const invoiceId = r.invoiceId || 'N/A';
 
     return (
         <motion.div
@@ -160,20 +157,6 @@ export default function RideStatus({ ride, onCancel, isGarageRequest, isAmbulanc
                     </div>
                 </CardContent>
             </Card>
-
-            <Card>
-                <CardHeader>
-                    <CardTitle className="text-base">Fare Breakdown</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-2 text-sm">
-                    <div className="flex justify-between"><span className="text-muted-foreground">Base Fare</span><span>₹{config.base.toFixed(2)}</span></div>
-                     <div className="flex justify-between">
-                        <span className="text-muted-foreground">Distance Charge</span>
-                        <span>₹{(totalAmount - config.base - 5.00).toFixed(2)}</span>
-                    </div>
-                    <div className="flex justify-between"><span className="text-muted-foreground">Taxes & Fees</span><span>₹5.00</span></div>
-                </CardContent>
-            </Card>
             
             <Card>
                 <CardHeader>
@@ -183,15 +166,15 @@ export default function RideStatus({ ride, onCancel, isGarageRequest, isAmbulanc
                     <p className="text-sm font-semibold text-center mb-4">Pay driver in cash or use UPI</p>
                     <div className="flex justify-center gap-4">
                         <a href={`upi://pay?pa=${driverDetails?.phone}@ybl&pn=${driverDetails?.name || 'Driver'}&am=${totalAmount.toFixed(2)}&cu=INR`} className="flex flex-col items-center gap-2 p-2 rounded-lg hover:bg-muted">
-                           <Image src="https://i.ibb.co/5KwF0w5/gpay.png" alt="Google Pay" width={48} height={48} />
+                           <Image src="/images/upi/gpay.png" alt="Google Pay" width={48} height={48} />
                            <span className="text-xs font-semibold">GPay</span>
                         </a>
                         <a href={`phonepe://pay?pa=${driverDetails?.phone}@ybl&pn=${driverDetails?.name || 'Driver'}&am=${totalAmount.toFixed(2)}&cu=INR`} className="flex flex-col items-center gap-2 p-2 rounded-lg hover:bg-muted">
-                           <Image src="https://i.ibb.co/3sN39sK/phonepe.png" alt="PhonePe" width={48} height={48} />
+                           <Image src="/images/upi/phonepe.png" alt="PhonePe" width={48} height={48} />
                              <span className="text-xs font-semibold">PhonePe</span>
                         </a>
                         <a href={`paytmmp://pay?pa=${driverDetails?.phone}@paytm&pn=${driverDetails?.name || 'Driver'}&am=${totalAmount.toFixed(2)}&cu=INR`} className="flex flex-col items-center gap-2 p-2 rounded-lg hover:bg-muted">
-                           <Image src="https://i.ibb.co/LSTP58s/paytm.png" alt="Paytm" width={48} height={48} />
+                           <Image src="/images/upi/paytm.png" alt="Paytm" width={48} height={48} />
                             <span className="text-xs font-semibold">Paytm</span>
                         </a>
                     </div>
