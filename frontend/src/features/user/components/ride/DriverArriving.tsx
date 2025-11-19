@@ -320,27 +320,21 @@ export default function DriverArriving({ ride, onCancel }: DriverArrivingProps) 
                             <p className="text-xs text-muted-foreground">Share this OTP to start</p>
                         </div>
                     </div>
-                     <Accordion type="single" collapsible className="w-full mt-2">
-                      <AccordionItem value="item-1">
-                        <AccordionTrigger>View Trip Details</AccordionTrigger>
-                        <AccordionContent>
-                          <div className="space-y-3 pt-2">
-                            <div className="flex items-start gap-3 text-sm">
-                                <MapPin className="w-4 h-4 mt-1 text-green-500"/>
-                                <div><p className="font-semibold text-muted-foreground text-xs">FROM</p><p>{ride.pickup?.address}</p></div>
-                            </div>
-                            <div className="flex items-start gap-3 text-sm">
-                                <Route className="w-4 h-4 mt-1 text-red-500"/>
-                                <div><p className="font-semibold text-muted-foreground text-xs">TO</p><p>{ride.destination?.address}</p></div>
-                            </div>
-                            <div className="flex items-start gap-3 text-sm">
-                                <IndianRupee className="w-4 h-4 mt-1 text-primary"/>
-                                <div><p className="font-semibold text-muted-foreground text-xs">FARE</p><p className="font-bold text-base">₹{ride.fare}</p></div>
-                            </div>
-                          </div>
-                        </AccordionContent>
-                      </AccordionItem>
-                    </Accordion>
+                     <Separator className="my-3"/>
+                      <div className="space-y-3 pt-2">
+                        <div className="flex items-start gap-3 text-sm">
+                            <MapPin className="w-4 h-4 mt-1 text-green-500"/>
+                            <div><p className="font-semibold text-muted-foreground text-xs">FROM</p><p>{ride.pickup?.address}</p></div>
+                        </div>
+                        <div className="flex items-start gap-3 text-sm">
+                            <Route className="w-4 h-4 mt-1 text-red-500"/>
+                            <div><p className="font-semibold text-muted-foreground text-xs">TO</p><p>{ride.destination?.address}</p></div>
+                        </div>
+                        <div className="flex items-start gap-3 text-sm">
+                            <IndianRupee className="w-4 h-4 mt-1 text-primary"/>
+                            <div><p className="font-semibold text-muted-foreground text-xs">FARE</p><p className="font-bold text-base">₹{ride.fare}</p></div>
+                        </div>
+                      </div>
                 </CardContent>
             </Card>
 
@@ -399,4 +393,3 @@ export default function DriverArriving({ ride, onCancel }: DriverArrivingProps) 
     </div>
   );
 }
-
