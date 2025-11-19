@@ -66,7 +66,7 @@ const ecosystemCards = [
 const dayTimelineItems = [
     { time: "Daily Commute", title: "The Morning Rush", description: "Start your day stress-free with Curocity's PATH service. Reliable rides, fair fares, no surge pricing.", icon: Car },
     { time: "Sudden Breakdown", title: "Roadside ResQ", description: "Car trouble? One tap brings a verified ResQ mechanic to your location for on-the-spot repairs.", icon: Wrench },
-    { time: "Financial Need", title: "Curocity Bank", description: "Unexpected expense? Get instant, fair-interest credit directly from your Curocity wallet, no questions asked.", icon: Landmark },
+    { time: "Financial Need", title: "CuroBank", description: "Unexpected expense? Get instant, fair-interest credit directly from your Curocity wallet, no questions asked.", icon: Landmark },
     { time: "Household Needs", title: "Home Services", description: "Need a plumber or electrician? Curocity connects you with trusted local professionals.", icon: Home },
     { time: "Feeling Unwell", title: "Doctor Visit", description: "Instantly book an in-clinic or video appointment with a specialist.", icon: Calendar },
     { time: "Health Checkup", title: "Lab Tests at Home", description: "A certified phlebotomist will collect your sample from the comfort of your home.", icon: FlaskConical },
@@ -129,17 +129,24 @@ export default function HomePage() {
         <section className="relative py-24 md:py-32 text-center">
           <div className="container" data-aos="fade-up">
             <h1 className="text-5xl md:text-6xl font-extrabold font-headline animate-text-gradient bg-gradient-to-r from-primary via-accent to-primary">
-              Move. Heal. Fix. <br /> One App for Your Urban Life.
+              Move. Heal. Fix.
+              <br />
+              One App for Real Life.
             </h1>
-            <p className="mt-6 text-lg text-muted-foreground max-w-2xl mx-auto">
-              Curocity is India's first Super App for mobility, safety, and daily life. From fair-fare rides and 24/7 roadside assistance to emergency ambulance dispatch, we've integrated all your essential urban needs into one powerful, seamless platform.
-            </p>
+            <div className="mt-6 text-lg text-muted-foreground max-w-3xl mx-auto space-y-4">
+                <p>
+                    Curocity is building a practical Super App that connects mobility, medical access, and everyday assistance into one simple platform — starting with our pilot in the AMC Zone, Dibrugarh.
+                </p>
+                <p>
+                    Whether it’s a ride, on-road rescue, or urgent medical help, Curocity keeps your day running smoothly.
+                </p>
+            </div>
             <div className="mt-10 flex justify-center gap-4">
               <Button size="lg" className="btn-glow bg-accent text-accent-foreground hover:bg-accent/90" asChild>
-                <Link href="/login?role=user">Get Started <ArrowRight className="ml-2 h-5 w-5" /></Link>
+                <Link href="/login?role=user">▶ Get Started</Link>
               </Button>
               <Button size="lg" variant="outline" asChild>
-                <Link href="#ecosystem">Explore Ecosystem</Link>
+                <Link href="#ecosystem">▶ Explore Our Vision</Link>
               </Button>
             </div>
           </div>
