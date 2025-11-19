@@ -12,7 +12,7 @@ export const dispatchEmergency = async (caseData: any, caseId: string) => {
 
     await db.runTransaction(async (transaction) => {
         const hospitalsSnapshot = await transaction.get(
-            db.collection("ambulances").where("isOnline", "==", true)
+            db.collection("curePartners").where("isOnline", "==", true).where("isErFull", "!=", true)
         );
 
         if (hospitalsSnapshot.empty) {
@@ -49,7 +49,8 @@ export const dispatchEmergency = async (caseData: any, caseId: string) => {
                 data: { type: "new_emergency_request", caseId, ...caseData },
                 token: target.fcmToken
             });
-            transaction.update(caseRef, { status: "dispatched", partnerId: target.id });
+            // Update status immediately to prevent re-dispatch
+            transaction.update(caseRef, { status: "dispatched", 'assignedPartner.id': target.id });
         } catch (e) {
             console.error(`Failed to send notification to ${target.id}:`, e);
             transaction.update(caseRef, { rejectedBy: FieldValue.arrayUnion(target.id) });

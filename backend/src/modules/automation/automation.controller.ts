@@ -13,7 +13,7 @@ export const onNewResQPartner = onDocumentCreated("mechanics/{id}", (event) => {
     if (data) callAutomationWebhook({ id: event.params.id, ...data, type: 'ResQ' }, "resq");
 });
 
-export const onNewCurePartner = onDocumentCreated("ambulances/{id}", (event) => {
+export const onNewCurePartner = onDocumentCreated("curePartners/{id}", (event) => { // Changed from "ambulances" to "curePartners"
     const data = event.data?.data();
     if (data) callAutomationWebhook({ id: event.params.id, ...data, type: 'Cure' }, "cure");
 });

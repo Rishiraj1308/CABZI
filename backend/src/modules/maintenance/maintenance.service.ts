@@ -28,7 +28,7 @@ export const cleanup = async () => {
             cleanCollection("users", "isOnline"),
             cleanCollection("pathPartners", "isOnline"),
             cleanCollection("mechanics", "isOnline"),
-            cleanCollection("ambulances", "isOnline")
+            cleanCollection("curePartners", "isOnline") // Changed from "ambulances" to "curePartners"
         ]);
     } catch (error) {
         console.error("Error during status cleanup:", error);

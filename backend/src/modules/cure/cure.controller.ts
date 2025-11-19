@@ -31,13 +31,12 @@ export const emergencyCaseUpdater = onDocumentUpdated("emergencyCases/{caseId}",
     if (ra.length > rb.length) {
         const who = ra.find((id: string) => !rb.includes(id));
         message = `Case rejected by partner ${who}. Re-dispatching.`;
+        if (after.status === "pending") {
+          await dispatchEmergencyService(after, caseId);
+        }
     }
 
     if (message) {
         await logRef.add({ timestamp: FieldValue.serverTimestamp(), message, before, after });
-    }
-
-    if (ra.length > rb.length && after.status === "pending") {
-        await dispatchEmergencyService(after, caseId);
     }
 });
