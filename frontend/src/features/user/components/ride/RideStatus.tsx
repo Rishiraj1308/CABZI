@@ -51,9 +51,26 @@ const fareConfig: {[key: string]: { base: number, perKm: number, serviceFee: num
     'Curocity Pink': { base: 50, perKm: 12, serviceFee: 30 },
 }
 
-const GPayIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 256 256"><path fill="#4285F4" d="M204.3 106.2c0-10-1.6-19.5-4.5-28.3h-70.3v34.4h39.9c-1.6 11.2-6.4 20.8-13.8 26.5v22.2h28.7c16.8-15.5 26.6-38.3 26.6-64.8z"/><path fill="#34A853" d="M129.5 209c25.9 0 47.9-8.5 63.8-23.1l-28.7-22.2c-8.5 5.7-19.6 9-35.1 9-27.1 0-50-18.1-58.2-42.6H42.2v23C58.3 189.5 91.5 209 129.5 209z"/><path fill="#FBBC05" d="M71.3 121.1c-1.9-5.7-3-11.8-3-18s1.1-12.3 3-18V63H42.2C35.9 76.5 32 91.8 32 108.1s3.9 31.6 10.2 45.1l29.1-22.1z"/><path fill="#EA4335" d="M129.5 61.1c14.1 0 26.9 4.8 36.9 14.3l25.5-25.5C177.4 33.4 155.4 23 129.5 23C91.5 23 58.3 42.5 42.2 63l29.1 22.1C79.5 61.2 102.4 43 129.5 61.1z"/></svg>;
-const PhonePeIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="#5f259f" d="M17.4 14.8c-.8-1.5-2.2-2-3.3-2.9-1-.8-1.2-1.2-1.2-1.9 0-.6.4-1.1 1.2-1.1.9 0 1.9.3 2.5 1l2.2-1.4c-.9-1.5-2.5-2.5-4.7-2.5-2.8 0-4.9 1.6-4.9 4.1 0 2.4 1.5 3.5 3.8 5 .8.6 1.3 1 1.3 1.8 0 .6-.4 1.2-1.3 1.2-1.2 0-2.1-.5-2.8-1.3l-2.2 1.4c1.1 1.8 2.9 2.8 5 2.8 3.2.1 5.3-1.6 5.3-4.2.1-2.2-1-3.6-2.5-4.8z"/><path fill="#5f259f" d="M22.9 13.9h-3.3v-1.9H23v-2.3h-3.3V7.8h-2.3v1.9h-1.6v2.3h1.6v1.9h-1.6v2.3h1.6v1.7h2.3v-1.7h3.3v2.3h2.2V13.9z"/></svg>;
-const PaytmIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 118 41"><path fill="#00b9f1" d="M83.1 24.5h-5.2V41H72v-8.2H58.2v8.2h-5.9V16.6h19.7v7.9zm-5.2-2.7h-8.6v2.7h8.6v-2.7zM111.4 24.5h-5.2V41h-5.9v-8.2H86.4v8.2h-5.9V16.6h19.7v7.9zm-5.2-2.7h-8.6v2.7h8.6v-2.7zM42.2 24.5H29.5l6.5-7.9h8.3l-2.1 7.9zM22.9 41l13.2-24.4h-9.7L13.2 41h10.3-.6zM0 41l13.2-24.4H3.5L0 41zM51.9 41l13.2-24.4h-9.7L42.2 41h10.3-.6z"/></svg>;
+const GPayIcon = () => (
+    <svg width="32" height="32" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path d="M10.385 10.052v3.917h5.9c-.25 1.55-1.733 3.916-5.9 3.916-3.55 0-6.45-2.933-6.45-6.5S6.835 4.885 10.385 4.885c2.017 0 3.3.85 4.067 1.583l2.55-2.583C15.118 2.085 12.985 1 10.385 1 5.318 1 1.452 4.817 1.452 9.833c0 5.017 3.866 8.834 8.933 8.834 5.3 0 8.6-3.55 8.6-8.633 0-.85-.1-1.483-.233-2.034h-8.367z" fill="#FFF"/>
+    </svg>
+);
+const PhonePeIcon = () => (
+    <svg width="32" height="32" viewBox="0 0 73 73" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M5.961 46.543l3.327 3.327a3.414 3.414 0 004.828 0l8.653-8.654a23.328 23.328 0 01-13.48-13.48l-8.653 8.653a3.414 3.414 0 000 4.827z" fill="#9554C8"/>
+        <path d="M10.789 67.21l16.142-16.142a23.41 23.41 0 00-6.195-23.953L4.593 53.257a3.414 3.414 0 000 4.827l6.196 6.196a3.414 3.414 0 002.413.93z" fill="#9554C8"/>
+        <path d="M43.714 5.258l-3.326-3.327a3.414 3.414 0 00-4.828 0L26.906 10.585a23.327 23.327 0 0113.48 13.48l8.654-8.654a3.414 3.414 0 000-4.826z" fill="#AF65E0"/>
+        <path d="M23.633 26.906L10.585 13.858a23.327 23.327 0 0123.953-6.195L50.68 23.805a23.41 23.41 0 01-6.195 23.953l-2.414-2.414a19.98 19.98 0 005.258-14.417c0-5.44-2.127-10.354-5.696-14.017z" fill="#AF65E0"/>
+        <path d="M67.939 42.777l-6.196-6.196a3.414 3.414 0 00-4.827 0l-6.196 6.196-2.414 2.414 8.61 8.61a3.414 3.414 0 004.828 0l6.195-6.195z" fill="#9554C8"/>
+    </svg>
+);
+const PaytmIcon = () => (
+    <svg width="50" height="18" viewBox="0 0 50 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M34.11 0H16.16L0 18h16.03l8.02-8.91L32.1 18H48L34.11 0z" fill="#00B9F1"/>
+        <path d="M16.16 0L0 18h8.02l16.15-18H16.16z" fill="#002970"/>
+    </svg>
+);
 
 
 export default function RideStatus({ ride, onCancel, isGarageRequest, isAmbulanceCase, onDone }: RideStatusProps) {
@@ -165,10 +182,10 @@ export default function RideStatus({ ride, onCancel, isGarageRequest, isAmbulanc
                 </Card>
                 <div className="mt-4 text-center text-sm text-muted-foreground">
                     <p className="font-semibold">Pay driver in cash or use UPI</p>
-                    <div className="flex justify-center gap-2 mt-3">
-                         <a href={`gpay://upi/pay?pa=driver-upi@oksbi&pn=${driverDetails?.name || 'Driver'}&am=${totalAmount.toFixed(2)}&cu=INR`}><Button variant="outline" className="h-12 w-12 p-0"><GPayIcon /></Button></a>
-                         <a href={`phonepe://pay?pa=driver-upi@ybl&pn=${driverDetails?.name || 'Driver'}&am=${totalAmount.toFixed(2)}&cu=INR`}><Button variant="outline" className="h-12 w-12 p-0"><PhonePeIcon /></Button></a>
-                         <a href={`paytmmp://pay?pa=driver-upi@paytm&pn=${driverDetails?.name || 'Driver'}&am=${totalAmount.toFixed(2)}&cu=INR`}><Button variant="outline" className="h-12 w-12 p-0"><PaytmIcon /></Button></a>
+                    <div className="flex justify-center gap-4 mt-3">
+                         <a href={`upi://pay?pa=driver-upi@oksbi&pn=${driverDetails?.name || 'Driver'}&am=${totalAmount.toFixed(2)}&cu=INR`}><Button variant="outline" className="h-14 w-14 p-0 flex items-center justify-center bg-white"><GPayIcon /></Button></a>
+                         <a href={`phonepe://pay?pa=driver-upi@ybl&pn=${driverDetails?.name || 'Driver'}&am=${totalAmount.toFixed(2)}&cu=INR`}><Button variant="outline" className="h-14 w-14 p-0 flex items-center justify-center bg-white"><PhonePeIcon /></Button></a>
+                         <a href={`paytmmp://pay?pa=driver-upi@paytm&pn=${driverDetails?.name || 'Driver'}&am=${totalAmount.toFixed(2)}&cu=INR`}><Button variant="outline" className="h-14 w-14 p-0 flex items-center justify-center bg-white"><PaytmIcon /></Button></a>
                     </div>
                     <p className="text-xs mt-4">Waiting for driver to confirm payment...</p>
                 </div>
