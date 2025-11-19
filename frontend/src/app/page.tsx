@@ -134,10 +134,11 @@ export default function HomePage() {
             </h2>
             <div className="mt-6 text-lg text-muted-foreground max-w-3xl mx-auto space-y-4">
                 <p>
-                    Curocity is building a practical Super App that connects mobility, medical access, and everyday assistance into one simple platform — starting with our pilot in the AMC Zone, Dibrugarh.
+                From your morning commute to sudden emergencies, one app handles it all.
+                
                 </p>
                 <p className="text-base">
-                    Whether it’s a ride, on-road rescue, or urgent medical help, Curocity keeps your day running smoothly.
+                Curocity begins its journey at AMC, Dibrugarh with rides, rescue, and medical access.
                 </p>
             </div>
             <div className="mt-10 flex justify-center gap-4">

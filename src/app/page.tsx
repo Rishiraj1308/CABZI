@@ -134,7 +134,7 @@ export default function HomePage() {
             </h2>
             <div className="mt-6 text-lg text-muted-foreground max-w-3xl mx-auto space-y-4">
                 <p>
-                    From your morning commute to sudden emergencies, one app handles it all. Curocity begins its journey at AMC, Dibrugarh with rides, rescue, and medical access.
+                From your morning commute to sudden emergencies, one app handles it all. Curocity begins its journey at AMC, Dibrugarh with rides, rescue, and medical access.
                 </p>
             </div>
             <div className="mt-10 flex justify-center gap-4">
@@ -279,3 +279,5 @@ export default function HomePage() {
     </div>
   )
 }
+
+    
