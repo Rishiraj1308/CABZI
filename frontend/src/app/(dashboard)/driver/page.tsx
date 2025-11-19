@@ -22,7 +22,7 @@ import type { RideData } from '@/lib/types'
   
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
-import { Star, History, IndianRupee, Power, Route, MapPin } from 'lucide-react'
+import { Star, History, IndianRupee, Power, Route, MapPin, Car } from 'lucide-react'
 import { toast } from 'sonner'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useDriver } from './layout'
@@ -99,7 +99,6 @@ export default function DriverDashboardPage() {
 
 
     const ridesQ = query(collection(db, 'rides'), where('status', '==', 'searching'));
-    console.log('✅ Driver listener attached');
 
     const unsub = onSnapshot(ridesQ, (snapshot) => {
       const normalize = (s: string) => (s || '').toLowerCase().replace(/[\s\-\(\)]/g, '');
@@ -111,7 +110,7 @@ export default function DriverDashboardPage() {
         const rideType = normalize(ride.rideType || '');
 
         // respect 'rejectedBy' and vehicle type match
-        if (!ride.rejectedBy?.includes(partnerData.id) && rideType.includes(driverType)) {
+        if (!ride.rejectedBy?.includes(partnerData.id!) && rideType.includes(driverType)) {
           matches.push(ride);
         }
       });
@@ -120,7 +119,6 @@ export default function DriverDashboardPage() {
         const next = matches[0];
         setJobRequest(next);
         notificationSoundRef.current?.play().catch(() => {});
-        console.log('✅ Ride delivered to driver:', next);
 
         // Driver -> pickup ETA/distance via OSRM
         const driverLoc = partnerData.currentLocation as any; // expected Firestore GeoPoint
@@ -149,7 +147,7 @@ export default function DriverDashboardPage() {
     });
 
     return () => unsub();
-  }, [db, partnerData?.id, partnerData?.isOnline, partnerData?.vehicleType, activeRide]);
+  }, [db, partnerData, activeRide]);
 
   /** =================================================
    *  Check/attach active ride on mount & keep updated

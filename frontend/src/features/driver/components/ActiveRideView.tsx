@@ -1,12 +1,12 @@
 
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, Dispatch, SetStateAction } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import { Navigation, CheckCircle, Phone, Route, Clock, MessageSquare, MapPin, IndianRupee, Star, PartyPopper, XCircle, User } from 'lucide-react';
+import { Navigation, CheckCircle, Phone, Route, Clock, MessageSquare, MapPin, IndianRupee, Star, PartyPopper, XCircle, User, BadgeCheck } from 'lucide-react';
 import { RideData } from '@/lib/types';
 import { useFirebase } from '@/lib/firebase/client-provider';
 import { doc, updateDoc } from 'firebase/firestore';
@@ -39,7 +39,7 @@ const LiveMap = dynamic(() => import('@/features/user/components/ride/LiveMap'),
 
 interface ActiveRideViewProps {
   activeRide: RideData;
-  setActiveRide: (ride: RideData | null) => void;
+  setActiveRide: Dispatch<SetStateAction<RideData | null>>;
 }
 
 // Define fare configuration for consistent calculation
@@ -383,3 +383,5 @@ const ActiveRideView: React.FC<ActiveRideViewProps> = ({ activeRide, setActiveRi
     </motion.div>
   );
 };
+
+export default ActiveRideView;
