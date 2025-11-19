@@ -4,7 +4,7 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
-import { Siren, Star, Wrench, Car } from 'lucide-react';
+import { Siren, Star, Wrench, Car, IndianRupee, MapPin, Route, PartyPopper } from 'lucide-react';
 import type { RideData, GarageRequest, AmbulanceCase } from '@/lib/types';
 import { toast } from 'sonner';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -24,7 +24,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import dynamic from 'next/dynamic';
 import MiniMap from '@/features/user/components/ride/MiniMap';
-
+import { Separator } from '@/components/ui/separator';
 
 const DriverArriving = dynamic(() => import('@/features/user/components/ride/DriverArriving'), {
     ssr: false,
@@ -39,6 +39,16 @@ interface RideStatusProps {
     isAmbulanceCase?: boolean;
     onCancel: () => void;
     onDone: () => void;
+}
+
+// Define fare configuration for consistent calculation
+const fareConfig: {[key: string]: { base: number, perKm: number, serviceFee: number }} = {
+    'Bike': { base: 20, perKm: 5, serviceFee: 0 },
+    'Auto': { base: 30, perKm: 8, serviceFee: 0 }, 
+    'Cab (Lite)': { base: 40, perKm: 12, serviceFee: 20 },
+    'Cab (Prime)': { base: 50, perKm: 15, serviceFee: 25 },
+    'Cab (XL)': { base: 60, perKm: 18, serviceFee: 30 },
+    'Curocity Pink': { base: 50, perKm: 12, serviceFee: 30 },
 }
 
 export default function RideStatus({ ride, onCancel, isGarageRequest, isAmbulanceCase, onDone }: RideStatusProps) {
@@ -108,6 +118,54 @@ export default function RideStatus({ ride, onCancel, isGarageRequest, isAmbulanc
       </div>
   );
   
+  const renderPaymentView = () => {
+    const totalAmount = (ride as RideData).fare || 0;
+    const rideType = (ride as RideData).rideType || 'Cab (Lite)';
+    const config = fareConfig[rideType] || fareConfig['Cab (Lite)'];
+    
+    const taxesAndFees = 5.00;
+    const baseFare = config.base;
+    const distanceCharge = totalAmount - baseFare - taxesAndFees;
+    const distanceKm = (ride as RideData).distance || (distanceCharge / config.perKm) || 0;
+    const perKmRate = distanceKm > 0 ? (distanceCharge / distanceKm) : config.perKm;
+
+    return (
+        <Card className="w-full max-w-md mx-auto h-full flex flex-col shadow-2xl justify-center">
+            <div className="text-center p-4">
+                <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center border-4 border-primary/20 mb-4">
+                   <IndianRupee className="w-8 h-8 text-primary"/>
+                </div>
+                <h2 className="text-2xl font-bold">Payment Due</h2>
+                <p className="text-muted-foreground">Please pay the driver in cash.</p>
+                <Card className="mt-6 text-left w-full">
+                    <CardHeader>
+                        <CardTitle>Final Bill</CardTitle>
+                        <CardDescription>Ride with {driverDetails?.name}</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                         <div className="space-y-2 text-sm">
+                            <div className="flex justify-between"><span className="text-muted-foreground">Base Fare</span><span>₹{baseFare.toFixed(2)}</span></div>
+                            <div className="flex justify-between">
+                                <span className="text-muted-foreground">Distance Charge</span>
+                                <div className="text-right">
+                                    <span>₹{distanceCharge.toFixed(2)}</span>
+                                    <p className="text-xs text-muted-foreground">({distanceKm.toFixed(1)} km @ ₹{perKmRate.toFixed(1)}/km)</p>
+                                </div>
+                            </div>
+                            <div className="flex justify-between"><span className="text-muted-foreground">Taxes & Fees</span><span>₹{taxesAndFees.toFixed(2)}</span></div>
+                        </div>
+                        <Separator className="my-4"/>
+                        <div className="flex justify-between text-xl font-bold text-primary"><span>Total Amount</span><span>₹{totalAmount.toFixed(2)}</span></div>
+                    </CardContent>
+                </Card>
+                <div className="mt-4 text-center text-sm text-muted-foreground">
+                    <p>Waiting for driver to confirm payment...</p>
+                </div>
+            </div>
+        </Card>
+    );
+  }
+
   const renderCompletedView = () => (
      <Card className="w-full max-w-md mx-auto h-full flex flex-col shadow-2xl justify-center">
         <div className="text-center p-4">
@@ -150,6 +208,7 @@ export default function RideStatus({ ride, onCancel, isGarageRequest, isAmbulanc
 
   // Main Render Logic
   if (ride.status === 'searching' || ride.status === 'pending') return renderSearchingView();
+  if (ride.status === 'payment_pending') return renderPaymentView();
   if (ride.status === 'completed') return renderCompletedView();
   
   const pickupLocation = (ride as RideData).pickup?.location;
@@ -159,3 +218,4 @@ export default function RideStatus({ ride, onCancel, isGarageRequest, isAmbulanc
     <DriverArriving ride={ride as RideData} onCancel={onCancel} />
   );
 }
+
