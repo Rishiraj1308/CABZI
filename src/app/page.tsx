@@ -129,17 +129,23 @@ export default function HomePage() {
         <section className="relative py-24 md:py-32 text-center">
           <div className="container" data-aos="fade-up">
             <h1 className="text-5xl md:text-6xl font-extrabold font-headline animate-text-gradient bg-gradient-to-r from-primary via-accent to-primary">
-              Move. Heal. Fix. <br /> One App for Your Urban Life.
+                Move. Heal. Fix.
+                <br />
+                One App for Real Life.
             </h1>
             <p className="mt-6 text-lg text-muted-foreground max-w-2xl mx-auto">
-              Curocity is India's first Super App for mobility, safety, and daily life. From fair-fare rides and 24/7 roadside assistance to emergency ambulance dispatch, we've integrated all your essential urban needs into one powerful, seamless platform.
+                Curocity brings mobility, medical access and everyday services under one platform — starting with our pilot in the AMC Zone, Dibrugarh.
+                <br />
+                <span className="text-sm">
+                    Future: fair rides, emergency rescue, pharmacy, lab tests, home services and financial tools for partners.
+                </span>
             </p>
             <div className="mt-10 flex justify-center gap-4">
               <Button size="lg" className="btn-glow bg-accent text-accent-foreground hover:bg-accent/90" asChild>
                 <Link href="/login?role=user">Get Started <ArrowRight className="ml-2 h-5 w-5" /></Link>
               </Button>
               <Button size="lg" variant="outline" asChild>
-                <Link href="#ecosystem">Explore Ecosystem</Link>
+                <Link href="#ecosystem">Explore Vision</Link>
               </Button>
             </div>
           </div>
