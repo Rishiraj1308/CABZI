@@ -38,6 +38,8 @@ import { Separator } from '@/components/ui/separator';
 import { Table, TableBody, TableCell, TableRow, TableFooter, TableHead } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
 import dynamic from 'next/dynamic';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+
 
 const LiveMap = dynamic(() => import('@/features/user/components/ride/LiveMap'), {
     ssr: false,
@@ -272,32 +274,55 @@ export default function DriverArriving({ ride, onCancel }: DriverArrivingProps) 
                 </div>
 
             <Card className="shadow-none border">
-                <CardContent className="p-4 flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                        <Avatar className="w-16 h-16">
-                            <AvatarImage src={driverDetails?.photoUrl || `https://i.pravatar.cc/150?u=${ride.driverId}`} />
-                            <AvatarFallback>{driverDetails?.name?.charAt(0) || 'D'}</AvatarFallback>
-                        </Avatar>
-                        <div>
-                            <p className="font-bold text-lg flex items-center gap-2">
-                                {driverDetails?.name || 'Driver'} 
-                                <BadgeCheck className="w-5 h-5 text-green-500"/>
-                            </p>
-                            <p className="text-sm text-muted-foreground font-semibold">{ride.vehicleNumber}</p>
-                            <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                                <div className="flex items-center gap-1">
-                                    <Star className="w-3 h-3 text-amber-400 fill-amber-400" />
-                                    <span>{driverDetails?.rating?.toFixed(1) || '5.0'}</span>
+                <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                            <Avatar className="w-16 h-16">
+                                <AvatarImage src={driverDetails?.photoUrl || `https://i.pravatar.cc/150?u=${ride.driverId}`} />
+                                <AvatarFallback>{driverDetails?.name?.charAt(0) || 'D'}</AvatarFallback>
+                            </Avatar>
+                            <div>
+                                <p className="font-bold text-lg flex items-center gap-2">
+                                    {driverDetails?.name || 'Driver'} 
+                                    <BadgeCheck className="w-5 h-5 text-green-500"/>
+                                </p>
+                                <p className="text-sm text-muted-foreground font-semibold">{ride.vehicleNumber}</p>
+                                <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                                    <div className="flex items-center gap-1">
+                                        <Star className="w-3 h-3 text-amber-400 fill-amber-400" />
+                                        <span>{driverDetails?.rating?.toFixed(1) || '5.0'}</span>
+                                    </div>
+                                    {driverAge && <span>{driverAge} yrs</span>}
                                 </div>
-                                {driverAge && <span>{driverAge} yrs</span>}
                             </div>
                         </div>
+                        
+                        <div className="text-right">
+                            <p className="text-4xl font-extrabold tracking-[0.1em]">{ride.otp}</p>
+                            <p className="text-xs text-muted-foreground">Share this OTP to start</p>
+                        </div>
                     </div>
-                    
-                    <div className="text-right">
-                        <p className="text-4xl font-extrabold tracking-[0.1em]">{ride.otp}</p>
-                        <p className="text-xs text-muted-foreground">Share this OTP to start</p>
-                    </div>
+                     <Accordion type="single" collapsible className="w-full mt-2">
+                      <AccordionItem value="item-1">
+                        <AccordionTrigger>View Trip Details</AccordionTrigger>
+                        <AccordionContent>
+                          <div className="space-y-3 pt-2">
+                            <div className="flex items-start gap-3 text-sm">
+                                <MapPin className="w-4 h-4 mt-1 text-green-500"/>
+                                <div><p className="font-semibold text-muted-foreground text-xs">FROM</p><p>{ride.pickup?.address}</p></div>
+                            </div>
+                            <div className="flex items-start gap-3 text-sm">
+                                <Route className="w-4 h-4 mt-1 text-red-500"/>
+                                <div><p className="font-semibold text-muted-foreground text-xs">TO</p><p>{ride.destination?.address}</p></div>
+                            </div>
+                            <div className="flex items-start gap-3 text-sm">
+                                <IndianRupee className="w-4 h-4 mt-1 text-primary"/>
+                                <div><p className="font-semibold text-muted-foreground text-xs">FARE</p><p className="font-bold text-base">₹{ride.fare}</p></div>
+                            </div>
+                          </div>
+                        </AccordionContent>
+                      </AccordionItem>
+                    </Accordion>
                 </CardContent>
             </Card>
 
