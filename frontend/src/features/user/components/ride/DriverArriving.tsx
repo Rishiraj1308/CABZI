@@ -59,7 +59,6 @@ export default function DriverArriving({ ride, onCancel }: DriverArrivingProps) 
   const [distKm, setDistKm] = useState<number | null>(null);
   const [routeGeometry, setRouteGeometry] = useState<any | null>(null);
   const [isCancelling, setIsCancelling] = useState(false);
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
   
   // Watch driver's live location
   useEffect(() => {
@@ -233,7 +232,7 @@ export default function DriverArriving({ ride, onCancel }: DriverArrivingProps) 
                  <Dialog>
                     <DialogTrigger asChild>
                         <Button variant="outline" className="flex-1 h-12">
-                            <Shield className="w-5 h-5 mr-2"/> Safety
+                            <Shield className="w-5 h-5 mr-2"/> Safety Toolkit
                         </Button>
                     </DialogTrigger>
                     <DialogContent>
@@ -248,8 +247,10 @@ export default function DriverArriving({ ride, onCancel }: DriverArrivingProps) 
                         </div>
                     </DialogContent>
                 </Dialog>
-                <Button variant="outline" className="flex-1 h-12" onClick={handleShareRide}>
-                   <Share2 className="w-5 h-5 mr-2" /> Share
+                 <Button asChild size="sm" className="flex-1 h-12 bg-blue-600 hover:bg-blue-700 text-white">
+                    <a href={navigateUrl} target="_blank" rel="noopener noreferrer">
+                        <Navigation className="w-4 h-4 mr-2" /> Navigate
+                    </a>
                 </Button>
             </div>
             
@@ -355,25 +356,47 @@ export default function DriverArriving({ ride, onCancel }: DriverArrivingProps) 
                     </a>
                 </Button>
             </div>
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button variant="destructive" className="w-full h-12" disabled={isCancelling}>
-                    {isCancelling ? 'Cancelling...' : 'Cancel Ride'}
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                    <AlertDialogDescription>A cancellation fee may apply. This action cannot be undone.</AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                    <AlertDialogCancel>Go Back</AlertDialogCancel>
-                    <AlertDialogAction onClick={handleCancelClick} className="bg-destructive hover:bg-destructive/90">Confirm Cancellation</AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
+            
+            <div className="flex gap-4">
+                <Dialog>
+                    <DialogTrigger asChild>
+                        <Button variant="outline" className="flex-1 h-12">
+                            <Shield className="w-5 h-5 mr-2"/> Safety Toolkit
+                        </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                        <DialogHeader>
+                            <DialogTitle>Safety Toolkit</DialogTitle>
+                            <DialogDescription>Your safety is our priority. Use these tools if you feel unsafe.</DialogDescription>
+                        </DialogHeader>
+                        <div className="py-4 space-y-2">
+                            <Button onClick={handleShareRide} variant="outline" className="w-full justify-start gap-2"><Share2 className="w-4 h-4"/> Share Ride Status</Button>
+                            <Button variant="outline" className="w-full justify-start gap-2"><a href="tel:112"><Phone className="w-4 h-4"/> Call Emergency Services (112)</a></Button>
+                            <Button variant="destructive" className="w-full justify-start gap-2"><Siren className="w-4 h-4"/> Alert Curocity Safety Team</Button>
+                        </div>
+                    </DialogContent>
+                </Dialog>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="destructive" className="flex-1 h-12" disabled={isCancelling}>
+                        {isCancelling ? 'Cancelling...' : 'Cancel Ride'}
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                        <AlertDialogDescription>A cancellation fee may apply. This action cannot be undone.</AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Go Back</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleCancelClick} className="bg-destructive hover:bg-destructive/90">Confirm Cancellation</AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+            </div>
         </CardContent>
       </Card>
     </div>
   );
 }
+
