@@ -128,10 +128,11 @@ export default function HomePage() {
         <section className="relative py-24 md:py-32 text-center">
           <div className="container" data-aos="fade-up">
             <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold font-headline animate-text-gradient bg-gradient-to-r from-primary via-accent to-primary">
-              <span className="whitespace-nowrap">Move. Heal. Fix.</span>
-              <br />
-              <span className="whitespace-nowrap">One App for Urban Life.</span>
+              Move. Heal. Fix.
             </h1>
+            <h2 className="text-4xl sm:text-5xl md:text-6xl font-extrabold font-headline animate-text-gradient bg-gradient-to-r from-primary via-accent to-primary">
+              One App for Urban Life.
+            </h2>
             <div className="mt-6 text-lg text-muted-foreground max-w-3xl mx-auto space-y-4">
                 <p>
                     Curocity is building a practical Super App that connects mobility, medical access, and everyday assistance into one simple platform — starting with our pilot in the AMC Zone, Dibrugarh.
