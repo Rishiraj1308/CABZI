@@ -3,6 +3,7 @@
 
 import React, { useEffect, useRef } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import AOS from 'aos'
 import 'aos/dist/aos.css'
 
@@ -38,45 +39,18 @@ import CuroMindReveal from '@/components/CuroMindReveal'
 import dynamic from 'next/dynamic'
 const ThemeToggle = dynamic(() => import('@/components/ThemeToggleClient'), { ssr: false })
 
-
-function LanguageToggle() {
-  const { setLanguage } = useLanguage()
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon">
-          <Globe className="h-5 w-5" />
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
-        <DropdownMenuItem onClick={() => setLanguage('en')}>English</DropdownMenuItem>
-        <DropdownMenuItem onClick={() => setLanguage('hi')}>हिन्दी</DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
-  )
-}
-
 const corePillars = [
-    { title: "Curocity Platform", description: "The core engine for our 0% commission ride-hailing and emergency response network, ensuring fairness and reliability for everyone.", icon: Car, glowColor: "hsl(210 100% 56%)" },
-    { title: "CuroBank", description: "The FinTech heart of our ecosystem. CuroBank provides partners with instant payouts, savings with interest, and access to fair credit, building financial security and loyalty.", icon: Landmark, glowColor: "hsl(142 71% 45%)" },
-    { title: "CuroMind AI", description: "The intelligent layer that optimizes the entire platform. CuroMind handles smart dispatch, route optimization, and provides a personalized earnings coach for our partners.", icon: BrainCircuit, glowColor: "hsl(48 95% 55%)" },
+    { title: "Curocity Platform", description: "Commission-free rides and reliable emergency assistance for a fair and accessible urban experience.", icon: Car, glowColor: "hsl(210 100% 56%)" },
+    { title: "CuroBank", description: "Provides instant payouts, savings, options, and financial stability. In return, our focus is financial stability and growth.", icon: Landmark, glowColor: "hsl(142 71% 45%)" },
+    { title: "CuroMind AI", description: "Intelligent engine that dispatches rides, optimizes routes, and monitors earnings, all in the app.", icon: BrainCircuit, glowColor: "hsl(48 95% 55%)" },
 ]
 
 const dayTimelineItems = [
-    { time: "Daily Commute", title: "The Morning Rush", description: "Start your day stress-free with Curocity's PATH service. Reliable rides, fair fares, no surge pricing.", icon: Car },
-    { time: "Sudden Breakdown", title: "Roadside ResQ", description: "Car trouble? One tap brings a verified ResQ mechanic to your location for on-the-spot repairs.", icon: Wrench },
+    { time: "Daily Commute", title: "The Morning Rush", description: "Start your P2M service stress-free with no surge pricing.", icon: Car },
+    { time: "Sudden Breakdown", title: "Roadside ResQ", description: "Book a verified ResQ-app mechanic directly through the site.", icon: Wrench },
     { time: "Financial Need", title: "CuroBank", description: "Unexpected expense? Get instant, fair-interest credit directly from your Curocity wallet, no questions asked.", icon: Landmark },
-    { time: "Household Needs", title: "Home Services", description: "Need a plumber or electrician? Curocity connects you with trusted local professionals.", icon: Home },
-    { time: "Feeling Unwell", title: "Doctor Visit", description: "Instantly book an in-clinic or video appointment with a specialist.", icon: Calendar },
-    { time: "Health Checkup", title: "Lab Tests at Home", description: "A certified phlebotomist will collect your sample from the comfort of your home.", icon: FlaskConical },
     { time: "In an Emergency", title: "The Safety Net", description: "Health emergency? Don't panic. CURE connects you to the nearest ambulance in seconds.", icon: Siren },
 ]
-
-const whyCurocityItems = [
-    { title: "The Old Way: A Partner's Struggle", description: "A system that profits from a partner's hard work, offering little in return.", points: ["Lose 30% of your earnings to high commissions.", "Unpredictable income due to fluctuating demand.", "No financial safety net for emergencies."], icon: XCircle, isCurocityWay: false },
-    { title: "The Curocity Way: A True Partnership", description: "An ecosystem designed to empower partners, not just use them.", points: ["0% commission. You keep 100% of the fare.", "Access to instant loans and high-interest savings.", "A dedicated ResQ network to get you back on the road faster."], icon: CheckCircle, isCurocityWay: true }
-]
-
 
 export default function HomePage() {
   useEffect(() => {
@@ -94,56 +68,41 @@ export default function HomePage() {
   return (
     <div className={cn("flex flex-col min-h-screen bg-background aurora-background")}>
       <header className="sticky top-0 z-40 w-full border-b bg-background/80 backdrop-blur-sm">
-        <div className="container flex h-14 items-center justify-between">
+        <div className="container flex h-16 items-center justify-between">
           <Link href="/" className="flex items-center gap-2" aria-label="Curocity Home">
             <BrandLogo hideText={false} />
           </Link>
-          <div className="flex items-center gap-2">
-            <LanguageToggle />
-            <ThemeToggle />
-            <Sheet>
-              <SheetTrigger asChild>
-                <Button variant="outline" size="sm" className="h-9">
-                  Login / Signup
-                </Button>
-              </SheetTrigger>
-              <SheetContent>
-                <SheetHeader>
-                  <SheetTitle><BrandLogo /></SheetTitle>
-                </SheetHeader>
-                <div className="grid gap-4 py-4">
-                  <Button asChild><Link href="/login?role=user">Login as User</Link></Button>
-                  <Button asChild variant="outline"><Link href="/partner-hub">Become a Partner</Link></Button>
-                  <Separator />
-                  <Button asChild variant="ghost" className="text-xs"><Link href="/login?role=admin">Admin Panel</Link></Button>
-                </div>
-              </SheetContent>
-            </Sheet>
+          <div className="hidden md:flex items-center gap-2">
+             <Button variant="ghost" asChild><Link href="#">Download</Link></Button>
+             <Button asChild><Link href="/login">Log in</Link></Button>
           </div>
         </div>
       </header>
 
       <main className="flex-1">
-        <section className="relative py-24 md:py-32 text-center">
-          <div className="container" data-aos="fade-up">
-            <h1 className="text-5xl md:text-6xl font-extrabold font-headline animate-text-gradient bg-gradient-to-r from-primary via-accent to-primary">
-              Move. Heal. Fix.
-            </h1>
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold font-headline animate-text-gradient bg-gradient-to-r from-primary via-accent to-primary mt-2">
-              One App for Urban Life.
-            </h2>
-            <div className="mt-6 text-lg text-muted-foreground max-w-3xl mx-auto space-y-4">
-                <p>
-                From your morning commute to sudden emergencies, one app handles it all. Curocity begins its journey at AMC, Dibrugarh with rides, rescue, and medical access.
+        <section className="relative py-20 md:py-28">
+          <div className="container grid md:grid-cols-2 gap-10 items-center">
+            <div className="text-center md:text-left" data-aos="fade-right">
+                <h1 className="text-5xl md:text-7xl font-extrabold font-headline text-foreground">
+                Move. Heal. Fix.
+                </h1>
+                <h2 className="text-3xl sm:text-4xl md:text-4xl font-bold text-primary mt-2">
+                One App for Urban Life
+                </h2>
+                <p className="mt-6 text-lg text-muted-foreground max-w-lg mx-auto md:mx-0">
+                    Your all-in-one solution for rides, emergency response, and financial services—seamlessly integrating into your daily routine.
                 </p>
+                <div className="mt-10 flex flex-col sm:flex-row justify-center md:justify-start gap-4">
+                <Button size="lg" className="h-12 text-base btn-glow bg-accent text-accent-foreground hover:bg-accent/90" asChild>
+                    <Link href="/login?role=user">Get Started</Link>
+                </Button>
+                <Button size="lg" variant="outline" className="h-12 text-base" asChild>
+                    <Link href="#ecosystem">Learn More</Link>
+                </Button>
+                </div>
             </div>
-            <div className="mt-10 flex justify-center gap-4">
-              <Button size="lg" className="btn-glow bg-accent text-accent-foreground hover:bg-accent/90" asChild>
-                <Link href="/login?role=user">▶ Get Started</Link>
-              </Button>
-              <Button size="lg" variant="outline" asChild>
-                <Link href="#ecosystem">▶ Explore Our Vision</Link>
-              </Button>
+             <div className="relative h-80 md:h-full w-full" data-aos="fade-left">
+                <Image src="https://i.ibb.co/9rSgGjX/hero-curocity.png" layout="fill" objectFit="contain" alt="Curocity App Mockup" data-ai-hint="phone map car illustration" />
             </div>
           </div>
         </section>
@@ -153,13 +112,13 @@ export default function HomePage() {
             <div className="text-center max-w-3xl mx-auto">
               <h2 className="text-3xl md:text-4xl font-bold font-headline" data-aos="fade-up">Our Core Pillars</h2>
               <p className="mt-4 text-muted-foreground" data-aos="fade-up" data-aos-delay="100">
-                Our business is built on three core pillars that work together to create a powerful, sustainable ecosystem.
+                Our all-in-one solution for rides, emergency response, and financial services - seamlessly integrating into your daily routine.
               </p>
             </div>
             <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6">
               {corePillars.map((card, i) => (
                 <div key={card.title} data-aos="fade-up" data-aos-delay={100 * (i + 1)}>
-                  <Card style={{ '--glow-color': card.glowColor } as React.CSSProperties} className="card-glow text-center h-full flex flex-col">
+                  <Card style={{ '--glow-color': card.glowColor } as React.CSSProperties} className="card-glow text-center h-full flex flex-col bg-card/50">
                     <CardHeader className="items-center">
                       <div className="p-3 rounded-full bg-primary/10 mb-2">
                         <card.icon className="w-8 h-8 text-primary" />
@@ -181,7 +140,7 @@ export default function HomePage() {
                 <div className="text-center mb-16">
                     <h2 className="text-3xl md:text-4xl font-bold font-headline" data-aos="fade-up">A Day with Curocity</h2>
                     <p className="mt-4 text-muted-foreground" data-aos="fade-up" data-aos-delay="100">
-                        From your morning commute to unexpected emergencies, see how Curocity fits into your day.
+                        From morning commute to unexpected emergencies, see how Curocity fits into your day.
                     </p>
                 </div>
                 <div className="relative">
@@ -195,8 +154,8 @@ export default function HomePage() {
                             whileInView={{ opacity: 1 }}
                             viewport={{ root: timelineRef, amount: 0.5 }}
                         >
-                            <div className={`w-1/2 ${index % 2 === 0 ? 'pr-8' : 'pl-8 order-2'}`}>
-                                <Card className="p-4" data-aos={index % 2 === 0 ? 'fade-right' : 'fade-left'}>
+                            <div className={`w-1/2 ${index % 2 === 0 ? 'pr-8 text-right' : 'pl-8 order-2 text-left'}`}>
+                                <Card className="p-4 inline-block text-left" data-aos={index % 2 === 0 ? 'fade-right' : 'fade-left'}>
                                     <p className="text-sm font-semibold text-primary">{item.time}</p>
                                     <p className="font-bold">{item.title}</p>
                                     <p className="text-xs text-muted-foreground">{item.description}</p>
@@ -211,60 +170,6 @@ export default function HomePage() {
             </div>
         </section>
 
-        <section className="py-20 md:py-24 bg-muted/30">
-          <div className="container">
-            <div className="text-center max-w-3xl mx-auto">
-              <h2 className="text-3xl md:text-4xl font-bold font-headline" data-aos="fade-up">Why Choose Curocity?</h2>
-              <p className="mt-4 text-muted-foreground" data-aos="fade-up" data-aos-delay="100">
-                We're rebuilding ride-hailing from the ground up to be fair, safe, and reliable for everyone involved.
-              </p>
-            </div>
-            <div className="mt-12 grid grid-cols-1 md:grid-cols-2 gap-8">
-                {whyCurocityItems.map((item, i) => (
-                    <div key={item.title} data-aos="fade-up" data-aos-delay={100 * (i + 1)}>
-                        <Card className={cn("h-full flex flex-col", item.isCurocityWay && "border-primary/50 bg-primary/5")}>
-                            <CardHeader className="text-center">
-                                <item.icon className={cn("w-10 h-10 mx-auto mb-2", item.isCurocityWay ? 'text-green-500' : 'text-destructive')} />
-                                <CardTitle>{item.title}</CardTitle>
-                                <CardDescription>{item.description}</CardDescription>
-                            </CardHeader>
-                            <CardContent className="flex-grow">
-                                <ul className="space-y-3">
-                                    {item.points.map(point => (
-                                        <li key={point} className="flex items-start">
-                                            {item.isCurocityWay 
-                                                ? <CheckCircle className="w-5 h-5 text-green-500 mr-3 mt-0.5 shrink-0" /> 
-                                                : <XCircle className="w-5 h-5 text-destructive mr-3 mt-0.5 shrink-0" />}
-                                            <span className="text-sm">{point}</span>
-                                        </li>
-                                    ))}
-                                </ul>
-                            </CardContent>
-                        </Card>
-                    </div>
-                ))}
-            </div>
-          </div>
-        </section>
-
-        <CuroMindReveal />
-
-        <section className="py-20 md:py-32">
-            <div className="container text-center">
-                <h2 className="text-3xl md:text-4xl font-bold font-headline" data-aos="fade-up">Ready to Join the Revolution?</h2>
-                <p className="mt-4 text-muted-foreground max-w-xl mx-auto" data-aos="fade-up" data-aos-delay="100">
-                    Whether you need a ride or want to earn with fairness and respect, Curocity is your partner.
-                </p>
-                <div className="mt-8 flex flex-col sm:flex-row justify-center gap-4">
-                    <Button size="lg" className="btn-glow bg-accent text-accent-foreground hover:bg-accent/90" asChild data-aos="fade-up" data-aos-delay="200">
-                        <Link href="/login?role=user">Get a Safe Ride</Link>
-                    </Button>
-                    <Button size="lg" variant="outline" asChild data-aos="fade-up" data-aos-delay="300">
-                        <Link href="/partner-hub">Become a Partner</Link>
-                    </Button>
-                </div>
-            </div>
-        </section>
       </main>
 
       <footer className="py-6 bg-background border-t">
@@ -279,5 +184,3 @@ export default function HomePage() {
     </div>
   )
 }
-
-    
