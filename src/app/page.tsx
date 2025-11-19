@@ -128,24 +128,25 @@ export default function HomePage() {
       <main className="flex-1">
         <section className="relative py-24 md:py-32 text-center">
           <div className="container" data-aos="fade-up">
-            <h1 className="text-5xl md:text-6xl font-extrabold font-headline animate-text-gradient bg-gradient-to-r from-primary via-accent to-primary">
+            <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold font-headline animate-text-gradient bg-gradient-to-r from-primary via-accent to-primary">
               Move. Heal. Fix.
               <br />
               One App for Real Life.
             </h1>
-            <p className="mt-6 text-lg text-muted-foreground max-w-3xl mx-auto">
-              Curocity is building a practical Super App that connects mobility, medical access, and everyday assistance into one simple platform — starting with our pilot in the AMC Zone, Dibrugarh.
-              <br />
-              <span className="text-base">
-                Whether it’s a ride, on-road rescue, or urgent medical help, Curocity keeps your day running smoothly.
-              </span>
-            </p>
+            <div className="mt-6 text-lg text-muted-foreground max-w-3xl mx-auto space-y-4">
+                <p>
+                    Curocity is building a practical Super App that connects mobility, medical access, and everyday assistance into one simple platform — starting with our pilot in the AMC Zone, Dibrugarh.
+                </p>
+                <p className="text-base">
+                    Whether it’s a ride, on-road rescue, or urgent medical help, Curocity keeps your day running smoothly.
+                </p>
+            </div>
             <div className="mt-10 flex justify-center gap-4">
               <Button size="lg" className="btn-glow bg-accent text-accent-foreground hover:bg-accent/90" asChild>
-                <Link href="/login?role=user">Get Started <ArrowRight className="ml-2 h-5 w-5" /></Link>
+                <Link href="/login?role=user">▶ Get Started</Link>
               </Button>
               <Button size="lg" variant="outline" asChild>
-                <Link href="#ecosystem">Explore Our Vision</Link>
+                <Link href="#ecosystem">▶ Explore Our Vision</Link>
               </Button>
             </div>
           </div>
