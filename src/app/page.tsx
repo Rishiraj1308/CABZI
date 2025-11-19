@@ -1,4 +1,3 @@
-
 'use client'
 
 import React, { useEffect, useRef } from 'react'
@@ -127,10 +126,10 @@ export default function HomePage() {
       <main className="flex-1">
         <section className="relative py-24 md:py-32 text-center">
           <div className="container" data-aos="fade-up">
-            <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold font-headline animate-text-gradient bg-gradient-to-r from-primary via-accent to-primary">
+             <h1 className="text-5xl md:text-6xl font-extrabold font-headline animate-text-gradient bg-gradient-to-r from-primary via-accent to-primary">
               Move. Heal. Fix.
             </h1>
-            <h2 className="text-2xl sm:text-3xl md:text-5xl font-extrabold font-headline animate-text-gradient bg-gradient-to-r from-primary via-accent to-primary">
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold font-headline animate-text-gradient bg-gradient-to-r from-primary via-accent to-primary">
                 One App for Urban Life.
             </h2>
             <div className="mt-6 text-lg text-muted-foreground max-w-3xl mx-auto space-y-4">
