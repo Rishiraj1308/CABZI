@@ -13,7 +13,7 @@ import { useLanguage } from '@/context/language-provider'
 import { Loader2 } from 'lucide-react'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { useFirebase } from '@/lib/firebase/client-provider'
-import { collection, query, where, getDocs, setDoc, doc, serverTimestamp, limit } from 'firebase/firestore'
+import { collection, query, where, getDocs, setDoc, doc, serverTimestamp, limit, getDoc } from 'firebase/firestore'
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signInWithPhoneNumber, RecaptchaVerifier, type ConfirmationResult, GoogleAuthProvider, signInWithPopup, type User } from 'firebase/auth'
 import { AnimatePresence, motion } from 'framer-motion'
 import { toast } from 'sonner'
@@ -477,3 +477,5 @@ export default function LoginPage() {
     </>
   );
 }
+
+    
