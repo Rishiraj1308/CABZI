@@ -57,9 +57,9 @@ function LanguageToggle() {
 }
 
 const corePillars = [
-    { title: "Curocity", description: "The core platform connecting riders and partners. It's the engine for our 0% commission ride-hailing and emergency response network, ensuring fairness and reliability.", icon: Car, glowColor: "hsl(210 100% 56%)" },
+    { title: "Curocity Platform", description: "The core engine for our 0% commission ride-hailing and emergency response network, ensuring fairness and reliability for everyone.", icon: Car, glowColor: "hsl(210 100% 56%)" },
     { title: "CuroBank", description: "The FinTech heart of our ecosystem. CuroBank provides partners with instant payouts, savings with interest, and access to fair credit, building financial security and loyalty.", icon: Landmark, glowColor: "hsl(142 71% 45%)" },
-    { title: "CuroMind", description: "The intelligent AI layer that optimizes the entire platform. CuroMind handles smart dispatch, route optimization, and provides a personalized earnings coach for our partners.", icon: BrainCircuit, glowColor: "hsl(48 95% 55%)" },
+    { title: "CuroMind AI", description: "The intelligent layer that optimizes the entire platform. CuroMind handles smart dispatch, route optimization, and provides a personalized earnings coach for our partners.", icon: BrainCircuit, glowColor: "hsl(48 95% 55%)" },
 ]
 
 const dayTimelineItems = [
@@ -129,15 +129,12 @@ export default function HomePage() {
             <h1 className="text-5xl md:text-6xl font-extrabold font-headline animate-text-gradient bg-gradient-to-r from-primary via-accent to-primary">
               Move. Heal. Fix.
             </h1>
-            <h2 className="text-3xl sm:text-4xl font-extrabold font-headline animate-text-gradient bg-gradient-to-r from-primary via-accent to-primary mt-2">
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold font-headline animate-text-gradient bg-gradient-to-r from-primary via-accent to-primary mt-2">
               One App for Urban Life.
             </h2>
             <div className="mt-6 text-lg text-muted-foreground max-w-3xl mx-auto space-y-4">
                 <p>
-                    Curocity is building a practical Super App that connects mobility, medical access, and everyday assistance into one simple platform — starting with our pilot in the AMC Zone, Dibrugarh.
-                </p>
-                <p className="text-base">
-                    Whether it’s a ride, on-road rescue, or urgent medical help, Curocity keeps your day running smoothly.
+                    From your morning commute to sudden emergencies, one app handles it all. Curocity begins its journey at AMC, Dibrugarh with rides, rescue, and medical access.
                 </p>
             </div>
             <div className="mt-10 flex justify-center gap-4">
