@@ -12,7 +12,7 @@ import { useFirebase } from '@/lib/firebase/client-provider';
 import { doc, updateDoc } from 'firebase/firestore';
 import { toast } from 'sonner';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useDriver } from '@/app/(dashboard)/driver/layout';
+import { useDriver } from '@/app/(dashboard)/driver/ClientLayout';
 import { useRoute } from '../hooks/useRoute';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
@@ -384,5 +384,3 @@ const ActiveRideView: React.FC<ActiveRideViewProps> = ({ activeRide, setActiveRi
     </motion.div>
   );
 };
-
-export default ActiveRideView;
