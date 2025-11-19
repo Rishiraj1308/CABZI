@@ -1,42 +1,42 @@
+
 'use client';
 
 import { getMessaging, isSupported, type Messaging } from "firebase/messaging";
 import { getFirebaseApp } from "./app";
 
-let messagingInstance: Messaging | null | undefined = undefined;
+let messagingPromise: Promise<Messaging | null> | null = null;
 
-export function getFirebaseMessaging(): Messaging | null {
-  // already initialized
-  if (messagingInstance !== undefined) return messagingInstance;
-
-  // SSR safety
-  if (typeof window === "undefined") {
-    messagingInstance = null;
-    return null;
+export function getFirebaseMessaging(): Promise<Messaging | null> {
+  // If we've already started the process, return the existing promise
+  if (messagingPromise) {
+    return messagingPromise;
   }
 
-  const app = getFirebaseApp();
-  if (!app) {
-    messagingInstance = null;
-    return null;
-  }
+  // Create a new promise to handle the async initialization
+  messagingPromise = new Promise(async (resolve) => {
+    // SSR safety
+    if (typeof window === "undefined") {
+      return resolve(null);
+    }
+    
+    const app = getFirebaseApp();
+    if (!app) {
+      return resolve(null);
+    }
 
-  // DO NOT BLOCK — check support async + set later
-  isSupported()
-    .then((supported) => {
-      if (supported && messagingInstance === null) {
-        try {
-          messagingInstance = getMessaging(app);
-        } catch {
-          messagingInstance = null;
-        }
+    try {
+      const supported = await isSupported();
+      if (supported) {
+        resolve(getMessaging(app));
+      } else {
+        console.warn("Firebase Messaging is not supported in this browser.");
+        resolve(null);
       }
-    })
-    .catch(() => {
-      messagingInstance = null;
-    });
+    } catch (error) {
+      console.error("Error initializing Firebase Messaging:", error);
+      resolve(null);
+    }
+  });
 
-  // Return null immediately (non-blocking)
-  messagingInstance = null;
-  return null;
+  return messagingPromise;
 }

@@ -6,6 +6,10 @@ import { getRoute } from '@/lib/routing';
 
 type Coord = { lat: number; lon: number };
 
+// This hook is being deprecated as the functionality is now integrated directly within the LiveMap component
+// for better performance and to avoid redundant data fetching.
+// The useRoute hook will be removed in a future update.
+
 export function useRoute(start: Coord | null, end: Coord | null) {
   const [route, setRoute] = useState<any | null>(null);
   const [distance, setDistance] = useState<number | null>(null);
@@ -38,7 +42,9 @@ export function useRoute(start: Coord | null, end: Coord | null) {
 
     fetchRouteData();
     
-  }, [start?.lat, start?.lon, end?.lat, end?.lon]); // Only refetch when start or end points change
+    // This dependency array ensures the effect only re-runs when the
+    // actual coordinates of the start or end points change.
+  }, [start?.lat, start?.lon, end?.lat, end?.lon]); 
 
   return { route, distance, duration };
 }

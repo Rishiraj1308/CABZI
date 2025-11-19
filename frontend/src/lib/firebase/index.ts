@@ -1,3 +1,4 @@
+
 'use client';
 
 import { getFirebaseApp } from './app';
@@ -17,16 +18,11 @@ const db = app ? getDb() : null;
 const functions = app ? getFirebaseFunctions() : null;
 
 // --- FIXED MESSAGING HANDLING ---
-let messaging: Messaging | null = null;
+let messaging: Promise<Messaging | null> | null = null;
 
 // Only run this on client (browser)
 if (typeof window !== 'undefined' && app) {
-  try {
-    messaging = getFirebaseMessaging(); // MUST NOT return Promise
-  } catch (err) {
-    console.warn('Messaging init failed:', err);
-    messaging = null;
-  }
+  messaging = getFirebaseMessaging();
 }
 
 // Re-export hooks from client-provider

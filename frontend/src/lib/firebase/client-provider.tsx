@@ -44,7 +44,7 @@ export default function FirebaseProviderClient({ children }: { children: ReactNo
 
   useEffect(() => {
     // This check is important because messaging is not supported in all environments
-    if (getMessagingPromise) {
+    if (typeof window !== 'undefined' && getMessagingPromise) {
       getMessagingPromise.then((m) => {
         if (m) setMessaging(m);
       }).catch(err => {
