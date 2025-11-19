@@ -39,15 +39,33 @@ import CuroMindReveal from '@/components/CuroMindReveal'
 import dynamic from 'next/dynamic'
 const ThemeToggle = dynamic(() => import('@/components/ThemeToggleClient'), { ssr: false })
 
+
+function LanguageToggle() {
+  const { setLanguage } = useLanguage()
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" size="icon">
+          <Globe className="h-5 w-5" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuItem onClick={() => setLanguage('en')}>English</DropdownMenuItem>
+        <DropdownMenuItem onClick={() => setLanguage('hi')}>हिन्दी</DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  )
+}
+
 const corePillars = [
-    { title: "Curocity Platform", description: "Commission-free rides and reliable emergency assistance for a fair and accessible urban experience.", icon: Car, glowColor: "hsl(210 100% 56%)" },
-    { title: "CuroBank", description: "Provides instant payouts, savings, options, and financial stability. In return, our focus is financial stability and growth.", icon: Landmark, glowColor: "hsl(142 71% 45%)" },
-    { title: "CuroMind AI", description: "Intelligent engine that dispatches rides, optimizes routes, and monitors earnings, all in the app.", icon: BrainCircuit, glowColor: "hsl(48 95% 55%)" },
+    { title: "Curocity Platform", description: "The core engine for our 0% commission ride-hailing and emergency response network, ensuring fairness and reliability for everyone.", icon: Car, glowColor: "hsl(210 100% 56%)" },
+    { title: "CuroBank", description: "The FinTech heart of our ecosystem. CuroBank provides partners with instant payouts, savings with interest, and access to fair credit, building financial security and loyalty.", icon: Landmark, glowColor: "hsl(142 71% 45%)" },
+    { title: "CuroMind AI", description: "The intelligent layer that optimizes the entire platform. CuroMind handles smart dispatch, route optimization, and provides a personalized earnings coach for our partners.", icon: BrainCircuit, glowColor: "hsl(48 95% 55%)" },
 ]
 
 const dayTimelineItems = [
-    { time: "Daily Commute", title: "The Morning Rush", description: "Start your P2M service stress-free with no surge pricing.", icon: Car },
-    { time: "Sudden Breakdown", title: "Roadside ResQ", description: "Book a verified ResQ-app mechanic directly through the site.", icon: Wrench },
+    { time: "Daily Commute", title: "The Morning Rush", description: "Start your day stress-free with Curocity's PATH service. Reliable rides, fair fares, no surge pricing.", icon: Car },
+    { time: "Sudden Breakdown", title: "Roadside ResQ", description: "Car trouble? One tap brings a verified ResQ mechanic to your location for on-the-spot repairs.", icon: Wrench },
     { time: "Financial Need", title: "CuroBank", description: "Unexpected expense? Get instant, fair-interest credit directly from your Curocity wallet, no questions asked.", icon: Landmark },
     { time: "In an Emergency", title: "The Safety Net", description: "Health emergency? Don't panic. CURE connects you to the nearest ambulance in seconds.", icon: Siren },
 ]
@@ -101,7 +119,7 @@ export default function HomePage() {
                 </Button>
                 </div>
             </div>
-             <div className="relative h-80 md:h-full w-full" data-aos="fade-left">
+             <div className="relative h-80 md:h-full w-full min-h-[300px]" data-aos="fade-left">
                 <Image src="https://i.ibb.co/9rSgGjX/hero-curocity.png" layout="fill" objectFit="contain" alt="Curocity App Mockup" data-ai-hint="phone map car illustration" />
             </div>
           </div>
