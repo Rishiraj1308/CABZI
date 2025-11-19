@@ -20,7 +20,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import BrandLogo from '@/components/shared/brand-logo'
+import BrandLogo, { NewLogoIcon } from '@/components/shared/brand-logo'
 import { useTheme } from 'next-themes'
 import { useFirebase } from '@/lib/firebase/client-provider'
 import { doc, updateDoc, serverTimestamp, type DocumentReference, onSnapshot, GeoPoint } from 'firebase/firestore'
@@ -277,7 +277,7 @@ function DriverLayoutContent({ children }: { children: React.ReactNode }) {
           
           <div className="w-full flex-1">
              <Link href="/driver" className="flex items-center gap-2 font-semibold text-lg">
-                <BrandLogo hideText={true} iconClassName="w-8 h-8"/>
+                <NewLogoIcon className="w-8 h-8"/>
                 <Badge variant="outline" className="font-semibold">Path Partner</Badge>
              </Link>
           </div>
