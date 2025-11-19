@@ -55,7 +55,7 @@ export default function DriverArriving({ ride, onCancel }: DriverArrivingProps) 
   const [driverLocation, setDriverLocation] = useState<{lat: number, lon: number} | null>(null);
   const [etaMin, setEtaMin] = useState<number | null>(null);
   const [distKm, setDistKm] = useState<number | null>(null);
-  const [routeCoords, setRouteCoords] = useState<[number, number][]>([]);
+  const [routeGeometry, setRouteGeometry] = useState<any | null>(null);
   const [isCancelling, setIsCancelling] = useState(false);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   
@@ -95,8 +95,7 @@ export default function DriverArriving({ ride, onCancel }: DriverArrivingProps) 
         const route = routeData.routes[0];
         setEtaMin(Math.max(1, Math.round(route.duration / 60)));
         setDistKm(route.distance / 1000);
-        const coords = route.geometry.coordinates.map((c: [number, number]) => [c[1], c[0]]);
-        setRouteCoords(coords);
+        setRouteGeometry(route.geometry);
       }
     } catch (error) {
         console.error("Error computing route:", error);
@@ -180,7 +179,7 @@ export default function DriverArriving({ ride, onCancel }: DriverArrivingProps) 
         <LiveMap
             driverLocation={driverLocation}
             destinationLocation={ride.destination?.location ? { lat: ride.destination.location.latitude, lon: ride.destination.location.longitude } : null}
-            routeGeometry={{ type: "LineString", coordinates: routeCoords.map(c => [c[1], c[0]]) }}
+            routeGeometry={routeGeometry}
             isTripInProgress={true}
         />
       </div>
@@ -253,15 +252,13 @@ export default function DriverArriving({ ride, onCancel }: DriverArrivingProps) 
 
   if (!ride?.pickup?.location) return null;
 
-  const pickupPosition: [number, number] = [ride.pickup.location.latitude, ride.pickup.location.longitude];
-
   return (
     <div className="w-full h-full flex flex-col">
       <div className="relative flex-1 w-full">
         <LiveMap
             riderLocation={ride.pickup?.location ? { lat: ride.pickup.location.latitude, lon: ride.pickup.location.longitude } : null}
             driverLocation={driverLocation}
-            routeGeometry={{ type: "LineString", coordinates: routeCoords.map(c => [c[1], c[0]]) }}
+            routeGeometry={routeGeometry}
         />
       </div>
 
