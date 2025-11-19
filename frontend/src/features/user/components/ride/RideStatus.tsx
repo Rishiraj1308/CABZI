@@ -160,6 +160,20 @@ export default function RideStatus({ ride, onCancel, isGarageRequest, isAmbulanc
                     </div>
                 </CardContent>
             </Card>
+
+            <Card>
+                <CardHeader>
+                    <CardTitle className="text-base">Fare Breakdown</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2 text-sm">
+                    <div className="flex justify-between"><span className="text-muted-foreground">Base Fare</span><span>₹{config.base.toFixed(2)}</span></div>
+                     <div className="flex justify-between">
+                        <span className="text-muted-foreground">Distance Charge</span>
+                        <span>₹{(totalAmount - config.base - 5.00).toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between"><span className="text-muted-foreground">Taxes & Fees</span><span>₹5.00</span></div>
+                </CardContent>
+            </Card>
             
             <Card>
                 <CardHeader>
