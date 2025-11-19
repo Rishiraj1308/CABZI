@@ -66,7 +66,7 @@ const ecosystemCards = [
 const dayTimelineItems = [
     { time: "Daily Commute", title: "The Morning Rush", description: "Start your day stress-free with Curocity's PATH service. Reliable rides, fair fares, no surge pricing.", icon: Car },
     { time: "Sudden Breakdown", title: "Roadside ResQ", description: "Car trouble? One tap brings a verified ResQ mechanic to your location for on-the-spot repairs.", icon: Wrench },
-    { time: "Financial Need", title: "Instant Credit via Curocity Bank", description: "Unexpected expense? Get instant, fair-interest credit directly from your Curocity wallet, no questions asked.", icon: Landmark },
+    { time: "Financial Need", title: "Curocity Bank", description: "Unexpected expense? Get instant, fair-interest credit directly from your Curocity wallet, no questions asked.", icon: Landmark },
     { time: "Household Needs", title: "Home Services", description: "Need a plumber or electrician? Curocity connects you with trusted local professionals.", icon: Home },
     { time: "Feeling Unwell", title: "Doctor Visit", description: "Instantly book an in-clinic or video appointment with a specialist.", icon: Calendar },
     { time: "Health Checkup", title: "Lab Tests at Home", description: "A certified phlebotomist will collect your sample from the comfort of your home.", icon: FlaskConical },
