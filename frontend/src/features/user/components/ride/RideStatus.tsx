@@ -51,6 +51,11 @@ const fareConfig: {[key: string]: { base: number, perKm: number, serviceFee: num
     'Curocity Pink': { base: 50, perKm: 12, serviceFee: 30 },
 }
 
+const GPayIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 256 256"><path fill="#4285F4" d="M204.3 106.2c0-10-1.6-19.5-4.5-28.3h-70.3v34.4h39.9c-1.6 11.2-6.4 20.8-13.8 26.5v22.2h28.7c16.8-15.5 26.6-38.3 26.6-64.8z"/><path fill="#34A853" d="M129.5 209c25.9 0 47.9-8.5 63.8-23.1l-28.7-22.2c-8.5 5.7-19.6 9-35.1 9-27.1 0-50-18.1-58.2-42.6H42.2v23C58.3 189.5 91.5 209 129.5 209z"/><path fill="#FBBC05" d="M71.3 121.1c-1.9-5.7-3-11.8-3-18s1.1-12.3 3-18V63H42.2C35.9 76.5 32 91.8 32 108.1s3.9 31.6 10.2 45.1l29.1-22.1z"/><path fill="#EA4335" d="M129.5 61.1c14.1 0 26.9 4.8 36.9 14.3l25.5-25.5C177.4 33.4 155.4 23 129.5 23C91.5 23 58.3 42.5 42.2 63l29.1 22.1C79.5 61.2 102.4 43 129.5 61.1z"/></svg>;
+const PhonePeIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="#5f259f" d="M17.4 14.8c-.8-1.5-2.2-2-3.3-2.9-1-.8-1.2-1.2-1.2-1.9 0-.6.4-1.1 1.2-1.1.9 0 1.9.3 2.5 1l2.2-1.4c-.9-1.5-2.5-2.5-4.7-2.5-2.8 0-4.9 1.6-4.9 4.1 0 2.4 1.5 3.5 3.8 5 .8.6 1.3 1 1.3 1.8 0 .6-.4 1.2-1.3 1.2-1.2 0-2.1-.5-2.8-1.3l-2.2 1.4c1.1 1.8 2.9 2.8 5 2.8 3.2.1 5.3-1.6 5.3-4.2.1-2.2-1-3.6-2.5-4.8z"/><path fill="#5f259f" d="M22.9 13.9h-3.3v-1.9H23v-2.3h-3.3V7.8h-2.3v1.9h-1.6v2.3h1.6v1.9h-1.6v2.3h1.6v1.7h2.3v-1.7h3.3v2.3h2.2V13.9z"/></svg>;
+const PaytmIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 118 41"><path fill="#00b9f1" d="M83.1 24.5h-5.2V41H72v-8.2H58.2v8.2h-5.9V16.6h19.7v7.9zm-5.2-2.7h-8.6v2.7h8.6v-2.7zM111.4 24.5h-5.2V41h-5.9v-8.2H86.4v8.2h-5.9V16.6h19.7v7.9zm-5.2-2.7h-8.6v2.7h8.6v-2.7zM42.2 24.5H29.5l6.5-7.9h8.3l-2.1 7.9zM22.9 41l13.2-24.4h-9.7L13.2 41h10.3-.6zM0 41l13.2-24.4H3.5L0 41zM51.9 41l13.2-24.4h-9.7L42.2 41h10.3-.6z"/></svg>;
+
+
 export default function RideStatus({ ride, onCancel, isGarageRequest, isAmbulanceCase, onDone }: RideStatusProps) {
   const [isCancelling, setIsCancelling] = useState(false);
   const [rating, setRating] = useState(0);
@@ -136,7 +141,7 @@ export default function RideStatus({ ride, onCancel, isGarageRequest, isAmbulanc
                    <IndianRupee className="w-8 h-8 text-primary"/>
                 </div>
                 <h2 className="text-2xl font-bold">Payment Due</h2>
-                <p className="text-muted-foreground">Please pay the driver in cash.</p>
+                <p className="text-muted-foreground">Please complete the payment to your driver.</p>
                 <Card className="mt-6 text-left w-full">
                     <CardHeader>
                         <CardTitle>Final Bill</CardTitle>
@@ -159,7 +164,13 @@ export default function RideStatus({ ride, onCancel, isGarageRequest, isAmbulanc
                     </CardContent>
                 </Card>
                 <div className="mt-4 text-center text-sm text-muted-foreground">
-                    <p>Waiting for driver to confirm payment...</p>
+                    <p className="font-semibold">Pay driver in cash or use UPI</p>
+                    <div className="flex justify-center gap-2 mt-3">
+                         <a href={`gpay://upi/pay?pa=driver-upi@oksbi&pn=Driver%20Name&am=${totalAmount.toFixed(2)}&cu=INR`}><Button variant="outline" className="h-12 w-12 p-0"><GPayIcon /></Button></a>
+                         <a href={`phonepe://pay?pa=driver-upi@ybl&pn=Driver%20Name&am=${totalAmount.toFixed(2)}&cu=INR`}><Button variant="outline" className="h-12 w-12 p-0"><PhonePeIcon /></Button></a>
+                         <a href={`paytmmp://pay?pa=driver-upi@paytm&pn=Driver%20Name&am=${totalAmount.toFixed(2)}&cu=INR`}><Button variant="outline" className="h-12 w-12 p-0"><PaytmIcon /></Button></a>
+                    </div>
+                    <p className="text-xs mt-4">Waiting for driver to confirm payment...</p>
                 </div>
             </div>
         </Card>
@@ -218,4 +229,3 @@ export default function RideStatus({ ride, onCancel, isGarageRequest, isAmbulanc
     <DriverArriving ride={ride as RideData} onCancel={onCancel} />
   );
 }
-
