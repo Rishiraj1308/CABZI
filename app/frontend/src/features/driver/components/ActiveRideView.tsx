@@ -53,7 +53,7 @@ const fareConfig: {[key: string]: { base: number, perKm: number, serviceFee: num
     'Curocity Pink': { base: 50, perKm: 12, serviceFee: 30 },
 }
 
-const ActiveRideView: React.FC<ActiveRideViewProps> = ({ activeRide, setActiveRide }) => {
+export const ActiveRideView: React.FC<ActiveRideViewProps> = ({ activeRide, setActiveRide }) => {
   const { db } = useFirebase();
   const { partnerData } = useDriver();
   const [enteredOtp, setEnteredOtp] = useState('');
@@ -94,7 +94,7 @@ const ActiveRideView: React.FC<ActiveRideViewProps> = ({ activeRide, setActiveRi
   
   const handleCancelRide = async () => {
     await handleRideStatusUpdate('cancelled_by_driver');
-    handleDone(); // Clean up state after cancellation
+    // No need to call handleDone() here, the status change will trigger it in the useEffect below.
   };
 
   const handleVerifyOtp = async () => {
@@ -117,6 +117,15 @@ const ActiveRideView: React.FC<ActiveRideViewProps> = ({ activeRide, setActiveRi
     localStorage.removeItem('activeRideId');
     setActiveRide(null);
   };
+  
+  // This effect will run whenever the activeRide status changes
+  React.useEffect(() => {
+    if (activeRide.status.includes('cancelled')) {
+      toast.error("Ride Cancelled", { description: "This ride has been cancelled." });
+      handleDone();
+    }
+  }, [activeRide.status]);
+
 
   if (!activeRide) return null;
     
@@ -384,5 +393,3 @@ const ActiveRideView: React.FC<ActiveRideViewProps> = ({ activeRide, setActiveRi
     </motion.div>
   );
 };
-
-export default ActiveRideView;
