@@ -247,8 +247,10 @@ function BookRideMapComponent() {
                  ) : (
                     <>
                         <CardHeader className="text-center">
-                            <CardTitle>Select a Ride</CardTitle>
-                            <CardDescription>Choose your preferred ride type for this trip.</CardDescription>
+                            <CardTitle>Trip to {destination?.address.split(',')[0]}</CardTitle>
+                            <CardDescription>
+                                {routeInfo ? `Arriving in ~${routeInfo.duration} min • ${routeInfo.distance.toFixed(1)} km left` : 'Calculating...'}
+                            </CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-3 flex-1 overflow-y-auto">
                             {isLoading ? (
@@ -298,5 +300,3 @@ export default function BookRideMapPage() {
         </Suspense>
     );
 }
-
-    
