@@ -135,22 +135,16 @@ export default function DriverArriving({ ride, onCancel }: DriverArrivingProps) 
 
   const isTripInProgress = ride.status === 'in-progress';
   
-  const navigateUrl = isTripInProgress && ride.destination?.location
-    ? `https://www.google.com/maps/dir/?api=1&destination=${ride.destination.location.latitude},${ride.destination.location.longitude}`
-    : ride.pickup?.location
-    ? `https://www.google.com/maps/dir/?api=1&destination=${ride.pickup.location.latitude},${ride.pickup.location.longitude}`
-    : '#';
-
   const handleShareRide = async () => {
     if (navigator.share) {
       try {
         await navigator.share({
           title: 'My Curocity Ride',
-          text: `I'm on a Curocity ride with ${driverDetails?.name || 'a driver'}. Vehicle: ${driverDetails?.vehicle} (${ride.vehicleNumber}). Track my ride here: [Live Tracking Link Placeholder]`,
-          url: window.location.href, // You can replace this with a real tracking URL
+          text: `I'm on a Curocity ride with ${driverDetails?.name || 'a driver'}. Vehicle: ${driverDetails?.vehicle} (${ride.vehicleNumber}).`
         });
         toast.success("Ride status shared!");
       } catch (error) {
+        console.error("Share failed:", error);
         toast.error("Could not share ride status.");
       }
     } else {
@@ -232,7 +226,7 @@ export default function DriverArriving({ ride, onCancel }: DriverArrivingProps) 
                  <Dialog>
                     <DialogTrigger asChild>
                         <Button variant="outline" className="flex-1 h-12">
-                            <Shield className="w-5 h-5 mr-2"/> Safety Toolkit
+                            <Shield className="w-5 h-5 mr-2"/> Safety
                         </Button>
                     </DialogTrigger>
                     <DialogContent>
@@ -241,6 +235,7 @@ export default function DriverArriving({ ride, onCancel }: DriverArrivingProps) 
                             <DialogDescription>Your safety is our priority. Use these tools if you feel unsafe.</DialogDescription>
                         </DialogHeader>
                         <div className="py-4 space-y-2">
+                            <Button onClick={handleShareRide} variant="outline" className="w-full justify-start gap-2"><Share2 className="w-4 h-4"/> Share Ride Status</Button>
                             <Button variant="outline" className="w-full justify-start gap-2"><a href="tel:112"><Phone className="w-4 h-4"/> Call Emergency Services (112)</a></Button>
                             <Button variant="destructive" className="w-full justify-start gap-2"><Siren className="w-4 h-4"/> Alert Curocity Safety Team</Button>
                         </div>
@@ -347,6 +342,29 @@ export default function DriverArriving({ ride, onCancel }: DriverArrivingProps) 
                         <Phone className="w-5 h-5 mr-2" /> Call Driver
                     </a>
                 </Button>
+                <Button variant="outline" className="flex-1 h-12" onClick={handleShareRide}>
+                   <Share2 className="w-5 h-5 mr-2" /> Share
+                </Button>
+            </div>
+            
+            <div className="flex gap-4">
+                <Dialog>
+                    <DialogTrigger asChild>
+                        <Button variant="outline" className="flex-1 h-12">
+                            <Shield className="w-5 h-5 mr-2"/> Safety
+                        </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                        <DialogHeader>
+                            <DialogTitle>Safety Toolkit</DialogTitle>
+                            <DialogDescription>Your safety is our priority. Use these tools if you feel unsafe.</DialogDescription>
+                        </DialogHeader>
+                        <div className="py-4 space-y-2">
+                            <Button variant="outline" className="w-full justify-start gap-2"><a href="tel:112"><Phone className="w-4 h-4"/> Call Emergency Services (112)</a></Button>
+                            <Button variant="destructive" className="w-full justify-start gap-2"><Siren className="w-4 h-4"/> Alert Curocity Safety Team</Button>
+                        </div>
+                    </DialogContent>
+                </Dialog>
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
                     <Button variant="destructive" className="flex-1 h-12" disabled={isCancelling}>
