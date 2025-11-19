@@ -122,7 +122,7 @@ export default function RideStatus({ ride, onCancel, isGarageRequest, isAmbulanc
     const config = fareConfig[rideType] || fareConfig['Cab (Lite)'];
     
     // Consistent invoice ID logic
-    const rideCount = (r.driverDetails?.jobsToday || 0);
+    const rideCount = (r.driverDetails?.jobsToday || 0) + 1;
     const formattedRideCount = rideCount.toString().padStart(3, '0');
     const partnerIdentifier = r.driverDetails?.partnerId?.split('-')[1] || '0000';
     const invoiceId = `${partnerIdentifier}-${formattedRideCount}`;
@@ -169,15 +169,15 @@ export default function RideStatus({ ride, onCancel, isGarageRequest, isAmbulanc
                     <p className="text-sm font-semibold text-center mb-4">Pay driver in cash or use UPI</p>
                     <div className="flex justify-center gap-4">
                         <a href={`upi://pay?pa=${driverDetails?.phone}@ybl&pn=${driverDetails?.name || 'Driver'}&am=${totalAmount.toFixed(2)}&cu=INR`} className="flex flex-col items-center gap-2 p-2 rounded-lg hover:bg-muted">
-                           <Image src="/images/upi/gpay.png" alt="Google Pay" width={48} height={48} />
+                           <Image src="https://i.ibb.co/5KwF0w5/gpay.png" alt="Google Pay" width={48} height={48} />
                            <span className="text-xs font-semibold">GPay</span>
                         </a>
                         <a href={`phonepe://pay?pa=${driverDetails?.phone}@ybl&pn=${driverDetails?.name || 'Driver'}&am=${totalAmount.toFixed(2)}&cu=INR`} className="flex flex-col items-center gap-2 p-2 rounded-lg hover:bg-muted">
-                           <Image src="/images/upi/phonepe.png" alt="PhonePe" width={48} height={48} />
+                           <Image src="https://i.ibb.co/3sN39sK/phonepe.png" alt="PhonePe" width={48} height={48} />
                              <span className="text-xs font-semibold">PhonePe</span>
                         </a>
                         <a href={`paytmmp://pay?pa=${driverDetails?.phone}@paytm&pn=${driverDetails?.name || 'Driver'}&am=${totalAmount.toFixed(2)}&cu=INR`} className="flex flex-col items-center gap-2 p-2 rounded-lg hover:bg-muted">
-                           <Image src="/images/upi/paytm.png" alt="Paytm" width={48} height={48} />
+                           <Image src="https://i.ibb.co/LSTP58s/paytm.png" alt="Paytm" width={48} height={48} />
                             <span className="text-xs font-semibold">Paytm</span>
                         </a>
                     </div>
