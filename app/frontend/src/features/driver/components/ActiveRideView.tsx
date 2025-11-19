@@ -53,7 +53,7 @@ const fareConfig: {[key: string]: { base: number, perKm: number, serviceFee: num
     'Curocity Pink': { base: 50, perKm: 12, serviceFee: 30 },
 }
 
-export const ActiveRideView: React.FC<ActiveRideViewProps> = ({ activeRide, setActiveRide }) => {
+export function ActiveRideView({ activeRide, setActiveRide }: ActiveRideViewProps) {
   const { db } = useFirebase();
   const { partnerData } = useDriver();
   const [enteredOtp, setEnteredOtp] = useState('');
@@ -124,7 +124,7 @@ export const ActiveRideView: React.FC<ActiveRideViewProps> = ({ activeRide, setA
       toast.error("Ride Cancelled", { description: "This ride has been cancelled." });
       handleDone();
     }
-  }, [activeRide.status]);
+  }, [activeRide.status, handleDone]);
 
 
   if (!activeRide) return null;
@@ -160,6 +160,12 @@ export const ActiveRideView: React.FC<ActiveRideViewProps> = ({ activeRide, setA
         const rideType = activeRide.rideType || 'Cab (Lite)';
         const config = fareConfig[rideType] || fareConfig['Cab (Lite)'];
         
+        // New Invoice ID Logic
+        const rideCount = (partnerData?.jobsToday || 0) + 1;
+        const formattedRideCount = rideCount.toString().padStart(3, '0');
+        const partnerIdentifier = partnerData?.partnerId?.split('-')[1] || '0000';
+        const invoiceId = `${partnerIdentifier}-${formattedRideCount}`;
+
         // Derive other components from the total fare for consistency
         const taxesAndFees = 5.00;
         const baseFare = config.base;
@@ -182,8 +188,8 @@ export const ActiveRideView: React.FC<ActiveRideViewProps> = ({ activeRide, setA
                     <CardContent className="p-4 pt-0">
                        <Card className="text-left bg-muted/50 p-4 space-y-3">
                             <div className="flex justify-between items-center text-xs text-muted-foreground">
-                                <span>Invoice ID: {activeRide.id.slice(0,8).toUpperCase()}</span>
-                                <span>{format(activeRide.createdAt.toDate(), 'PPP')}</span>
+                                <span className="font-mono">Invoice: {invoiceId}</span>
+                                <span>{format(new Date(), 'Pp')}</span>
                             </div>
                             <Separator/>
                             <div className="space-y-1">
