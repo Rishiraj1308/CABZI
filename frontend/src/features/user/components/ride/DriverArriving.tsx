@@ -286,6 +286,7 @@ export default function DriverArriving({ ride, onCancel }: DriverArrivingProps) 
                                 {driverDetails?.name || 'Driver'} 
                                 <BadgeCheck className="w-5 h-5 text-green-500"/>
                             </p>
+                            <p className="text-sm text-muted-foreground font-semibold">{ride.vehicleNumber}</p>
                             <div className="flex items-center gap-3 text-xs text-muted-foreground">
                                 <div className="flex items-center gap-1">
                                     <Star className="w-3 h-3 text-amber-400 fill-amber-400" />
