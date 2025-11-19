@@ -276,7 +276,10 @@ function DriverLayoutContent({ children }: { children: React.ReactNode }) {
           </Sheet>
           
           <div className="w-full flex-1">
-             <h1 className="font-semibold text-lg">Unit: {partnerData?.partnerId}</h1>
+             <Link href="/driver" className="flex items-center gap-2 font-semibold text-lg">
+                <BrandLogo />
+                <Badge variant="outline" className="font-semibold">Path</Badge>
+             </Link>
           </div>
 
           <div className="flex items-center gap-4">
