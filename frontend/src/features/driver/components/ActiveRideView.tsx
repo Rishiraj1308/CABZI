@@ -16,7 +16,7 @@ import { useDriver } from '@/app/(dashboard)/driver/layout';
 import { useRoute } from '../hooks/useRoute';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import {
   AlertDialog,
@@ -31,6 +31,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { format } from 'date-fns';
 import dynamic from 'next/dynamic';
+import { Table, TableBody, TableCell, TableRow, TableFooter } from '@/components/ui/table';
 
 const LiveMap = dynamic(() => import('@/features/user/components/ride/LiveMap'), { 
     ssr: false,
