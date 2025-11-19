@@ -135,12 +135,6 @@ export default function DriverArriving({ ride, onCancel }: DriverArrivingProps) 
 
   const isTripInProgress = ride.status === 'in-progress';
   
-  const navigateUrl = isTripInProgress && ride.destination?.location
-    ? `https://www.google.com/maps/dir/?api=1&destination=${ride.destination.location.latitude},${ride.destination.location.longitude}`
-    : ride.pickup?.location
-    ? `https://www.google.com/maps/dir/?api=1&destination=${ride.pickup.location.latitude},${ride.pickup.location.longitude}`
-    : '#';
-
   const handleShareRide = async () => {
     if (navigator.share) {
       try {
@@ -247,10 +241,8 @@ export default function DriverArriving({ ride, onCancel }: DriverArrivingProps) 
                         </div>
                     </DialogContent>
                 </Dialog>
-                 <Button asChild size="sm" className="flex-1 h-12 bg-blue-600 hover:bg-blue-700 text-white">
-                    <a href={navigateUrl} target="_blank" rel="noopener noreferrer">
-                        <Navigation className="w-4 h-4 mr-2" /> Navigate
-                    </a>
+                <Button variant="outline" className="flex-1 h-12" onClick={handleShareRide}>
+                   <Share2 className="w-5 h-5 mr-2" /> Share
                 </Button>
             </div>
             
@@ -320,21 +312,27 @@ export default function DriverArriving({ ride, onCancel }: DriverArrivingProps) 
                             <p className="text-xs text-muted-foreground">Share this OTP to start</p>
                         </div>
                     </div>
-                     <Separator className="my-3"/>
-                      <div className="space-y-3 pt-2">
-                        <div className="flex items-start gap-3 text-sm">
-                            <MapPin className="w-4 h-4 mt-1 text-green-500"/>
-                            <div><p className="font-semibold text-muted-foreground text-xs">FROM</p><p>{ride.pickup?.address}</p></div>
-                        </div>
-                        <div className="flex items-start gap-3 text-sm">
-                            <Route className="w-4 h-4 mt-1 text-red-500"/>
-                            <div><p className="font-semibold text-muted-foreground text-xs">TO</p><p>{ride.destination?.address}</p></div>
-                        </div>
-                        <div className="flex items-start gap-3 text-sm">
-                            <IndianRupee className="w-4 h-4 mt-1 text-primary"/>
-                            <div><p className="font-semibold text-muted-foreground text-xs">FARE</p><p className="font-bold text-base">₹{ride.fare}</p></div>
-                        </div>
-                      </div>
+                     <Accordion type="single" collapsible className="w-full mt-2">
+                      <AccordionItem value="item-1">
+                        <AccordionTrigger>View Trip Details</AccordionTrigger>
+                        <AccordionContent>
+                          <div className="space-y-3 pt-2">
+                            <div className="flex items-start gap-3 text-sm">
+                                <MapPin className="w-4 h-4 mt-1 text-green-500"/>
+                                <div><p className="font-semibold text-muted-foreground text-xs">FROM</p><p>{ride.pickup?.address}</p></div>
+                            </div>
+                            <div className="flex items-start gap-3 text-sm">
+                                <Route className="w-4 h-4 mt-1 text-red-500"/>
+                                <div><p className="font-semibold text-muted-foreground text-xs">TO</p><p>{ride.destination?.address}</p></div>
+                            </div>
+                            <div className="flex items-start gap-3 text-sm">
+                                <IndianRupee className="w-4 h-4 mt-1 text-primary"/>
+                                <div><p className="font-semibold text-muted-foreground text-xs">FARE</p><p className="font-bold text-base">₹{ride.fare}</p></div>
+                            </div>
+                          </div>
+                        </AccordionContent>
+                      </AccordionItem>
+                    </Accordion>
                 </CardContent>
             </Card>
 
