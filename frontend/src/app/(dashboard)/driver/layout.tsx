@@ -277,7 +277,7 @@ function DriverLayoutContent({ children }: { children: React.ReactNode }) {
           
           <div className="w-full flex-1">
              <Link href="/driver" className="flex items-center gap-2 font-semibold text-lg">
-                <NewLogoIcon className="w-8 h-8"/>
+                <BrandLogo hideText={true} iconClassName="w-8 h-8"/>
                 <Badge variant="outline" className="font-semibold">Path Partner</Badge>
              </Link>
           </div>

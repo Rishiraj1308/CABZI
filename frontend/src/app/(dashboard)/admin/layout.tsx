@@ -97,9 +97,12 @@
                         <AdminMobileNav />
                    </SheetContent>
                </Sheet>
-               <div className="hidden md:block">
+                <div className="hidden md:flex items-center gap-4">
+                  <Link href="/admin">
+                    <BrandLogo />
+                  </Link>
                   <AdminNav />
-               </div>
+                </div>
              </div>
       
              <div className="ml-auto flex items-center gap-4">
