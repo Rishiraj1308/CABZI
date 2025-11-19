@@ -166,9 +166,9 @@ export default function RideStatus({ ride, onCancel, isGarageRequest, isAmbulanc
                 <div className="mt-4 text-center text-sm text-muted-foreground">
                     <p className="font-semibold">Pay driver in cash or use UPI</p>
                     <div className="flex justify-center gap-2 mt-3">
-                         <a href={`gpay://upi/pay?pa=driver-upi@oksbi&pn=Driver%20Name&am=${totalAmount.toFixed(2)}&cu=INR`}><Button variant="outline" className="h-12 w-12 p-0"><GPayIcon /></Button></a>
-                         <a href={`phonepe://pay?pa=driver-upi@ybl&pn=Driver%20Name&am=${totalAmount.toFixed(2)}&cu=INR`}><Button variant="outline" className="h-12 w-12 p-0"><PhonePeIcon /></Button></a>
-                         <a href={`paytmmp://pay?pa=driver-upi@paytm&pn=Driver%20Name&am=${totalAmount.toFixed(2)}&cu=INR`}><Button variant="outline" className="h-12 w-12 p-0"><PaytmIcon /></Button></a>
+                         <a href={`gpay://upi/pay?pa=driver-upi@oksbi&pn=${driverDetails?.name || 'Driver'}&am=${totalAmount.toFixed(2)}&cu=INR`}><Button variant="outline" className="h-12 w-12 p-0"><GPayIcon /></Button></a>
+                         <a href={`phonepe://pay?pa=driver-upi@ybl&pn=${driverDetails?.name || 'Driver'}&am=${totalAmount.toFixed(2)}&cu=INR`}><Button variant="outline" className="h-12 w-12 p-0"><PhonePeIcon /></Button></a>
+                         <a href={`paytmmp://pay?pa=driver-upi@paytm&pn=${driverDetails?.name || 'Driver'}&am=${totalAmount.toFixed(2)}&cu=INR`}><Button variant="outline" className="h-12 w-12 p-0"><PaytmIcon /></Button></a>
                     </div>
                     <p className="text-xs mt-4">Waiting for driver to confirm payment...</p>
                 </div>
