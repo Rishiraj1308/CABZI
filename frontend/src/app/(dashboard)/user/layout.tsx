@@ -2,7 +2,7 @@
 'use client'
 
 import React, { useState, useEffect, useCallback } from 'react'
-import { Toaster } from "@/components/ui/sonner";
+import { Toaster } from "sonner";
 import { Button } from '@/components/ui/button';
 import { Home, History, Menu, LogOut, Gift, PanelLeft, Landmark, Sun, Moon, Settings, User, Calendar, Car, MapPin, LifeBuoy, Search, MessageSquare, Shield, Phone, Siren, Languages, Wallet } from 'lucide-react';
 import { usePathname, useRouter } from 'next/navigation';
