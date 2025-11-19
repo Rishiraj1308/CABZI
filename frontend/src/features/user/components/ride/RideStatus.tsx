@@ -90,9 +90,7 @@ export default function RideStatus({ ride, onCancel, isGarageRequest, isAmbulanc
   const renderSearchingView = () => (
      <Card className="w-full max-w-md mx-auto h-full flex flex-col shadow-2xl">
         <CardContent className="p-6 flex flex-col items-center justify-center text-center flex-1">
-          <div className="p-4 bg-muted rounded-full mb-4">
-              {isAmbulanceCase ? <Siren className="w-10 h-10 text-destructive"/> : isGarageRequest ? <Wrench className="w-10 h-10 text-amber-600"/> : <Car className="w-10 h-10 text-primary"/>}
-          </div>
+          <SearchingIndicator partnerType={partnerType} />
           <p className="mt-4 font-semibold text-lg">Finding your partner...</p>
           <p className="text-sm text-muted-foreground">Connecting you to a nearby {isAmbulanceCase ? 'hospital' : 'partner'}.</p>
           <AlertDialog>
@@ -141,17 +139,29 @@ export default function RideStatus({ ride, onCancel, isGarageRequest, isAmbulanc
                         <CardDescription>Ride with {driverDetails?.name}</CardDescription>
                     </CardHeader>
                     <CardContent>
-                         <div className="space-y-2 text-sm">
-                            <div className="flex justify-between"><span className="text-muted-foreground">Base Fare</span><span>₹{baseFare.toFixed(2)}</span></div>
-                            <div className="flex justify-between">
-                                <span className="text-muted-foreground">Distance Charge</span>
-                                <div className="text-right">
-                                    <span>₹{distanceCharge.toFixed(2)}</span>
-                                    <p className="text-xs text-muted-foreground">({distanceKm.toFixed(1)} km @ ₹{perKmRate.toFixed(1)}/km)</p>
-                                </div>
+                         <div className="text-left bg-muted/50 p-3 rounded-lg space-y-3">
+                            <div className="flex justify-between items-center text-xs text-muted-foreground">
+                                <span className="font-mono">Invoice: RIDE-{ride.id.slice(0, 8).toUpperCase()}</span>
+                                <span>{format(new Date(), 'Pp')}</span>
                             </div>
-                            <div className="flex justify-between"><span className="text-muted-foreground">Taxes & Fees</span><span>₹{taxesAndFees.toFixed(2)}</span></div>
-                        </div>
+                             <Separator/>
+                             <div className="space-y-3 text-sm">
+                                <div className="flex items-start gap-3"><MapPin className="w-4 h-4 mt-1 text-green-500 flex-shrink-0"/><p><span className="font-medium text-muted-foreground text-xs">FROM: </span>{(ride as RideData).pickup?.address}</p></div>
+                                <div className="flex items-start gap-3"><Route className="w-4 h-4 mt-1 text-red-500 flex-shrink-0"/><p><span className="font-medium text-muted-foreground text-xs">TO: </span>{(ride as RideData).destination?.address}</p></div>
+                            </div>
+                            <Separator/>
+                            <div className="space-y-2 text-sm">
+                                <div className="flex justify-between"><span className="text-muted-foreground">Base Fare</span><span>₹{baseFare.toFixed(2)}</span></div>
+                                <div className="flex justify-between">
+                                    <span className="text-muted-foreground">Distance Charge</span>
+                                    <div className="text-right">
+                                        <span>₹{distanceCharge.toFixed(2)}</span>
+                                        <p className="text-xs text-muted-foreground">({distanceKm.toFixed(1)} km @ ₹{perKmRate.toFixed(1)}/km)</p>
+                                    </div>
+                                </div>
+                                <div className="flex justify-between"><span className="text-muted-foreground">Taxes & Fees</span><span>₹{taxesAndFees.toFixed(2)}</span></div>
+                            </div>
+                         </div>
                         <Separator className="my-4"/>
                         <div className="flex justify-between text-xl font-bold text-primary"><span>Total Amount</span><span>₹{totalAmount.toFixed(2)}</span></div>
                     </CardContent>
@@ -159,9 +169,21 @@ export default function RideStatus({ ride, onCancel, isGarageRequest, isAmbulanc
                 <div className="mt-4 text-center text-sm text-muted-foreground">
                     <p className="font-semibold">Pay driver in cash or use UPI</p>
                     <div className="flex justify-center gap-2 mt-3">
-                        <a href={`upi://pay?pa=driver-upi@oksbi&pn=${driverDetails?.name || 'Driver'}&am=${totalAmount.toFixed(2)}&cu=INR`}><Button variant="outline" className="h-14 w-14 p-2 flex items-center justify-center bg-white hover:bg-gray-100"><Image src="/images/upi/gpay.png" alt="Google Pay" width={40} height={40} /></Button></a>
-                        <a href={`phonepe://pay?pa=driver-upi@ybl&pn=${driverDetails?.name || 'Driver'}&am=${totalAmount.toFixed(2)}&cu=INR`}><Button variant="outline" className="h-14 w-14 p-2 flex items-center justify-center bg-white hover:bg-gray-100"><Image src="/images/upi/phonepe.png" alt="PhonePe" width={40} height={40} /></Button></a>
-                        <a href={`paytmmp://pay?pa=driver-upi@paytm&pn=${driverDetails?.name || 'Driver'}&am=${totalAmount.toFixed(2)}&cu=INR`}><Button variant="outline" className="h-14 w-14 p-2 flex items-center justify-center bg-white hover:bg-gray-100"><Image src="/images/upi/paytm.png" alt="Paytm" width={40} height={40} /></Button></a>
+                        <Button asChild variant="outline" className="h-14 w-14 p-2 flex items-center justify-center bg-white hover:bg-gray-100">
+                             <a href={`upi://pay?pa=${driverDetails?.phone}@ybl&pn=${driverDetails?.name || 'Driver'}&am=${totalAmount.toFixed(2)}&cu=INR`}>
+                                 <Image src="/images/upi/gpay.png" alt="Google Pay" width={40} height={40} />
+                             </a>
+                        </Button>
+                        <Button asChild variant="outline" className="h-14 w-14 p-2 flex items-center justify-center bg-white hover:bg-gray-100">
+                            <a href={`phonepe://pay?pa=${driverDetails?.phone}@ybl&pn=${driverDetails?.name || 'Driver'}&am=${totalAmount.toFixed(2)}&cu=INR`}>
+                                <Image src="/images/upi/phonepe.png" alt="PhonePe" width={40} height={40} />
+                            </a>
+                        </Button>
+                         <Button asChild variant="outline" className="h-14 w-14 p-2 flex items-center justify-center bg-white hover:bg-gray-100">
+                           <a href={`paytmmp://pay?pa=${driverDetails?.phone}@paytm&pn=${driverDetails?.name || 'Driver'}&am=${totalAmount.toFixed(2)}&cu=INR`}>
+                                <Image src="/images/upi/paytm.png" alt="Paytm" width={40} height={40} />
+                            </a>
+                        </Button>
                     </div>
                     <p className="text-xs mt-4">Waiting for driver to confirm payment...</p>
                 </div>
