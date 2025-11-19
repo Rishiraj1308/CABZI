@@ -418,44 +418,44 @@ export default function DriverDashboardPage() {
       <Dialog open={selectedRide !== null} onOpenChange={(isOpen) => !isOpen && setSelectedRide(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Ride Details</DialogTitle>
+            <DialogTitle>Trip Summary</DialogTitle>
             {selectedRide && (
               <DialogDescription>
                 {/* @ts-ignore Firestore TS */}
-                {selectedRide.createdAt ? format(new Date((selectedRide.createdAt as any).seconds * 1000), 'PPP, p') : ''}
+                Invoice ID: {selectedRide.invoiceId || 'N/A'}
               </DialogDescription>
             )}
           </DialogHeader>
-
           {selectedRide && (
             <div className="space-y-4 py-4 text-sm">
-              <div className="flex items-start gap-3">
-                <MapPin className="w-4 h-4 mt-1 text-green-500" />
-                <p>
-                  <span className="font-semibold text-muted-foreground">FROM: </span>
-                  {selectedRide.pickup?.address}
-                </p>
-              </div>
-              <div className="flex items-start gap-3">
-                <Route className="w-4 h-4 mt-1 text-red-500" />
-                <p>
-                  <span className="font-semibold text-muted-foreground">TO: </span>
-                  {selectedRide.destination?.address}
-                </p>
-              </div>
-              <Separator />
-              <div className="flex justify-between items-center">
-                <span className="text-muted-foreground">Rider</span>
-                <span className="font-semibold">{selectedRide.riderName}</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-muted-foreground">Status</span>
-                <span className="font-semibold">{selectedRide.status}</span>
-              </div>
-              <div className="flex justify-between items-center text-lg">
-                <span className="text-muted-foreground">Fare</span>
-                <span className="font-bold text-primary">₹{selectedRide.fare}</span>
-              </div>
+                 <div className="flex justify-between items-center text-xs text-muted-foreground">
+                    <span>{format(selectedRide.createdAt.toDate(), 'PPP, p')}</span>
+                 </div>
+                 <Separator/>
+                 <div className="space-y-1">
+                    <p className="text-xs text-muted-foreground">Billed to:</p>
+                    <p className="font-semibold">{selectedRide.riderName}</p>
+                </div>
+                <Separator/>
+                <div className="flex items-start gap-3">
+                    <MapPin className="w-4 h-4 mt-1 text-green-500" />
+                    <p>
+                    <span className="font-semibold text-muted-foreground text-xs">FROM: </span>
+                    {selectedRide.pickup?.address}
+                    </p>
+                </div>
+                <div className="flex items-start gap-3">
+                    <Route className="w-4 h-4 mt-1 text-red-500" />
+                    <p>
+                    <span className="font-semibold text-muted-foreground text-xs">TO: </span>
+                    {selectedRide.destination?.address}
+                    </p>
+                </div>
+                <Separator />
+                <div className="flex justify-between items-center text-lg">
+                    <span className="text-muted-foreground">Total Fare</span>
+                    <span className="font-bold text-primary">₹{selectedRide.fare}</span>
+                </div>
             </div>
           )}
         </DialogContent>
