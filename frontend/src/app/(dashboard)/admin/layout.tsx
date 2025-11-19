@@ -27,23 +27,25 @@
         const [isLoading, setIsLoading] = useState(true);
       
         useEffect(() => {
+          let sessionData: string | null = null;
           try {
-            const sessionData = localStorage.getItem('curocity-admin-session');
-            if (sessionData) {
-              const parsedSession = JSON.parse(sessionData);
-              if (parsedSession.isLoggedIn) {
-                setSession(parsedSession);
-              } else {
-                router.replace('/login?role=admin');
-              }
+             sessionData = localStorage.getItem('curocity-admin-session');
+          } catch (e) {
+            // localStorage not available
+          }
+          
+          if (sessionData) {
+            const parsedSession = JSON.parse(sessionData);
+            if (parsedSession.isLoggedIn) {
+              setSession(parsedSession);
             } else {
               router.replace('/login?role=admin');
             }
-          } catch (error) {
+          } else {
             router.replace('/login?role=admin');
-          } finally {
-            setIsLoading(false);
           }
+
+          setIsLoading(false);
         }, [router]);
         
         const getInitials = (name: string) => {

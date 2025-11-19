@@ -68,27 +68,9 @@ function DriverProvider({ children }: { children: React.ReactNode }) {
     const { db, user, isUserLoading: isAuthLoading } = useFirebase();
     const router = useRouter();
     const pathname = usePathname();
-
-    const handleLogout = useCallback(() => {
-        const sessionString = localStorage.getItem('curocity-session');
-        if (sessionString && db) {
-            try {
-                const sessionData = JSON.parse(sessionString);
-                if (sessionData.partnerId) {
-                    updateDoc(doc(db, 'pathPartners', sessionData.partnerId), { isOnline: false, lastSeen: serverTimestamp() }).catch(error => {
-                        console.warn("Failed to update status on logout (non-critical):", error);
-                    });
-                }
-            } catch (e) {
-                console.error("Error parsing session on logout:", e);
-            }
-        }
-        localStorage.removeItem('curocity-session');
-        router.push('/');
-    }, [db, router]);
     
     useEffect(() => {
-        if (isAuthLoading || !db) return;
+        if (isAuthLoading) return; // Wait until Firebase Auth is initialized
 
         const isOnboardingPage = pathname.includes('/driver/onboarding');
 
@@ -101,44 +83,40 @@ function DriverProvider({ children }: { children: React.ReactNode }) {
         let unsubscribe: (() => void) | null = null;
         let isSubscribed = true;
 
-        try {
-            const sessionString = localStorage.getItem('curocity-session');
-            if (!sessionString) {
-                if (!isOnboardingPage) handleLogout();
-                setIsLoading(false);
-                return;
-            }
-
-            const sessionData = JSON.parse(sessionString);
-            if (!sessionData.role || sessionData.role !== 'driver' || !sessionData.partnerId) {
-                if (!isOnboardingPage) handleLogout();
-                setIsLoading(false);
-                return;
-            }
-
-            const partnerDocRef = doc(db, 'pathPartners', sessionData.partnerId);
-            unsubscribe = onSnapshot(partnerDocRef, (docSnap) => {
-                if (!isSubscribed) return;
-                if (docSnap.exists()) {
-                    setPartnerData({ id: docSnap.id, ...docSnap.data() } as PartnerData);
-                } else {
-                    if (!isOnboardingPage) handleLogout();
-                }
-                setIsLoading(false);
-            }, (error) => {
-                if (!isOnboardingPage) handleLogout();
-                setIsLoading(false);
-            });
-        } catch (e) {
-            if (!isOnboardingPage) handleLogout();
-            setIsLoading(false);
+        const sessionString = localStorage.getItem('curocity-session');
+        if (!sessionString) {
+             if (!isOnboardingPage) router.replace('/login?role=driver');
+             setIsLoading(false);
+             return;
         }
+
+        const sessionData = JSON.parse(sessionString);
+        if (!sessionData.role || sessionData.role !== 'driver' || !sessionData.partnerId) {
+             if (!isOnboardingPage) router.replace('/login?role=driver');
+             setIsLoading(false);
+             return;
+        }
+
+        const partnerDocRef = doc(db, 'pathPartners', sessionData.partnerId);
+        unsubscribe = onSnapshot(partnerDocRef, (docSnap) => {
+            if (!isSubscribed) return;
+            if (docSnap.exists()) {
+                setPartnerData({ id: docSnap.id, ...docSnap.data() } as PartnerData);
+            } else {
+                 if (!isOnboardingPage) router.replace('/login?role=driver');
+            }
+            setIsLoading(false);
+        }, (error) => {
+            console.error("Driver data listener error:", error);
+            if (!isOnboardingPage) router.replace('/login?role=driver');
+            setIsLoading(false);
+        });
       
         return () => {
             isSubscribed = false;
             if (unsubscribe) unsubscribe();
         };
-    }, [isAuthLoading, user, db, handleLogout, pathname, router]);
+    }, [isAuthLoading, user, db, pathname, router]);
 
     return (
         <DriverContext.Provider value={{ partnerData, isLoading }}>
@@ -199,18 +177,21 @@ function ThemeToggle() {
 function DriverLayoutContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { auth } = useFirebase();
+  const { auth, db } = useFirebase();
   const { partnerData, isLoading } = useDriver();
   useDriverLocation();
   
   const handleLogout = useCallback(() => {
+    if (partnerData?.id && db) {
+        updateDoc(doc(db, 'pathPartners', partnerData.id), { isOnline: false, lastSeen: serverTimestamp() }).catch(error => {
+            console.warn("Failed to update status on logout (non-critical):", error);
+        });
+    }
     if (auth) auth.signOut();
     localStorage.removeItem('curocity-session');
-    toast.success('Logged Out', {
-        description: 'You have been successfully logged out.'
-    });
+    toast.success('Logged Out');
     router.push('/');
-  }, [auth, router]);
+  }, [auth, db, partnerData?.id, router]);
   
   if (pathname.includes('/onboarding')) {
     return <>{children}</>

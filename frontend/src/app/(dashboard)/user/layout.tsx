@@ -2,7 +2,7 @@
 'use client'
 
 import React, { useState, useEffect, useCallback } from 'react'
-import { Toaster } from "@/components/ui/toaster";
+import { Toaster } from "@/components/ui/sonner";
 import { Button } from '@/components/ui/button';
 import { Home, History, Menu, LogOut, Gift, PanelLeft, Landmark, Sun, Moon, Settings, User, Calendar, Car, MapPin, LifeBuoy, Search, MessageSquare, Shield, Phone, Siren, Languages, Wallet } from 'lucide-react';
 import { usePathname, useRouter } from 'next/navigation';
@@ -27,8 +27,6 @@ import {
 } from "@/components/ui/alert-dialog"
 import { useFirebase } from '@/lib/firebase/client-provider';
 import { doc, updateDoc } from 'firebase/firestore';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from '@/components/ui/dialog'
-import { Input } from '@/components/ui/input'
 import { motion, AnimatePresence } from 'framer-motion';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useLanguage } from '@/context/language-provider';
@@ -75,9 +73,13 @@ function UserLayoutContent({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     setIsMounted(true);
+  }, []);
+
+  // More robust authentication check
+  useEffect(() => {
     if (!isUserLoading && !user) {
-      if (window.location.pathname.startsWith('/rider') || window.location.pathname.startsWith('/user')) {
-        router.push('/login?role=user');
+      if (window.location.pathname.startsWith('/user')) {
+        router.replace('/login?role=user');
       }
     }
   }, [user, isUserLoading, router]);
@@ -91,11 +93,12 @@ function UserLayoutContent({ children }: { children: React.ReactNode }) {
     auth.signOut().then(() => {
       localStorage.removeItem('curocity-session');
       router.push('/login?role=user');
+      toast.success('Logged Out');
     });
   };
 
   const getInitials = (name: string | null | undefined) => {
-    if (!name) return 'R';
+    if (!name) return 'U';
     const names = name.split(' ');
     return names.length > 1 ? names[0][0] + names[1][0] : name.substring(0, 2);
   }
@@ -122,8 +125,12 @@ function UserLayoutContent({ children }: { children: React.ReactNode }) {
     visible: { opacity: 1, y: 0 },
   };
 
-  if (!isMounted || isUserLoading) {
-    return <div className="flex h-screen w-full flex-col bg-background"></div>;
+  if (isUserLoading || !isMounted) {
+    return <div className="flex h-screen w-full flex-col bg-background" />;
+  }
+
+  if(!user) {
+    return <div className="flex h-screen w-full items-center justify-center">Redirecting to login...</div>;
   }
   
   return (
@@ -250,5 +257,3 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         </ActiveRequestProvider>
     )
 }
-
-    
