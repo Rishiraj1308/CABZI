@@ -118,8 +118,6 @@ export default function RideStatus({ ride, onCancel, isGarageRequest, isAmbulanc
   const renderPaymentView = () => {
     const r = ride as RideData;
     const totalAmount = r.fare || 0;
-    const rideType = r.rideType || 'Cab (Lite)';
-    const config = fareConfig[rideType] || fareConfig['Cab (Lite)'];
     
     // Get invoiceId from ride data
     const invoiceId = r.invoiceId || 'N/A';
