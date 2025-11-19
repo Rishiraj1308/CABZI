@@ -4,7 +4,7 @@
 import React, { useState, useEffect, useCallback, createContext, useContext } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { LayoutDashboard, LogOut, Sun, Moon, Wrench, Radio, Menu } from 'lucide-react'
+import { LayoutDashboard, LogOut, Sun, Moon, Wrench, Radio, Menu, Shield, Siren, Landmark } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from '@/components/ui/sheet'
@@ -128,7 +128,7 @@ function DriverProvider({ children }: { children: React.ReactNode }) {
 
 const navItems = [
   { href: '/driver', label: 'Patrol Dashboard', icon: LayoutDashboard },
-  { href: '/driver/wallet', label: 'Curocity Bank', icon: 'Landmark' },
+  { href: '/driver/wallet', label: 'Curocity Bank', icon: Landmark },
   { href: '/driver/support', label: 'On-Duty Support', icon: Radio },
 ]
 
@@ -278,7 +278,7 @@ function DriverLayoutContent({ children }: { children: React.ReactNode }) {
           <div className="w-full flex-1">
              <Link href="/driver" className="flex items-center gap-2 font-semibold text-lg">
                 <BrandLogo />
-                <Badge variant="outline" className="font-semibold">Path</Badge>
+                <Badge variant="outline" className="font-semibold">Path Partner</Badge>
              </Link>
           </div>
 
