@@ -35,6 +35,7 @@ export default function UserActivityPage() {
         const fetchAllActivity = async () => {
             setIsLoading(true);
             try {
+                // Corrected field names for queries
                 const ridesQuery = query(collection(db, 'rides'), where('riderId', '==', user.uid), orderBy('createdAt', 'desc'));
                 const casesQuery = query(collection(db, 'emergencyCases'), where('riderId', '==', user.uid), orderBy('createdAt', 'desc'));
                 const appointmentsQuery = query(collection(db, 'appointments'), where('patientId', '==', user.uid), orderBy('createdAt', 'desc'));
