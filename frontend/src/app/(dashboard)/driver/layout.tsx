@@ -4,10 +4,10 @@
 import React, { useState, useEffect, useCallback, createContext, useContext } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { LayoutDashboard, LogOut, Sun, Moon, Wrench, MapPin, Map, Shield, Siren, Radio, UserCheck, Landmark, Menu } from 'lucide-react'
+import { LayoutDashboard, LogOut, Sun, Moon, Wrench, Radio, Landmark, Menu } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
-import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet'
+import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import {
   AlertDialog,
@@ -29,8 +29,8 @@ import { NotificationsProvider } from '@/context/NotificationContext'
 import { Skeleton } from '@/components/ui/skeleton'
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator } from '@/components/ui/dropdown-menu'
 import { toast } from 'sonner'
-import { Separator } from '@/components/ui/separator'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import { useDriverLocation } from '@/features/driver/hooks/useDriverLocation'
 
 
 interface PartnerData {
@@ -177,63 +177,40 @@ function DriverNav() {
 }
 
 function ThemeToggle() {
-    const { theme, setTheme } = useTheme();
+    const { setTheme } = useTheme();
     return (
-       <Button variant="outline" size="icon" onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} className="h-9 w-9">
+       <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+           <Button variant="outline" size="icon" className="h-9 w-9">
             <Sun className="h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
             <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
             <span className="sr-only">Toggle theme</span>
-        </Button>
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem onClick={() => setTheme('light')}>Light</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => setTheme('dark')}>Dark</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => setTheme('system')}>System</DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
     )
 }
 
 function DriverLayoutContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { theme, setTheme } = useTheme();
-  const { auth, db } = useFirebase();
+  const { auth } = useFirebase();
   const { partnerData, isLoading } = useDriver();
+  useDriverLocation();
   
   const handleLogout = useCallback(() => {
     if (auth) auth.signOut();
-    const sessionString = localStorage.getItem('curocity-session');
-    if (sessionString && db) {
-        try {
-            const sessionData = JSON.parse(sessionString);
-            if (sessionData.partnerId) {
-                updateDoc(doc(db, 'pathPartners', sessionData.partnerId), { isOnline: false, lastSeen: serverTimestamp() });
-            }
-        } catch (e) {
-            console.error("Error parsing session on logout:", e);
-        }
-    }
-    
     localStorage.removeItem('curocity-session');
-    
-    if (theme === 'pink') setTheme('system');
-
     toast.success('Logged Out', {
         description: 'You have been successfully logged out.'
     });
     router.push('/');
-  }, [auth, db, router, theme, setTheme]);
-
-   useEffect(() => {
-    let heartbeatInterval: NodeJS.Timeout | null = null;
-    
-    if (partnerData?.id && db && partnerData?.isOnline) { 
-        heartbeatInterval = setInterval(() => {
-            updateDoc(doc(db, 'pathPartners', partnerData.id), { lastSeen: serverTimestamp() }).catch(error => {
-                console.warn("Heartbeat update failed (non-critical):", error);
-            });
-        }, 60000); 
-    }
-    
-    return () => {
-        if (heartbeatInterval) clearInterval(heartbeatInterval);
-    }
-  }, [partnerData, db]);
-  
+  }, [auth, router]);
   
   if (pathname.includes('/onboarding')) {
     return <>{children}</>
@@ -241,22 +218,20 @@ function DriverLayoutContent({ children }: { children: React.ReactNode }) {
   
   if (isLoading) {
     return (
-        <div className="flex h-screen w-full items-center justify-center bg-gray-900">
-             <div className="grid min-h-screen w-full lg:grid-cols-[280px_1fr]">
-                <div className="hidden border-r bg-gray-900/50 lg:block">
-                     <div className="flex h-full max-h-screen flex-col gap-2">
-                        <div className="flex h-[60px] items-center border-b px-6"><Skeleton className="h-8 w-32" /></div>
-                         <div className="flex-1 overflow-auto py-2"><div className="p-4 space-y-2"><Skeleton className="h-8 w-full" /><Skeleton className="h-8 w-full" /></div></div>
-                     </div>
-                </div>
-                 <div className="flex flex-col">
-                    <header className="flex h-14 items-center gap-4 border-b bg-gray-950 px-6">
-                        <Skeleton className="h-8 w-8 rounded-full lg:hidden" />
-                        <Skeleton className="h-6 w-48" />
-                         <div className="ml-auto flex items-center gap-2"><Skeleton className="h-8 w-8 rounded-full" /></div>
-                    </header>
-                    <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6"><Skeleton className="h-full w-full rounded-lg" /></main>
-                </div>
+        <div className="grid min-h-screen w-full lg:grid-cols-[280px_1fr]">
+            <div className="hidden border-r bg-muted/40 lg:block">
+                 <div className="flex h-full max-h-screen flex-col gap-2">
+                    <div className="flex h-[60px] items-center border-b px-6"><Skeleton className="h-8 w-32" /></div>
+                     <div className="flex-1 overflow-auto py-2"><div className="p-4 space-y-2"><Skeleton className="h-8 w-full" /><Skeleton className="h-8 w-full" /></div></div>
+                 </div>
+            </div>
+             <div className="flex flex-col">
+                <header className="flex h-14 items-center gap-4 border-b bg-muted/40 px-6">
+                    <Skeleton className="h-8 w-8 rounded-full lg:hidden" />
+                    <Skeleton className="h-6 w-48" />
+                     <div className="ml-auto flex items-center gap-2"><Skeleton className="h-8 w-8 rounded-full" /></div>
+                </header>
+                <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6"><Skeleton className="h-full w-full rounded-lg" /></main>
             </div>
         </div>
     )
@@ -265,28 +240,27 @@ function DriverLayoutContent({ children }: { children: React.ReactNode }) {
   const getInitials = (name: string) => name.split(' ').map(n => n[0]).join('');
 
   return (
-    <div className={cn("grid min-h-screen w-full lg:grid-cols-[280px_1fr] dark bg-gray-950 text-gray-200")}>
-      <div className="hidden border-r border-gray-800 bg-gray-900 lg:block">
+    <div className="grid min-h-screen w-full lg:grid-cols-[280px_1fr]">
+      <div className="hidden border-r bg-muted/40 lg:block">
         <div className="flex h-full max-h-screen flex-col gap-2">
-          <div className="flex h-[60px] items-center border-b border-gray-800 px-6">
-            <Link href="/driver" className="flex items-center gap-2 font-semibold text-white">
-                <Shield className="h-6 w-6 text-blue-400"/>
-                <span>Patrol System</span>
+          <div className="flex h-[60px] items-center border-b px-6">
+            <Link href="/driver" className="flex items-center gap-2 font-semibold">
+                <BrandLogo />
             </Link>
           </div>
           <div className="flex-1 overflow-auto py-2">
             <DriverNav />
           </div>
-          <div className="mt-auto p-4 border-t border-gray-800">
-              <Card className="bg-gray-800/50 border-gray-700">
-                  <CardHeader className="p-3">
-                      <CardTitle className="text-base">Need Assistance?</CardTitle>
-                      <CardDescription className="text-xs">Request on-duty support for vehicle or other issues.</CardDescription>
+          <div className="mt-auto p-4">
+              <Card>
+                  <CardHeader className="pb-4">
+                      <CardTitle>Need Assistance?</CardTitle>
+                      <CardDescription>Request on-duty support for vehicle or other issues.</CardDescription>
                   </CardHeader>
-                  <CardContent className="p-3 pt-0">
-                      <Button size="sm" className="w-full bg-blue-600 hover:bg-blue-500" asChild>
+                  <CardContent>
+                      <Button size="sm" className="w-full" asChild>
                           <Link href="/user/resq">
-                            <Siren className="w-4 h-4 mr-2" /> Request ResQ
+                              <Wrench className="w-4 h-4 mr-2" /> Request ResQ
                           </Link>
                       </Button>
                   </CardContent>
@@ -295,26 +269,25 @@ function DriverLayoutContent({ children }: { children: React.ReactNode }) {
         </div>
       </div>
       <div className="flex flex-col">
-        <header className="flex h-14 items-center gap-4 border-b border-gray-800 bg-gray-900/50 px-4 lg:h-[60px] lg:px-6">
+        <header className="flex h-14 items-center gap-4 border-b bg-muted/40 px-4 lg:h-[60px] lg:px-6">
           <Sheet>
             <SheetTrigger asChild>
-              <Button variant="outline" size="icon" className="shrink-0 lg:hidden bg-gray-800 border-gray-700 hover:bg-gray-700">
+              <Button variant="outline" size="icon" className="shrink-0 lg:hidden">
                 <Menu className="h-5 w-5" />
                 <span className="sr-only">Toggle navigation menu</span>
               </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="flex flex-col bg-gray-900 border-gray-800 text-white p-0">
-               <SheetHeader className="h-[60px] flex flex-row items-center border-b border-gray-800 px-6">
-                   <Link href="/driver" className="flex items-center gap-2 font-semibold text-white">
-                        <Shield className="h-6 w-6 text-blue-400"/>
-                        <span>Patrol System</span>
+            <SheetContent side="left" className="flex flex-col p-0">
+               <SheetHeader className="h-[60px] flex flex-row items-center border-b px-6">
+                   <Link href="/driver" className="flex items-center gap-2 font-semibold">
+                       <BrandLogo />
                     </Link>
                </SheetHeader>
                <div className="pt-4"><DriverNav/></div>
-               <div className="mt-auto p-4 border-t border-gray-800">
-                  <Button size="sm" className="w-full bg-blue-600 hover:bg-blue-500" asChild>
-                      <Link href="/user/resq">
-                        <Siren className="w-4 h-4 mr-2" /> Request ResQ
+               <div className="mt-auto p-4 border-t">
+                  <Button size="sm" className="w-full" asChild>
+                       <Link href="/user/resq">
+                          <Wrench className="w-4 h-4 mr-2" /> Request ResQ
                       </Link>
                   </Button>
                 </div>
@@ -322,47 +295,46 @@ function DriverLayoutContent({ children }: { children: React.ReactNode }) {
           </Sheet>
           
           <div className="w-full flex-1">
-             <h1 className="font-semibold text-lg text-gray-300">Unit: {partnerData?.partnerId}</h1>
+             <h1 className="font-semibold text-lg">Unit: {partnerData?.partnerId}</h1>
           </div>
 
           <div className="flex items-center gap-4">
-             <Badge className={cn("text-xs", partnerData?.isOnline ? "bg-green-500/20 text-green-400 border-green-500/30" : "bg-gray-500/20 text-gray-400 border-gray-500/30")}>
-                {partnerData?.isOnline ? "ON DUTY" : "OFF DUTY"}
+             <Badge className={cn("text-xs", partnerData?.isOnline ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800")}>
+                {partnerData?.isOnline ? "ONLINE" : "OFFLINE"}
              </Badge>
+             <ThemeToggle />
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="rounded-full h-9 w-9">
+                  <Button variant="secondary" size="icon" className="rounded-full">
                     <Avatar className="h-8 w-8">
                        <AvatarImage src={partnerData?.photoUrl || undefined} alt={partnerData?.name || 'Driver'} />
-                       <AvatarFallback className="bg-gray-700 text-gray-300">{getInitials(partnerData?.name || 'D')}</AvatarFallback>
+                       <AvatarFallback>{getInitials(partnerData?.name || 'D')}</AvatarFallback>
                     </Avatar>
                     <span className="sr-only">Toggle user menu</span>
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="bg-gray-900 border-gray-800 text-gray-200">
+                <DropdownMenuContent align="end">
                   <DropdownMenuLabel>{partnerData?.name}</DropdownMenuLabel>
-                  <DropdownMenuSeparator className="bg-gray-800" />
-                  <DropdownMenuItem onClick={() => router.push('/driver/profile')} className="focus:bg-gray-800"><UserCheck className="mr-2 h-4 w-4" /> Profile</DropdownMenuItem>
-                  <DropdownMenuSeparator className="bg-gray-800"/>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => router.push('/driver/profile')}>Profile</DropdownMenuItem>
+                  <DropdownMenuSeparator/>
                   <AlertDialog>
                       <AlertDialogTrigger asChild>
-                         <DropdownMenuItem onSelect={e => e.preventDefault()} className="text-red-400 focus:bg-red-500/20 focus:text-red-400">
+                         <DropdownMenuItem onSelect={e => e.preventDefault()} className="text-destructive focus:text-destructive">
                             <LogOut className="mr-2 h-4 w-4" /> Sign Out
                          </DropdownMenuItem>
                       </AlertDialogTrigger>
-                      <AlertDialogContent className="bg-gray-900 border-gray-800 text-gray-200">
-                          <AlertDialogHeader><AlertDialogTitle>Confirm Sign Out</AlertDialogTitle><AlertDialogDescription className="text-gray-400">Are you sure you want to end your patrol session?</AlertDialogDescription></AlertDialogHeader>
-                          <AlertDialogFooter><AlertDialogCancel className="bg-gray-800 border-gray-700 hover:bg-gray-700">Cancel</AlertDialogCancel><AlertDialogAction onClick={handleLogout} className="bg-red-600 hover:bg-red-500">Sign Out</AlertDialogAction></AlertDialogFooter>
+                      <AlertDialogContent>
+                          <AlertDialogHeader><AlertDialogTitle>Confirm Sign Out</AlertDialogTitle><AlertDialogDescription>Are you sure you want to end your shift?</AlertDialogDescription></AlertDialogHeader>
+                          <AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={handleLogout} className="bg-destructive hover:bg-destructive/90">Sign Out</AlertDialogAction></AlertDialogFooter>
                       </AlertDialogContent>
                   </AlertDialog>
                 </DropdownMenuContent>
               </DropdownMenu>
           </div>
         </header>
-        <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6 bg-gray-950/50">
-          <NotificationsProvider>
+        <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
             {children}
-          </NotificationsProvider>
         </main>
       </div>
     </div>
@@ -378,7 +350,3 @@ export default function DriverLayout({ children }: { children: React.ReactNode }
         </NotificationsProvider>
     );
 }
-
-    
-
-    
