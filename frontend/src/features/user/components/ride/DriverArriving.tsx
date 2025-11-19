@@ -106,7 +106,13 @@ export default function DriverArriving({ ride, onCancel }: DriverArrivingProps) 
   useEffect(() => {
     if (ride.status === 'searching' || !driverLocation) return;
 
-    computeRoute();
+    const interval = setInterval(() => {
+        computeRoute();
+    }, 10000); // Re-calculate every 10 seconds
+    
+    computeRoute(); // Initial calculation
+
+    return () => clearInterval(interval);
 
   }, [driverLocation, computeRoute, ride.status]);
 
@@ -133,6 +139,12 @@ export default function DriverArriving({ ride, onCancel }: DriverArrivingProps) 
 
   const driverAge = calculateAge(driverDetails?.dob);
 
+  const navigateUrl = ride.status === 'in-progress' && ride.destination?.location
+    ? `https://www.google.com/maps/dir/?api=1&destination=${ride.destination.location.latitude},${ride.destination.location.longitude}`
+    : ride.pickup?.location
+    ? `https://www.google.com/maps/dir/?api=1&destination=${ride.pickup.location.latitude},${ride.pickup.location.longitude}`
+    : '#';
+
   const isTripInProgress = ride.status === 'in-progress';
   
   const handleShareRide = async () => {
@@ -140,7 +152,7 @@ export default function DriverArriving({ ride, onCancel }: DriverArrivingProps) 
       try {
         await navigator.share({
           title: 'My Curocity Ride',
-          text: `I'm on a Curocity ride with ${driverDetails?.name || 'a driver'}. Vehicle: ${driverDetails?.vehicle} (${ride.vehicleNumber}).`
+          text: `I'm on a Curocity ride with ${driverDetails?.name || 'a driver'}. Vehicle: ${driverDetails?.vehicle} (${ride.vehicleNumber}).`,
         });
         toast.success("Ride status shared!");
       } catch (error) {
@@ -205,20 +217,39 @@ export default function DriverArriving({ ride, onCancel }: DriverArrivingProps) 
             </div>
             
             <Card className="shadow-none border">
-                <CardContent className="p-3 flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                        <Avatar className="w-12 h-12">
-                            <AvatarImage src={driverDetails?.photoUrl || `https://i.pravatar.cc/150?u=${ride.driverId}`} />
-                            <AvatarFallback>{driverDetails?.name?.charAt(0) || 'D'}</AvatarFallback>
-                        </Avatar>
-                        <div>
-                            <p className="font-bold">{driverDetails?.name || 'Driver'}</p>
-                            <p className="text-xs text-muted-foreground">{driverDetails?.vehicle} • {ride.vehicleNumber}</p>
+                <CardContent className="p-3">
+                     <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                            <Avatar className="w-12 h-12">
+                                <AvatarImage src={driverDetails?.photoUrl || `https://i.pravatar.cc/150?u=${ride.driverId}`} />
+                                <AvatarFallback>{driverDetails?.name?.charAt(0) || 'D'}</AvatarFallback>
+                            </Avatar>
+                            <div>
+                                <p className="font-bold">{driverDetails?.name || 'Driver'}</p>
+                                <p className="text-xs text-muted-foreground">{driverDetails?.vehicle} • {ride.vehicleNumber}</p>
+                            </div>
                         </div>
+                         <div className="flex items-center gap-2">
+                             <Button asChild variant="outline" size="icon"><a href={`tel:${driverDetails?.phone}`}><Phone className="w-4 h-4"/></a></Button>
+                         </div>
                     </div>
-                     <div className="flex items-center gap-2">
-                         <Button asChild variant="outline" size="icon"><a href={`tel:${driverDetails?.phone}`}><Phone className="w-4 h-4"/></a></Button>
-                     </div>
+                     <Accordion type="single" collapsible className="w-full mt-2">
+                      <AccordionItem value="item-1">
+                        <AccordionTrigger>View Trip Details</AccordionTrigger>
+                        <AccordionContent>
+                          <div className="space-y-3 pt-2">
+                            <div className="flex items-start gap-3 text-sm">
+                                <MapPin className="w-4 h-4 mt-1 text-green-500"/>
+                                <div><p className="font-semibold text-muted-foreground text-xs">FROM</p><p>{ride.pickup?.address}</p></div>
+                            </div>
+                            <div className="flex items-start gap-3 text-sm">
+                                <Route className="w-4 h-4 mt-1 text-red-500"/>
+                                <div><p className="font-semibold text-muted-foreground text-xs">TO</p><p>{ride.destination?.address}</p></div>
+                            </div>
+                          </div>
+                        </AccordionContent>
+                      </AccordionItem>
+                    </Accordion>
                 </CardContent>
             </Card>
 
@@ -226,7 +257,7 @@ export default function DriverArriving({ ride, onCancel }: DriverArrivingProps) 
                  <Dialog>
                     <DialogTrigger asChild>
                         <Button variant="outline" className="flex-1 h-12">
-                            <Shield className="w-5 h-5 mr-2"/> Safety
+                            <Shield className="w-5 h-5 mr-2"/> Safety Toolkit
                         </Button>
                     </DialogTrigger>
                     <DialogContent>
@@ -241,13 +272,12 @@ export default function DriverArriving({ ride, onCancel }: DriverArrivingProps) 
                         </div>
                     </DialogContent>
                 </Dialog>
-                <Button variant="outline" className="flex-1 h-12" onClick={handleShareRide}>
-                   <Share2 className="w-5 h-5 mr-2" /> Share
+                 <Button asChild size="sm" className="flex-1 h-12 bg-blue-600 hover:bg-blue-700 text-white">
+                    <a href={navigateUrl} target="_blank" rel="noopener noreferrer">
+                        <Navigation className="w-4 h-4 mr-2" /> Navigate
+                    </a>
                 </Button>
             </div>
-            
-            <p className="text-xs text-center text-muted-foreground pt-2">You are on a safe and insured Curocity ride.</p>
-
         </CardContent>
       </Card>
     </div>
@@ -342,8 +372,10 @@ export default function DriverArriving({ ride, onCancel }: DriverArrivingProps) 
                         <Phone className="w-5 h-5 mr-2" /> Call Driver
                     </a>
                 </Button>
-                <Button variant="outline" className="flex-1 h-12" onClick={handleShareRide}>
-                   <Share2 className="w-5 h-5 mr-2" /> Share
+                 <Button asChild size="sm" className="flex-1 h-12 bg-blue-600 hover:bg-blue-700 text-white">
+                    <a href={navigateUrl} target="_blank" rel="noopener noreferrer">
+                        <Navigation className="w-4 h-4 mr-2" /> Navigate
+                    </a>
                 </Button>
             </div>
             
@@ -351,7 +383,7 @@ export default function DriverArriving({ ride, onCancel }: DriverArrivingProps) 
                 <Dialog>
                     <DialogTrigger asChild>
                         <Button variant="outline" className="flex-1 h-12">
-                            <Shield className="w-5 h-5 mr-2"/> Safety
+                            <Shield className="w-5 h-5 mr-2"/> Safety Toolkit
                         </Button>
                     </DialogTrigger>
                     <DialogContent>
@@ -360,6 +392,7 @@ export default function DriverArriving({ ride, onCancel }: DriverArrivingProps) 
                             <DialogDescription>Your safety is our priority. Use these tools if you feel unsafe.</DialogDescription>
                         </DialogHeader>
                         <div className="py-4 space-y-2">
+                            <Button onClick={handleShareRide} variant="outline" className="w-full justify-start gap-2"><Share2 className="w-4 h-4"/> Share Ride Status</Button>
                             <Button variant="outline" className="w-full justify-start gap-2"><a href="tel:112"><Phone className="w-4 h-4"/> Call Emergency Services (112)</a></Button>
                             <Button variant="destructive" className="w-full justify-start gap-2"><Siren className="w-4 h-4"/> Alert Curocity Safety Team</Button>
                         </div>
