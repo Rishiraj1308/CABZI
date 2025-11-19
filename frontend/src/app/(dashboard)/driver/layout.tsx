@@ -4,7 +4,7 @@
 import React, { useState, useEffect, useCallback, createContext, useContext } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { LayoutDashboard, LogOut, Sun, Moon, Wrench, Radio, Landmark, Menu } from 'lucide-react'
+import { LayoutDashboard, LogOut, Sun, Moon, Wrench, Radio, Menu } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from '@/components/ui/sheet'
@@ -128,7 +128,7 @@ function DriverProvider({ children }: { children: React.ReactNode }) {
 
 const navItems = [
   { href: '/driver', label: 'Patrol Dashboard', icon: LayoutDashboard },
-  { href: '/driver/wallet', label: 'Curocity Bank', icon: Landmark },
+  { href: '/driver/wallet', label: 'Curocity Bank', icon: 'Landmark' },
   { href: '/driver/support', label: 'On-Duty Support', icon: Radio },
 ]
 
@@ -283,9 +283,6 @@ function DriverLayoutContent({ children }: { children: React.ReactNode }) {
           </div>
 
           <div className="flex items-center gap-4">
-             <Badge className={cn("text-xs", partnerData?.isOnline ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800")}>
-                {partnerData?.isOnline ? "ONLINE" : "OFFLINE"}
-             </Badge>
              <ThemeToggle />
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -334,3 +331,4 @@ export default function DriverLayout({ children }: { children: React.ReactNode }
         </NotificationsProvider>
     );
 }
+
