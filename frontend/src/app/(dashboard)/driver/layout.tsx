@@ -1,10 +1,10 @@
 
 'use client'
 
-import React, { useState, useEffect, useRef, useCallback, createContext, useContext } from 'react'
+import React, { useState, useEffect, useCallback, createContext, useContext } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { LayoutDashboard, Landmark, Gem, User, PanelLeft, LogOut, Sun, Moon, Wrench, MapPin, Map } from 'lucide-react'
+import { LayoutDashboard, LogOut, Sun, Moon, Wrench, MapPin, Map, Shield, Siren, Radio, UserCheck } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet'
@@ -29,6 +29,7 @@ import { NotificationsProvider } from '@/context/NotificationContext'
 import { Skeleton } from '@/components/ui/skeleton'
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator } from '@/components/ui/dropdown-menu'
 import { toast } from 'sonner'
+import { Separator } from '@/components/ui/separator'
 
 interface PartnerData {
     id: string;
@@ -36,6 +37,9 @@ interface PartnerData {
     name: string;
     isOnline?: boolean;
     currentLocation?: GeoPoint;
+    vehicleNumber?: string;
+    partnerId?: string;
+    photoUrl?: string;
     [key: string]: any;
 }
 
@@ -143,14 +147,12 @@ function DriverProvider({ children }: { children: React.ReactNode }) {
 
 
 const navItems = [
-  { href: '/driver', label: 'Dashboard', icon: LayoutDashboard },
+  { href: '/driver', label: 'Patrol Dashboard', icon: LayoutDashboard },
   { href: '/driver/wallet', label: 'Curocity Bank', icon: Landmark },
-  { href: '/driver/subscription', label: 'Subscription', icon: Gem },
-  { href: '/driver/support', label: 'Support', icon: Wrench },
-  { href: '/driver/profile', label: 'Profile', icon: User },
+  { href: '/driver/support', label: 'On-Duty Support', icon: Radio },
 ]
 
-function DriverNav({ isPinkPartner }: { isPinkPartner: boolean }) {
+function DriverNav() {
   const pathname = usePathname()
   
   return (
@@ -161,7 +163,7 @@ function DriverNav({ isPinkPartner }: { isPinkPartner: boolean }) {
           href={item.href}
           className={cn(
             'flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:bg-muted hover:text-primary',
-            pathname === item.href && (isPinkPartner ? 'bg-pink-100/50 text-pink-700 dark:text-pink-300 font-semibold' : 'bg-muted text-primary font-semibold')
+            pathname === item.href && 'bg-muted text-primary font-semibold'
           )}
         >
             <item.icon className="h-4 w-4" />
@@ -173,70 +175,14 @@ function DriverNav({ isPinkPartner }: { isPinkPartner: boolean }) {
 }
 
 function ThemeToggle() {
-    const { setTheme } = useTheme()
+    const { theme, setTheme } = useTheme()
     return (
-        <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-               <Button variant="outline" size="icon">
-                <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-                <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-                <span className="sr-only">Toggle theme</span>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => setTheme('light')}>Light</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setTheme('dark')}>Dark</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setTheme('pink')}>Pink</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setTheme('system')}>System</DropdownMenuItem>
-            </DropdownMenuContent>
-        </DropdownMenu>
+       <Button variant="outline" size="icon" onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} className="h-9 w-9">
+            <Sun className="h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+            <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+            <span className="sr-only">Toggle theme</span>
+        </Button>
     )
-}
-
-function LocationDisplay() {
-    const { partnerData } = useDriver();
-    const [locationAddress, setLocationAddress] = useState('Locating...');
-
-    useEffect(() => {
-        let isMounted = true;
-        const getAddress = async (lat: number, lon: number) => {
-            try {
-                const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=14`);
-                if (!response.ok || !isMounted) return;
-                const data = await response.json();
-                const address = data.address;
-                const primaryLocation = address.suburb || address.neighbourhood || address.city || address.town || address.village;
-                const secondaryLocation = address.city || address.state;
-
-                if (isMounted) {
-                    if (primaryLocation && secondaryLocation && primaryLocation !== secondaryLocation) {
-                        setLocationAddress(`${primaryLocation}, ${secondaryLocation}`);
-                    } else if (primaryLocation) {
-                        setLocationAddress(primaryLocation);
-                    } else {
-                        setLocationAddress(data.display_name.split(',').slice(0, 2).join(', '));
-                    }
-                }
-            } catch (error) {
-                if (isMounted) setLocationAddress('Location details unavailable');
-            }
-        };
-
-        if (partnerData?.currentLocation) {
-            getAddress(partnerData.currentLocation.latitude, partnerData.currentLocation.longitude);
-        } else {
-            setLocationAddress('Location Unknown');
-        }
-
-        return () => { isMounted = false; };
-    }, [partnerData?.currentLocation]);
-
-    return (
-        <div className="flex items-center gap-2 overflow-hidden">
-            <MapPin className="w-4 h-4 text-muted-foreground flex-shrink-0"/>
-            <span className="text-sm font-medium text-muted-foreground truncate">{locationAddress}</span>
-        </div>
-    );
 }
 
 function DriverLayoutContent({ children }: { children: React.ReactNode }) {
@@ -286,13 +232,6 @@ function DriverLayoutContent({ children }: { children: React.ReactNode }) {
     }
   }, [partnerData, db]);
   
-  useEffect(() => {
-    if (!isLoading && partnerData?.isCabziPinkPartner && theme !== 'pink') {
-      setTheme('pink');
-    } else if (!isLoading && !partnerData?.isCabziPinkPartner && theme === 'pink') {
-      setTheme('system');
-    }
-  }, [isLoading, partnerData, theme, setTheme]);
   
   if (pathname.includes('/onboarding')) {
     return <>{children}</>
@@ -300,86 +239,125 @@ function DriverLayoutContent({ children }: { children: React.ReactNode }) {
   
   if (isLoading) {
     return (
-        <div className="flex h-screen w-full items-center justify-center">
-            <Skeleton className="h-full w-full" />
+        <div className="flex h-screen w-full items-center justify-center bg-gray-900">
+             <div className="grid min-h-screen w-full lg:grid-cols-[280px_1fr]">
+                <div className="hidden border-r bg-gray-900/50 lg:block">
+                     <div className="flex h-full max-h-screen flex-col gap-2">
+                        <div className="flex h-[60px] items-center border-b px-6"><Skeleton className="h-8 w-32" /></div>
+                         <div className="flex-1 overflow-auto py-2"><div className="p-4 space-y-2"><Skeleton className="h-8 w-full" /><Skeleton className="h-8 w-full" /></div></div>
+                     </div>
+                </div>
+                 <div className="flex flex-col">
+                    <header className="flex h-14 items-center gap-4 border-b bg-gray-950 px-6">
+                        <Skeleton className="h-8 w-8 rounded-full lg:hidden" />
+                        <Skeleton className="h-6 w-48" />
+                         <div className="ml-auto flex items-center gap-2"><Skeleton className="h-8 w-8 rounded-full" /></div>
+                    </header>
+                    <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6"><Skeleton className="h-full w-full rounded-lg" /></main>
+                </div>
+            </div>
         </div>
     )
   }
 
   const getInitials = (name: string) => name.split(' ').map(n => n[0]).join('');
-  const isPinkPartner = partnerData?.isCabziPinkPartner ?? false;
 
   return (
-    <div className={cn("grid min-h-screen w-full lg:grid-cols-[280px_1fr]", isPinkPartner && 'pink')}>
-      <div className="hidden border-r bg-muted/40 lg:block">
+    <div className={cn("grid min-h-screen w-full lg:grid-cols-[280px_1fr] dark bg-gray-950 text-gray-200")}>
+      <div className="hidden border-r border-gray-800 bg-gray-900 lg:block">
         <div className="flex h-full max-h-screen flex-col gap-2">
-          <div className="flex h-[60px] items-center border-b px-6">
-            <Link href="/driver" className="flex items-center gap-2 font-semibold">
-              <BrandLogo />
+          <div className="flex h-[60px] items-center border-b border-gray-800 px-6">
+            <Link href="/driver" className="flex items-center gap-2 font-semibold text-white">
+                <Shield className="h-6 w-6 text-blue-400"/>
+                <span>Patrol System</span>
             </Link>
           </div>
           <div className="flex-1 overflow-auto py-2">
-            <DriverNav isPinkPartner={isPinkPartner} />
+            <DriverNav />
+          </div>
+          <div className="mt-auto p-4 border-t border-gray-800">
+              <Card className="bg-gray-800/50 border-gray-700">
+                  <CardHeader className="p-3">
+                      <CardTitle className="text-base">Need Assistance?</CardTitle>
+                      <CardDescription className="text-xs">Request on-duty support for vehicle or other issues.</CardDescription>
+                  </CardHeader>
+                  <CardContent className="p-3 pt-0">
+                      <Button size="sm" className="w-full bg-blue-600 hover:bg-blue-500" asChild>
+                          <Link href="/user/resq">
+                            <Siren className="w-4 h-4 mr-2" /> Request ResQ
+                          </Link>
+                      </Button>
+                  </CardContent>
+              </Card>
           </div>
         </div>
       </div>
       <div className="flex flex-col">
-        <header className="flex h-14 items-center gap-4 border-b bg-muted/40 px-6">
+        <header className="flex h-14 items-center gap-4 border-b border-gray-800 bg-gray-900/50 px-4 lg:h-[60px] lg:px-6">
           <Sheet>
             <SheetTrigger asChild>
-              <Button variant="outline" size="icon" className="lg:hidden">
-                <PanelLeft className="h-5 w-5" />
+              <Button variant="outline" size="icon" className="shrink-0 lg:hidden bg-gray-800 border-gray-700 hover:bg-gray-700">
+                <Menu className="h-5 w-5" />
                 <span className="sr-only">Toggle navigation menu</span>
               </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="p-0">
-               <SheetHeader className="h-[60px] flex flex-row items-center border-b px-6">
-                   <SheetTitle className="sr-only">Main Menu</SheetTitle>
-                   <Link href="/driver" className="flex items-center gap-2 font-semibold">
-                      <BrandLogo />
-                   </Link>
+            <SheetContent side="left" className="flex flex-col bg-gray-900 border-gray-800 text-white p-0">
+               <SheetHeader className="h-[60px] flex flex-row items-center border-b border-gray-800 px-6">
+                   <Link href="/driver" className="flex items-center gap-2 font-semibold text-white">
+                        <Shield className="h-6 w-6 text-blue-400"/>
+                        <span>Patrol System</span>
+                    </Link>
                </SheetHeader>
-               <div className="pt-4"><DriverNav isPinkPartner={isPinkPartner} /></div>
+               <div className="pt-4"><DriverNav/></div>
+               <div className="mt-auto p-4 border-t border-gray-800">
+                  <Button size="sm" className="w-full bg-blue-600 hover:bg-blue-500" asChild>
+                      <Link href="/user/resq">
+                        <Siren className="w-4 h-4 mr-2" /> Request ResQ
+                      </Link>
+                  </Button>
+                </div>
             </SheetContent>
           </Sheet>
           
-          <LocationDisplay />
+          <div className="w-full flex-1">
+             <h1 className="font-semibold text-lg text-gray-300">Unit: {partnerData?.partnerId}</h1>
+          </div>
 
-          <div className="ml-auto flex items-center gap-2">
-            {isPinkPartner && <Badge className="bg-pink-500 text-white">Curocity Pink Partner</Badge>}
-             <ThemeToggle />
-             <DropdownMenu>
+          <div className="flex items-center gap-4">
+             <Badge className={cn("text-xs", partnerData?.isOnline ? "bg-green-500/20 text-green-400 border-green-500/30" : "bg-gray-500/20 text-gray-400 border-gray-500/30")}>
+                {partnerData?.isOnline ? "ON DUTY" : "OFF DUTY"}
+             </Badge>
+            <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="secondary" size="icon" className="rounded-full">
+                  <Button variant="ghost" size="icon" className="rounded-full h-9 w-9">
                     <Avatar className="h-8 w-8">
                        <AvatarImage src={partnerData?.photoUrl || undefined} alt={partnerData?.name || 'Driver'} />
-                       <AvatarFallback>{getInitials(partnerData?.name || 'D')}</AvatarFallback>
+                       <AvatarFallback className="bg-gray-700 text-gray-300">{getInitials(partnerData?.name || 'D')}</AvatarFallback>
                     </Avatar>
                     <span className="sr-only">Toggle user menu</span>
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuLabel>{partnerData?.name || 'Driver'}</DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => router.push('/driver/profile')}>Profile</DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => router.push('/driver/support')}>Support</DropdownMenuItem>
-                  <DropdownMenuSeparator />
+                <DropdownMenuContent align="end" className="bg-gray-900 border-gray-800 text-gray-200">
+                  <DropdownMenuLabel>{partnerData?.name}</DropdownMenuLabel>
+                  <DropdownMenuSeparator className="bg-gray-800" />
+                  <DropdownMenuItem onClick={() => router.push('/driver/profile')} className="focus:bg-gray-800"><UserCheck className="mr-2 h-4 w-4" /> Profile</DropdownMenuItem>
+                  <DropdownMenuSeparator className="bg-gray-800"/>
                   <AlertDialog>
                       <AlertDialogTrigger asChild>
-                         <DropdownMenuItem onSelect={e => e.preventDefault()} className="text-destructive focus:bg-destructive/10">
-                            <LogOut className="mr-2 h-4 w-4" /> Logout
+                         <DropdownMenuItem onSelect={e => e.preventDefault()} className="text-red-400 focus:bg-red-500/20 focus:text-red-400">
+                            <LogOut className="mr-2 h-4 w-4" /> Sign Out
                          </DropdownMenuItem>
                       </AlertDialogTrigger>
-                      <AlertDialogContent>
-                          <AlertDialogHeader><AlertDialogTitle>Confirm Logout</AlertDialogTitle><AlertDialogDescription>Are you sure you want to end your session?</AlertDialogDescription></AlertDialogHeader>
-                          <AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={handleLogout} className="bg-destructive hover:bg-destructive/90">Logout</AlertDialogAction></AlertDialogFooter>
+                      <AlertDialogContent className="bg-gray-900 border-gray-800 text-gray-200">
+                          <AlertDialogHeader><AlertDialogTitle>Confirm Sign Out</AlertDialogTitle><AlertDialogDescription className="text-gray-400">Are you sure you want to end your patrol session?</AlertDialogDescription></AlertDialogHeader>
+                          <AlertDialogFooter><AlertDialogCancel className="bg-gray-800 border-gray-700 hover:bg-gray-700">Cancel</AlertDialogCancel><AlertDialogAction onClick={handleLogout} className="bg-red-600 hover:bg-red-500">Sign Out</AlertDialogAction></AlertDialogFooter>
                       </AlertDialogContent>
                   </AlertDialog>
                 </DropdownMenuContent>
               </DropdownMenu>
           </div>
         </header>
-        <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6 bg-muted/20">
+        <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6 bg-gray-950/50">
           <NotificationsProvider>
             {children}
           </NotificationsProvider>
@@ -398,5 +376,7 @@ export default function DriverLayout({ children }: { children: React.ReactNode }
         </NotificationsProvider>
     );
 }
+
+    
 
     
