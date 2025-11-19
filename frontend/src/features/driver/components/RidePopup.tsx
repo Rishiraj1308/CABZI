@@ -15,7 +15,7 @@ import { RideData } from '@/lib/types';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { MapPin, Route, Clock, IndianRupee, PersonStanding, Bike, Car } from 'lucide-react';
-import { useDriver } from '@/app/(dashboard)/driver/layout';
+import { useDriver } from '@/app/(dashboard)/driver/ClientLayout';
 import dynamic from 'next/dynamic';
 import { Skeleton } from '@/components/ui/skeleton';
 import { getRoute } from '@/lib/routing';
