@@ -97,7 +97,7 @@ export default function HomePage() {
       <header className="sticky top-0 z-40 w-full border-b bg-background/80 backdrop-blur-sm">
         <div className="container flex h-14 items-center justify-between">
           <Link href="/" className="flex items-center gap-2 opacity-0 pointer-events-none" aria-hidden="true">
-            <BrandLogo hideText={false} iconClassName="w-8 h-8" />
+            <BrandLogo hideText={true} iconClassName="w-8 h-8" />
           </Link>
           <div className="flex items-center gap-2">
             <LanguageToggle />
@@ -125,7 +125,7 @@ export default function HomePage() {
       </header>
 
       <main className="flex-1">
-        <section className="relative py-20 md:py-24 text-center">
+        <section className="relative py-24 md:py-32 text-center">
           <div className="container" data-aos="fade-up">
             <motion.div
               initial={{ opacity: 0, y: -20 }}
