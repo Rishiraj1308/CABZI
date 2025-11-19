@@ -242,12 +242,12 @@ export default function DriverArriving({ ride, onCancel }: DriverArrivingProps) 
                         </DialogHeader>
                         <div className="py-4 space-y-2">
                             <Button onClick={handleShareRide} variant="outline" className="w-full justify-start gap-2"><Share2 className="w-4 h-4"/> Share Ride Status</Button>
-                            <Button variant="outline" className="w-full justify-start gap-2"><a href="tel:112"><Phone className="w-4 h-4"/> Call Emergency Services (112)</a></Button>
+                            <Button variant="outline" className="w-full justify-start gap-2" asChild><a href="tel:112"><Phone className="w-4 h-4"/> Call Emergency Services (112)</a></Button>
                             <Button variant="destructive" className="w-full justify-start gap-2"><Siren className="w-4 h-4"/> Alert Curocity Safety Team</Button>
                         </div>
                     </DialogContent>
                 </Dialog>
-                 <Button asChild size="sm" className="flex-1 h-12 bg-blue-600 hover:bg-blue-700 text-white">
+                <Button asChild size="sm" className="flex-1 h-12 bg-blue-600 hover:bg-blue-700 text-white">
                     <a href={navigateUrl} target="_blank" rel="noopener noreferrer">
                         <Navigation className="w-4 h-4 mr-2" /> Navigate
                     </a>
@@ -320,21 +320,27 @@ export default function DriverArriving({ ride, onCancel }: DriverArrivingProps) 
                             <p className="text-xs text-muted-foreground">Share this OTP to start</p>
                         </div>
                     </div>
-                     <Separator className="my-3"/>
-                      <div className="space-y-3 pt-2">
-                        <div className="flex items-start gap-3 text-sm">
-                            <MapPin className="w-4 h-4 mt-1 text-green-500"/>
-                            <div><p className="font-semibold text-muted-foreground text-xs">FROM</p><p>{ride.pickup?.address}</p></div>
-                        </div>
-                        <div className="flex items-start gap-3 text-sm">
-                            <Route className="w-4 h-4 mt-1 text-red-500"/>
-                            <div><p className="font-semibold text-muted-foreground text-xs">TO</p><p>{ride.destination?.address}</p></div>
-                        </div>
-                        <div className="flex items-start gap-3 text-sm">
-                            <IndianRupee className="w-4 h-4 mt-1 text-primary"/>
-                            <div><p className="font-semibold text-muted-foreground text-xs">FARE</p><p className="font-bold text-base">₹{ride.fare}</p></div>
-                        </div>
-                      </div>
+                     <Accordion type="single" collapsible className="w-full mt-2">
+                      <AccordionItem value="item-1">
+                        <AccordionTrigger>View Trip Details</AccordionTrigger>
+                        <AccordionContent>
+                          <div className="space-y-3 pt-2">
+                            <div className="flex items-start gap-3 text-sm">
+                                <MapPin className="w-4 h-4 mt-1 text-green-500"/>
+                                <div><p className="font-semibold text-muted-foreground text-xs">FROM</p><p>{ride.pickup?.address}</p></div>
+                            </div>
+                            <div className="flex items-start gap-3 text-sm">
+                                <Route className="w-4 h-4 mt-1 text-red-500"/>
+                                <div><p className="font-semibold text-muted-foreground text-xs">TO</p><p>{ride.destination?.address}</p></div>
+                            </div>
+                            <div className="flex items-start gap-3 text-sm">
+                                <IndianRupee className="w-4 h-4 mt-1 text-primary"/>
+                                <div><p className="font-semibold text-muted-foreground text-xs">FARE</p><p className="font-bold text-base">₹{ride.fare}</p></div>
+                            </div>
+                          </div>
+                        </AccordionContent>
+                      </AccordionItem>
+                    </Accordion>
                 </CardContent>
             </Card>
 
@@ -365,7 +371,7 @@ export default function DriverArriving({ ride, onCancel }: DriverArrivingProps) 
                         </DialogHeader>
                         <div className="py-4 space-y-2">
                             <Button onClick={handleShareRide} variant="outline" className="w-full justify-start gap-2"><Share2 className="w-4 h-4"/> Share Ride Status</Button>
-                            <Button variant="outline" className="w-full justify-start gap-2"><a href="tel:112"><Phone className="w-4 h-4"/> Call Emergency Services (112)</a></Button>
+                            <Button variant="outline" className="w-full justify-start gap-2" asChild><a href="tel:112"><Phone className="w-4 h-4"/> Call Emergency Services (112)</a></Button>
                             <Button variant="destructive" className="w-full justify-start gap-2"><Siren className="w-4 h-4"/> Alert Curocity Safety Team</Button>
                         </div>
                     </DialogContent>
