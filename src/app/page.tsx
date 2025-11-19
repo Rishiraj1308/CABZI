@@ -1,3 +1,4 @@
+
 'use client'
 
 import React, { useEffect, useRef } from 'react'
@@ -68,6 +69,7 @@ const dayTimelineItems = [
     { time: "Financial Need", title: "CuroBank", description: "Unexpected expense? Get instant, fair-interest credit directly from your Curocity wallet, no questions asked.", icon: Landmark },
     { time: "In an Emergency", title: "The Safety Net", description: "Health emergency? Don't panic. CURE connects you to the nearest ambulance in seconds.", icon: Siren },
 ]
+
 
 export default function HomePage() {
   useEffect(() => {
