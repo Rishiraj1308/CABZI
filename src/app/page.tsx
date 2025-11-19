@@ -1,3 +1,4 @@
+
 'use client'
 
 import React, { useEffect, useRef } from 'react'
@@ -129,8 +130,8 @@ export default function HomePage() {
             <h1 className="text-5xl md:text-6xl font-extrabold font-headline animate-text-gradient bg-gradient-to-r from-primary via-accent to-primary">
               Move. Heal. Fix.
             </h1>
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold font-headline animate-text-gradient bg-gradient-to-r from-primary via-accent to-primary">
-                One App for Urban Life.
+            <h2 className="text-2xl sm:text-4xl md:text-5xl font-extrabold font-headline animate-text-gradient bg-gradient-to-r from-primary via-accent to-primary">
+              One App for Urban Life.
             </h2>
             <div className="mt-6 text-lg text-muted-foreground max-w-3xl mx-auto space-y-4">
                 <p>
