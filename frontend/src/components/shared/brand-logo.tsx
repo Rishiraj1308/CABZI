@@ -1,4 +1,3 @@
-
 'use client'
 
 import { cn } from '@/lib/utils'
@@ -50,9 +49,9 @@ export const NewLogoIcon = ({ className }: { className?: string }) => {
 
 export default function BrandLogo({ className, iconClassName, hideText = false }: BrandLogoProps) {
   return (
-    <div className={cn("flex items-center select-none", className)}>
+    <h1 className={cn("flex items-center select-none text-2xl font-bold tracking-tight", className)}>
         <NewLogoIcon className={cn("w-10 h-10", iconClassName)} />
-       {!hideText && <span className="text-xl ml-2 font-extrabold tracking-tight animate-text-gradient bg-gradient-to-r from-primary via-accent to-primary font-headline">Curocity</span>}
-    </div>
+       {!hideText && <span className="ml-2 font-extrabold animate-text-gradient bg-gradient-to-r from-primary via-accent to-primary font-headline">Curocity</span>}
+    </h1>
   )
 }
