@@ -121,6 +121,7 @@ export default function RideStatus({ ride, onCancel, isGarageRequest, isAmbulanc
     const rideType = r.rideType || 'Cab (Lite)';
     const config = fareConfig[rideType] || fareConfig['Cab (Lite)'];
     
+    // Consistent invoice ID logic
     const rideCount = (r.driverDetails?.jobsToday || 0) + 1;
     const formattedRideCount = rideCount.toString().padStart(3, '0');
     const partnerIdentifier = r.driverDetails?.partnerId?.split('-')[1] || '0000';
@@ -174,11 +175,11 @@ export default function RideStatus({ ride, onCancel, isGarageRequest, isAmbulanc
                     <p className="text-sm font-semibold text-center mb-4">Pay driver in cash or use UPI</p>
                     <div className="flex justify-center gap-4">
                         <a href={`upi://pay?pa=${driverDetails?.phone}@ybl&pn=${driverDetails?.name || 'Driver'}&am=${totalAmount.toFixed(2)}&cu=INR`} className="flex flex-col items-center gap-2 p-2 rounded-lg hover:bg-muted">
-                           <Image src="/images/upi/gpay.svg" alt="Google Pay" width={48} height={48} />
+                           <Image src="/images/upi/gpay.png" alt="Google Pay" width={48} height={48} />
                            <span className="text-xs font-semibold">GPay</span>
                         </a>
                         <a href={`phonepe://pay?pa=${driverDetails?.phone}@ybl&pn=${driverDetails?.name || 'Driver'}&am=${totalAmount.toFixed(2)}&cu=INR`} className="flex flex-col items-center gap-2 p-2 rounded-lg hover:bg-muted">
-                           <Image src="/images/upi/phonepe.svg" alt="PhonePe" width={48} height={48} />
+                           <Image src="/images/upi/phonepe.png" alt="PhonePe" width={48} height={48} />
                              <span className="text-xs font-semibold">PhonePe</span>
                         </a>
                         <a href={`paytmmp://pay?pa=${driverDetails?.phone}@paytm&pn=${driverDetails?.name || 'Driver'}&am=${totalAmount.toFixed(2)}&cu=INR`} className="flex flex-col items-center gap-2 p-2 rounded-lg hover:bg-muted">
