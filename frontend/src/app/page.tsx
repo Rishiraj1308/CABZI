@@ -64,12 +64,12 @@ const ecosystemCards = [
 ]
 
 const dayTimelineItems = [
-  { time: "8 AM", title: "The Morning Rush", description: "Start your day stress-free with Curocity's PATH service. Reliable rides, fair fares, no surge pricing.", icon: Car },
-  { time: "1 PM", title: "Roadside ResQ", description: "Car trouble? One tap brings a verified ResQ mechanic to your location for on-the-spot repairs.", icon: Wrench },
-  { time: "4 PM", title: "Home Services", description: "Need a plumber or electrician? Curocity connects you with trusted local professionals.", icon: Home },
-  { time: "6 PM", title: "Doctor Visit", description: "Feeling unwell? Instantly book an in-clinic or video appointment with a specialist.", icon: Calendar },
-  { time: "8 PM", title: "Lab Tests at Home", description: "A certified phlebotomist will collect your sample from the comfort of your home.", icon: FlaskConical },
-  { time: "Anytime", title: "The Safety Net", description: "Health emergency? Don't panic. CURE connects you to the nearest ambulance in seconds.", icon: Siren },
+    { time: "Daily Commute", title: "The Morning Rush", description: "Start your day stress-free with Curocity's PATH service. Reliable rides, fair fares, no surge pricing.", icon: Car },
+    { time: "Sudden Breakdown", title: "Roadside ResQ", description: "Car trouble? One tap brings a verified ResQ mechanic to your location for on-the-spot repairs.", icon: Wrench },
+    { time: "Household Needs", title: "Home Services", description: "Need a plumber or electrician? Curocity connects you with trusted local professionals.", icon: Home },
+    { time: "Feeling Unwell", title: "Doctor Visit", description: "Instantly book an in-clinic or video appointment with a specialist.", icon: Calendar },
+    { time: "Health Checkup", title: "Lab Tests at Home", description: "A certified phlebotomist will collect your sample from the comfort of your home.", icon: FlaskConical },
+    { time: "In an Emergency", title: "The Safety Net", description: "Health emergency? Don't panic. CURE connects you to the nearest ambulance in seconds.", icon: Siren },
 ]
 
 const whyCurocityItems = [
@@ -78,7 +78,7 @@ const whyCurocityItems = [
 ]
 
 
-function HomePage() {
+export default function HomePage() {
   useEffect(() => {
     AOS.init({ duration: 800, once: true, offset: 100 })
   }, [])
@@ -275,5 +275,3 @@ function HomePage() {
     </div>
   )
 }
-
-export default HomePage;
