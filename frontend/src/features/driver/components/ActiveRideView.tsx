@@ -259,7 +259,7 @@ export function ActiveRideView({ activeRide, setActiveRide }: ActiveRideViewProp
                          <Table>
                             <TableBody>
                                 <TableRow><TableCell>Rider</TableCell><TableCell className="text-right font-semibold">{activeRide.riderName}</TableCell></TableRow>
-                                <TableRow><TableCell>Date</TableCell><TableCell className="text-right font-semibold">{format(activeRide.createdAt.toDate(), 'PPP')}</TableCell></TableRow>
+                                <TableRow><TableCell>Date</TableCell><TableCell className="text-right font-semibold">{activeRide.createdAt.toDate ? format(activeRide.createdAt.toDate(), 'PPP') : 'N/A'}</TableCell></TableRow>
                                 <TableRow className="font-bold text-primary"><TableCell>Total Fare</TableCell><TableCell className="text-right text-xl">₹{rideFare.toFixed(2)}</TableCell></TableRow>
                             </TableBody>
                         </Table>

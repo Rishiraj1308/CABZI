@@ -1,27 +1,41 @@
 
 'use client';
 
-import React, { createContext, useContext, useEffect, useState, useMemo, type ReactNode } from 'react';
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  useMemo,
+  type ReactNode,
+} from 'react';
+
 import { onAuthStateChanged, type User } from 'firebase/auth';
+
+// ✅ Import from the new, consolidated entry point
 import { app, auth, db, functions, messaging as getMessagingPromise } from '@/lib/firebase';
 import type { FirebaseApp } from 'firebase/app';
 import type { Auth } from 'firebase/auth';
 import type { Firestore } from 'firebase/firestore';
 import type { Functions } from 'firebase/functions';
 import type { Messaging } from 'firebase/messaging';
+
+
 import { FirebaseErrorListener } from '@/components/shared/FirebaseErrorListener';
 
 interface FirebaseContextValue {
-  firebaseApp: FirebaseApp | null;
-  auth: Auth | null;
-  db: Firestore | null;
-  functions: Functions | null;
+  firebaseApp: FirebaseApp | null; // Allow null
+  auth: Auth | null; // Allow null
+  db: Firestore | null; // Allow null
+  functions: Functions | null; // Allow null
   messaging: Messaging | null;
   user: User | null;
   isUserLoading: boolean;
 }
 
-const FirebaseContext = createContext<FirebaseContextValue | undefined>(undefined);
+const FirebaseContext = createContext<FirebaseContextValue | undefined>(
+  undefined
+);
 
 export default function FirebaseProviderClient({ children }: { children: ReactNode }) {
   const [messaging, setMessaging] = useState<Messaging | null>(null);
@@ -29,8 +43,16 @@ export default function FirebaseProviderClient({ children }: { children: ReactNo
   const [isUserLoading, setIsUserLoading] = useState(true);
 
   useEffect(() => {
-    setMessaging(messaging);
-  }, [messaging]);
+    // This check is important because messaging is not supported in all environments
+    if (getMessagingPromise) {
+      getMessagingPromise.then((m) => {
+        if (m) setMessaging(m);
+      }).catch(err => {
+        console.warn("Could not initialize messaging:", err);
+        setMessaging(null);
+      });
+    }
+  }, []);
   
 
   useEffect(() => {

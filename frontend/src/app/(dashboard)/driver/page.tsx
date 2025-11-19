@@ -16,24 +16,25 @@ import {
   onSnapshot,
   serverTimestamp,
   getDoc,
+  Timestamp
 } from 'firebase/firestore'
 import { useFirebase } from '@/lib/firebase/client-provider'
 import type { RideData } from '@/lib/types'
   
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
-import { Star, History, IndianRupee, Power, Route, MapPin, Car } from 'lucide-react'
+import { Star, History, IndianRupee, Power } from 'lucide-react'
 import { toast } from 'sonner'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useDriver } from './ClientLayout'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import SearchingIndicator from '@/components/ui/searching-indicator'
 import { Switch } from '@/components/ui/switch'
 import { cn } from '@/lib/utils'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from '@/components/ui/button'
-import { format } from 'date-fns'
+import { format, startOfDay, endOfDay } from 'date-fns'
 import dynamic from 'next/dynamic'
 
 import { useDriverLocation } from '@/features/driver/hooks/useDriverLocation'
@@ -59,7 +60,7 @@ const StatCard = ({ title, value, icon: Icon, isLoading, onValueClick }: { title
     {isLoading ? (
         <Skeleton className="h-8 w-20" />
     ) : (
-        <div className="text-2xl font-bold cursor-pointer" onClick={onValueClick}>
+        <div className={cn("text-2xl font-bold", onValueClick && "cursor-pointer")} onClick={onValueClick}>
         {value}
         </div>
     )}
@@ -82,6 +83,7 @@ export default function DriverDashboardPage() {
   const [recentRides, setRecentRides] = useState<RideData[]>([]);
   const [isHistoryLoading, setIsHistoryLoading] = useState(true);
   const [selectedRide, setSelectedRide] = useState<RideData | null>(null);
+  const [todaysEarnings, setTodaysEarnings] = useState(0);
 
   const [currentTime, setCurrentTime] = useState(new Date());
   const notificationSoundRef = useRef<HTMLAudioElement | null>(null);
@@ -90,6 +92,28 @@ export default function DriverDashboardPage() {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
+  
+    useEffect(() => {
+    if (!db || !partnerData?.id) return;
+
+    const todayStart = startOfDay(new Date());
+    const todayEnd = endOfDay(new Date());
+
+    const ridesQuery = query(
+      collection(db, 'rides'),
+      where('driverId', '==', partnerData.id),
+      where('status', '==', 'completed'),
+      where('createdAt', '>=', Timestamp.fromDate(todayStart)),
+      where('createdAt', '<=', Timestamp.fromDate(todayEnd))
+    );
+
+    const unsub = onSnapshot(ridesQuery, (snapshot) => {
+      const earnings = snapshot.docs.reduce((sum, doc) => sum + (doc.data().fare || 0), 0);
+      setTodaysEarnings(earnings);
+    });
+
+    return () => unsub();
+  }, [db, partnerData?.id]);
 
   /** =========================
    *  REAL-TIME RIDE LISTENER
@@ -97,7 +121,7 @@ export default function DriverDashboardPage() {
   useEffect(() => {
     if (!db || !partnerData?.id || !partnerData?.isOnline || !partnerData?.vehicleType) return;
 
-    const vehicleTypeBase = (partnerData.vehicleType || "").split(" ")[0].trim();
+    const vehicleTypeBase = (partnerData.vehicleType || "").split(" ")[0].trim().toLowerCase();
     if(!vehicleTypeBase) return;
 
 
@@ -105,7 +129,7 @@ export default function DriverDashboardPage() {
 
     const unsub = onSnapshot(ridesQ, (snapshot) => {
       const normalize = (s: string) => (s || '').toLowerCase().replace(/[\s\-\(\)]/g, '');
-      const driverType = normalize(partnerData.vehicleType);
+      const driverType = normalize(partnerData.vehicleType as string);
       const matches: RideData[] = [];
 
       snapshot.forEach((d) => {
@@ -122,30 +146,6 @@ export default function DriverDashboardPage() {
         const next = matches[0];
         setJobRequest(next);
         notificationSoundRef.current?.play().catch(() => {});
-
-        // Driver -> pickup ETA/distance via OSRM
-        const driverLoc = partnerData.currentLocation as any; // expected Firestore GeoPoint
-        const pickupLoc = next?.pickup?.location as any;
-
-        if (driverLoc && pickupLoc) {
-          const url = `https://router.project-osrm.org/route/v1/driving/${driverLoc.longitude},${driverLoc.latitude};${pickupLoc.longitude},${pickupLoc.latitude}?overview=false`;
-          fetch(url)
-            .then((res) => res.json())
-            .then((data) => {
-              const route = data?.routes?.[0];
-              if (!route) return;
-              setJobRequest((prev) =>
-                prev
-                  ? {
-                      ...prev,
-                      distance: Number((route.distance / 1000).toFixed(1)), // meters -> km
-                      eta: Math.max(1, Math.round(route.duration / 60)), // seconds -> minutes
-                    }
-                  : prev
-              );
-            })
-            .catch((err) => console.log('OSRM error:', err));
-        }
       }
     });
 
@@ -358,7 +358,7 @@ export default function DriverDashboardPage() {
               <div className="grid gap-4 grid-cols-2 lg:grid-cols-2">
                 <StatCard
                   title="Today's Earnings"
-                  value={isEarningsVisible ? `₹${(partnerData?.todaysEarnings || 0).toLocaleString()}` : '₹ ****'}
+                  value={isEarningsVisible ? `₹${(todaysEarnings || 0).toLocaleString()}` : '₹ ****'}
                   icon={IndianRupee}
                   isLoading={isDriverLoading}
                   onValueClick={() => !isEarningsVisible && setIsPinDialogOpen(true)}
@@ -421,7 +421,6 @@ export default function DriverDashboardPage() {
             <DialogTitle>Trip Summary</DialogTitle>
             {selectedRide && (
               <DialogDescription>
-                {/* @ts-ignore Firestore TS */}
                 Invoice ID: {selectedRide.invoiceId || 'N/A'}
               </DialogDescription>
             )}
@@ -429,7 +428,7 @@ export default function DriverDashboardPage() {
           {selectedRide && (
             <div className="space-y-4 py-4 text-sm">
                  <div className="flex justify-between items-center text-xs text-muted-foreground">
-                    <span>{format(selectedRide.createdAt.toDate(), 'PPP, p')}</span>
+                    <span>{selectedRide.createdAt.toDate ? format(selectedRide.createdAt.toDate(), 'PPP, p') : 'N/A'}</span>
                  </div>
                  <Separator/>
                  <div className="space-y-1">

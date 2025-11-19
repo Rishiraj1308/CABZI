@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import React, {
@@ -25,10 +24,10 @@ import type { Messaging } from 'firebase/messaging';
 import { FirebaseErrorListener } from '@/components/shared/FirebaseErrorListener';
 
 interface FirebaseContextValue {
-  firebaseApp: FirebaseApp;
-  auth: Auth;
-  db: Firestore;
-  functions: Functions;
+  firebaseApp: FirebaseApp | null; // Allow null
+  auth: Auth | null; // Allow null
+  db: Firestore | null; // Allow null
+  functions: Functions | null; // Allow null
   messaging: Messaging | null;
   user: User | null;
   isUserLoading: boolean;
@@ -44,10 +43,16 @@ export function FirebaseProviderClient({ children }: { children: ReactNode }) {
   const [isUserLoading, setIsUserLoading] = useState(true);
 
   useEffect(() => {
-    getMessagingPromise.then((m) => setMessaging(m));
+    if (getMessagingPromise) {
+      getMessagingPromise.then((m) => setMessaging(m));
+    }
   }, []);
 
   useEffect(() => {
+    if (!auth) {
+        setIsUserLoading(false);
+        return;
+    };
     const unsubscribe = onAuthStateChanged(auth, (fbUser) => {
       setUser(fbUser);
       setIsUserLoading(false);

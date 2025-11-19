@@ -43,16 +43,6 @@ interface RideStatusProps {
     onDone: () => void;
 }
 
-// Define fare configuration for consistent calculation
-const fareConfig: {[key: string]: { base: number, perKm: number, serviceFee: number }} = {
-    'Bike': { base: 20, perKm: 5, serviceFee: 0 },
-    'Auto': { base: 30, perKm: 8, serviceFee: 0 }, 
-    'Cab (Lite)': { base: 40, perKm: 12, serviceFee: 20 },
-    'Cab (Prime)': { base: 50, perKm: 15, serviceFee: 25 },
-    'Cab (XL)': { base: 60, perKm: 18, serviceFee: 30 },
-    'Curocity Pink': { base: 50, perKm: 12, serviceFee: 30 },
-}
-
 export default function RideStatus({ ride, onCancel, isGarageRequest, isAmbulanceCase, onDone }: RideStatusProps) {
   const [isCancelling, setIsCancelling] = useState(false);
   const [rating, setRating] = useState(0);
