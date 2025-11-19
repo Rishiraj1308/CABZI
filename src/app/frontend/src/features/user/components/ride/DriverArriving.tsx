@@ -79,6 +79,7 @@ export default function DriverArriving({ ride, onCancel }: DriverArrivingProps) 
   const computeRoute = React.useCallback(async () => {
     if (!driverLocation) return;
     
+    // Determine the destination based on ride status
     const destination = ride.status === 'in-progress' 
         ? ride.destination?.location 
         : ride.pickup?.location;
@@ -132,13 +133,30 @@ export default function DriverArriving({ ride, onCancel }: DriverArrivingProps) 
 
   const driverAge = calculateAge(driverDetails?.dob);
 
+  const isTripInProgress = ride.status === 'in-progress';
+  
   const navigateUrl = isTripInProgress && ride.destination?.location
     ? `https://www.google.com/maps/dir/?api=1&destination=${ride.destination.location.latitude},${ride.destination.location.longitude}`
     : ride.pickup?.location
     ? `https://www.google.com/maps/dir/?api=1&destination=${ride.pickup.location.latitude},${ride.pickup.location.longitude}`
     : '#';
 
-  const isTripInProgress = ride.status === 'in-progress';
+  const handleShareRide = async () => {
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: 'My Curocity Ride',
+          text: `I'm on a Curocity ride with ${driverDetails?.name || 'a driver'}. Vehicle: ${driverDetails?.vehicle} (${ride.vehicleNumber}). Track my ride here: [Live Tracking Link Placeholder]`,
+          url: window.location.href, // You can replace this with a real tracking URL
+        });
+        toast.success("Ride status shared!");
+      } catch (error) {
+        toast.error("Could not share ride status.");
+      }
+    } else {
+      toast.info("Web Share API not supported on this browser.");
+    }
+  };
 
 
   const renderSearchingView = () => (
@@ -214,7 +232,7 @@ export default function DriverArriving({ ride, onCancel }: DriverArrivingProps) 
                  <Dialog>
                     <DialogTrigger asChild>
                         <Button variant="outline" className="flex-1 h-12">
-                            <Shield className="w-5 h-5 mr-2"/> Safety
+                            <Shield className="w-5 h-5 mr-2"/> Safety Toolkit
                         </Button>
                     </DialogTrigger>
                     <DialogContent>
@@ -223,14 +241,16 @@ export default function DriverArriving({ ride, onCancel }: DriverArrivingProps) 
                             <DialogDescription>Your safety is our priority. Use these tools if you feel unsafe.</DialogDescription>
                         </DialogHeader>
                         <div className="py-4 space-y-2">
-                            <Button variant="outline" className="w-full justify-start gap-2"><Share2 className="w-4 h-4"/> Share Ride Status</Button>
+                            <Button onClick={handleShareRide} variant="outline" className="w-full justify-start gap-2"><Share2 className="w-4 h-4"/> Share Ride Status</Button>
                             <Button variant="outline" className="w-full justify-start gap-2"><a href="tel:112"><Phone className="w-4 h-4"/> Call Emergency Services (112)</a></Button>
                             <Button variant="destructive" className="w-full justify-start gap-2"><Siren className="w-4 h-4"/> Alert Curocity Safety Team</Button>
                         </div>
                     </DialogContent>
                 </Dialog>
-                <Button variant="outline" className="flex-1 h-12">
-                   <Share2 className="w-5 h-5 mr-2" /> Share
+                 <Button asChild size="sm" className="flex-1 h-12 bg-blue-600 hover:bg-blue-700 text-white">
+                    <a href={navigateUrl} target="_blank" rel="noopener noreferrer">
+                        <Navigation className="w-4 h-4 mr-2" /> Navigate
+                    </a>
                 </Button>
             </div>
             
@@ -300,27 +320,21 @@ export default function DriverArriving({ ride, onCancel }: DriverArrivingProps) 
                             <p className="text-xs text-muted-foreground">Share this OTP to start</p>
                         </div>
                     </div>
-                     <Accordion type="single" collapsible className="w-full mt-2">
-                      <AccordionItem value="item-1">
-                        <AccordionTrigger>View Trip Details</AccordionTrigger>
-                        <AccordionContent>
-                          <div className="space-y-3 pt-2">
-                            <div className="flex items-start gap-3 text-sm">
-                                <MapPin className="w-4 h-4 mt-1 text-green-500"/>
-                                <div><p className="font-semibold text-muted-foreground text-xs">FROM</p><p>{ride.pickup?.address}</p></div>
-                            </div>
-                            <div className="flex items-start gap-3 text-sm">
-                                <Route className="w-4 h-4 mt-1 text-red-500"/>
-                                <div><p className="font-semibold text-muted-foreground text-xs">TO</p><p>{ride.destination?.address}</p></div>
-                            </div>
-                            <div className="flex items-start gap-3 text-sm">
-                                <IndianRupee className="w-4 h-4 mt-1 text-primary"/>
-                                <div><p className="font-semibold text-muted-foreground text-xs">FARE</p><p className="font-bold text-base">₹{ride.fare}</p></div>
-                            </div>
-                          </div>
-                        </AccordionContent>
-                      </AccordionItem>
-                    </Accordion>
+                     <Separator className="my-3"/>
+                      <div className="space-y-3 pt-2">
+                        <div className="flex items-start gap-3 text-sm">
+                            <MapPin className="w-4 h-4 mt-1 text-green-500"/>
+                            <div><p className="font-semibold text-muted-foreground text-xs">FROM</p><p>{ride.pickup?.address}</p></div>
+                        </div>
+                        <div className="flex items-start gap-3 text-sm">
+                            <Route className="w-4 h-4 mt-1 text-red-500"/>
+                            <div><p className="font-semibold text-muted-foreground text-xs">TO</p><p>{ride.destination?.address}</p></div>
+                        </div>
+                        <div className="flex items-start gap-3 text-sm">
+                            <IndianRupee className="w-4 h-4 mt-1 text-primary"/>
+                            <div><p className="font-semibold text-muted-foreground text-xs">FARE</p><p className="font-bold text-base">₹{ride.fare}</p></div>
+                        </div>
+                      </div>
                 </CardContent>
             </Card>
 
@@ -336,23 +350,44 @@ export default function DriverArriving({ ride, onCancel }: DriverArrivingProps) 
                     </a>
                 </Button>
             </div>
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button variant="destructive" className="w-full h-12" disabled={isCancelling}>
-                    {isCancelling ? 'Cancelling...' : 'Cancel Ride'}
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                    <AlertDialogDescription>A cancellation fee may apply. This action cannot be undone.</AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                    <AlertDialogCancel>Go Back</AlertDialogCancel>
-                    <AlertDialogAction onClick={handleCancelClick} className="bg-destructive hover:bg-destructive/90">Confirm Cancellation</AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
+            
+            <div className="flex gap-4">
+                <Dialog>
+                    <DialogTrigger asChild>
+                        <Button variant="outline" className="flex-1 h-12">
+                            <Shield className="w-5 h-5 mr-2"/> Safety Toolkit
+                        </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                        <DialogHeader>
+                            <DialogTitle>Safety Toolkit</DialogTitle>
+                            <DialogDescription>Your safety is our priority. Use these tools if you feel unsafe.</DialogDescription>
+                        </DialogHeader>
+                        <div className="py-4 space-y-2">
+                            <Button onClick={handleShareRide} variant="outline" className="w-full justify-start gap-2"><Share2 className="w-4 h-4"/> Share Ride Status</Button>
+                            <Button variant="outline" className="w-full justify-start gap-2"><a href="tel:112"><Phone className="w-4 h-4"/> Call Emergency Services (112)</a></Button>
+                            <Button variant="destructive" className="w-full justify-start gap-2"><Siren className="w-4 h-4"/> Alert Curocity Safety Team</Button>
+                        </div>
+                    </DialogContent>
+                </Dialog>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="destructive" className="flex-1 h-12" disabled={isCancelling}>
+                        {isCancelling ? 'Cancelling...' : 'Cancel Ride'}
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                        <AlertDialogDescription>A cancellation fee may apply. This action cannot be undone.</AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Go Back</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleCancelClick} className="bg-destructive hover:bg-destructive/90">Confirm Cancellation</AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+            </div>
         </CardContent>
       </Card>
     </div>
