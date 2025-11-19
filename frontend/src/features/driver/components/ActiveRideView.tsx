@@ -140,6 +140,12 @@ export function ActiveRideView({ activeRide, setActiveRide }: ActiveRideViewProp
     : destinationLocation
     ? `https://www.google.com/maps/dir/?api=1&destination=${destinationLocation.lat},${destinationLocation.lon}`
     : '#';
+
+  // Centralize Invoice ID logic
+  const rideCount = (partnerData?.jobsToday || 0) + 1;
+  const formattedRideCount = rideCount.toString().padStart(3, '0');
+  const partnerIdentifier = partnerData?.partnerId?.split('-')[1] || '0000';
+  const invoiceId = `${partnerIdentifier}-${formattedRideCount}`;
     
    const renderActionButton = () => {
         switch (activeRide.status) {
@@ -159,12 +165,6 @@ export function ActiveRideView({ activeRide, setActiveRide }: ActiveRideViewProp
         const rideType = activeRide.rideType || 'Cab (Lite)';
         const config = fareConfig[rideType] || fareConfig['Cab (Lite)'];
         
-        // New Invoice ID Logic
-        const rideCount = (partnerData?.jobsToday || 0) + 1;
-        const formattedRideCount = rideCount.toString().padStart(3, '0');
-        const partnerIdentifier = partnerData?.partnerId?.split('-')[1] || '0000';
-        const invoiceId = `${partnerIdentifier}-${formattedRideCount}`;
-
         // Derive other components from the total fare for consistency
         const taxesAndFees = 5.00;
         const baseFare = config.base;
@@ -247,7 +247,7 @@ export function ActiveRideView({ activeRide, setActiveRide }: ActiveRideViewProp
                 <Card className="mt-6 text-left w-full max-w-sm mx-auto">
                     <CardHeader>
                         <CardTitle>Trip Summary</CardTitle>
-                        <CardDescription>Invoice ID: {activeRide.id.slice(0,8).toUpperCase()}</CardDescription>
+                        <CardDescription>Invoice ID: {invoiceId}</CardDescription>
                     </CardHeader>
                     <CardContent>
                          <Table>

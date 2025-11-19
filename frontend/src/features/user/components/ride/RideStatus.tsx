@@ -122,16 +122,10 @@ export default function RideStatus({ ride, onCancel, isGarageRequest, isAmbulanc
     const config = fareConfig[rideType] || fareConfig['Cab (Lite)'];
     
     // Consistent invoice ID logic
-    const rideCount = (r.driverDetails?.jobsToday || 0) + 1;
+    const rideCount = (r.driverDetails?.jobsToday || 0);
     const formattedRideCount = rideCount.toString().padStart(3, '0');
     const partnerIdentifier = r.driverDetails?.partnerId?.split('-')[1] || '0000';
     const invoiceId = `${partnerIdentifier}-${formattedRideCount}`;
-
-    const taxesAndFees = 5.00;
-    const baseFare = config.base;
-    const distanceCharge = totalAmount - baseFare - taxesAndFees;
-    const distanceKm = r.distance || (distanceCharge / config.perKm) || 0;
-    const perKmRate = distanceKm > 0 ? (distanceCharge / distanceKm) : config.perKm;
 
     return (
         <motion.div
@@ -175,15 +169,15 @@ export default function RideStatus({ ride, onCancel, isGarageRequest, isAmbulanc
                     <p className="text-sm font-semibold text-center mb-4">Pay driver in cash or use UPI</p>
                     <div className="flex justify-center gap-4">
                         <a href={`upi://pay?pa=${driverDetails?.phone}@ybl&pn=${driverDetails?.name || 'Driver'}&am=${totalAmount.toFixed(2)}&cu=INR`} className="flex flex-col items-center gap-2 p-2 rounded-lg hover:bg-muted">
-                           <Image src="https://i.ibb.co/68Z4C9v/gpay.png" alt="Google Pay" width={48} height={48} />
+                           <Image src="/images/upi/gpay.png" alt="Google Pay" width={48} height={48} />
                            <span className="text-xs font-semibold">GPay</span>
                         </a>
                         <a href={`phonepe://pay?pa=${driverDetails?.phone}@ybl&pn=${driverDetails?.name || 'Driver'}&am=${totalAmount.toFixed(2)}&cu=INR`} className="flex flex-col items-center gap-2 p-2 rounded-lg hover:bg-muted">
-                           <Image src="https://i.ibb.co/VvZB2B0/phonepe.png" alt="PhonePe" width={48} height={48} />
+                           <Image src="/images/upi/phonepe.png" alt="PhonePe" width={48} height={48} />
                              <span className="text-xs font-semibold">PhonePe</span>
                         </a>
                         <a href={`paytmmp://pay?pa=${driverDetails?.phone}@paytm&pn=${driverDetails?.name || 'Driver'}&am=${totalAmount.toFixed(2)}&cu=INR`} className="flex flex-col items-center gap-2 p-2 rounded-lg hover:bg-muted">
-                           <Image src="https://i.ibb.co/D5b2z8R/paytm.png" alt="Paytm" width={48} height={48} />
+                           <Image src="/images/upi/paytm.png" alt="Paytm" width={48} height={48} />
                             <span className="text-xs font-semibold">Paytm</span>
                         </a>
                     </div>
