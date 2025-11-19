@@ -77,7 +77,7 @@ export default function DriverArriving({ ride, onCancel }: DriverArrivingProps) 
   }, [db, ride?.driverId]);
 
 
-  const computeRoute = async () => {
+  const computeRoute = React.useCallback(async () => {
     if (!driverLocation) return;
     
     // Determine the destination based on ride status
@@ -102,23 +102,14 @@ export default function DriverArriving({ ride, onCancel }: DriverArrivingProps) 
     } catch (error) {
         console.error("Error computing route:", error);
     }
-  }
+  }, [driverLocation, ride.status, ride.pickup?.location, ride.destination?.location]);
   
   useEffect(() => {
     if (ride.status === 'searching' || !driverLocation) return;
 
-    computeRoute(); // Initial calculation
+    computeRoute();
 
-    if (timerRef.current) clearInterval(timerRef.current);
-  
-    // Re-calculate every 15 seconds
-    timerRef.current = setInterval(computeRoute, 15000);
-  
-    return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
-    };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [driverLocation, ride.status, ride.pickup?.location, ride.destination?.location]);
+  }, [driverLocation, computeRoute, ride.status]);
 
 
   const handleCancelClick = async () => {
@@ -142,6 +133,32 @@ export default function DriverArriving({ ride, onCancel }: DriverArrivingProps) 
   }
 
   const driverAge = calculateAge(driverDetails?.dob);
+
+  const isTripInProgress = ride.status === 'in-progress';
+  
+  const navigateUrl = isTripInProgress && ride.destination?.location
+    ? `https://www.google.com/maps/dir/?api=1&destination=${ride.destination.location.latitude},${ride.destination.location.longitude}`
+    : ride.pickup?.location
+    ? `https://www.google.com/maps/dir/?api=1&destination=${ride.pickup.location.latitude},${ride.pickup.location.longitude}`
+    : '#';
+
+  const handleShareRide = async () => {
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: 'My Curocity Ride',
+          text: `I'm on a Curocity ride with ${driverDetails?.name || 'a driver'}. Vehicle: ${driverDetails?.vehicle} (${ride.vehicleNumber}). Track my ride here: [Live Tracking Link Placeholder]`,
+          url: window.location.href, // You can replace this with a real tracking URL
+        });
+        toast.success("Ride status shared!");
+      } catch (error) {
+        toast.error("Could not share ride status.");
+      }
+    } else {
+      toast.info("Web Share API not supported on this browser.");
+    }
+  };
+
 
   const renderSearchingView = () => (
     <div className="w-full h-full flex flex-col">
@@ -225,13 +242,13 @@ export default function DriverArriving({ ride, onCancel }: DriverArrivingProps) 
                             <DialogDescription>Your safety is our priority. Use these tools if you feel unsafe.</DialogDescription>
                         </DialogHeader>
                         <div className="py-4 space-y-2">
-                            <Button variant="outline" className="w-full justify-start gap-2"><Share2 className="w-4 h-4"/> Share Ride Status</Button>
+                            <Button onClick={handleShareRide} variant="outline" className="w-full justify-start gap-2"><Share2 className="w-4 h-4"/> Share Ride Status</Button>
                             <Button variant="outline" className="w-full justify-start gap-2"><a href="tel:112"><Phone className="w-4 h-4"/> Call Emergency Services (112)</a></Button>
                             <Button variant="destructive" className="w-full justify-start gap-2"><Siren className="w-4 h-4"/> Alert Curocity Safety Team</Button>
                         </div>
                     </DialogContent>
                 </Dialog>
-                <Button variant="outline" className="flex-1 h-12">
+                <Button variant="outline" className="flex-1 h-12" onClick={handleShareRide}>
                    <Share2 className="w-5 h-5 mr-2" /> Share
                 </Button>
             </div>
@@ -332,24 +349,11 @@ export default function DriverArriving({ ride, onCancel }: DriverArrivingProps) 
                         <Phone className="w-5 h-5 mr-2" /> Call Driver
                     </a>
                 </Button>
-                <Dialog>
-                  <DialogTrigger asChild>
-                    <Button variant="outline" className="flex-1 h-12">
-                      <Shield className="w-5 h-5 mr-2"/> Safety
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent>
-                      <DialogHeader>
-                        <DialogTitle>Safety Toolkit</DialogTitle>
-                        <DialogDescription>Your safety is our priority. Use these tools if you feel unsafe.</DialogDescription>
-                      </DialogHeader>
-                      <div className="py-4 space-y-2">
-                        <Button variant="outline" className="w-full justify-start gap-2"><Share2 className="w-4 h-4"/> Share Ride Status</Button>
-                        <Button variant="outline" className="w-full justify-start gap-2"><a href="tel:112"><Phone className="w-4 h-4"/> Call Emergency Services (112)</a></Button>
-                        <Button variant="destructive" className="w-full justify-start gap-2"><Siren className="w-4 h-4"/> Alert Curocity Safety Team</Button>
-                      </div>
-                  </DialogContent>
-                </Dialog>
+                 <Button asChild size="sm" className="flex-1 h-12 bg-blue-600 hover:bg-blue-700 text-white">
+                    <a href={navigateUrl} target="_blank" rel="noopener noreferrer">
+                        <Navigation className="w-4 h-4 mr-2" /> Navigate
+                    </a>
+                </Button>
             </div>
             <AlertDialog>
               <AlertDialogTrigger asChild>
