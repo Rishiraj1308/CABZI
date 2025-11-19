@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useState, Dispatch, SetStateAction } from 'react';
+import React, { useState, Dispatch, SetStateAction, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -112,10 +112,10 @@ export function ActiveRideView({ activeRide, setActiveRide }: ActiveRideViewProp
     await handleRideStatusUpdate('completed');
   };
 
-  const handleDone = () => {
+  const handleDone = useCallback(() => {
     localStorage.removeItem('activeRideId');
     setActiveRide(null);
-  };
+  }, [setActiveRide]);
   
   // This effect will run whenever the activeRide status changes
   React.useEffect(() => {
@@ -123,7 +123,7 @@ export function ActiveRideView({ activeRide, setActiveRide }: ActiveRideViewProp
       toast.error("Ride Cancelled", { description: "This ride has been cancelled." });
       handleDone();
     }
-  }, [activeRide.status]);
+  }, [activeRide.status, handleDone]);
 
 
   if (!activeRide) return null;
@@ -158,8 +158,13 @@ export function ActiveRideView({ activeRide, setActiveRide }: ActiveRideViewProp
         const totalAmount = activeRide.fare || 0;
         const rideType = activeRide.rideType || 'Cab (Lite)';
         const config = fareConfig[rideType] || fareConfig['Cab (Lite)'];
-        const invoiceId = `${partnerData?.partnerId || 'P'}-${activeRide.id.slice(-4).toUpperCase()}-${format(new Date(), 'yyyyMMdd')}`;
         
+        // New Invoice ID Logic
+        const rideCount = (partnerData?.jobsToday || 0) + 1;
+        const formattedRideCount = rideCount.toString().padStart(3, '0');
+        const partnerIdentifier = partnerData?.partnerId?.split('-')[1] || '0000';
+        const invoiceId = `${partnerIdentifier}-${formattedRideCount}`;
+
         // Derive other components from the total fare for consistency
         const taxesAndFees = 5.00;
         const baseFare = config.base;
@@ -183,7 +188,7 @@ export function ActiveRideView({ activeRide, setActiveRide }: ActiveRideViewProp
                        <Card className="text-left bg-muted/50 p-4 space-y-3">
                             <div className="flex justify-between items-center text-xs text-muted-foreground">
                                 <span className="font-mono">Invoice: {invoiceId}</span>
-                                <span>{format(activeRide.createdAt.toDate(), 'Pp')}</span>
+                                <span>{format(new Date(), 'Pp')}</span>
                             </div>
                             <Separator/>
                             <div className="space-y-1">
