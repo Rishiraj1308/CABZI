@@ -53,7 +53,7 @@ const fareConfig: {[key: string]: { base: number, perKm: number, serviceFee: num
     'Curocity Pink': { base: 50, perKm: 12, serviceFee: 30 },
 }
 
-const ActiveRideView: React.FC<ActiveRideViewProps> = ({ activeRide, setActiveRide }) => {
+export const ActiveRideView: React.FC<ActiveRideViewProps> = ({ activeRide, setActiveRide }) => {
   const { db } = useFirebase();
   const { partnerData } = useDriver();
   const [enteredOtp, setEnteredOtp] = useState('');
