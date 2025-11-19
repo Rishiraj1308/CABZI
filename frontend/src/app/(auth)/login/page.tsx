@@ -14,7 +14,7 @@ import { Loader2 } from 'lucide-react'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { useFirebase } from '@/lib/firebase/client-provider'
 import { collection, query, where, getDocs, setDoc, doc, serverTimestamp, limit } from 'firebase/firestore'
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signInWithPhoneNumber, RecaptchaVerifier, type ConfirmationResult, GoogleAuthProvider, signInWithPopup } from 'firebase/auth'
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signInWithPhoneNumber, RecaptchaVerifier, type ConfirmationResult, GoogleAuthProvider, signInWithPopup, type User } from 'firebase/auth'
 import { AnimatePresence, motion } from 'framer-motion'
 import { toast } from 'sonner'
 
@@ -90,24 +90,15 @@ export default function LoginPage() {
       }
   }
 
-  const findAndSetSession = async (user: { uid: string; email?: string | null; phoneNumber?: string | null }) => {
+  const findAndSetSession = async (user: User) => {
     if (!db) return false;
 
-    let userQuery;
-    if (user.email) {
-        userQuery = query(collection(db, "users"), where("email", "==", user.email), limit(1));
-    } else if (user.phoneNumber) {
-        userQuery = query(collection(db, "users"), where("phone", "==", user.phoneNumber.replace('+91', '')), limit(1));
-    } else {
-        return false;
-    }
-    
-    const snapshot = await getDocs(userQuery);
+    // Search for user in the 'users' collection by their UID
+    const userDocRef = doc(db, 'users', user.uid);
+    const userDoc = await getDoc(userDocRef);
 
-    if (!snapshot.empty) {
-        const userDoc = snapshot.docs[0];
+    if (userDoc.exists()) {
         const userData = userDoc.data();
-        
         const sessionData = { 
             role: 'user',
             phone: userData.phone, 
@@ -123,10 +114,15 @@ export default function LoginPage() {
         return true;
     }
     
-    // User does not exist in Firestore, move to details step
+    // User authenticated with Firebase but doesn't have a profile in Firestore, move to details step
+    if (user.displayName) setName(user.displayName);
+    if (user.email) setIdentifier(user.email);
+    if (user.phoneNumber) setIdentifier(user.phoneNumber.replace('+91', ''));
+    
     setStep('details'); 
-    return true; // Return true to indicate the auth part was successful
+    return true; // Return true to indicate the auth part was successful, but more details are needed
   }
+
 
   const handleIdentifierSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -147,6 +143,7 @@ export default function LoginPage() {
       await findAndSetSession(userCredential.user);
     } catch (error: any) {
       if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential') {
+        // If user not found via email/pass, we treat it as a new registration
         setStep('details');
       } else if (error.code === 'auth/wrong-password') {
         toast.error('Incorrect Password', { description: 'Please check your password and try again.' });
@@ -201,29 +198,39 @@ export default function LoginPage() {
           let user = auth.currentUser;
 
           if (!user && inputType === 'email') {
+              // This is the sign-up case for email
               user = (await createUserWithEmailAndPassword(auth, identifier, password)).user;
           }
           
           if (!user) {
-              throw new Error("Could not create or find user.");
+              throw new Error("Could not create or find user. Please try logging in again.");
           }
 
-          const systematicId = `CUU-${user.uid.slice(0, 6).toUpperCase()}`;
           const newUserRef = doc(db, "users", user.uid);
 
-          await setDoc(newUserRef, {
+          const dataToSave = {
               id: user.uid,
               name,
-              email: user.email || null,
-              phone: user.phoneNumber ? user.phoneNumber.replace('+91','') : identifier.replace(/[^0-9]/g, ''),
+              email: user.email || (inputType === 'email' ? identifier : null),
+              phone: user.phoneNumber ? user.phoneNumber.replace('+91','') : (inputType === 'phone' ? identifier : null),
               gender,
               dob,
               role: 'user', 
               createdAt: serverTimestamp(),
               isOnline: false,
-          });
+          };
+
+          await setDoc(newUserRef, dataToSave);
   
-          localStorage.setItem('curocity-session', JSON.stringify({ role: 'user', phone: user.phoneNumber, email: user.email, name, gender, userId: user.uid }));
+          localStorage.setItem('curocity-session', JSON.stringify({ 
+            role: 'user', 
+            phone: dataToSave.phone, 
+            email: dataToSave.email, 
+            name, 
+            gender, 
+            userId: user.uid 
+          }));
+
           toast.success("Account Created!", { description: "Welcome to Curocity! Redirecting..." });
           router.push('/user');
   
@@ -246,16 +253,7 @@ export default function LoginPage() {
     const provider = new GoogleAuthProvider();
     try {
         const result = await signInWithPopup(auth, provider);
-        const user = result.user;
-        
-        // Pre-fill details from Google for the signup form
-        if (user.displayName) setName(user.displayName);
-        if (user.email) setIdentifier(user.email);
-        setInputType('email'); // Set input type to email for Google sign-in flow
-        
-        // Now check if user exists, and if not, take them to the details page.
-        await findAndSetSession(user);
-
+        await findAndSetSession(result.user);
     } catch (error: any) {
         toast.error('Google Sign-In Failed', { description: error.message });
     } finally {
@@ -371,7 +369,7 @@ export default function LoginPage() {
                 <form onSubmit={handleOtpSubmit} className="space-y-4">
                     <div className="space-y-2 text-center">
                         <Label htmlFor="otp">Enter OTP</Label>
-                        <Input id="otp" name="otp" type="tel" placeholder="123456" maxLength={6} required value={otp} onChange={(e) => setOtp(e.target.value)} disabled={isLoading} className="text-2xl tracking-[0.5em] text-center font-mono" />
+                        <Input id="otp" name="otp" type="tel" placeholder="123456" maxLength={6} required value={otp} onChange={(e) => setOtp(e.target.value)} disabled={isLoading} className="text-2xl tracking-[0.5em] text-center font-mono h-14" />
                     </div>
                     <Button type="submit" className="w-full" disabled={isLoading}>
                          {isLoading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Verifying...</> : "Verify & Login"}
@@ -396,7 +394,7 @@ export default function LoginPage() {
                             <Input id="phone_details" value={identifier} disabled />
                         </div>
                     )}
-                    {inputType === 'email' && (
+                    {inputType === 'email' && !auth?.currentUser && (
                         <div className="space-y-2">
                             <Label htmlFor="password_details">Create Password</Label>
                             <Input id="password_details" name="password" type="password" placeholder="••••••••" required value={password} onChange={(e) => setPassword(e.target.value)} />
@@ -479,6 +477,3 @@ export default function LoginPage() {
     </>
   );
 }
-
-
-    
