@@ -11,7 +11,7 @@ import BrandLogo from '@/components/shared/brand-logo'
 
 import {
   ArrowRight, Car, Wrench, Ambulance, Landmark, Shield, IndianRupee, Sun, Moon, Globe,
-  MapPin, Clock, Calendar, FlaskConical, Home, Siren, CheckCircle, XCircle
+  MapPin, Clock, Calendar, FlaskConical, Home, Siren, CheckCircle, XCircle, BrainCircuit
 } from 'lucide-react'
 
 import { motion, useInView, useScroll, useTransform } from 'framer-motion'
@@ -56,11 +56,10 @@ function LanguageToggle() {
   )
 }
 
-const ecosystemCards = [
-    { title: "Fair Fares with PATH", description: "Our core 0% commission ride-hailing service ensures drivers earn more and riders pay fair, consistent fares. No surge, no surprises.", icon: Car, glowColor: "hsl(210 100% 56%)" },
-    { title: "Reliability with ResQ", description: "Our network of verified mechanics provides instant on-road assistance to our partners, minimizing downtime and ensuring a reliable service for you.", icon: Wrench, glowColor: "hsl(36 100% 50%)" },
-    { title: "Safety with CURE", description: "In an emergency, every second counts. Our integrated ambulance dispatch and doctor appointment system connects you to the nearest partner hospital.", icon: Ambulance, glowColor: "hsl(0 84% 60%)" },
-    { title: "Empowerment with Bank", description: "We are a FinTech company at heart. Our 'Curocity Bank' offers partners instant loans, savings, and financial security, creating a loyal and happy fleet.", icon: Landmark, glowColor: "hsl(142 71% 45%)" },
+const corePillars = [
+    { title: "Curocity", description: "The core platform connecting riders and partners. It's the engine for our 0% commission ride-hailing and emergency response network, ensuring fairness and reliability.", icon: Car, glowColor: "hsl(210 100% 56%)" },
+    { title: "CuroBank", description: "The FinTech heart of our ecosystem. CuroBank provides partners with instant payouts, savings with interest, and access to fair credit, building financial security and loyalty.", icon: Landmark, glowColor: "hsl(142 71% 45%)" },
+    { title: "CuroMind", description: "The intelligent AI layer that optimizes the entire platform. CuroMind handles smart dispatch, route optimization, and provides a personalized earnings coach for our partners.", icon: BrainCircuit, glowColor: "hsl(48 95% 55%)" },
 ]
 
 const dayTimelineItems = [
@@ -96,8 +95,8 @@ export default function HomePage() {
     <div className={cn("flex flex-col min-h-screen bg-background aurora-background")}>
       <header className="sticky top-0 z-40 w-full border-b bg-background/80 backdrop-blur-sm">
         <div className="container flex h-14 items-center justify-between">
-           <Link href="/" className="flex items-center gap-2" aria-label="Curocity Home">
-            <BrandLogo hideText={true} iconClassName="w-8 h-8" />
+          <Link href="/" className="flex items-center gap-2" aria-label="Curocity Home">
+            <BrandLogo hideText={false} />
           </Link>
           <div className="flex items-center gap-2">
             <LanguageToggle />
@@ -155,13 +154,13 @@ export default function HomePage() {
         <section id="ecosystem" className="py-20 md:py-24 bg-muted/30">
           <div className="container">
             <div className="text-center max-w-3xl mx-auto">
-              <h2 className="text-3xl md:text-4xl font-bold font-headline" data-aos="fade-up">One App for Your Entire Day</h2>
+              <h2 className="text-3xl md:text-4xl font-bold font-headline" data-aos="fade-up">Our Core Pillars</h2>
               <p className="mt-4 text-muted-foreground" data-aos="fade-up" data-aos-delay="100">
-                Curocity integrates mobility, health, and assistance services into one seamless Super App, creating a safety net for your everyday life.
+                Our business is built on three core pillars that work together to create a powerful, sustainable ecosystem.
               </p>
             </div>
-            <div className="mt-12 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {ecosystemCards.map((card, i) => (
+            <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6">
+              {corePillars.map((card, i) => (
                 <div key={card.title} data-aos="fade-up" data-aos-delay={100 * (i + 1)}>
                   <Card style={{ '--glow-color': card.glowColor } as React.CSSProperties} className="card-glow text-center h-full flex flex-col">
                     <CardHeader className="items-center">
