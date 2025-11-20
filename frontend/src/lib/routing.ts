@@ -1,13 +1,38 @@
 'use server'
 
+const getBaseUrl = () => {
+  // For Vercel deployments, VERCEL_URL is automatically set.
+  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
+  // For local development, we default to localhost.
+  return 'http://localhost:3000';
+}
+
+// This function now calls our Next.js API route with an absolute URL
 export async function searchPlace(query: string) {
     if (!query) return null;
+
+    const baseUrl = getBaseUrl();
+    const absoluteUrl = `${baseUrl}/api/search?q=${encodeURIComponent(query)}`;
+
+    console.log(`Searching for place via our API: ${query}`);
     try {
-        const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&countrycodes=in`);
+        console.log(`Fetching URL: ${absoluteUrl}`);
+        const response = await fetch(absoluteUrl);
+
+        console.log(`Our API response status: ${response.status}`);
+
+        if (!response.ok) {
+            console.error(`Our API request failed with status ${response.status}`);
+            const errorText = await response.text();
+            console.error(`Error response body: ${errorText}`);
+            return null;
+        }
+
         const data = await response.json();
+        console.log('Our API response data:', JSON.stringify(data, null, 2));
         return data;
     } catch (error) {
-        console.error('Error searching place:', error);
+        console.error('Error calling our search API:', error);
         return null;
     }
 }

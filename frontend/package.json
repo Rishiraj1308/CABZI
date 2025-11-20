@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "./dev-script.sh",
+    "dev": "./dev-script.sh 3000 0.0.0.0",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
@@ -33,7 +33,7 @@
     "@radix-ui/react-slider": "^1.2.0",
     "@radix-ui/react-slot": "^1.1.0",
     "@radix-ui/react-switch": "^1.1.0",
-    "@radix-ui/react-tabs": "^1.1.0",
+    "react-tabs": "^1.1.0",
     "@radix-ui/react-toast": "^1.2.1",
     "@radix-ui/react-tooltip": "^1.1.2",
     "aos": "^2.3.4",
