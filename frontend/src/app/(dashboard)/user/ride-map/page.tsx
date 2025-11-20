@@ -81,11 +81,16 @@ function BookRideMapComponent() {
 
     const getAddress = useCallback(async (lat: number, lon: number): Promise<string | null> => {
         try {
-            const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`);
-            if (!res.ok) return null;
+            // Use the internal API route for reverse geocoding
+            const res = await fetch(`/api/search?lat=${lat}&lon=${lon}`);
+            if (!res.ok) {
+                console.error("Reverse geocoding failed:", await res.text());
+                return null;
+            }
             const data = await res.json();
             return data?.display_name || null;
-        } catch {
+        } catch (error) {
+            console.error("Could not fetch address", error);
             return null;
         }
     }, []);
@@ -166,7 +171,7 @@ function BookRideMapComponent() {
                         const totalFare = Math.round(((config.base + (config.perKm * (route.distance / 1000))) * 1.2) / 5) * 5;
                         return { 
                             ...rt, 
-                            fare: `₹${totalFare}`, 
+                            fare: `₹${totalFare}`,
                             fareDetails: { ...config, total: totalFare },
                             eta: `${Math.round(route.duration / 60) + 3} min`
                         };

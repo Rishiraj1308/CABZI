@@ -2,7 +2,8 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, useMap, Polyline } from 'react-leaflet';
+// Changed Polyline to GeoJSON for correct route rendering
+import { MapContainer, TileLayer, Marker, Popup, useMap, GeoJSON } from 'react-leaflet';
 import L, { LatLngExpression } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { useTheme } from 'next-themes';
@@ -21,7 +22,6 @@ L.Icon.Default.mergeOptions({
 // Custom pulsating icons for rider and destination
 const redPulsatingIcon = L.divIcon({ className: 'pulsating-marker pulsating-marker-red', iconSize: [20, 20] });
 const greenPulsatingIcon = L.divIcon({ className: 'pulsating-marker pulsating-marker-green', iconSize: [20, 20] });
-
 
 const createPartnerIcon = (iconName: string, color: string) => {
     const iconSvgs = {
@@ -164,13 +164,16 @@ const LiveMap = ({ children, riderLocation, destinationLocation, driverLocation,
             )
         })}
 
+        {/* Replaced Polyline with GeoJSON for accurate route display */}
         {routeGeometry && (
-            <Polyline 
-                positions={routeGeometry.coordinates.map((c: [number, number]) => [c[1], c[0]])}
-                pathOptions={{
-                    color: isTripInProgress ? 'hsl(var(--primary))' : 'hsl(var(--accent))',
-                    className: 'route-electric-flow'
-                }}
+            <GeoJSON 
+                key={JSON.stringify(routeGeometry)} // Add a key to force re-render when geometry changes
+                data={routeGeometry}
+                style={() => ({
+                    color: isTripInProgress ? 'hsl(var(--primary))' : '#3498db', // A solid blue for pending routes
+                    weight: 5,
+                    opacity: 0.8
+                })}
             />
         )}
     </MapContainer>

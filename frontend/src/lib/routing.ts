@@ -1,49 +1,45 @@
-'use server'
 
-const getBaseUrl = () => {
-  // For Vercel deployments, VERCEL_URL is automatically set.
-  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
-  // For local development, we default to localhost.
-  return 'http://localhost:3000';
+// Switched to HTTPS for OSRM for better security and to avoid mixed-content issues.
+const OSRM_BASE_URL = 'https://router.project-osrm.org';
+
+interface Coordinate {
+    lat: number;
+    lon: number;
 }
 
-// This function now calls our Next.js API route with an absolute URL
-export async function searchPlace(query: string) {
-    if (!query) return null;
-
-    const baseUrl = getBaseUrl();
-    const absoluteUrl = `${baseUrl}/api/search?q=${encodeURIComponent(query)}`;
-
-    console.log(`Searching for place via our API: ${query}`);
+// This function now calls our internal API route instead of Nominatim directly
+export const searchPlace = async (query: string) => {
+    if (!query) return [];
     try {
-        console.log(`Fetching URL: ${absoluteUrl}`);
-        const response = await fetch(absoluteUrl);
-
-        console.log(`Our API response status: ${response.status}`);
-
+        // Use a relative path for the API call, which works universally
+        const response = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
         if (!response.ok) {
-            console.error(`Our API request failed with status ${response.status}`);
-            const errorText = await response.text();
-            console.error(`Error response body: ${errorText}`);
-            return null;
+            console.error("Search API Error:", await response.text());
+            return [];
         }
-
         const data = await response.json();
-        console.log('Our API response data:', JSON.stringify(data, null, 2));
         return data;
     } catch (error) {
-        console.error('Error calling our search API:', error);
-        return null;
+        console.error('Could not fetch search results', error);
+        return [];
     }
-}
+};
 
-export async function getRoute(start: { lat: number, lon: number }, end: { lat: number, lon: number }) {
+export const getRoute = async (start: Coordinate, end: Coordinate) => {
+    const { lat: startLat, lon: startLon } = start;
+    const { lat: endLat, lon: endLon } = end;
+    
+    const url = `${OSRM_BASE_URL}/route/v1/driving/${startLon},${startLat};${endLon},${endLat}?overview=full&geometries=geojson`;
+
     try {
-        const response = await fetch(`https://router.project-osrm.org/route/v1/driving/${start.lon},${start.lat};${end.lon},${end.lat}?overview=full&geometries=geojson`);
+        const response = await fetch(url);
+        if (!response.ok) {
+            throw new Error('Failed to fetch route from OSRM');
+        }
         const data = await response.json();
         return data;
     } catch (error) {
-        console.error('Error fetching route:', error);
-        return null;
+        console.error('OSRM routing error:', error);
+        throw error;
     }
-}
+};
